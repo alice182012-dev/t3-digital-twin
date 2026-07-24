@@ -33,6 +33,8 @@ const state = {
   modelPollInFlight: false,
   modelEventInFlight: false,
   placeSearchResults: [],
+  selectedPlace: null,
+  selectedPlaceMarker: null,
 };
 
 const map = L.map("map", { zoomControl: false }).setView([21.0219, 105.763], 16);
@@ -90,6 +92,7 @@ const layers = {
   }),
   routes: L.layerGroup().addTo(map),
   markers: L.layerGroup().addTo(map),
+  selectedPlace: L.layerGroup().addTo(map),
 };
 
 let floodControlButton = null;
@@ -280,6 +283,70 @@ function setMarkers(origin, destination) {
   L.marker([destination.lat, destination.lon], { icon: pointIcon("E", "end") }).bindPopup("End").addTo(layers.markers);
 }
 
+function selectedPlaceIcon() {
+  return L.divIcon({
+    className: "selected-place-marker",
+    html: `
+      <svg viewBox="0 0 36 48" aria-hidden="true" focusable="false">
+        <path d="M18 46S4 30.5 4 18A14 14 0 1 1 32 18C32 30.5 18 46 18 46Z"></path>
+        <circle cx="18" cy="18" r="5"></circle>
+      </svg>
+    `,
+    iconSize: [36, 48],
+    iconAnchor: [18, 46],
+    popupAnchor: [0, -42],
+  });
+}
+
+function selectedPlaceDepth(place) {
+  return FloodPointDepth.pointDepthAt(place, layers.floodPolygons.toGeoJSON());
+}
+
+function renderSelectedPlacePopup(place) {
+  const depth = selectedPlaceDepth(place);
+  const title = place.name || "Selected point";
+  const rows = [
+    ["Point", `${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`],
+    ["Depth", formatDepth(depth.depthM)],
+    ["Road", depth.roadName || (depth.flooded ? "Unknown" : "No mapped flooding")],
+    ["Time", formatTimestamp(depth.time || state.currentFloodTime)],
+  ];
+  return `
+    ${renderFloodPopup(title, rows)}
+    <div class="selected-place-actions">
+      <button type="button" data-place-direction>Chỉ đường / Direction</button>
+    </div>
+  `;
+}
+
+function refreshSelectedPlacePopup(openPopup = false) {
+  if (!state.selectedPlace || !state.selectedPlaceMarker) return;
+  state.selectedPlaceMarker.setPopupContent(renderSelectedPlacePopup(state.selectedPlace));
+  if (openPopup) state.selectedPlaceMarker.openPopup();
+}
+
+function setSelectedPlace(latlng, details = {}, openPopup = true) {
+  const lat = Number(latlng.lat);
+  const lng = Number(latlng.lng ?? latlng.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  state.selectedPlace = {
+    lat,
+    lng,
+    name: details.name || "Selected point",
+    address: details.address || "",
+  };
+  layers.selectedPlace.clearLayers();
+  state.selectedPlaceMarker = L.marker([lat, lng], {
+    icon: selectedPlaceIcon(),
+    keyboard: true,
+    title: state.selectedPlace.name,
+    alt: state.selectedPlace.name,
+  })
+    .bindPopup(renderSelectedPlacePopup(state.selectedPlace), { maxWidth: 300 })
+    .addTo(layers.selectedPlace);
+  if (openPopup) state.selectedPlaceMarker.openPopup();
+}
+
 function setInputPoint(inputId, latlng) {
   document.getElementById(inputId).value = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
   refreshInputMarkers();
@@ -354,6 +421,7 @@ function renderPlaceSearchResults(results) {
         <div class="place-result-actions">
           <button type="button" data-place-index="${index}" data-place-target="origin">Điểm đi / Set start</button>
           <button type="button" data-place-index="${index}" data-place-target="destination">Điểm đến / Set destination</button>
+          <button type="button" data-place-index="${index}" data-place-target="direction">Chỉ đường / Direction</button>
         </div>
       </li>
     `)
@@ -418,12 +486,20 @@ function schedulePlaceSearch() {
   placeSearchTimer = window.setTimeout(runPlaceSearch, 350);
 }
 
-function selectPlaceResult(index, target) {
+async function selectPlaceResult(index, target) {
   const result = state.placeSearchResults[index];
-  if (!result || !["origin", "destination"].includes(target)) return;
+  if (!result || !["origin", "destination", "direction"].includes(target)) return;
   const lat = Number(result.lat);
   const lon = Number(result.lon);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (target === "direction") {
+    setSelectedPlace({ lat, lng: lon }, result);
+    map.setView([lat, lon], Math.max(map.getZoom(), 15));
+    document.getElementById("place-search-input").value = result.name;
+    setPlaceSearchExpanded(false);
+    await routeToSelectedPlace();
+    return;
+  }
   setInputPoint(target, { lat, lng: lon });
   map.setView([lat, lon], Math.max(map.getZoom(), 15));
   document.getElementById("place-search-input").value = result.name;
@@ -517,6 +593,7 @@ async function loadFloodLayers(options = {}) {
   if (!time) {
     layers.floodPolygons.clearLayers();
     layers.floodRoads.clearLayers();
+    refreshSelectedPlacePopup();
     return;
   }
   const sourceMode = options.sourceMode || (state.floodSourceMode === "rain" ? "nonempty" : "latest");
@@ -529,6 +606,7 @@ async function loadFloodLayers(options = {}) {
   layers.floodPolygons.addData(polygons);
   layers.floodRoads.clearLayers();
   layers.floodRoads.addData(roads);
+  refreshSelectedPlacePopup();
 }
 
 function modelGenerationFrom(data) {
@@ -631,6 +709,24 @@ async function runForecast() {
     renderStatus("neutral", "STALE DATA", "Dùng timestep gần nhất / Using nearest available timestep");
   } else {
     renderStatus("pass", "READY", "Dữ liệu theo khung giờ / Timed forecast ready");
+  }
+}
+
+async function refreshAndRunForecast() {
+  await loadTimesteps();
+  await loadFloodLayers();
+  await runForecast();
+}
+
+async function routeToSelectedPlace() {
+  if (!state.selectedPlace) return;
+  setInputPoint("destination", state.selectedPlace);
+  setPlaceSearchExpanded(false);
+  try {
+    await refreshAndRunForecast();
+    refreshSelectedPlacePopup();
+  } catch (error) {
+    renderStatus("fail", "ERROR", error.message);
   }
 }
 
@@ -958,11 +1054,18 @@ map.on("click", (event) => {
     setPickButtonState();
     return;
   }
-  if (!state.pickMode) return;
-  setInputPoint(state.pickMode, event.latlng);
-  state.pickMode = null;
+  if (state.pickMode) {
+    setInputPoint(state.pickMode, event.latlng);
+    state.pickMode = null;
+    return;
+  }
+  setSelectedPlace(event.latlng);
 });
 
+document.getElementById("map").addEventListener("click", (event) => {
+  if (!event.target.closest("[data-place-direction]")) return;
+  routeToSelectedPlace();
+});
 document.getElementById("origin").addEventListener("change", refreshInputMarkers);
 document.getElementById("destination").addEventListener("change", refreshInputMarkers);
 document.getElementById("place-search-input").addEventListener("focus", () => setPlaceSearchExpanded(true));
@@ -1013,10 +1116,7 @@ document.getElementById("pick-route-pins").addEventListener("click", () => {
   setPickButtonState();
 });
 document.getElementById("route").addEventListener("click", () => {
-  loadTimesteps()
-    .then(loadFloodLayers)
-    .then(runForecast)
-    .catch((error) => renderStatus("fail", "ERROR", error.message));
+  refreshAndRunForecast().catch((error) => renderStatus("fail", "ERROR", error.message));
 });
 document.getElementById("rain-source").addEventListener("click", () => {
   state.floodSourceMode = state.floodSourceMode === "rain" ? "latest" : "rain";

@@ -126,7 +126,11 @@ http://127.0.0.1:8010
 
 ## Place Search
 
-The bilingual search pill expands inside the route sheet and searches after a 350 ms debounce. Results provide explicit Set start and Set destination actions, which update the existing coordinates and markers without automatically calculating a new route. Search data is attributed to OpenStreetMap contributors.
+The bilingual search pill expands inside the route sheet and searches after a 350 ms debounce. Results provide Set start and Set destination actions, plus a Direction action that places a red result pin, makes that point the destination, and immediately calculates the existing flood-aware route. Search data is attributed to OpenStreetMap contributors.
+
+## Map Pin Directions
+
+An ordinary map click, outside the explicit start/end picking modes, places one red selected-place pin. Its popup shows the coordinates and the deepest currently displayed flood polygon at that point, including road and timestep metadata when present. A point outside the mapped flood polygons reports 0 cm and `No mapped flooding`. The popup Direction action keeps the current origin, makes the pin the destination, and immediately refreshes the flood-aware directions.
 
 ## Map Layers
 

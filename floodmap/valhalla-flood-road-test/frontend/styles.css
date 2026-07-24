@@ -311,6 +311,51 @@ body {
   background: #16a067;
 }
 
+.selected-place-marker {
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 35%));
+}
+
+.selected-place-marker svg {
+  display: block;
+  width: 36px;
+  height: 48px;
+}
+
+.selected-place-marker path {
+  fill: #e53935;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.selected-place-marker circle {
+  fill: #ffffff;
+}
+
+.selected-place-actions {
+  padding: 0 14px 14px;
+}
+
+.selected-place-actions button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #0a7cb6;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #087caf;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.selected-place-actions button:hover,
+.selected-place-actions button:focus-visible {
+  background: #086b98;
+  outline: 3px solid rgb(8 124 175 / 25%);
+  outline-offset: 2px;
+}
+
 .app {
   min-height: 100vh;
 }
@@ -550,6 +595,18 @@ body {
 .place-result-actions button:focus-visible {
   border-color: #69d6ee;
   background: rgb(105 214 238 / 16%);
+}
+
+.place-result-actions button[data-place-target="direction"] {
+  grid-column: 1 / -1;
+  border-color: #69d6ee;
+  color: #102026;
+  background: #69d6ee;
+}
+
+.place-result-actions button[data-place-target="direction"]:hover,
+.place-result-actions button[data-place-target="direction"]:focus-visible {
+  background: #8ee4f5;
 }
 
 .eyebrow {
