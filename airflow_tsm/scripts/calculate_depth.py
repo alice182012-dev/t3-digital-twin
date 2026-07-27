@@ -110,7 +110,7 @@ def run_calculate_depth(grid_path, nc_path, dem_path, output_dir):
         default_workers = len(os.sched_getaffinity(0))
     except AttributeError:
         default_workers = multiprocessing.cpu_count()
-    max_workers = int(os.getenv("MAX_WORKERS", default_workers))
+    max_workers = os.getenv("MAX_WORKERS", default_workers)
 
     print(f"🚀 Calculating on {max_workers} processes (Multiprocessing)...")
     # Sử dụng billiard.Pool, một nhánh của multiprocessing.Pool, an toàn để sử dụng
