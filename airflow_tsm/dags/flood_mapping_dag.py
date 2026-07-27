@@ -35,7 +35,7 @@ ROADS_GEOJSON_PATH = os.path.join(DATA_PATH, "inputs", "toa-do-duong-hanoi.geojs
 GEOJSON_ROOT_DIR = os.path.join(DATA_PATH, "output_geojsons")
 FINAL_OUTPUT_ROOT_DIR = os.path.join(DATA_PATH, "output_final")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
-RAIN_CHECK_INTERVAL_SECONDS = os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900")
+RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900"))
 
 
 def task_check_forecast_rain(**kwargs):
