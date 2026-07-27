@@ -11,15 +11,15 @@ if not hasattr(fiona, 'path'):
     fiona.path = fiona.vfs
 
 
-TOMORROW_API_KEY = os.getenv["TOMORROW_API_KEY"]
+TOMORROW_API_KEY = os.getenv("TOMORROW_API_KEY")
 LOCATION_LAT = os.getenv("LOCATION_LAT", "21.0285")
 LOCATION_LON = os.getenv("LOCATION_LON", "105.804817")
 
 
-THREEDI_API_KEY = os.getenv ["THREEDI_API_KEY"],
+THREEDI_API_KEY = os.getenv ("THREEDI_API_KEY"),
 
-ORG_UUID = os.getenv["ORG_UUID"]
-MODEL_ID = int(os.getenv["MODEL_ID"], 1)
+ORG_UUID = os.getenv("ORG_UUID")
+MODEL_ID = int(os.getenv("MODEL_ID"), 1)
 
 
 SIMULATION_DURATION = int(os.getenv("SIMULATION_DURATION", 7200))
