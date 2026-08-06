@@ -1,7 +1,4 @@
 # FloodNav — SW Architecture
-
-> OCR'd/transcribed from `SW Architecture.png` (Fibery whiteboard). Structure follows the C4 model: System Context → Container → Component-level detail for each container.
-
 ---
 
 ## 1. System Context Diagram
@@ -427,7 +424,3 @@ Marked as a **BLACK BOX** on the whiteboard — no internal detail specified. Re
 - Treating them as two distinct modes makes the reliability boundary explicit and ensures the architecture does not accidentally rely on push delivery for safety-critical situations where the app is open.
 - The location-sharing sub-cases in the push receiver → affect how accurately the pipeline can target alerts.
   - A user who has granted always-on location permission gets alerts targeted to their actual current location every cycle.
-
----
-
-*Note: OCR performed by cropping the native 25000×6162px whiteboard image into per-frame sections and transcribing via vision model. Minor transcription artifacts (e.g. exact Vietnamese diacritics, arrow directions) may exist — cross-check against the original image/Fibery whiteboard for anything safety-critical.*
