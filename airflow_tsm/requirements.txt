@@ -1,5 +1,7 @@
 requests
+threedi-api-client==5.0.5
 threedidepth
+xarray
 geopandas
 rasterio==1.4.4
 python-dotenv

@@ -1,10 +1,14 @@
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.standard.sensors.time_delta import TimeDeltaSensor
 from datetime import datetime, timedelta
 import sys
 import os
 import pandas as pd
+
+sys.path.append(os.path.join("/opt/airflow", "plugins"))
+from vn_timetable import VNContinuousTimetable
 
 
 BASE_PATH = "/opt/airflow"
@@ -22,6 +26,8 @@ try:
     import mapping.merge_geojson
     import mapping.mapping_geojson
     import mapping.upload_minio
+    import database.geojson_to_pg
+    import database.netcdf_to_pg
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -39,7 +45,7 @@ RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS",
 
 
 def task_check_forecast_rain(**kwargs):
-    """Choose the full pipeline only when any forecast window reaches 5 mm/h."""
+    """Choose the full pipeline only when any forecast window reaches 0.01 mm/h."""
     ti = kwargs["ti"]
     intervals = create_simulation.get_rain_forecast()
     if not intervals:
@@ -69,7 +75,7 @@ def task_run_simulation(**kwargs):
         rain_intervals=rain_intervals,
     )
     if not sim_id:
-        raise ValueError("❌ Failed to create simulation")
+        raise AirflowSkipException("⏭️ Simulation was not triggered; skipping run")
     ti.xcom_push(key="sim_id", value=sim_id)
 
 
@@ -81,6 +87,18 @@ def task_download_result(**kwargs):
     if not saved_path:
         raise ValueError("❌ Download failed")
     ti.xcom_push(key="nc_path", value=saved_path)
+
+
+def task_upload_netcdf_postgres(**kwargs):
+    ti = kwargs["ti"]
+    nc_path = ti.xcom_pull(task_ids="2_download_results", key="nc_path")
+
+    if not nc_path or not os.path.exists(nc_path):
+        raise ValueError(f"❌ Không tìm thấy NetCDF để ingest: {nc_path}")
+
+    print(f"🗄️ 3b. Uploading NetCDF to Postgres: {nc_path}")
+
+    database.netcdf_to_pg.upload_netcdf_to_database(nc_path)
 
 
 def task_calculate_depth(**kwargs):
@@ -127,7 +145,12 @@ def task_merge_geojson(**kwargs):
     ti = kwargs["ti"]
     input_geojson_dir = ti.xcom_pull(task_ids="4_extract_geojson_full")
 
-    run_ts = kwargs.get("ts_nodash") or pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+    # Name the merged output after the earliest depth_<timestamp>.tif in this
+    # run, not the Airflow trigger time, so the filename reflects the actual
+    # forecast window covered.
+    run_ts = mapping.merge_geojson.get_earliest_depth_timestamp(input_geojson_dir)
+    if not run_ts:
+        run_ts = kwargs.get("ts_nodash") or pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
     ti.xcom_push(key="run_ts", value=run_ts)
 
     # run_merge nên return merged_path (string) như cũ
@@ -208,8 +231,26 @@ def task_upload_minio(**kwargs):
         raise ValueError("❌ Upload MinIO failed")
 
     return result
-    
-    
+
+
+def task_upload_postgres(**kwargs):
+    ti = kwargs["ti"]
+
+    upload_result = ti.xcom_pull(task_ids="7_upload_minio")
+    if not upload_result or not upload_result.get("object_name"):
+        raise ValueError("❌ Không tìm thấy object_name từ task upload MinIO")
+
+    object_name = upload_result["object_name"]
+
+    print(f"🗄️ 8. Uploading GeoJSON to Postgres: {object_name}")
+
+    inserted = database.geojson_to_pg.upload_geojson_to_db(object_name)
+
+    print(f"✅ Postgres upload done: {inserted} rows")
+
+    return inserted
+
+
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -222,7 +263,7 @@ with DAG(
     "flood_mapping_full",
     default_args=default_args,
     description="Pipeline 3Di -> MinIO (Direct Path Passing)",
-    schedule="@continuous",
+    schedule=VNContinuousTimetable(),
     start_date=datetime(2026, 2, 5),
     catchup=False,
     max_active_runs=1,
@@ -246,6 +287,9 @@ with DAG(
     t3 = PythonOperator(
         task_id="3_calculate_depth", python_callable=task_calculate_depth
     )
+    t3b = PythonOperator(
+        task_id="3b_upload_netcdf_postgres", python_callable=task_upload_netcdf_postgres
+    )
     t4 = PythonOperator(
         task_id="4_extract_geojson_full", python_callable=task_extract_geojson_full
     )
@@ -258,6 +302,10 @@ with DAG(
     t7 = PythonOperator(
         task_id="7_upload_minio", python_callable=task_upload_minio
     )
+    t8 = PythonOperator(
+        task_id="8_upload_postgres", python_callable=task_upload_postgres
+    )
 
-    t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7
+    t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
+    t2 >> t3b
     t0 >> wait_for_next_check

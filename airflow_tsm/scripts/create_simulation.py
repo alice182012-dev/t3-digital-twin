@@ -1,32 +1,38 @@
-import requests
+"""3Di simulation trigger, built on the official threedi-api-client (ThreediApi).
+
+Auth/config is read by threedi_client.get_client() from THREEDI_API_HOST /
+THREEDI_API_PERSONAL_API_TOKEN. Status polling is bounded (timeout +
+exponential backoff + max consecutive-error cap) rather than an unbounded
+retry loop.
+"""
+
 import json
-import time
 import os
+import time
 from datetime import datetime, timedelta, timezone
 
-import fiona
-import fiona.vfs
+from threedi_api_client.openapi import Action, FromTemplate, TimedSavedState, TimeseriesRain
 
-if not hasattr(fiona, 'path'):
-    fiona.path = fiona.vfs
+import requests
 
+from threedi_client import get_client
 
 TOMORROW_API_KEY = os.getenv("TOMORROW_API_KEY")
 LOCATION_LAT = os.getenv("LOCATION_LAT", "21.0285")
 LOCATION_LON = os.getenv("LOCATION_LON", "105.804817")
 
-
-THREEDI_API_KEY = os.getenv("THREEDI_API_KEY")
-
 ORG_UUID = os.getenv("ORG_UUID")
-MODEL_ID = int(os.getenv("MODEL_ID", "83022"))
-
+TEMPLATE_ID = int(os.getenv("TEMPLATE_ID", "40921"))
 
 SIMULATION_DURATION = int(os.getenv("SIMULATION_DURATION", "7200"))
-UPDATE_INTERVAL = int(os.getenv("UPDATE_INTERVAL", "900"))
 RAIN_LOOKAHEAD_HOURS = float(os.getenv("FLOOD_RAIN_LOOKAHEAD_HOURS", "2"))
 RAIN_TIMESTEP_MINUTES = int(os.getenv("FLOOD_RAIN_TIMESTEP_MINUTES", "15"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
+
+# Bounded-polling config.
+POLL_INTERVAL_SECONDS = int(os.getenv("THREEDI_POLL_INTERVAL_SECONDS", "10"))
+POLL_MAX_INTERVAL_SECONDS = int(os.getenv("THREEDI_POLL_MAX_INTERVAL_SECONDS", "60"))
+POLL_TIMEOUT_SECONDS = int(os.getenv("THREEDI_POLL_TIMEOUT_SECONDS", str(SIMULATION_DURATION + 1800)))
 
 
 def load_last_state(state_file_path):
@@ -35,7 +41,7 @@ def load_last_state(state_file_path):
         try:
             with open(state_file_path, "r") as f:
                 return json.load(f).get("last_saved_state_id")
-        except:
+        except Exception:
             return None
     return None
 
@@ -43,7 +49,6 @@ def load_last_state(state_file_path):
 def save_new_state(state_file_path, state_id):
     """Lưu ID saved state mới"""
     try:
-
         os.makedirs(os.path.dirname(state_file_path), exist_ok=True)
         with open(state_file_path, "w") as f:
             json.dump(
@@ -53,82 +58,32 @@ def save_new_state(state_file_path, state_id):
         print(f"⚠️ Không thể lưu state file: {e}")
 
 
-def get_simulation_template_id(model_id):
-    """Lấy Template ID để clone settings"""
-    print(f"🔍 Đang tìm Template cho Model {model_id}...")
-    url = "https://api.3di.live/v3/simulation-templates/"
-    params = {"simulation__threedimodel__id": model_id, "limit": 1}
-    headers = {"Authorization": THREEDI_API_KEY, "Content-Type": "application/json"}
-
-    try:
-        res = requests.get(url, params=params, headers=headers)
-        res.raise_for_status()
-        results = res.json().get("results", [])
-        if results:
-            t_id = results[0]["id"]
-            print(f"✅ Đã tìm thấy Template ID: {t_id}")
-            return t_id
-        else:
-            print("❌ Không tìm thấy Template nào!")
-            return None
-    except Exception as e:
-        print(f"❌ Lỗi lấy Template: {e}")
-        return None
-
-# def get_simulation_id(model_id):
-#     """
-#     Lấy simulation_id mới nhất của model
-#     """
-
-#     url = f"https://api.3di.live/v3/simulations/"
-
-#     params = {"threemodel_id": model_id}
-#     headers = {"Authorization": THREEDI_API_KEY, "Content-Type": "application/json"}
-
-#     response = requests.get(
-#         url,
-#         headers=headers,
-#         params=params,
-#     )
-
-#     response.raise_for_status()
-
-#     results = response.json()["results"]
-
-#     if not results:
-#         raise Exception(
-#             f"Không tìm thấy simulation cho model {model_id}"
-#         )
-
-#     simulations = sorted(
-#         results,
-#         key=lambda x: x["id"],
-#         reverse=True
-#     )
-
-#     return simulations[0]["id"]
+def build_fixed_rain_intervals(rain_mm_hr, duration_hours=RAIN_LOOKAHEAD_HOURS, timestep_minutes=RAIN_TIMESTEP_MINUTES, start_time=None):
+    """Build a deterministic rain series at a fixed intensity, for manual/local testing."""
+    now = start_time or datetime.now(timezone.utc)
+    interval_count = int((duration_hours * 60) / timestep_minutes)
+    return [
+        {
+            "startTime": (now + timedelta(minutes=timestep_minutes * index))
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "values": {"precipitationIntensity": rain_mm_hr},
+        }
+        for index in range(interval_count + 1)
+    ]
 
 
 def get_rain_forecast():
     """Fetch the configured Tomorrow.io rain lookahead at 15-minute cadence."""
-    print(f"📡 1. Lấy dữ liệu mưa Tomorrow.io...")
+    print("📡 1. Lấy dữ liệu mưa Tomorrow.io...")
     now = datetime.now(timezone.utc)
     end_time = now + timedelta(hours=RAIN_LOOKAHEAD_HOURS)
 
     test_rain = os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip()
     if test_rain:
         rain_mm_hr = float(test_rain)
-        interval_count = int((RAIN_LOOKAHEAD_HOURS * 60) / RAIN_TIMESTEP_MINUTES)
         print(f"🧪 Using FLOOD_TEST_RAIN_MM_HR={rain_mm_hr:g} mm/h")
-        return [
-            {
-                "startTime": (now + timedelta(minutes=RAIN_TIMESTEP_MINUTES * index))
-                .isoformat()
-                .replace("+00:00", "Z"),
-                "values": {"precipitationIntensity": rain_mm_hr},
-            }
-            for index in range(interval_count + 1)
-        ]
+        return build_fixed_rain_intervals(rain_mm_hr)
 
     url = "https://api.tomorrow.io/v4/timelines"
     params = {
@@ -198,7 +153,43 @@ def build_rain_values(intervals):
     return values
 
 
-def run_forecast_process(state_file_path, rain_intervals=None):
+def monitor_simulation(api, sim_id):
+    """Bounded status polling: timeout + exponential backoff + max attempts."""
+    print("⏳ 7. Đang chạy...")
+    deadline = time.monotonic() + POLL_TIMEOUT_SECONDS
+    interval = POLL_INTERVAL_SECONDS
+    consecutive_errors = 0
+    max_consecutive_errors = 5
+
+    while time.monotonic() < deadline:
+        try:
+            status = api.simulations_status_list(sim_id)
+            consecutive_errors = 0
+            name = status.name
+
+            if name == "finished":
+                print("\n🏁 Hoàn tất!")
+                return True
+            if name in ("crashed", "timeout", "shut_down"):
+                print(f"\n❌ Simulation bị lỗi giữa chừng: {name}")
+                return False
+
+            interval = POLL_INTERVAL_SECONDS
+        except Exception as e:
+            consecutive_errors += 1
+            print(f"\n⚠️ Lỗi đọc status ({consecutive_errors}/{max_consecutive_errors}): {e}")
+            if consecutive_errors >= max_consecutive_errors:
+                print("❌ Quá nhiều lỗi liên tiếp khi poll status. Dừng.")
+                return False
+            interval = min(interval * 2, POLL_MAX_INTERVAL_SECONDS)
+
+        time.sleep(interval)
+
+    print(f"❌ Poll timeout sau {POLL_TIMEOUT_SECONDS}s. Simulation {sim_id} chưa hoàn tất.")
+    return False
+
+
+def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=True):
     print(f"🚀 Bắt đầu quy trình Simulation (State: {state_file_path})")
 
     intervals = rain_intervals if rain_intervals is not None else get_rain_forecast()
@@ -206,18 +197,13 @@ def run_forecast_process(state_file_path, rain_intervals=None):
         print("❌ Không lấy được dữ liệu mưa. Dừng.")
         return None, None
 
-    template_id = get_simulation_template_id(MODEL_ID)
-    if not template_id:
-        return None, None
-
     print("🔄 2. Xử lý dữ liệu mưa...")
     rain_values = build_rain_values(intervals)
     start_time_str = intervals[0]["startTime"]
 
-    headers = {"Authorization": THREEDI_API_KEY, "Content-Type": "application/json"}
-    base_url = "https://api.3di.live/v3"
+    api = get_client()
 
-    last_state_id = load_last_state(state_file_path)
+    last_state_id = load_last_state(state_file_path) if use_saved_state else None
     is_hotstart = False
     if last_state_id:
         print(f"🔗 [Hotstart] Sẽ dùng Saved State ID: {last_state_id}")
@@ -225,114 +211,70 @@ def run_forecast_process(state_file_path, rain_intervals=None):
     else:
         print("🆕 [Coldstart] Chạy mới từ Template")
 
-    sim_payload = {
-        "template": template_id,
-        "name": f"Forecast_{datetime.now().strftime('%H%M')}",
-        "organisation": ORG_UUID,
-        "start_datetime": start_time_str,
-        "duration": SIMULATION_DURATION,
-        "tags": ["airflow-forecast"],
-        "clone_settings": True,
-        "clone_events": False,
-        "clone_initials": not is_hotstart,
-    }
-
-    if is_hotstart:
-        sim_payload["initial_conditions"] = {"use_saved_state_id": last_state_id}
-
-    print(f"🚀 3. Tạo Simulation...")
-    res = requests.post(
-        f"{base_url}/simulations/from-template/", json=sim_payload, headers=headers
+    print("🚀 3. Tạo Simulation...")
+    from_template_kwargs = dict(
+        template=TEMPLATE_ID,
+        name=f"Forecast_{datetime.now().strftime('%H%M')}",
+        organisation=ORG_UUID,
+        start_datetime=start_time_str,
+        duration=SIMULATION_DURATION,
+        tags=["airflow-forecast"],
+        clone_settings=True,
+        clone_events=False,
+        clone_initials=not is_hotstart,
     )
-    if res.status_code != 201:
-        print(f"❌ Lỗi tạo Sim: {res.text}")
+    try:
+        simulation = api.simulations_from_template(FromTemplate(**from_template_kwargs))
+    except Exception as e:
+        print(f"❌ Lỗi tạo Sim: {e}")
         return None, None
-    sim_id = res.json()["id"]
+
+    sim_id = simulation.id
     print(f"✅ Simulation ID: {sim_id}")
 
     print("🌧️ 4. Nạp mưa...")
-    rain_payload = {
-        "values": rain_values,
-        "units": "m/s",
-        "interpolate": True,
-        "offset": 0,
-    }
-    requests.post(
-        f"{base_url}/simulations/{sim_id}/events/rain/timeseries",
-        json=rain_payload,
-        headers=headers,
-    )
-
-    print(f"💾 5. Đăng ký lưu state tại giây thứ {UPDATE_INTERVAL}...")
-
-    expiry_date = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-    save_payload = {
-        "name": f"RollingState_{datetime.now().strftime('%H%M')}",
-        "time": UPDATE_INTERVAL,
-        "expiry": expiry_date,
-        "tags": ["rolling-forecast"],
-    }
-
-    future_saved_state_id = None
-    save_res = requests.post(
-        f"{base_url}/simulations/{sim_id}/create-saved-states/timed/",
-        json=save_payload,
-        headers=headers,
-    )
-
-    if save_res.status_code in [200, 201]:
-        future_saved_state_id = save_res.json()["id"]
-        print(f"✅ Đã đăng ký thành công (ID tương lai: {future_saved_state_id})")
-    else:
-        print(f"❌ Lỗi đăng ký lưu state: {save_res.text}")
-
-    print("▶️ 6. Gửi lệnh start...")
-
     try:
-        action_res = requests.post(
-            f"{base_url}/simulations/{sim_id}/actions/",
-            json={"name": "start"},
-            headers=headers,
+        api.simulations_events_rain_timeseries_create(
+            sim_id,
+            TimeseriesRain(values=rain_values, units="m/s", interpolate=True, offset=0),
         )
-
-        if action_res.status_code not in [200, 201]:
-            print(f"❌ LỖI NGHIÊM TRỌNG: Không thể Start Simulation!")
-            print(f"   Status Code: {action_res.status_code}")
-            print(f"   Response: {action_res.text}")
-
-            return None, None
-
     except Exception as e:
-        print(f"❌ Lỗi kết nối khi gọi lệnh Start: {e}")
+        print(f"❌ Lỗi nạp mưa: {e}")
         return None, None
 
-    print("⏳ 7. Đang chạy...")
-    is_success = False
-
-    while True:
+    future_saved_state_id = None
+    if use_saved_state:
+        print(f"💾 5. Đăng ký lưu state tại giây thứ {SIMULATION_DURATION}...")
+        expiry_date = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
         try:
-            st_data = requests.get(
-                f"{base_url}/simulations/{sim_id}/status", headers=headers
-            ).json()
-            st = st_data["name"]
+            saved_state = api.simulations_create_saved_states_timed_create(
+                sim_id,
+                TimedSavedState(
+                    name=f"RollingState_{datetime.now().strftime('%H%M')}",
+                    time=SIMULATION_DURATION,
+                    expiry=expiry_date,
+                    tags=["rolling-forecast"],
+                ),
+            )
+            future_saved_state_id = saved_state.id
+            print(f"✅ Đã đăng ký thành công (ID tương lai: {future_saved_state_id})")
+        except Exception as e:
+            print(f"❌ Lỗi đăng ký lưu state: {e}")
+    else:
+        print("⏭️ 5. Bỏ qua đăng ký lưu state (use_saved_state=False)")
 
-            if st == "finished":
-                print("\n🏁 Hoàn tất!")
-                is_success = True
-                break
-            elif st in ["crashed", "timeout", "shut_down"]:
-                print(f"\n❌ Simulation bị lỗi giữa chừng: {st}")
+    print("▶️ 6. Gửi lệnh start...")
+    try:
+        api.simulations_actions_create(sim_id, Action(name="start"))
+    except Exception as e:
+        print(f"❌ LỖI NGHIÊM TRỌNG: Không thể Start Simulation! {e}")
+        return None, None
 
-                return None, None
-
-            time.sleep(10)
-        except:
-            time.sleep(10)
+    is_success = monitor_simulation(api, sim_id)
 
     if is_success and future_saved_state_id:
-
-        save_new_state(state_file_path, future_saved_state_id)
-
+        if use_saved_state:
+            save_new_state(state_file_path, future_saved_state_id)
         return sim_id, future_saved_state_id
 
     if is_success:
@@ -342,5 +284,4 @@ def run_forecast_process(state_file_path, rain_intervals=None):
 
 
 if __name__ == "__main__":
-
     run_forecast_process("flood_system_state.json")

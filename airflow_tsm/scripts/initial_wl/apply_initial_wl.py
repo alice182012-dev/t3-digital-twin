@@ -1,16 +1,24 @@
+"""Apply an initial 1D waterlevel resource on 3Di, built on the official
+threedi-api-client. MinIO/CSV logic is unchanged; the 3Di resource-create +
+upload flow uses the typed client and threedi_api_client.files.upload_file
+instead of a raw requests.put.
+"""
+
 import csv
 import json
-import requests
-from datetime import datetime
 import os
-import boto3
+import sys
+from datetime import datetime
+from pathlib import Path
 
-# =========================
-# CONFIG
-# =========================
-THREEDI_API_KEY = os.getenv("THREEDI_API_KEY")
+import boto3
+from threedi_api_client.files import upload_file
+from threedi_api_client.openapi import InitialWaterlevel, Upload
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from threedi_client import get_client  # noqa: E402
+
 MODEL_ID = os.getenv("MODEL_ID", "83022")
-BASE_URL = "https://api.3di.live/v3"
 
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
@@ -20,25 +28,6 @@ MINIO_BUCKET = os.getenv("INITIAL_WL_MINIO_BUCKET", "initial-wl")
 MINIO_PREFIX = os.getenv("INITIAL_WL_MINIO_PREFIX", "dummy-files")
 
 
-# =========================
-# COMMON
-# =========================
-def get_headers():
-    api_key = THREEDI_API_KEY.strip()
-
-    if api_key.lower().startswith("basic "):
-        auth_value = api_key
-    else:
-        auth_value = f"Basic {api_key}"
-
-    return {
-        "Authorization": auth_value,
-        "Content-Type": "application/json",
-    }
-
-# =========================
-# MINIO
-# =========================
 def get_latest_csv():
     s3 = boto3.client(
         "s3",
@@ -69,82 +58,51 @@ def get_latest_csv():
     return local_path
 
 
-# =========================
-# CSV → JSON
-# =========================
 def load_csv(csv_file):
     node_ids = []
     values = []
 
     with open(csv_file, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
-
         for row in reader:
             node_ids.append(int(row["node_id"]))
             values.append(float(row["initial_waterlevel"]))
 
-    return {
-        "node_ids": node_ids,
-        "values": values,
-    }
+    return {"node_ids": node_ids, "values": values}
 
 
-# =========================
-# 3DI API
-# =========================
-def create_resource():
-    url = f"{BASE_URL}/threedimodels/{MODEL_ID}/initial_waterlevels/"
-    res = requests.post(url, json={"dimension": "one_d"}, headers=get_headers())
-
-    if res.status_code not in [200, 201]:
-        raise Exception(f"Create resource failed: {res.text}")
-
-    return res.json()["id"]
+def create_resource(api):
+    resource = api.threedimodels_initial_waterlevels_create(
+        MODEL_ID, InitialWaterlevel(dimension="one_d")
+    )
+    return resource.id
 
 
-def get_upload_url(resource_id):
-    url = f"{BASE_URL}/threedimodels/{MODEL_ID}/initial_waterlevels/{resource_id}/upload/"
-
+def upload_initial_waterlevels(api, resource_id, data):
     filename = f"initial_wl_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-
-    res = requests.post(url, json={"filename": filename}, headers=get_headers())
-
-    if res.status_code not in [200, 201]:
-        raise Exception(f"Get upload URL failed: {res.text}")
-
-    data = res.json()
-    return data.get("put_url") or data.get("upload_url") or data.get("url")
-
-
-def upload(upload_url, data):
-    print("⬆️ Uploading initial waterlevels JSON to 3Di storage...")
-
-    file_content = json.dumps(data).encode("utf-8")
-
-    res = requests.put(
-        upload_url,
-        data=file_content,
+    upload = api.threedimodels_initial_waterlevels_upload(
+        resource_id, MODEL_ID, Upload(filename=filename)
     )
 
-    if res.status_code not in [200, 201, 204]:
-        raise Exception(
-            f"Upload failed: status={res.status_code}, response={res.text}"
-        )
+    print("⬆️ Uploading initial waterlevels JSON to 3Di storage...")
+
+    tmp_path = Path(f"/tmp/{filename}")
+    tmp_path.write_text(json.dumps(data), encoding="utf-8")
+    try:
+        upload_file(upload.put_url, tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
     print("✅ Uploaded initial waterlevels JSON")
 
 
-# =========================
-# MAIN (FOR AIRFLOW)
-# =========================
 def run_apply_initial_wl():
     csv_path = get_latest_csv()
     data = load_csv(csv_path)
 
-    resource_id = create_resource()
-    upload_url = get_upload_url(resource_id)
-
-    upload(upload_url, data)
+    api = get_client()
+    resource_id = create_resource(api)
+    upload_initial_waterlevels(api, resource_id, data)
 
     print(f"✅ initial_wl_id = {resource_id}")
 

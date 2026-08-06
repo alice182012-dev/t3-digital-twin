@@ -240,20 +240,16 @@ def insert_values(cur, rows):
     )
 
 
-def main():
+def upload_geojson_to_db(geojson_key):
 
-    latest_folder = get_latest_folder()
-
-    geojson_key = get_flood_road_geojson(
-        latest_folder
-    )
+    folder = geojson_key.split("/")[0] + "/"
 
     geojson = load_geojson(
         geojson_key
     )
 
     timestamp = parse_timestamp(
-        latest_folder
+        folder
     )
 
     source_file = os.path.basename(
@@ -294,6 +290,19 @@ def main():
     print(
         f"Inserted {len(rows)} rows"
     )
+
+    return len(rows)
+
+
+def main():
+
+    latest_folder = get_latest_folder()
+
+    geojson_key = get_flood_road_geojson(
+        latest_folder
+    )
+
+    upload_geojson_to_db(geojson_key)
 
 
 if __name__ == "__main__":

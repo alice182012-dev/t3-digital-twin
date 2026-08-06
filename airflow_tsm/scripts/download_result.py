@@ -1,67 +1,51 @@
-import requests
+"""3Di simulation result download, built on the official threedi-api-client.
+
+Uses the client's dedicated results-download endpoint
+(simulations_results_files_download) instead of a manual multi-hop link
+resolution, and threedi_api_client.files.download_file (streaming + retry)
+instead of a raw requests.get(stream=True).
+"""
+
 import os
+from pathlib import Path
+
 import fiona
 import fiona.vfs
 
 if not hasattr(fiona, 'path'):
     fiona.path = fiona.vfs
 
+from threedi_api_client.files import download_file
 
-THREEDI_API_KEY = os.getenv("THREEDI_API_KEY")
-
-
-def get_real_download_link(sim_id):
-    headers = {"Authorization": THREEDI_API_KEY, "Content-Type": "application/json"}
-    list_url = f"https://api.3di.live/v3/simulations/{sim_id}/results/files/"
-
-    try:
-        res = requests.get(list_url, headers=headers)
-        res.raise_for_status()
-
-        target_item = None
-        for item in res.json().get("results", []):
-            if item.get("filename", "").endswith(".nc"):
-                target_item = item
-                break
-
-        if not target_item:
-            return None, None
-
-        file_meta_url = target_item["file"]["url"]
-        res_meta = requests.get(file_meta_url, headers=headers)
-        related_object_url = res_meta.json().get("related_object")
-
-        if related_object_url:
-            download_api_url = related_object_url.rstrip("/") + "/download/"
-            res_dl = requests.get(download_api_url, headers=headers)
-            return res_dl.json().get("get_url"), target_item["filename"]
-    except Exception as e:
-        print(f"❌ Error getting link: {e}")
-        return None, None
-    return None, None
+from threedi_client import get_client
 
 
-def download_file(url, output_dir, filename):
-    os.makedirs(output_dir, exist_ok=True)
-    local_path = os.path.join(output_dir, filename)
-
-    print(f"⬇️ Downloading to {local_path}...")
-    try:
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open(local_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
-        return local_path
-    except Exception as e:
-        print(f"❌ Download failed: {e}")
-        return None
+def get_result_file(api, sim_id):
+    """Find the first .nc result file for a simulation."""
+    result_files = api.simulations_results_files_list(sim_id)
+    for item in result_files.results:
+        if item.filename.endswith(".nc"):
+            return item
+    return None
 
 
 def run_download(sim_id, output_dir):
-    link, filename = get_real_download_link(sim_id)
-    if link:
-        return download_file(link, output_dir, filename)
-    else:
-        print(f"❌ Could not find valid results for Sim {sim_id}")
+    api = get_client()
+
+    try:
+        result_file = get_result_file(api, sim_id)
+        if not result_file:
+            print(f"❌ Could not find valid results for Sim {sim_id}")
+            return None
+
+        download = api.simulations_results_files_download(result_file.id, sim_id)
+
+        os.makedirs(output_dir, exist_ok=True)
+        local_path = Path(output_dir) / result_file.filename
+
+        print(f"⬇️ Downloading to {local_path}...")
+        download_file(download.get_url, local_path)
+        return str(local_path)
+    except Exception as e:
+        print(f"❌ Download failed: {e}")
         return None

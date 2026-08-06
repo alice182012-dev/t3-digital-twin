@@ -28,6 +28,40 @@ MINIO_SECRET_KEY = os.getenv(
 BUCKET_NAME = os.getenv("FLOOD_MINIO_BUCKET", "flood-results-full")
 
 
+def _raw_timestamp_from_filename(filename: str) -> str:
+    """depth_20260728_125800.geojson (or .tif) -> '20260728_125800'"""
+    name = os.path.splitext(filename)[0]
+    return name[len("depth_"):] if name.startswith("depth_") else name
+
+
+def _col_name_from_raw_timestamp(raw_name: str) -> str:
+    if len(raw_name) == 15 and "_" in raw_name:
+        return (
+            f"{raw_name[:4]}-{raw_name[4:6]}-{raw_name[6:8]}"
+            f"T{raw_name[9:11]}:{raw_name[11:13]}:{raw_name[13:]}"
+        )
+    return raw_name
+
+
+def get_earliest_depth_timestamp(geojson_dir: str):
+    """
+    Tìm mốc thời gian sớm nhất trong các file depth_<timestamp>.geojson,
+    trả về dạng '%Y%m%dT%H%M%S' (khớp với ts_nodash của Airflow) hoặc None
+    nếu không tìm thấy file nào.
+    """
+    if not geojson_dir:
+        return None
+
+    files = glob.glob(os.path.join(geojson_dir, "depth_*.geojson"))
+    raw_names = sorted(
+        _raw_timestamp_from_filename(os.path.basename(f)) for f in files
+    )
+    if not raw_names:
+        return None
+
+    return raw_names[0].replace("_", "T")
+
+
 def merge_geojsons(input_dir: str, output_file: str) -> bool:
     """
     Hàm gộp các file GeoJSON lẻ thành 1 file duy nhất.
@@ -45,27 +79,24 @@ def merge_geojsons(input_dir: str, output_file: str) -> bool:
         return False
 
     all_dfs = []
+    empty_col_names = []
     print(f"⚡ Tìm thấy {len(files)} file. Đang xử lý...")
 
     for f in files:
         try:
             filename = os.path.basename(f)
-            raw_name = filename.replace("depth_", "").replace(".geojson", "")
-
-            if len(raw_name) == 15 and "_" in raw_name:
-                col_name = (
-                    f"{raw_name[:4]}-{raw_name[4:6]}-{raw_name[6:8]}"
-                    f"T{raw_name[9:11]}:{raw_name[11:13]}:{raw_name[13:]}"
-                )
-            else:
-                col_name = raw_name
+            raw_name = _raw_timestamp_from_filename(filename)
+            col_name = _col_name_from_raw_timestamp(raw_name)
 
             # Workaround for "module 'fiona' has no attribute 'path'"
             with open(f, "r", encoding="utf-8") as geojson_file:
                 data = json.load(geojson_file)
 
             if not data.get("features"):
-                print(f"⚠️ File {filename} không có features, bỏ qua.")
+                # No wet cells at this timestep (e.g. before flooding starts).
+                # Keep the timestamp as an all-zero column instead of dropping it.
+                print(f"⚠️ File {filename} không có features, sẽ điền depth=0 cho mốc thời gian này.")
+                empty_col_names.append(col_name)
                 continue
 
             gdf = gpd.GeoDataFrame.from_features(data["features"])
@@ -94,6 +125,10 @@ def merge_geojsons(input_dir: str, output_file: str) -> bool:
     master_df = pd.concat(all_dfs, ignore_index=True)
     merged_df = master_df.groupby("geom_wkt").first().reset_index()
     merged_df = merged_df.fillna(0)
+
+    for col_name in empty_col_names:
+        if col_name not in merged_df.columns:
+            merged_df[col_name] = 0.0
 
     print(f"🗺️ Đang tái tạo GeoJSON ({len(merged_df)} polygons)...")
     geometry = gpd.GeoSeries.from_wkt(merged_df["geom_wkt"])

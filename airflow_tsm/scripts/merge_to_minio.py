@@ -21,12 +21,10 @@ import geopandas as gpd
 from botocore.exceptions import NoCredentialsError
 
 
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "https://storage.9web.vn")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "airflow")
-MINIO_SECRET_KEY = os.getenv(
-    "MINIO_SECRET_KEY", "KQfCfEwmO7irPY4RITfszEu9f15wWoCnvwtbSRXO"
-)
-BUCKET_NAME = os.getenv("FLOOD_MINIO_BUCKET", "flood-results-full")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
+BUCKET_NAME = os.getenv("FLOOD_MINIO_BUCKET")
 
 
 def get_s3_client():

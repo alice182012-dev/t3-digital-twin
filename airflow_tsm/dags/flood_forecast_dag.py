@@ -1,4 +1,5 @@
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
 import sys
@@ -7,7 +8,7 @@ import os
 
 BASE_PATH = "/opt/airflow"
 SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
-DATA_PATH = os.path.join(BASE_PATH, "data")
+DATA_PATH = os.path.join(BASE_PATH, "data/mapping")
 
 sys.path.append(SCRIPTS_PATH)
 
@@ -29,13 +30,26 @@ DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
 GEOJSON_ROOT_DIR = os.path.join(DATA_PATH, "output_geojsons")
 FINAL_OUTPUT_ROOT_DIR = os.path.join(DATA_PATH, "output_final")
 
+# Manual test pipeline: always use a fixed rain series instead of the live
+# Tomorrow.io forecast (flood_mapping_dag fetches its own forecast and is
+# unaffected by these).
+FIXED_RAIN_MM_HR = 20
+FIXED_RAIN_DURATION_HOURS = 2
+
 
 def task_run_simulation(**kwargs):
     ti = kwargs["ti"]
     print("🚀 1. Trigger Simulation...")
-    sim_id, _ = create_simulation.run_forecast_process(state_file_path=STATE_FILE)
+    rain_intervals = create_simulation.build_fixed_rain_intervals(
+        FIXED_RAIN_MM_HR, duration_hours=FIXED_RAIN_DURATION_HOURS
+    )
+    sim_id, _ = create_simulation.run_forecast_process(
+        state_file_path=STATE_FILE,
+        rain_intervals=rain_intervals,
+        use_saved_state=False,
+    )
     if not sim_id:
-        raise ValueError("❌ Failed to create simulation")
+        raise AirflowSkipException("⏭️ Simulation was not triggered; skipping run")
     ti.xcom_push(key="sim_id", value=sim_id)
 
 
@@ -124,12 +138,12 @@ default_args = {
 with DAG(
     "flood_forecast_pipeline",
     default_args=default_args,
-    description="Pipeline 3Di -> MinIO (Direct Path Passing)",
-    schedule="*/30 * * * *",
+    description="Manual test pipeline: fixed 20mm/hr rain for 2h, 3Di -> MinIO (Direct Path Passing)",
+    schedule=None,
     start_date=datetime(2026, 2, 5),
     catchup=False,
     max_active_runs=1,
-    tags=["3di", "flood"],
+    tags=["3di", "flood", "manual-test"],
 ) as dag:
 
     t1 = PythonOperator(

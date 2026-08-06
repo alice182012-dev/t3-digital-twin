@@ -1,4 +1,5 @@
 import os
+import json
 import billiard as multiprocessing
 import rasterio
 import pandas as pd
@@ -70,7 +71,13 @@ def worker_tif_to_geojson(args):
                         )
 
         if not cells:
-            return f"⚠️ Skipped (Empty/Low depth): {os.path.basename(input_tif)}"
+            # No wet cells at this timestep (e.g. the first step, before any
+            # flooding has occurred). Still emit an empty FeatureCollection so
+            # merge_geojson can register this timestamp as an all-zero column
+            # instead of silently dropping it from the merged output.
+            with open(output_geojson, "w", encoding="utf-8") as f:
+                json.dump({"type": "FeatureCollection", "features": []}, f)
+            return f"⚠️ Empty (no wet cells): {os.path.basename(output_geojson)}"
 
         gdf = gpd.GeoDataFrame.from_features(cells)
 
