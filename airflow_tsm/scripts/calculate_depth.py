@@ -18,6 +18,53 @@ if not hasattr(fiona, 'path'):
 
 CLEAN_DATA = True
 
+# Corrupt/truncated raster detection (T4). A genuine per-timestep depth
+# GeoTIFF for this model is never this small, and a fully-valid raster is
+# never entirely NoData; a file that violates either bound is treated as a
+# cycle failure rather than silently published. Bounds are placeholders —
+# recalibrate from a known-good reference set before relying on this in
+# production.
+MIN_DEPTH_TIF_SIZE_BYTES = int(os.getenv("DEPTH_TIF_MIN_SIZE_BYTES", "1024"))
+MAX_DEPTH_TIF_NODATA_RATIO = float(os.getenv("DEPTH_TIF_MAX_NODATA_RATIO", "0.999"))
+
+
+def validate_depth_raster(tif_path):
+    """Reject a depth GeoTIFF that is corrupt/truncated or almost entirely NoData.
+
+    Checked on the raw output of calculate_waterdepth(), before
+    get_time_from_tif_and_clean() rewrites NoData/negative/out-of-range
+    values to 0 (which would otherwise make a genuinely corrupt raster look
+    like a normal, mostly-dry timestep). Returns (is_valid, reason).
+    """
+    try:
+        size_bytes = os.path.getsize(tif_path)
+        if size_bytes < MIN_DEPTH_TIF_SIZE_BYTES:
+            return False, f"file too small ({size_bytes}B < {MIN_DEPTH_TIF_SIZE_BYTES}B)"
+
+        ds = gdal.Open(tif_path, 0)
+        if ds is None:
+            return False, "unreadable by GDAL"
+        band = ds.GetRasterBand(1)
+        data = band.ReadAsArray()
+        nodata_val = band.GetNoDataValue()
+        ds = None
+
+        if data is None or data.size == 0:
+            return False, "no pixel data"
+
+        if nodata_val is not None:
+            if np.isnan(nodata_val):
+                nodata_count = np.isnan(data).sum()
+            else:
+                nodata_count = (data == nodata_val).sum()
+            nodata_ratio = nodata_count / data.size
+            if nodata_ratio > MAX_DEPTH_TIF_NODATA_RATIO:
+                return False, f"NoData ratio too high ({nodata_ratio:.3%})"
+
+        return True, None
+    except Exception as e:
+        return False, f"validation error: {e}"
+
 
 def get_time_from_tif_and_clean(tif_path):
     """Đọc giờ từ TIF (UTC) -> cộng 7 tiếng -> Làm sạch dữ liệu"""
@@ -98,6 +145,10 @@ def process_single_step(args):
             calculation_steps=[step_index],
         )
 
+        is_valid, invalid_reason = validate_depth_raster(temp_path)
+        if not is_valid:
+            return f"❌ Step {step_index}: corrupt/undersized raster ({invalid_reason})"
+
         timestamp_name = get_time_from_tif_and_clean(temp_path)
         if timestamp_name:
             final_name = f"depth_{timestamp_name}.tif"
@@ -107,7 +158,15 @@ def process_single_step(args):
             os.rename(temp_path, final_path)
             return f"✅ {final_name}"
         else:
-            return f"⚠️ {temp_filename} (No Time)"
+            # No timestamp match in the band description: name it clearly and
+            # move it out of the temp_*.tif naming so it never ships into the
+            # final output dir looking like an in-progress/orphaned file.
+            final_name = f"notime_step{step_index:04d}.tif"
+            final_path = os.path.join(output_dir, final_name)
+            if os.path.exists(final_path):
+                os.remove(final_path)
+            os.rename(temp_path, final_path)
+            return f"⚠️ {final_name} (No Time)"
     except Exception as e:
         return f"❌ Step {step_index}: {e}"
 
@@ -159,6 +218,16 @@ def run_calculate_depth(grid_path, nc_path, dem_path, output_dir):
     finally:
         pool.close()
         pool.join()
+
+    # Orchestration-only failure surfacing (T13): process_single_step never
+    # raises out of the pool, it returns a "❌ ..." string per failed
+    # timestep. Without this check a cycle where some timesteps failed still
+    # reports success with an incomplete depth-tif set.
+    failures = [res for res in results if res.startswith("❌")]
+    if failures:
+        raise RuntimeError(
+            f"{len(failures)}/{len(results)} depth timesteps failed: " + "; ".join(failures)
+        )
 
     depth_files = sorted(
         f for f in os.listdir(current_output_dir)

@@ -11,7 +11,13 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from threedi_api_client.openapi import Action, FromTemplate, TimedSavedState, TimeseriesRain
+from threedi_api_client.openapi import (
+    Action,
+    ApiException,
+    FromTemplate,
+    TimedSavedState,
+    TimeseriesRain,
+)
 
 import requests
 
@@ -153,6 +159,20 @@ def build_rain_values(intervals):
     return values
 
 
+def _log_if_auth_expired(e, context):
+    """Fire a distinct, non-self-resolving alert for a 401/403 from the 3Di API.
+
+    Unlike a timeout or transient error, an expired/invalid token will fail
+    identically on every subsequent cycle until it's rotated, so this needs
+    its own signal instead of blending into the generic error log below it.
+    """
+    if isinstance(e, ApiException) and e.status in (401, 403):
+        print(
+            f"🔒 ALERT [3di-auth-expired, will-not-self-resolve] {context}: "
+            f"status={e.status} {e}"
+        )
+
+
 def monitor_simulation(api, sim_id):
     """Bounded status polling: timeout + exponential backoff + max attempts."""
     print("⏳ 7. Đang chạy...")
@@ -226,6 +246,7 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
     try:
         simulation = api.simulations_from_template(FromTemplate(**from_template_kwargs))
     except Exception as e:
+        _log_if_auth_expired(e, "Tạo Sim")
         print(f"❌ Lỗi tạo Sim: {e}")
         return None, None
 
@@ -239,6 +260,7 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
             TimeseriesRain(values=rain_values, units="m/s", interpolate=True, offset=0),
         )
     except Exception as e:
+        _log_if_auth_expired(e, "Nạp mưa")
         print(f"❌ Lỗi nạp mưa: {e}")
         return None, None
 
@@ -259,6 +281,7 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
             future_saved_state_id = saved_state.id
             print(f"✅ Đã đăng ký thành công (ID tương lai: {future_saved_state_id})")
         except Exception as e:
+            _log_if_auth_expired(e, "Đăng ký lưu state")
             print(f"❌ Lỗi đăng ký lưu state: {e}")
     else:
         print("⏭️ 5. Bỏ qua đăng ký lưu state (use_saved_state=False)")
@@ -267,6 +290,7 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
     try:
         api.simulations_actions_create(sim_id, Action(name="start"))
     except Exception as e:
+        _log_if_auth_expired(e, "Start Simulation")
         print(f"❌ LỖI NGHIÊM TRỌNG: Không thể Start Simulation! {e}")
         return None, None
 

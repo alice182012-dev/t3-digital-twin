@@ -6,9 +6,7 @@ import pandas as pd
 
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "https://storage.9web.vn")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "airflow")
-MINIO_SECRET_KEY = os.getenv(
-    "MINIO_SECRET_KEY", "KQfCfEwmO7irPY4RITfszEu9f15wWoCnvwtbSRXO"
-)
+MINIO_SECRET_KEY = os.environ["MINIO_SECRET_KEY"]
 BUCKET_NAME = os.getenv("FLOOD_MINIO_BUCKET", "flood-results-full")
 
 
