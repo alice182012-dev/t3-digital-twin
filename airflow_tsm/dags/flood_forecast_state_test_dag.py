@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowException
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta, timezone
 import sys
@@ -60,7 +60,10 @@ def task_trigger_event1(**kwargs):
         use_saved_state=True,
     )
     if not sim_id:
-        raise AirflowSkipException("⏭️ Event 1 simulation was not triggered; skipping run")
+        # This DAG uses fixed synthetic rain, not a rain gate — a falsy
+        # sim_id here always means a real 3Di failure, never a legitimate
+        # skip, so it should fail loudly rather than show as skipped.
+        raise AirflowException("❌ Event 1 simulation failed to trigger (see create_simulation logs for cause)")
     ti.xcom_push(key="sim_id", value=sim_id)
     ti.xcom_push(key="event1_start", value=event1_start.isoformat())
 
@@ -109,7 +112,7 @@ def task_trigger_event2(**kwargs):
         use_saved_state=True,
     )
     if not sim_id:
-        raise AirflowSkipException("⏭️ Event 2 simulation was not triggered; skipping run")
+        raise AirflowException("❌ Event 2 simulation failed to trigger (see create_simulation logs for cause)")
     ti.xcom_push(key="sim_id", value=sim_id)
 
 

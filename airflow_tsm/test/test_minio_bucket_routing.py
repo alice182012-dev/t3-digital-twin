@@ -51,7 +51,8 @@ class MinioBucketRoutingTests(unittest.TestCase):
     def test_flood_mapping_upload_uses_flood_bucket_and_keeps_key(self):
         client = MagicMock()
         pandas = types.ModuleType("pandas")
-        with patch.dict(os.environ, {"FLOOD_MINIO_BUCKET": "flood-custom"}, clear=False):
+        environment = {"FLOOD_MINIO_BUCKET": "flood-custom", "MINIO_SECRET_KEY": "test-secret"}
+        with patch.dict(os.environ, environment, clear=False):
             module = load_module(
                 "scripts/mapping/upload_minio.py",
                 "test_mapping_upload",

@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.exceptions import AirflowSkipException
+from airflow.exceptions import AirflowException
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 from airflow.providers.standard.sensors.time_delta import TimeDeltaSensor
 from datetime import datetime, timedelta
@@ -16,6 +16,9 @@ SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
 DATA_PATH = os.path.join(BASE_PATH, "data/mapping")
 
 sys.path.append(SCRIPTS_PATH)
+# database/*.py import `db_config` as a top-level module (not `database.db_config`),
+# so its directory needs to be importable directly too.
+sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
 
 try:
     import create_simulation
@@ -75,7 +78,14 @@ def task_run_simulation(**kwargs):
         rain_intervals=rain_intervals,
     )
     if not sim_id:
-        raise AirflowSkipException("⏭️ Simulation was not triggered; skipping run")
+        # By the time this task runs, the rain gate (0_check_forecast_rain)
+        # has already routed here specifically because it decided to run —
+        # a legitimate dry-cycle skip never reaches this task at all (it
+        # routes to wait_before_next_rain_check instead). So a falsy sim_id
+        # here always means a real 3Di failure, never a correct skip; raising
+        # AirflowSkipException made that failure look identical to a
+        # dry-cycle skip (both green) in the Airflow UI.
+        raise AirflowException("❌ Simulation failed to trigger (see create_simulation logs for cause)")
     ti.xcom_push(key="sim_id", value=sim_id)
 
 

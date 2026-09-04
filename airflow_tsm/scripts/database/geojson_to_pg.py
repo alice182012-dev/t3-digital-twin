@@ -6,30 +6,17 @@ import psycopg2
 from botocore.config import Config
 from psycopg2.extras import execute_values
 
+from db_config import DB_CONFIG
+
 
 # =========================
 # CONFIG
 # =========================
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "https://storage.9web.vn")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "airflow")
-MINIO_SECRET_KEY = os.getenv(
-    "MINIO_SECRET_KEY", "KQfCfEwmO7irPY4RITfszEu9f15wWoCnvwtbSRXO"
-)
+MINIO_SECRET_KEY = os.environ["MINIO_SECRET_KEY"]
 BUCKET_NAME = os.getenv("FLOOD_MINIO_BUCKET", "flood-results-full")
 GEOJSON_PREFIX_NAME = "flood_road_"
-
-
-# =========================
-# DATABASE
-# =========================
-
-DB_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST", "storage-postgres"),
-    "port": int(os.getenv("POSTGRES_PORT", "5432")),
-    "database": os.getenv("POSTGRES_DB", "minio_custom"),
-    "user": os.getenv("POSTGRES_USER", "minio_custom"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-}
 
 
 def get_minio_client():

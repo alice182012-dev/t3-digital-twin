@@ -1,14 +1,8 @@
 import os
 import psycopg2
 
+from db_config import DB_CONFIG
 
-DB_CONFIG = {
-    "host": os.getenv("POSTGRES_HOST", "storage-postgres"),
-    "port": int(os.getenv("POSTGRES_PORT", "5432")),
-    "database": os.getenv("POSTGRES_DB", "minio_custom"),
-    "user": os.getenv("POSTGRES_USER", "minio_custom"),
-    "password": os.getenv("POSTGRES_PASSWORD"),
-}
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
