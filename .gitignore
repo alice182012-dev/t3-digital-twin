@@ -40,12 +40,12 @@ build/
 local_geojson/
 
 # Airflow local state
-airflow_tsm/data/
-airflow_tsm/state/
-airflow_tsm/logs/
-airflow_tsm/config/
-airflow_tsm/plugins/
-airflow_tsm/flood/
+data/
+state/
+logs/
+config/
+plugins/
+flood/
 
 # MinIO / Django local state
 db.sqlite3
@@ -55,3 +55,8 @@ minio_custom/backend-data/
 # Large generated Valhalla data
 floodmap/valhalla-flood-road-test/valhalla/custom_files/valhalla_tiles.tar
 floodmap/valhalla-flood-road-test/valhalla/source/vietnam-latest.osm.pbf
+.claude
+.SynologyWorkingDirectory
+artifacts/
+docs\designs/
+CLAUDE.md

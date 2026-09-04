@@ -6,7 +6,7 @@ MODEL_ID / TEMPLATE_ID are all valid before running anything that actually
 creates a simulation (which consumes 3Di compute quota).
 
 Usage (from repo root, with a Python env that has requirements.txt installed):
-    python airflow_tsm/scripts/test_threedi_connection.py
+    python scripts/test_threedi_connection.py
 """
 
 import os
@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTS_DIR)
 
-# Load .env from the repo root (two levels up from airflow_tsm/scripts/)
-load_dotenv(os.path.join(SCRIPTS_DIR, "..", "..", ".env"))
+# Load .env from the repo root (one level up from scripts/)
+load_dotenv(os.path.join(SCRIPTS_DIR, "..", ".env"))
 
 from threedi_client import get_client  # noqa: E402
 

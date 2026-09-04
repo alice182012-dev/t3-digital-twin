@@ -1,6 +1,6 @@
 """Local, real end-to-end test of the 3Di integration (threedi-api-client).
 
-Mirrors airflow_tsm/dags/flood_forecast_state_test_dag.py's two-event
+Mirrors dags/flood_forecast_state_test_dag.py's two-event
 hotstart chain (20mm/h 2h event -> saved state -> 5mm/h 2h event hotstarted
 from it), but runs outside Airflow using create_simulation.py /
 download_result.py directly.
@@ -8,7 +8,7 @@ download_result.py directly.
 This creates two REAL simulations on 3Di and consumes real compute quota.
 
 Usage (from repo root):
-    python airflow_tsm/test/test_threedi_state_test.py
+    python test/test_threedi_state_test.py
 """
 
 import os
@@ -18,9 +18,9 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_PATH = os.path.dirname(TEST_DIR)  # airflow_tsm/
+REPO_ROOT = os.path.dirname(TEST_DIR)  # airflow_new/
+BASE_PATH = REPO_ROOT
 SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
-REPO_ROOT = os.path.dirname(BASE_PATH)  # airflow_new/
 
 sys.path.insert(0, SCRIPTS_PATH)
 load_dotenv(os.path.join(REPO_ROOT, ".env"))

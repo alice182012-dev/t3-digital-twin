@@ -1,7 +1,7 @@
 ---
 x-airflow-common: &airflow-common
   build:
-    context: ./airflow_tsm
+    context: .
   env_file:
     - .env
   environment: &airflow-common-env
@@ -47,12 +47,12 @@ x-airflow-common: &airflow-common
     MODEL_ID: ${MODEL_ID:-83022}
     ORG_UUID: ${ORG_UUID:?Set ORG_UUID in .env}
   volumes:
-    - ./airflow_tsm/dags:/opt/airflow/dags
+    - ./dags:/opt/airflow/dags
     - airflow-logs:/opt/airflow/logs
-    - ./airflow_tsm/config:/opt/airflow/config
-    - ./airflow_tsm/plugins:/opt/airflow/plugins
-    - ./airflow_tsm/scripts:/opt/airflow/scripts
-    - ./airflow_tsm/data:/opt/airflow/data
+    - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
+    - ./scripts:/opt/airflow/scripts
+    - ./data:/opt/airflow/data
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     airflow-redis:

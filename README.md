@@ -2,7 +2,7 @@
 
 This repository now has one top-level Docker Compose app that connects:
 
-- `airflow_tsm`: Airflow flood processing pipeline.
+- Airflow flood processing pipeline (dags/, scripts/, config/, plugins/).
 - `minio_custom`: MinIO plus Django/React storage UI.
 - `floodmap/valhalla-flood-road-test`: Valhalla-backed flood-aware routing map.
 

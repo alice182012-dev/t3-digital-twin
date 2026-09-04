@@ -1,0 +1,15 @@
+.git/
+.gstack/
+.claude/
+docs/
+artifacts/
+floodmap/
+data/
+state/
+logs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+node_modules/
