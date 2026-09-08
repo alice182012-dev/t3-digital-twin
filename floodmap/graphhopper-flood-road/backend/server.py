@@ -34,6 +34,7 @@ from place_search import (  # noqa: E402
     geocode_gh_shape,
     search_places,
 )
+from tiles import TileNotFound, parse_tile_path, render_tile  # noqa: E402
 
 GRAPHHOPPER_URL = os.environ.get("GRAPHHOPPER_URL", "http://localhost:8989")
 AREAS_CACHE_TTL_SECONDS = int(os.environ.get("FLOOD_AREAS_CACHE_TTL_SECONDS", "30"))
@@ -110,6 +111,15 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
+    def _send_png(self, payload: bytes) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "public, max-age=600")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
     def do_OPTIONS(self) -> None:
         self._send(204, {})
 
@@ -156,8 +166,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, {"results": results})
             elif parsed.path == "/geocode":
                 self._send(200, geocode_gh_shape(qs.get("q", [""])[0], qs.get("locale", ["en"])[0]))
+            elif parsed.path.startswith("/tiles/"):
+                request = parse_tile_path(parsed.path)
+                if request is None:
+                    raise TileNotFound("malformed tile path")
+                self._send_png(render_tile(request, qs.get("vehicle_type", ["motorbike"])[0]))
             else:
                 self._send(404, {"error": "not found"})
+        except TileNotFound as exc:
+            self._send(404, {"error": str(exc)})
         except PlaceSearchValidationError as exc:
             self._send(400, {"error": str(exc)})
         except PlaceSearchTimeout:

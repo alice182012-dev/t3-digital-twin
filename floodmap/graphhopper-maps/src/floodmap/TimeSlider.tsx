@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import styles from './TimeSlider.module.css'
 import {
     getFloodStore,
-    loadFloodAreas,
     loadFloodTimesteps,
     reissueCurrentRoute,
     FloodStoreState,
     SelectFloodTimestep,
     SelectFloodVehicle,
+    ToggleFloodTiles,
 } from '@/floodmap/FloodStore'
 import Dispatcher from '@/stores/Dispatcher'
 
@@ -23,7 +23,6 @@ export default function TimeSlider() {
 
     useEffect(() => {
         if (flood.selectedIndex < 0 || flood.timesteps.length === 0) return
-        loadFloodAreas(flood.selectedIndex, flood.vehicleType)
         reissueCurrentRoute()
     }, [flood.selectedIndex, flood.vehicleType, flood.timesteps])
 
@@ -53,6 +52,14 @@ export default function TimeSlider() {
                 value={Math.max(flood.selectedIndex, 0)}
                 onChange={e => Dispatcher.dispatch(new SelectFloodTimestep(parseInt(e.target.value, 10)))}
             />
+            <label className={styles.toggle}>
+                <input
+                    type="checkbox"
+                    checked={flood.tilesVisible}
+                    onChange={e => Dispatcher.dispatch(new ToggleFloodTiles(e.target.checked))}
+                />
+                Flood
+            </label>
         </div>
     )
 }

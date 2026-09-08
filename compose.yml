@@ -349,6 +349,10 @@ services:
         condition: service_healthy
       storage-postgres:
         condition: service_healthy
+    volumes:
+      # Read-write on purpose: the tile endpoint builds overviews into these
+      # source rasters on first touch (they ship without any).
+      - ../grasshopper-routing/flood-timeseries:/data/flood-timeseries
     ports:
       - "${FLOODMAP_BACKEND_PORT:-8010}:8010"
     restart: unless-stopped
