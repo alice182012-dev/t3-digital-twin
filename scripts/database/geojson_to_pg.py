@@ -189,6 +189,7 @@ def build_rows(
                     item["time"],
                     item["depth"],
                     geometry_json,
+                    geometry_json,
                 )
             )
 
@@ -208,7 +209,8 @@ def insert_values(cur, rows):
             road_name,
             forecast_time,
             depth,
-            geom
+            geom,
+            geom_4326
         )
         VALUES %s
         """,
@@ -220,7 +222,8 @@ def insert_values(cur, rows):
             %s,
             %s,
             %s,
-            %s::jsonb
+            %s::jsonb,
+            ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326)
         )
         """,
         page_size=1000,

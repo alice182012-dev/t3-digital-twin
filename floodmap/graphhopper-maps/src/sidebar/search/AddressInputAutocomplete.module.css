@@ -1,0 +1,119 @@
+.autocompleteItem:not(:last-child) {
+    border-bottom: 1px lightgray solid;
+}
+
+@media (max-width: 44rem) {
+    .autocompleteItem:first-child {
+        border-top: 1px lightgray solid;
+    }
+}
+
+.selectableItem {
+    display: block;
+    width: 100%;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    cursor: pointer;
+    outline: inherit;
+    overflow: hidden;
+}
+
+.highlightedItem,
+.selectableItem:hover {
+    background-color: #ececec;
+}
+
+.selectableItem:active {
+    background-color: #c6c6c6;
+}
+
+.poiEntry {
+    padding: 0.5em 0;
+    display: flex;
+    flex-direction: row;
+    gap: 0.4rem;
+    text-align: start;
+    margin: 0.4rem 0.5rem;
+}
+
+.poiEntryPrimaryText {
+    font-weight: bold;
+}
+
+.geocodingEntry {
+    display: flex;
+    flex-direction: column;
+    text-align: start;
+    margin: 0.4rem 0.5rem;
+}
+
+.mainText {
+    font-weight: bold;
+}
+
+.secondaryText {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: small;
+    color: #5b616a;
+}
+
+.recentEntry {
+    display: flex;
+    align-items: center;
+    text-align: start;
+    /* right: align the x icon with the clear button of the input */
+    margin: 0.4rem 2px 0.4rem 0.5rem;
+}
+
+.recentEntryText {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.recentIcon {
+    flex-shrink: 0;
+    color: #5b616a;
+    margin-right: 0.5rem;
+}
+
+.removeIcon {
+    flex-shrink: 0;
+    display: flex;
+    color: #5b616a;
+    margin-left: 0.5rem;
+    padding: 0.4rem;
+    border-radius: 50%;
+}
+
+.removeIcon > svg {
+    width: 18px;
+    height: 18px;
+}
+
+.removeIcon:hover {
+    background-color: #d5d5d5;
+    color: black;
+}
+
+@media (max-width: 44rem) {
+    /* align the suggestion text with the input text (at 52px) */
+    .recentEntry {
+        margin-left: 22px;
+    }
+
+    .recentIcon {
+        margin-right: 10px;
+    }
+
+    .geocodingEntry,
+    .poiEntry {
+        margin-left: 52px;
+    }
+}

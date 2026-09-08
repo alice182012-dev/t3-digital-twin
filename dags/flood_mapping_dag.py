@@ -31,6 +31,7 @@ try:
     import mapping.upload_minio
     import database.geojson_to_pg
     import database.netcdf_to_pg
+    import database.create_geojson_tables
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -97,6 +98,11 @@ def task_download_result(**kwargs):
     if not saved_path:
         raise ValueError("❌ Download failed")
     ti.xcom_push(key="nc_path", value=saved_path)
+
+
+def task_ensure_schema(**kwargs):
+    print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
+    database.create_geojson_tables.main()
 
 
 def task_upload_netcdf_postgres(**kwargs):
@@ -291,6 +297,9 @@ with DAG(
     t1 = PythonOperator(
         task_id="1_trigger_simulation", python_callable=task_run_simulation
     )
+    t_ddl = PythonOperator(
+        task_id="0b_ensure_schema", python_callable=task_ensure_schema
+    )
     t2 = PythonOperator(
         task_id="2_download_results", python_callable=task_download_result
     )
@@ -318,4 +327,7 @@ with DAG(
 
     t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
     t2 >> t3b
+    t1 >> t_ddl
+    t_ddl >> t3b
+    t_ddl >> t8
     t0 >> wait_for_next_check

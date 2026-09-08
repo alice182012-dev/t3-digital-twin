@@ -1,0 +1,38 @@
+graphhopper:
+  datareader.file: /data/hanoi-model-area.osm.pbf
+  graph.location: /data/graph-cache
+  import.osm.ignored_highways: ''
+
+  # car.json / truck.json are reserved custom_model filenames for GraphHopper's
+  # built-in profiles, even when overridden with our own content — hence the
+  # _custom suffix (motorbike.json isn't reserved since there's no built-in
+  # "motorbike" profile, only "motorcycle").
+  profiles:
+    - name: motorbike
+      custom_model_files: [motorbike.json]
+    - name: car
+      custom_model_files: [car_custom.json]
+    - name: truck
+      custom_model_files: [truck_custom.json]
+
+  # Every flood request supplies its own custom_model with ch.disable in the
+  # body, so every query runs in flexible mode anyway — landmarks (LM) keep
+  # those fast without paying for CH preparation we'd never use.
+  profiles_ch: []
+  profiles_lm:
+    - profile: motorbike
+    - profile: car
+    - profile: truck
+
+  # Union of what motorbike.json (upstream motorcycle.json), car.json and truck.json need.
+  graph.encoded_values: car_access, car_average_speed, road_access, road_class, track_type, surface,
+    max_speed, ferry_speed, hgv, max_width, max_height, max_weight, max_weight_except, road_environment
+
+  prepare.min_network_size: 200
+
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+  request_log:
+    appenders: []

@@ -1,0 +1,42 @@
+/**
+ * Copy this to config-local.js (gitignored) before building — webpack
+ * substitutes it for config.js. Points the vendored graphhopper-maps UI at
+ * the floodmap-backend proxy instead of graphhopper.com, per Workstream C
+ * of the Phase 2 plan.
+ */
+// config.js is loaded as a plain global <script> (see webpack.common.js's
+// `externals: { config: 'config' }`), before bundle.js, so `window` is
+// available here. Must be absolute: upstream's Api.ts does
+// `new URL(this.routingApi + endpoint)` with no base argument, which throws
+// "Failed to construct 'URL': Invalid URL" on a relative path — silently
+// breaking getApi().info() (so the map never gets a bbox to fit to) and
+// every route/geocode call.
+const apiBase = typeof window !== 'undefined' ? window.location.origin : ''
+
+const config = {
+    routingApi: apiBase + '/api/gh/',
+    geocodingApi: apiBase + '/api/geocode/',
+    defaultTiles: 'OpenStreetMap',
+    keys: {
+        graphhopper: '',
+        maptiler: 'missing_api_key',
+        omniscale: 'missing_api_key',
+        thunderforest: 'missing_api_key',
+        kurviger: 'missing_api_key',
+        tracestrack: 'missing_api_key',
+    },
+    routingGraphLayerAllowed: false,
+    request: {
+        details: ['road_class', 'road_environment', 'road_access', 'surface', 'max_speed', 'average_speed', 'track_type'],
+    },
+    // Only the two profiles graphhopper/config.yml actually serves.
+    profiles: {
+        motorbike: {},
+        car: {},
+    },
+    profile_group_mapping: {},
+    // Consumed directly by src/floodmap/FloodStore.ts — not an upstream field.
+    floodBackend: apiBase + '/api/gh/',
+}
+
+if (typeof module !== 'undefined') module.exports = config

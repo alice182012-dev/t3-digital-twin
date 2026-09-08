@@ -101,7 +101,10 @@ services:
         echo "MinIO buckets ready: $${FLOOD_MINIO_BUCKET}, $${INITIAL_WL_MINIO_BUCKET}, $${MANHOLES_MINIO_BUCKET}"
 
   storage-postgres:
-    image: postgres:17-alpine
+    # The official postgis/postgis:17-3.5 tag is amd64-only (no arm64 manifest as of
+    # this writing). imresamu/postgis is a multi-arch mirror built from the same
+    # Dockerfile/version, published specifically to cover arm64 (Apple Silicon, etc).
+    image: imresamu/postgis:17-3.5
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
       POSTGRES_USER: ${POSTGRES_USER:-minio_custom}
@@ -303,56 +306,70 @@ services:
         condition: service_started
     restart: "no"
 
-  valhalla:
-    image: ghcr.io/valhalla/valhalla:3.6.2
-    command: ["valhalla_service", "/custom_files/valhalla.json", "2"]
-    ports:
-      - "${VALHALLA_PORT:-8002}:8002"
+  graphhopper:
+    # Pinned by digest, not :latest — this is a 12.0-SNAPSHOT build and the
+    # `ch.disable`-in-body behaviour Workstream B depends on is undocumented
+    # and could silently change. Re-pull the digest deliberately if upstream
+    # publishes a fix, and re-run the ch.disable smoke test before trusting it.
+    image: israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32
     volumes:
-      - ./floodmap/valhalla-flood-road-test/valhalla/custom_files:/custom_files
-      - ./floodmap/valhalla-flood-road-test/valhalla/custom_files/valhalla.json:/custom_files/valhalla.json:ro
+      - ../grasshopper-routing/osm/hanoi-model-area.osm.pbf:/data/hanoi-model-area.osm.pbf:ro
+      - graphhopper-graph-cache:/data/graph-cache
+      - ./floodmap/graphhopper-flood-road/graphhopper/config.yml:/graphhopper/config.yml:ro
+      - ./floodmap/graphhopper-flood-road/graphhopper/motorbike.json:/graphhopper/motorbike.json:ro
+      - ./floodmap/graphhopper-flood-road/graphhopper/car_custom.json:/graphhopper/car_custom.json:ro
+      - ./floodmap/graphhopper-flood-road/graphhopper/truck_custom.json:/graphhopper/truck_custom.json:ro
+    entrypoint: ["./graphhopper.sh", "-c", "config.yml"]
+    ports:
+      - "${GRAPHHOPPER_PORT:-8989}:8989"
     healthcheck:
-      test: ["CMD", "bash", "-lc", "printf 'GET /status HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >/dev/tcp/127.0.0.1/8002"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8989/health"]
       interval: 10s
       timeout: 5s
       retries: 12
+      start_period: 60s
     restart: unless-stopped
 
   floodmap-backend:
     build:
-      context: ./floodmap/valhalla-flood-road-test
+      context: ./floodmap/graphhopper-flood-road
       dockerfile: backend/Dockerfile
     environment:
       HOST: 0.0.0.0
       PORT: 8010
-      VALHALLA_URL: http://valhalla:8002
-      FLOOD_MINIO_ENDPOINT: http://minio:9000
-      FLOOD_MINIO_BUCKET: ${FLOOD_MINIO_BUCKET:-flood-results-full}
-      FLOOD_MINIO_PREFIX: ${FLOOD_MINIO_PREFIX:-}
-      FLOOD_MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
-      FLOOD_MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
-      FLOOD_LOCAL_FALLBACK: ${FLOOD_LOCAL_FALLBACK:-data/flood_road_20260522T103000.geojson}
+      GRAPHHOPPER_URL: http://graphhopper:8989
+      POSTGRES_HOST: storage-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
+      POSTGRES_USER: ${POSTGRES_USER:-minio_custom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PHOTON_BASE_URL: ${PHOTON_BASE_URL:-https://photon.komoot.io}
     depends_on:
-      valhalla:
+      graphhopper:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
+      storage-postgres:
+        condition: service_healthy
     ports:
       - "${FLOODMAP_BACKEND_PORT:-8010}:8010"
     restart: unless-stopped
 
-  floodmap-frontend:
+  # floodmap-frontend (Valhalla-era static test UI, floodmap/valhalla-flood-road-test/frontend)
+  # is retired here: floodmap-backend's response contract changed from Valhalla's
+  # trip/legs/polyline shape to GraphHopper's paths[] shape (Workstream B), so the old
+  # UI no longer matches it. Superseded by flood-routing-frontend (Workstream C) below.
+  # The Valhalla PoC source tree is left on disk, untouched, for reference.
+
+  flood-routing-frontend:
     build:
-      context: ./floodmap/valhalla-flood-road-test
-      dockerfile: frontend/Dockerfile
+      context: ./floodmap/graphhopper-maps
     depends_on:
       - floodmap-backend
     ports:
-      - "${FLOODMAP_FRONTEND_PORT:-8081}:80"
+      - "${FLOOD_ROUTING_FRONTEND_PORT:-8082}:80"
     restart: unless-stopped
 
 volumes:
+  graphhopper-graph-cache:
   airflow-postgres-data:
   airflow-logs:
   minio-data:

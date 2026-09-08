@@ -1,0 +1,509 @@
+import { useContext, useEffect, useRef, useState } from 'react'
+import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
+import styles from './App.module.css'
+import {
+    getApiInfoStore,
+    getErrorStore,
+    getMapFeatureStore,
+    getMapOptionsStore,
+    getPathDetailsStore,
+    getPOIsStore,
+    getQueryStore,
+    getRouteStore,
+    getSettingsStore,
+    getCurrentLocationStore,
+} from '@/stores/Stores'
+import MapComponent from '@/map/MapComponent'
+import mapStyles from '@/map/Map.module.css'
+import MapOptions from '@/map/MapOptions'
+import MobileSidebar from '@/sidebar/MobileSidebar'
+import { useMediaQuery } from 'react-responsive'
+import RoutingResults from '@/sidebar/RoutingResults'
+import PoweredBy from '@/sidebar/PoweredBy'
+import { milliSecondsToText, metersToText } from '@/Converters'
+import { Path } from '@/api/graphhopper'
+import { QueryStoreState, RequestState } from '@/stores/QueryStore'
+import { RouteStoreState } from '@/stores/RouteStore'
+import { MapOptionsStoreState, StyleOption } from '@/stores/MapOptionsStore'
+import { ErrorStoreState } from '@/stores/ErrorStore'
+import { CurrentLocationStoreState } from '@/stores/CurrentLocationStore'
+import Search from '@/sidebar/search/Search'
+import ErrorMessage from '@/sidebar/ErrorMessage'
+import useBackgroundLayer from '@/layers/UseBackgroundLayer'
+import useQueryPointsLayer from '@/layers/UseQueryPointsLayer'
+import usePathsLayer from '@/layers/UsePathsLayer'
+import ContextMenu from '@/layers/ContextMenu'
+import usePathDetailsLayer from '@/layers/UsePathDetailsLayer'
+import { Map } from 'ol'
+import { getMap } from '@/map/map'
+import CustomModelBox from '@/sidebar/CustomModelBox'
+import useRoutingGraphLayer from '@/layers/UseRoutingGraphLayer'
+import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
+import useMapBorderLayer from '@/layers/UseMapBorderLayer'
+import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
+import MapPopups from '@/map/MapPopups'
+import Menu from '@/sidebar/menu.svg'
+import Cross from '@/sidebar/times-solid.svg'
+import PlainButton from '@/PlainButton'
+import useAreasLayer from '@/layers/UseAreasLayer'
+import useExternalMVTLayer from '@/layers/UseExternalMVTLayer'
+import LocationButton from '@/map/LocationButton'
+import { SettingsContext } from '@/contexts/SettingsContext'
+import usePOIsLayer from '@/layers/UsePOIsLayer'
+import maptoolkitImg from '@/map/maptoolkit-attribution.png'
+import useCurrentLocationLayer from '@/layers/UseCurrentLocationLayer'
+import useFloodLayer from '@/floodmap/FloodLayer'
+import TimeSlider from '@/floodmap/TimeSlider'
+
+// the Maptoolkit logo is only shown for their map styles
+function isMaptoolkitStyle(styleOption: StyleOption) {
+    const url = Array.isArray(styleOption.url) ? styleOption.url.join(' ') : styleOption.url
+    return url.includes('maptoolkit.')
+}
+
+export const POPUP_CONTAINER_ID = 'popup-container'
+export const SIDEBAR_CONTENT_ID = 'sidebar-content'
+
+export default function App() {
+    const [settings, setSettings] = useState(getSettingsStore().state)
+    const [query, setQuery] = useState(getQueryStore().state)
+    const [info, setInfo] = useState(getApiInfoStore().state)
+    const [route, setRoute] = useState(getRouteStore().state)
+    const [error, setError] = useState(getErrorStore().state)
+    const [mapOptions, setMapOptions] = useState(getMapOptionsStore().state)
+    const [pathDetails, setPathDetails] = useState(getPathDetailsStore().state)
+    const [mapFeatures, setMapFeatures] = useState(getMapFeatureStore().state)
+    const [pois, setPOIs] = useState(getPOIsStore().state)
+    const [currentLocation, setCurrentLocation] = useState(getCurrentLocationStore().state)
+
+    const map = getMap()
+
+    useEffect(() => {
+        const onSettingsChanged = () => setSettings(getSettingsStore().state)
+        const onQueryChanged = () => setQuery(getQueryStore().state)
+        const onInfoChanged = () => setInfo(getApiInfoStore().state)
+        const onRouteChanged = () => setRoute(getRouteStore().state)
+        const onErrorChanged = () => setError(getErrorStore().state)
+        const onMapOptionsChanged = () => setMapOptions(getMapOptionsStore().state)
+        const onPathDetailsChanged = () => setPathDetails(getPathDetailsStore().state)
+        const onMapFeaturesChanged = () => setMapFeatures(getMapFeatureStore().state)
+        const onPOIsChanged = () => setPOIs(getPOIsStore().state)
+        const onCurrentLocationChanged = () => setCurrentLocation(getCurrentLocationStore().state)
+
+        getSettingsStore().register(onSettingsChanged)
+        getQueryStore().register(onQueryChanged)
+        getApiInfoStore().register(onInfoChanged)
+        getRouteStore().register(onRouteChanged)
+        getErrorStore().register(onErrorChanged)
+        getMapOptionsStore().register(onMapOptionsChanged)
+        getPathDetailsStore().register(onPathDetailsChanged)
+        getMapFeatureStore().register(onMapFeaturesChanged)
+        getPOIsStore().register(onPOIsChanged)
+        getCurrentLocationStore().register(onCurrentLocationChanged)
+
+        onQueryChanged()
+        onInfoChanged()
+        onRouteChanged()
+        onErrorChanged()
+        onMapOptionsChanged()
+        onPathDetailsChanged()
+        onMapFeaturesChanged()
+        onPOIsChanged()
+        onCurrentLocationChanged()
+
+        return () => {
+            getSettingsStore().deregister(onSettingsChanged)
+            getQueryStore().deregister(onQueryChanged)
+            getApiInfoStore().deregister(onInfoChanged)
+            getRouteStore().deregister(onRouteChanged)
+            getErrorStore().deregister(onErrorChanged)
+            getMapOptionsStore().deregister(onMapOptionsChanged)
+            getPathDetailsStore().deregister(onPathDetailsChanged)
+            getMapFeatureStore().deregister(onMapFeaturesChanged)
+            getPOIsStore().deregister(onPOIsChanged)
+            getCurrentLocationStore().deregister(onCurrentLocationChanged)
+        }
+    }, [])
+
+    // our different map layers
+    useBackgroundLayer(map, mapOptions.selectedStyle)
+    useExternalMVTLayer(map, mapOptions.externalMVTEnabled)
+    useMapBorderLayer(map, info.bbox)
+    useAreasLayer(map, settings.drawAreasEnabled, query.customModelStr, query.customModelEnabled)
+    useRoutingGraphLayer(map, mapOptions.routingGraphEnabled)
+    useUrbanDensityLayer(map, mapOptions.urbanDensityEnabled)
+    type PathDisplayMode = 'normal' | 'incline' | 'hidden'
+    const [pathDisplayMode, setPathDisplayMode] = useState<PathDisplayMode>('normal')
+    const showPaths = pathDisplayMode !== 'hidden'
+    const inclineOnMap = pathDisplayMode === 'incline'
+    usePathsLayer(
+        map,
+        route.routingResult.paths,
+        route.selectedPath,
+        query.queryPoints,
+        showPaths,
+        settings.drawAreasEnabled,
+    )
+    useQueryPointsLayer(map, query.queryPoints)
+    usePathDetailsLayer(map, pathDetails, showPaths)
+    usePOIsLayer(map, pois)
+    useCurrentLocationLayer(map, currentLocation)
+    useFloodLayer(map)
+
+    const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
+    return (
+        <SettingsContext.Provider value={settings}>
+            <div className={styles.appWrapper}>
+                <MapPopups
+                    map={map}
+                    pathDetails={pathDetails}
+                    mapFeatures={mapFeatures}
+                    poiState={pois}
+                    query={query}
+                />
+                <ContextMenu map={map} route={route} queryPoints={query.queryPoints} />
+                {isSmallScreen ? (
+                    <SmallScreenLayout
+                        query={query}
+                        route={route}
+                        map={map}
+                        mapOptions={mapOptions}
+                        error={error}
+                        encodedValues={info.encoded_values}
+                        drawAreas={settings.drawAreasEnabled}
+                        currentLocation={currentLocation}
+                        pathDisplayMode={pathDisplayMode}
+                        onCyclePathDisplay={() =>
+                            setPathDisplayMode(m =>
+                                m === 'normal' ? 'incline' : m === 'incline' ? 'hidden' : 'normal',
+                            )
+                        }
+                    />
+                ) : (
+                    <LargeScreenLayout
+                        query={query}
+                        route={route}
+                        map={map}
+                        mapOptions={mapOptions}
+                        error={error}
+                        encodedValues={info.encoded_values}
+                        drawAreas={settings.drawAreasEnabled}
+                        currentLocation={currentLocation}
+                        pathDisplayMode={pathDisplayMode}
+                        onCyclePathDisplay={() =>
+                            setPathDisplayMode(m =>
+                                m === 'normal' ? 'incline' : m === 'incline' ? 'hidden' : 'normal',
+                            )
+                        }
+                    />
+                )}
+                <TimeSlider />
+            </div>
+        </SettingsContext.Provider>
+    )
+}
+
+function InclineIcon({ mode }: { mode: 'normal' | 'incline' | 'hidden' }) {
+    if (mode === 'incline')
+        return (
+            <svg viewBox="0 0 14 14" fill="none">
+                <polyline points="3,11 5.5,5 8,9 11,3" stroke="#2E7D32" strokeWidth="1.2" fill="none" />
+                <circle cx="3" cy="11" r="1.5" fill="#2E7D32" />
+                <circle cx="11" cy="3" r="1.5" fill="#F44336" />
+            </svg>
+        )
+    if (mode === 'hidden')
+        return (
+            <svg viewBox="0 0 14 14" fill="none">
+                <polyline points="3,11 5.5,5 8,9 11,3" stroke="gray" strokeWidth="1.2" fill="none" opacity="0.3" />
+                <circle cx="3" cy="11" r="1.5" fill="gray" />
+                <circle cx="11" cy="3" r="1.5" fill="gray" />
+            </svg>
+        )
+    return (
+        <svg viewBox="0 0 14 14" fill="none">
+            <polyline points="3,11 5.5,5 8,9 11,3" stroke="gray" strokeWidth="1.2" fill="none" />
+            <circle cx="3" cy="11" r="1.5" fill="gray" />
+            <circle cx="11" cy="3" r="1.5" fill="gray" />
+        </svg>
+    )
+}
+
+interface LayoutProps {
+    query: QueryStoreState
+    route: RouteStoreState
+    map: Map
+    mapOptions: MapOptionsStoreState
+    currentLocation: CurrentLocationStoreState
+    error: ErrorStoreState
+    encodedValues: object[]
+    drawAreas: boolean
+    pathDisplayMode: 'normal' | 'incline' | 'hidden'
+    onCyclePathDisplay: () => void
+}
+
+function LargeScreenLayout({
+    query,
+    route,
+    map,
+    error,
+    mapOptions,
+    encodedValues,
+    drawAreas,
+    currentLocation,
+    pathDisplayMode,
+    onCyclePathDisplay,
+}: LayoutProps) {
+    const inclineOnMap = pathDisplayMode === 'incline'
+    const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
+    const [showSidebar, setShowSidebar] = useState(true)
+    const [showCustomModelBox, setShowCustomModelBox] = useState(false)
+    const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
+    const hasRoute = route.selectedPath.points.coordinates.length > 0
+    const routeRequestPending = query.currentRequest.subRequests.some(r => r.state === RequestState.SENT)
+    // Show elevation widget when a route arrives, hide when route is gone
+    // (but not during transient empty states like via point addition where a new request is already pending)
+    useEffect(() => {
+        if (hasRoute) {
+            setElevationState(s => (s === 'closed' ? 'compact' : s))
+        } else if (!routeRequestPending) {
+            setElevationState('closed')
+        }
+    }, [hasRoute, routeRequestPending])
+    // Hide map attribution when elevation widget is expanded (it would be covered)
+    useEffect(() => {
+        const el = map.getTargetElement()?.querySelector('.' + mapStyles.customAttribution) as HTMLElement | null
+        if (el) el.style.display = elevationState === 'expanded' ? 'none' : ''
+    }, [elevationState, map])
+    return (
+        <>
+            {showSidebar ? (
+                <div className={styles.sidebar}>
+                    <div className={styles.sidebarContent} id={SIDEBAR_CONTENT_ID}>
+                        <PlainButton onClick={() => setShowSidebar(false)} className={styles.sidebarCloseButton}>
+                            <Cross />
+                        </PlainButton>
+                        <RoutingProfiles
+                            routingProfiles={query.profiles}
+                            selectedProfile={query.routingProfile}
+                            memorizedProfilePerGroup={query.memorizedProfilePerGroup}
+                            showCustomModelBox={showCustomModelBox}
+                            toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
+                            customModelBoxEnabled={query.customModelEnabled}
+                        />
+                        {showCustomModelBox && (
+                            <CustomModelBox
+                                customModelEnabled={query.customModelEnabled}
+                                encodedValues={encodedValues}
+                                customModelStr={query.customModelStr}
+                                queryOngoing={query.currentRequest.subRequests[0]?.state === RequestState.SENT}
+                                drawAreas={drawAreas}
+                            />
+                        )}
+                        <Search points={query.queryPoints} profile={query.routingProfile} map={map} />
+                        <div>{!error.isDismissed && <ErrorMessage error={error} />}</div>
+                        <RoutingResults
+                            info={route.routingResult.info}
+                            paths={route.routingResult.paths}
+                            selectedPath={route.selectedPath}
+                            currentRequest={query.currentRequest}
+                            profile={query.routingProfile.name}
+                        />
+                        <div>
+                            <PoweredBy />
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className={styles.sidebarWhenClosed} onClick={() => setShowSidebar(true)}>
+                    <PlainButton className={styles.sidebarOpenButton}>
+                        <Menu />
+                    </PlainButton>
+                </div>
+            )}
+            <div className={styles.popupContainer} id={POPUP_CONTAINER_ID} />
+            <div className={styles.onMapRightSide}>
+                <MapOptions {...mapOptions} />
+                <LocationButton currentLocation={currentLocation} />
+                {hasRoute && (
+                    <div
+                        className={
+                            styles.inclineButton +
+                            (pathDisplayMode === 'incline' ? ' ' + styles.inclineButtonActive : '')
+                        }
+                        onClick={onCyclePathDisplay}
+                        title={
+                            pathDisplayMode === 'normal'
+                                ? 'Show incline on map'
+                                : pathDisplayMode === 'incline'
+                                  ? 'Hide path'
+                                  : 'Show path'
+                        }
+                    >
+                        <InclineIcon mode={pathDisplayMode} />
+                    </div>
+                )}
+            </div>
+            <div className={styles.map}>
+                <MapComponent map={map} />
+            </div>
+
+            {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
+            {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
+                <div className={styles.pathDetails + ' ' + styles.bottomLeftBar}>
+                    {hasRoute && (
+                        <button
+                            className={styles.elevationReopenButton}
+                            onClick={() => setElevationState('compact')}
+                            title="Show elevation"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 1792 1792" fill="#666">
+                                <path d="M1920 1536v128h-2048v-1536h128v1408h1920zm-384-1024l256 896h-1664v-576l448-576 576 576z" />
+                            </svg>
+                        </button>
+                    )}
+                    {showMaptoolkitLogo && (
+                        <img className={styles.maptoolkitLogo} src={maptoolkitImg} alt="Maptoolkit" />
+                    )}
+                </div>
+            )}
+            <div
+                className={elevationState === 'expanded' ? styles.pathDetailsExpanded : styles.pathDetails}
+                style={{ display: elevationState === 'closed' ? 'none' : undefined }}
+            >
+                <ElevationInfoBar
+                    selectedPath={route.selectedPath}
+                    alternativePaths={route.routingResult.paths}
+                    profile={query.routingProfile.name}
+                    isExpanded={elevationState === 'expanded'}
+                    onToggleExpanded={() => setElevationState(s => (s === 'expanded' ? 'compact' : 'expanded'))}
+                    onClose={() => setElevationState('closed')}
+                    inclineOnMap={inclineOnMap}
+                />
+            </div>
+        </>
+    )
+}
+
+function SmallScreenLayout({
+    query,
+    route,
+    map,
+    error,
+    mapOptions,
+    encodedValues,
+    drawAreas,
+    currentLocation,
+    pathDisplayMode,
+    onCyclePathDisplay,
+}: LayoutProps) {
+    const inclineOnMap = pathDisplayMode === 'incline'
+    const hasPath = route.selectedPath.points.coordinates.length > 0
+    const settings = useContext(SettingsContext)
+
+    const [isFooterCollapsed, setIsFooterCollapsed] = useState(false)
+    const footerRef = useRef<HTMLDivElement>(null)
+
+    // Auto-expand when new route arrives
+    useEffect(() => {
+        if (hasPath) setIsFooterCollapsed(false)
+    }, [route.routingResult.paths])
+
+    return (
+        <>
+            <div className={styles.smallScreenSidebar}>
+                <MobileSidebar
+                    query={query}
+                    route={route}
+                    error={error}
+                    encodedValues={encodedValues}
+                    drawAreas={drawAreas}
+                    map={map}
+                />
+            </div>
+            <div className={styles.smallScreenMap}>
+                <MapComponent map={map} />
+            </div>
+            {isMaptoolkitStyle(mapOptions.selectedStyle) && (
+                <img
+                    className={styles.smallScreenMaptoolkit + ' ' + styles.maptoolkitLogo}
+                    src={maptoolkitImg}
+                    alt="Maptoolkit"
+                />
+            )}
+            <div className={styles.smallScreenMapOptions}>
+                <div className={styles.onMapRightSide}>
+                    <MapOptions {...mapOptions} />
+                    <LocationButton currentLocation={currentLocation} />
+                    {hasPath && (
+                        <div
+                            className={
+                                styles.inclineButton +
+                                (pathDisplayMode === 'incline' ? ' ' + styles.inclineButtonActive : '')
+                            }
+                            onClick={onCyclePathDisplay}
+                            title={
+                                pathDisplayMode === 'normal'
+                                    ? 'Show incline on map'
+                                    : pathDisplayMode === 'incline'
+                                      ? 'Hide path'
+                                      : 'Show path'
+                            }
+                        >
+                            <InclineIcon mode={pathDisplayMode} />
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className={styles.smallScreenFooter} ref={footerRef}>
+                {hasPath && isFooterCollapsed && (
+                    <CollapsedFooter
+                        path={route.selectedPath}
+                        showDistanceInMiles={settings.showDistanceInMiles}
+                        onClick={() => setIsFooterCollapsed(false)}
+                    />
+                )}
+                <div style={{ display: hasPath && isFooterCollapsed ? 'none' : undefined }}>
+                    {hasPath && (
+                        <div className={styles.smallScreenFooterHandle} onClick={() => setIsFooterCollapsed(true)}>
+                            <div className={styles.handleBar} />
+                        </div>
+                    )}
+                    <RoutingResults
+                        info={route.routingResult.info}
+                        paths={route.routingResult.paths}
+                        selectedPath={route.selectedPath}
+                        currentRequest={query.currentRequest}
+                        profile={query.routingProfile.name}
+                        inclineOnMap={inclineOnMap}
+                    />
+                    <PoweredBy />
+                </div>
+            </div>
+        </>
+    )
+}
+
+function CollapsedFooter({
+    path,
+    showDistanceInMiles,
+    onClick,
+}: {
+    path: Path
+    showDistanceInMiles: boolean
+    onClick: () => void
+}) {
+    return (
+        <div className={styles.collapsedFooter} onClick={onClick}>
+            <div className={styles.handleBar} />
+            <div className={styles.collapsedFooterSummary}>
+                <span className={styles.collapsedFooterTime}>{milliSecondsToText(path.time)}</span>
+                {' - '}
+                <span className={styles.collapsedFooterDistance}>
+                    {metersToText(path.distance, showDistanceInMiles)}
+                </span>
+            </div>
+        </div>
+    )
+}
