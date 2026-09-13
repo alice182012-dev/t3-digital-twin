@@ -235,14 +235,31 @@
     color: black !important;
 }
 
+/* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar),
+   shaped like MobileSidebar's SmallSearchView rather than the old square puck. */
 .sidebarWhenClosed {
     z-index: 1;
     position: absolute;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
     background-color: white;
-    border-radius: 0.5rem;
+    border-radius: 1.5rem;
     box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
-    padding: 0.25em;
+    padding: 0.25em 0.9em 0.25em 0.4em;
     margin: 0.5em;
+    cursor: pointer;
+}
+
+.sidebarOpenLabel {
+    color: #5b616a;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.sidebarWhenClosed:hover .sidebarOpenLabel {
+    color: #2c2f33;
 }
 
 .sidebarOpenButton svg {

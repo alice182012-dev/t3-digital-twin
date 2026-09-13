@@ -110,11 +110,7 @@ export function clampTimestepIndex(index: number, timesteps: readonly FloodTimes
  * re-anchor to nearest-to-now. Identity, not ordinal position, is what the user selected, so this
  * needs no separate "has the user picked a step" flag.
  */
-export function reanchorTimestepIndex(
-    prev: FloodStoreState,
-    next: readonly FloodTimestep[],
-    now: number,
-): number {
+export function reanchorTimestepIndex(prev: FloodStoreState, next: readonly FloodTimestep[], now: number): number {
     const current = prev.timesteps[prev.selectedIndex]
     if (current) {
         const i = next.findIndex(s => s.valid_time === current.valid_time && s.run === current.run)
@@ -154,9 +150,7 @@ class FloodStore extends Store<FloodStoreState> {
                 ...state,
                 timesteps: action.timesteps,
                 selectedIndex: reanchorTimestepIndex(state, action.timesteps, action.receivedAt),
-                mapMode: state.userChoseMapMode
-                    ? state.mapMode
-                    : defaultMapMode(action.timesteps, action.receivedAt),
+                mapMode: state.userChoseMapMode ? state.mapMode : defaultMapMode(action.timesteps, action.receivedAt),
             }
         } else if (action instanceof SelectFloodTimestep) {
             const next = clampTimestepIndex(action.index, state.timesteps)
@@ -232,7 +226,8 @@ function installRoutingInterceptor() {
     window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
         try {
             const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-            const method = (init?.method || (typeof input !== 'string' && !(input instanceof URL) ? input.method : 'GET')) as string
+            const method = (init?.method ||
+                (typeof input !== 'string' && !(input instanceof URL) ? input.method : 'GET')) as string
             if (method.toUpperCase() === 'POST' && url.includes('/route') && typeof init?.body === 'string') {
                 const state = floodStore.state
                 const step = state.timesteps[state.selectedIndex]

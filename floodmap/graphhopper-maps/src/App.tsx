@@ -140,7 +140,14 @@ export default function App() {
     useAreasLayer(map, settings.drawAreasEnabled, query.customModelStr, query.customModelEnabled)
     useRoutingGraphLayer(map, mapOptions.routingGraphEnabled)
     useUrbanDensityLayer(map, mapOptions.urbanDensityEnabled)
-    usePathsLayer(map, route.routingResult.paths, route.selectedPath, query.queryPoints, true, settings.drawAreasEnabled)
+    usePathsLayer(
+        map,
+        route.routingResult.paths,
+        route.selectedPath,
+        query.queryPoints,
+        true,
+        settings.drawAreasEnabled,
+    )
     useQueryPointsLayer(map, query.queryPoints)
     usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
@@ -278,6 +285,7 @@ function LargeScreenLayout({
                     <PlainButton className={styles.sidebarOpenButton}>
                         <Menu />
                     </PlainButton>
+                    <span className={styles.sidebarOpenLabel}>Search for a place</span>
                 </div>
             )}
             <div className={styles.popupContainer} id={POPUP_CONTAINER_ID} />
