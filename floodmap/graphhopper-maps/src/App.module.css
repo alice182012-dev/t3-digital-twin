@@ -235,40 +235,41 @@
     color: black !important;
 }
 
-/* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar),
-   shaped like MobileSidebar's SmallSearchView rather than the old square puck. */
+/* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar).
+   Exact values from the approved mockup
+   (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screen 2a). */
 .sidebarWhenClosed {
     z-index: 1;
     position: absolute;
+    left: 30px;
+    top: 30px;
+    width: 424px;
+    height: 60px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 0.25rem;
-    background-color: white;
-    border-radius: 1.5rem;
-    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
-    padding: 0.25em 0.9em 0.25em 0.4em;
-    margin: 0.5em;
+    gap: 12px;
+    background-color: #fff;
+    border-radius: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    padding: 0 20px 0 34px;
     cursor: pointer;
 }
 
 .sidebarOpenLabel {
-    color: #5b616a;
-    font-size: 0.95rem;
+    color: #6b7280;
+    font-size: 15px;
     white-space: nowrap;
+    flex: 1;
 }
 
 .sidebarWhenClosed:hover .sidebarOpenLabel {
-    color: #2c2f33;
+    color: #374151;
 }
 
 .sidebarOpenButton svg {
-    fill: gray;
-
-    width: 30px;
-    height: 24px;
-}
-
-.sidebarOpenButton:hover svg {
-    fill: black;
+    stroke: #111;
+    width: 28px;
+    height: 28px;
 }

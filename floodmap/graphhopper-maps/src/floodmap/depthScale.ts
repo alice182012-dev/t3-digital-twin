@@ -19,11 +19,12 @@ export interface DepthBand {
     readonly color: string
 }
 
-/** Ascending by depth, ascending in colour intensity. */
+/** Ascending by depth, ascending in colour intensity. Exact hex values from the approved
+ *  mockup (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, legend swatches). */
 export const DISPLAY_DEPTH_BANDS: readonly DepthBand[] = [
-    { id: 'd1', minCm: 1, maxCm: 5, label: '1–5 cm', color: '#cfe8f7' },
-    { id: 'd2', minCm: 5, maxCm: 10, label: '5–10 cm', color: '#8ec9ec' },
-    { id: 'd3', minCm: 10, maxCm: 30, label: '10–30 cm', color: '#3f9bd4' },
-    { id: 'd4', minCm: 30, maxCm: 60, label: '30–60 cm', color: '#1c5f9e' },
-    { id: 'd5', minCm: 60, maxCm: null, label: '> 60 cm', color: '#0d2f57' },
+    { id: 'd1', minCm: 1, maxCm: 5, label: '1–5 cm', color: '#cfe3f7' },
+    { id: 'd2', minCm: 5, maxCm: 10, label: '5–10 cm', color: '#9ec5ec' },
+    { id: 'd3', minCm: 10, maxCm: 30, label: '10–30 cm', color: '#5d9ad9' },
+    { id: 'd4', minCm: 30, maxCm: 60, label: '30–60 cm', color: '#2f6fbf' },
+    { id: 'd5', minCm: 60, maxCm: null, label: '> 60 cm', color: '#163f80' },
 ]

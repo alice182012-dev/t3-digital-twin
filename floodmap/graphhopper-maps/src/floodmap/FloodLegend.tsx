@@ -3,27 +3,21 @@ import { DISPLAY_DEPTH_BANDS } from '@/floodmap/depthScale'
 import { ForecastRecency } from '@/floodmap/floodSelectors'
 
 /**
- * Display-only. It takes the recency it renders rather than reading a store, so the neutral and
- * warning states are reachable from a plain value in a test.
+ * Display-only, positioned top-right per the approved mockup
+ * (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screens 2b/2e).
  *
- * The badge counts forecast steps, not runs: every entry in `timesteps` comes from the same run,
- * so being "behind" means being behind within one forecast series.
+ * It takes the recency it renders rather than reading a store, so the neutral and stale states
+ * are reachable from a plain value in a test.
+ *
+ * The mockup's static "Updated <timestamp>" footer is replaced with a real recency signal: the
+ * neutral state keeps that same slot and look; the stale state re-colors it amber and counts
+ * forecast steps, not runs — every entry in `timesteps` comes from the same run (see the backend
+ * fix), so being "behind" means being behind within one forecast series.
  */
 export default function FloodLegend({ recency }: { recency: ForecastRecency }) {
     return (
         <div className={styles.container}>
-            <div className={styles.header}>
-                <span className={styles.title}>Water depth</span>
-                {recency.isLatest ? (
-                    <span className={styles.badge}>
-                        {recency.validTimeLabel ? `Updated ${recency.validTimeLabel}` : 'Latest forecast'}
-                    </span>
-                ) : (
-                    <span className={styles.badgeStale}>
-                        {recency.stepsBehind} {recency.stepsBehind === 1 ? 'step' : 'steps'} behind latest
-                    </span>
-                )}
-            </div>
+            <div className={styles.title}>Flood depth</div>
             <ul className={styles.bands}>
                 {DISPLAY_DEPTH_BANDS.map(band => (
                     <li className={styles.band} key={band.id}>
@@ -32,6 +26,15 @@ export default function FloodLegend({ recency }: { recency: ForecastRecency }) {
                     </li>
                 ))}
             </ul>
+            {recency.isLatest ? (
+                <div className={styles.footer}>
+                    {recency.validTimeLabel ? `Updated ${recency.validTimeLabel}` : 'Latest forecast'}
+                </div>
+            ) : (
+                <div className={styles.footerStale}>
+                    {recency.stepsBehind} {recency.stepsBehind === 1 ? 'step' : 'steps'} behind latest
+                </div>
+            )}
         </div>
     )
 }

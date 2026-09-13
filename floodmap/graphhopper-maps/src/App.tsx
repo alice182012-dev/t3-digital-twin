@@ -42,7 +42,6 @@ import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
 import useMapBorderLayer from '@/layers/UseMapBorderLayer'
 import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
 import MapPopups from '@/map/MapPopups'
-import Menu from '@/sidebar/menu.svg'
 import Cross from '@/sidebar/times-solid.svg'
 import PlainButton from '@/PlainButton'
 import useAreasLayer from '@/layers/UseAreasLayer'
@@ -282,21 +281,24 @@ function LargeScreenLayout({
                 </div>
             ) : (
                 <div className={styles.sidebarWhenClosed} onClick={() => setShowSidebar(true)}>
+                    <span className={styles.sidebarOpenLabel}>Search Floodmap</span>
                     <PlainButton className={styles.sidebarOpenButton}>
-                        <Menu />
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 20V10a4 4 0 0 1 4-4h8" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M15 3l3 3-3 3" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                     </PlainButton>
-                    <span className={styles.sidebarOpenLabel}>Search for a place</span>
                 </div>
             )}
             <div className={styles.popupContainer} id={POPUP_CONTAINER_ID} />
             <div className={styles.onMapRightSide}>
                 <MapOptions {...mapOptions} />
                 <LocationButton currentLocation={currentLocation} />
-                <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
             </div>
             <div className={styles.map}>
                 <MapComponent map={map} />
             </div>
+            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
             {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
 
             {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
@@ -383,9 +385,9 @@ function SmallScreenLayout({
                 <div className={styles.onMapRightSide}>
                     <MapOptions {...mapOptions} />
                     <LocationButton currentLocation={currentLocation} />
-                    <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
                 </div>
             </div>
+            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
             {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
