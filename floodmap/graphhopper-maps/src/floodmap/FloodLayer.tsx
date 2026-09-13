@@ -17,9 +17,13 @@ const BAND_STYLE: Record<string, Style> = {
 }
 const DEFAULT_STYLE = BAND_STYLE.b3
 
-// Self-contained: subscribes to FloodStore itself so callers (App.tsx) only
-// need `useFloodLayer(map)`, no store plumbing at the call site.
-export default function useFloodLayer(map: Map) {
+// Keeps its own FloodStore subscription rather than taking `areas` as a prop: `areas` is bulk
+// GeoJSON that App has no use for, and routing it through App's render tree on every timestep
+// change is real, avoidable cost. App and this hook read disjoint slices of one store.
+//
+// `visible` is separate from "is there data" on purpose: an empty FeatureCollection in Flood mode
+// is a real answer (no flooding at this step), not the same thing as the overlay being off.
+export default function useFloodLayer(map: Map, visible: boolean) {
     const [areas, setAreas] = useState(getFloodStore().state.areas)
     useEffect(() => {
         const onChange = () => setAreas(getFloodStore().state.areas)
@@ -29,9 +33,9 @@ export default function useFloodLayer(map: Map) {
 
     useEffect(() => {
         removeFloodLayer(map)
-        if (areas && areas.features.length > 0) addFloodLayer(map, areas)
+        if (visible && areas && areas.features.length > 0) addFloodLayer(map, areas)
         return () => removeFloodLayer(map)
-    }, [map, areas])
+    }, [map, areas, visible])
 }
 
 function addFloodLayer(map: Map, areas: GeoJSON.FeatureCollection) {

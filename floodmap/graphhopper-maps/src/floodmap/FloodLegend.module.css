@@ -1,0 +1,68 @@
+.container {
+    position: absolute;
+    right: 10px;
+    bottom: 24px;
+    z-index: 3;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0.7rem;
+    font-size: 0.75rem;
+    color: #5b616a;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.title {
+    font-weight: 600;
+    color: #2c2f33;
+}
+
+.badge,
+.badgeStale {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.6rem;
+    white-space: nowrap;
+    font-size: 0.7rem;
+}
+
+.badge {
+    background-color: #eef1f4;
+    color: #5b616a;
+}
+
+.badgeStale {
+    background-color: #fdf0d5;
+    color: #8a5a00;
+    font-weight: 600;
+}
+
+.bands {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.band {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.swatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
