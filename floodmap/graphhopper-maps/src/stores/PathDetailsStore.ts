@@ -6,12 +6,9 @@ import {
     PathDetailsElevationSelected,
     PathDetailsHover,
     PathDetailsRangeSelected,
-    RouteRequestSuccess,
-    SetActiveDetail,
 } from '@/actions/Actions'
 import { Bbox } from '@/api/graphhopper'
 import { Coordinate } from '@/utils'
-import { ChartPathDetail } from '@/pathDetails/elevationWidget/types'
 
 export interface PathDetailsPoint {
     point: Coordinate
@@ -23,7 +20,6 @@ export interface PathDetailsStoreState {
     pathDetailsPoint: PathDetailsPoint | null
     pathDetailBbox?: Bbox
     pathDetailsHighlightedSegments: Coordinate[][]
-    activeDetail: ChartPathDetail | null
 }
 
 export default class PathDetailsStore extends Store<PathDetailsStoreState> {
@@ -36,7 +32,6 @@ export default class PathDetailsStore extends Store<PathDetailsStoreState> {
             pathDetailsPoint: null,
             pathDetailBbox: undefined,
             pathDetailsHighlightedSegments: [],
-            activeDetail: null,
         }
     }
 
@@ -60,24 +55,6 @@ export default class PathDetailsStore extends Store<PathDetailsStoreState> {
             }
         } else if (action instanceof ClearRoute || action instanceof ClearPoints) {
             return PathDetailsStore.getInitialState()
-        } else if (action instanceof RouteRequestSuccess) {
-            // Clear stale overlay when a new route arrives; ElevationInfoBar will
-            // restore it from the persisted selected key if still applicable.
-            if (!state.activeDetail) return state
-            return {
-                ...state,
-                activeDetail: null,
-                pathDetailsHighlightedSegments: [],
-            }
-        } else if (action instanceof SetActiveDetail) {
-            // Important: return the same state reference when the detail hasn't changed, otherwise the
-            // spread creates a new object on every dispatch, triggering a re-render loop via Store's
-            // reference equality check.
-            if (action.detail === state.activeDetail) return state
-            return {
-                ...state,
-                activeDetail: action.detail,
-            }
         }
         return state
     }
