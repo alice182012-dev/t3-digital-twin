@@ -1,5 +1,5 @@
 import { Instruction, Path, RoutingResultInfo } from '@/api/graphhopper'
-import { CurrentRequest, RequestState, SubRequest } from '@/stores/QueryStore'
+import { RouteTab, RoutingResultsViewInput, selectRoutingResultsView } from '@/sidebar/routingResultsView'
 import styles from './RoutingResult.module.css'
 import statsStyles from './RouteStats.module.css'
 import { ReactNode, useContext, useEffect, useState } from 'react'
@@ -35,27 +35,87 @@ import { Settings } from '@/stores/SettingsStore'
 
 let persistedElevationMounted = false
 
-export interface RoutingResultsProps {
+export interface RoutingResultsProps extends RoutingResultsViewInput {
     info: RoutingResultInfo
-    paths: Path[]
-    selectedPath: Path
-    currentRequest: CurrentRequest
     profile: string
-    inclineOnMap?: boolean
+    /** Flood mode is on. Gates the static reroute-context line. */
+    floodActive?: boolean
 }
 
 export default function RoutingResults(props: RoutingResultsProps) {
     const [isExpanded, setExpanded] = useState(false)
-    // for landscape orientation there is no need that there is space for the map under the 3 alternatives and so the max-height is smaller for short screen
-    const isShortScreen = useMediaQuery({
-        query: '(max-height: 45rem) and (orientation: landscape), (max-height: 70rem) and (orientation: portrait)',
-    })
+    const view = selectRoutingResultsView(props)
+    switch (view.kind) {
+        case 'idle':
+            return null
+        case 'loading':
+            return (
+                <ul>
+                    <RoutingResultPlaceholder />
+                </ul>
+            )
+        case 'empty':
+            return <NoSafeRouteMessage />
+        case 'routes': {
+            const active = view.tabs[view.activeIndex]
+            return (
+                <>
+                    <RouteTabs
+                        tabs={view.tabs}
+                        activeIndex={view.activeIndex}
+                        onSelect={index => Dispatcher.dispatch(new SetSelectedPath(view.tabs[index].path))}
+                    />
+                    {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
+                    <ul>
+                        <RoutingResult
+                            path={active.path}
+                            allPaths={props.paths}
+                            isSelected={true}
+                            profile={props.profile}
+                            info={props.info}
+                            isExpanded={isExpanded}
+                            setExpanded={setExpanded}
+                        />
+                    </ul>
+                </>
+            )
+        }
+    }
+}
+
+/** Tab strip over the returned alternatives. Presentational; index-keyed. */
+function RouteTabs({
+    tabs,
+    activeIndex,
+    onSelect,
+}: {
+    tabs: readonly RouteTab[]
+    activeIndex: number
+    onSelect: (index: number) => void
+}) {
     return (
-        <ul>
-            {isShortScreen
-                ? createSingletonListContent(props, isExpanded, setExpanded)
-                : createListContent(props, isExpanded, setExpanded)}
-        </ul>
+        <div className={styles.routeTabs} role="tablist">
+            {tabs.map(tab => (
+                <PlainButton
+                    key={tab.index}
+                    role="tab"
+                    aria-selected={tab.index === activeIndex}
+                    className={tab.index === activeIndex ? styles.routeTabActive : styles.routeTab}
+                    onClick={() => onSelect(tab.index)}
+                >
+                    {tab.label}
+                </PlainButton>
+            ))}
+        </div>
+    )
+}
+
+/** Terminal state, deliberately not an ErrorMessage: nothing failed, there is just no safe way. */
+function NoSafeRouteMessage() {
+    return (
+        <div className={styles.noSafeRoute}>
+            No safe route available. Please consider getting to the safest location or stay where you are.
+        </div>
     )
 }
 
@@ -65,7 +125,6 @@ function RoutingResult({
     allPaths,
     isSelected,
     profile,
-    inclineOnMap,
     isExpanded,
     setExpanded,
 }: {
@@ -74,13 +133,12 @@ function RoutingResult({
     allPaths: Path[]
     isSelected: boolean
     profile: string
-    inclineOnMap: boolean
     isExpanded: boolean
     setExpanded: (v: boolean) => void
 }) {
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     const [elevationMounted, setElevationMounted] = useState(persistedElevationMounted)
-    if ((isExpanded || inclineOnMap) && !elevationMounted) setElevationMounted(true)
+    if (isExpanded && !elevationMounted) setElevationMounted(true)
     if (elevationMounted && !persistedElevationMounted) persistedElevationMounted = true
     const [showInstructions, setShowInstructions] = useState(false)
     const [selectedRH, setSelectedRH] = useState('')
@@ -460,7 +518,6 @@ function RoutingResult({
                         profile={profile}
                         isExpanded={false}
                         onToggleExpanded={() => {}}
-                        inclineOnMap={inclineOnMap}
                     />
                 </div>
             )}
@@ -711,78 +768,4 @@ function RoutingResultPlaceholder() {
             </div>
         </div>
     )
-}
-
-function hasPendingRequests(subRequests: SubRequest[]) {
-    return subRequests.some(req => req.state === RequestState.SENT)
-}
-
-function getLength(paths: Path[], subRequests: SubRequest[]) {
-    if (subRequests.length > 0 && hasPendingRequests(subRequests)) {
-        // consider maxAlternativeRoutes only for subRequests that are not yet returned, i.e. state === SENT
-        // otherwise it can happen that too fast alternatives reject the main request leading to stale placeholders
-        return Math.max(
-            paths.length,
-            ...subRequests
-                .filter(request => request.state === RequestState.SENT)
-                .map(request => request.args.maxAlternativeRoutes),
-        )
-    }
-    return paths.length
-}
-
-function createSingletonListContent(
-    props: RoutingResultsProps,
-    isExpanded: boolean,
-    setExpanded: (v: boolean) => void,
-) {
-    if (props.paths.length > 0)
-        return (
-            <RoutingResult
-                path={props.selectedPath}
-                allPaths={props.paths}
-                isSelected={true}
-                profile={props.profile}
-                info={props.info}
-                inclineOnMap={props.inclineOnMap ?? false}
-                isExpanded={isExpanded}
-                setExpanded={setExpanded}
-            />
-        )
-    if (hasPendingRequests(props.currentRequest.subRequests)) return <RoutingResultPlaceholder key={1} />
-    return ''
-}
-
-function pathKey(path: Path): string {
-    return `${path.distance.toFixed(1)}_${path.time}_${path.ascend.toFixed(0)}_${path.descend.toFixed(0)}`
-}
-
-function createListContent(
-    { info, paths, currentRequest, selectedPath, profile, inclineOnMap }: RoutingResultsProps,
-    isExpanded: boolean,
-    setExpanded: (v: boolean) => void,
-) {
-    const length = getLength(paths, currentRequest.subRequests)
-    const result = []
-
-    for (let i = 0; i < length; i++) {
-        if (i < paths.length) {
-            const selected = paths[i] === selectedPath
-            result.push(
-                <RoutingResult
-                    key={pathKey(paths[i])}
-                    path={paths[i]}
-                    allPaths={paths}
-                    isSelected={selected}
-                    profile={profile}
-                    info={info}
-                    inclineOnMap={inclineOnMap ?? false}
-                    isExpanded={selected && isExpanded}
-                    setExpanded={setExpanded}
-                />,
-            )
-        } else result.push(<RoutingResultPlaceholder key={`placeholder-${i}`} />)
-    }
-
-    return result
 }
