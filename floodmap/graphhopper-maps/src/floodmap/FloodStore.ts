@@ -32,6 +32,11 @@ export interface FloodStoreState {
     /** True once the user has operated MapModeToggle. Suppresses the recency-derived default
      *  on every later FloodTimestepsReceived. This is user intent, not a cached derivation. */
     userChoseMapMode: boolean
+    /** Every distinct ingestion run the backend has data for, newest first (GET /flood/runs). */
+    availableRuns: string[]
+    /** null means "latest" — the backend's own default when no `run` query param is sent.
+     *  Explicit once the user picks a run from TimeSlider's dev-only run picker. */
+    selectedRun: string | null
 }
 
 /** Data is fresh enough to default into Flood mode when the newest timestep's valid_time is
@@ -62,6 +67,15 @@ export class SelectFloodVehicle implements Action {
 
 export class ToggleFloodTiles implements Action {
     constructor(readonly visible: boolean) {}
+}
+
+export class FloodRunsReceived implements Action {
+    constructor(readonly runs: string[]) {}
+}
+
+/** `null` re-selects "latest". Explicit user action from TimeSlider's run picker. */
+export class SelectFloodRun implements Action {
+    constructor(readonly run: string | null) {}
 }
 
 // '/flood/*', '/tiles/*' and '/route' live behind the same backend — see
@@ -148,6 +162,8 @@ class FloodStore extends Store<FloodStoreState> {
             tilesVisible: true,
             mapMode: 'map',
             userChoseMapMode: false,
+            availableRuns: [],
+            selectedRun: null,
         })
     }
 
@@ -171,6 +187,13 @@ class FloodStore extends Store<FloodStoreState> {
             return { ...state, vehicleType: action.vehicleType }
         } else if (action instanceof ToggleFloodTiles) {
             return { ...state, tilesVisible: action.visible }
+        } else if (action instanceof FloodRunsReceived) {
+            return { ...state, availableRuns: action.runs }
+        } else if (action instanceof SelectFloodRun) {
+            if (action.run === state.selectedRun) return state
+            // Old run's timesteps don't apply to the new run; clear them so the map doesn't
+            // keep showing a stale selection until the refetch lands.
+            return { ...state, selectedRun: action.run, timesteps: [], selectedIndex: -1 }
         }
         return state
     }
@@ -183,13 +206,26 @@ export function getFloodStore() {
     return floodStore
 }
 
+/** Reads `state.selectedRun` at call time rather than taking it as a parameter, so every call
+ *  site (mount, TimeSlider's run picker, a future refresh timer) stays in sync with the store
+ *  without threading the value through each one. */
 export async function loadFloodTimesteps() {
-    const res = await fetch(`${BACKEND_BASE}flood/timesteps`)
+    const run = floodStore.state.selectedRun
+    const url = new URL(`${BACKEND_BASE}flood/timesteps`, window.location.href)
+    if (run) url.searchParams.set('run', run)
+    const res = await fetch(url)
     if (!res.ok) return
     const data = await res.json()
     // Read the clock after the await: "nearest to now" should be nearest to the moment the user
     // sees the result, not to the moment the request left.
     Dispatcher.dispatch(new FloodTimestepsReceived(data.timesteps || [], Date.now()))
+}
+
+export async function loadFloodRuns() {
+    const res = await fetch(`${BACKEND_BASE}flood/runs`)
+    if (!res.ok) return
+    const data = await res.json()
+    Dispatcher.dispatch(new FloodRunsReceived(data.runs || []))
 }
 
 /** Re-sends the current route request unchanged; the fetch interceptor

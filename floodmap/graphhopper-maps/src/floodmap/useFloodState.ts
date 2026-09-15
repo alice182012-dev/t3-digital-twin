@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { FloodStoreState, getFloodStore, loadFloodTimesteps, reissueCurrentRoute } from '@/floodmap/FloodStore'
+import {
+    FloodStoreState,
+    getFloodStore,
+    loadFloodRuns,
+    loadFloodTimesteps,
+    reissueCurrentRoute,
+} from '@/floodmap/FloodStore'
 
 /**
  * The single App-level subscription to FloodStore. It returns the whole state; the view-model
@@ -28,11 +34,18 @@ export function useFloodState(): FloodStoreState {
  * returns.
  */
 export function useFloodBootstrap(): void {
-    const { selectedIndex, vehicleType, timesteps } = useFloodState()
+    const { selectedIndex, vehicleType, timesteps, selectedRun } = useFloodState()
 
     useEffect(() => {
-        loadFloodTimesteps()
+        loadFloodRuns()
     }, [])
+
+    // Keyed on selectedRun (not `[]`): fires on mount (selectedRun starts null, i.e. "latest")
+    // and again whenever TimeSlider's run picker changes it, so switching runs actually refetches
+    // instead of leaving the previous run's timesteps in the store under a new selectedRun.
+    useEffect(() => {
+        loadFloodTimesteps()
+    }, [selectedRun])
 
     useEffect(() => {
         if (selectedIndex < 0 || timesteps.length === 0) return

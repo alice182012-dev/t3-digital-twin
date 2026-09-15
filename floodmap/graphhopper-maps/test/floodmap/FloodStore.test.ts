@@ -87,6 +87,8 @@ describe('reanchorTimestepIndex', () => {
             tilesVisible: true,
             mapMode: 'map',
             userChoseMapMode: false,
+            availableRuns: [],
+            selectedRun: null,
         }
     }
 
