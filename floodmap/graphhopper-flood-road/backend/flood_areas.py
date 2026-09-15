@@ -52,22 +52,35 @@ def list_runs(conn) -> list[str]:
         return [row[0].isoformat() for row in cur.fetchall()]
 
 
-def list_timesteps(conn, run: str | None = None) -> list[dict[str, str]]:
+def latest_run(conn) -> str | None:
+    """The newest ingestion run timestamp, or None when the table is empty."""
     with conn.cursor() as cur:
-        if run and run != "latest":
-            cur.execute(
-                "SELECT DISTINCT forecast_time FROM flood_road_values WHERE timestamp = %(run)s ORDER BY forecast_time;",
-                {"run": run},
-            )
-            return [{"valid_time": row[0].isoformat(), "run": run} for row in cur.fetchall()]
+        cur.execute("SELECT max(timestamp) FROM flood_road_values;")
+        row = cur.fetchone()
+    return row[0].isoformat() if row and row[0] is not None else None
+
+
+def list_timesteps(conn, run: str | None = None) -> list[dict[str, str]]:
+    """Forecast times for exactly ONE run, ascending by forecast_time.
+
+    Every dict in the result carries the same `run`. The frontend's nearest-to-now
+    selection and its "N steps behind latest" indicator both assume a single ordered
+    forecast series; the previous no-run branch returned a DISTINCT ON (forecast_time)
+    composite in which each forecast_time could come from a DIFFERENT run (whichever
+    produced that forecast_time most recently), and such a view has no "latest step"
+    to be behind.
+
+    run=None or "latest" resolves to latest_run(conn); an empty table yields [].
+    """
+    resolved = run if run and run != "latest" else latest_run(conn)
+    if resolved is None:
+        return []
+    with conn.cursor() as cur:
         cur.execute(
-            """
-            SELECT DISTINCT ON (forecast_time) forecast_time, timestamp
-            FROM flood_road_values
-            ORDER BY forecast_time, timestamp DESC;
-            """
+            "SELECT DISTINCT forecast_time FROM flood_road_values WHERE timestamp = %(run)s ORDER BY forecast_time;",
+            {"run": resolved},
         )
-        return [{"valid_time": row[0].isoformat(), "run": row[1].isoformat()} for row in cur.fetchall()]
+        return [{"valid_time": row[0].isoformat(), "run": resolved} for row in cur.fetchall()]
 
 
 def derive_areas(
