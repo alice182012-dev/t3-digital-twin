@@ -319,6 +319,8 @@ services:
       - ./floodmap/graphhopper-flood-road/graphhopper/motorbike.json:/graphhopper/motorbike.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/car_custom.json:/graphhopper/car_custom.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/truck_custom.json:/graphhopper/truck_custom.json:ro
+      - ./floodmap/graphhopper-flood-road/graphhopper/foot_custom.json:/graphhopper/foot_custom.json:ro
+      - ./floodmap/graphhopper-flood-road/graphhopper/foot_avoid_private_node_custom.json:/graphhopper/foot_avoid_private_node_custom.json:ro
     entrypoint: ["./graphhopper.sh", "-c", "config.yml"]
     ports:
       - "${GRAPHHOPPER_PORT:-8989}:8989"

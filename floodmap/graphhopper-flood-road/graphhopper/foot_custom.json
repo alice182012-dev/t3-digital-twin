@@ -1,0 +1,22 @@
+// Trimmed copy of GraphHopper's bundled com/graphhopper/custom_models/foot.json — named
+// foot_custom.json, not foot.json, because "foot.json" is a reserved filename for GraphHopper's
+// built-in profiles (same reason car.json/truck.json became car_custom.json/truck_custom.json).
+// Two things dropped from upstream, both for the same reason as truck_custom.json's turn_costs
+// trim: this deployment doesn't configure the feature they need.
+//  - hike_rating/mtb_rating: gate hiking-trail/mountain-bike tags this Hanoi extract doesn't carry.
+//  - foot_priority: this GraphHopper build (israelhikingmap/graphhopper, pinned SNAPSHOT — see
+//    compose.yml's comment on the image digest) fails "Cannot compile expression: 'foot_priority'
+//    not available" even with foot_priority listed in graph.encoded_values, so the OSM-derived
+//    priority weighting is dropped and this profile falls back to a flat access/speed gate, the
+//    same shape car_custom.json and truck_custom.json already use.
+{
+  "priority": [
+    { "if": "!foot_access", "multiply_by": "0" },
+    { "if": "foot_road_access == NO", "multiply_by": "0" },
+    { "if": "road_environment == FERRY", "multiply_by": "0.5" }
+  ],
+  "speed": [
+    { "if": "road_environment == FERRY", "limit_to": "ferry_speed" },
+    { "else": "", "limit_to": "foot_average_speed" }
+  ]
+}

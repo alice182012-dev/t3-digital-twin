@@ -32,9 +32,19 @@ VEHICLE_PROFILES = {
     },
     "truck": {
         "costing": "truck",
-        "threshold_cm": 50,
+        "threshold_cm": 35,
         "label_vi": "Xe tải",
         "label_en": "Truck",
+    },
+    # No corresponding GraphHopper profile exists yet: this pinned GraphHopper build rejects
+    # any newly-declared vehicle encoded value at startup (reproduced for both foot_access and
+    # bike_access — see graphhopper/config.yml's comment and TODOS.md). Once that's resolved and
+    # a "foot" profile is wired up, this is the only change needed on the backend side.
+    "foot": {
+        "costing": "foot",
+        "threshold_cm": 40,
+        "label_vi": "Đi bộ",
+        "label_en": "Walking",
     },
 }
 

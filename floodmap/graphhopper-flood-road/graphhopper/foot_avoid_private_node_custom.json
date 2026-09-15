@@ -1,0 +1,7 @@
+// Verbatim copy of GraphHopper's bundled com/graphhopper/custom_models/foot_avoid_private_node.json —
+// named with a _custom suffix because "foot_avoid_private_node.json" is also a reserved filename.
+{
+  "priority": [
+    { "if": "foot_road_access == PRIVATE", "multiply_by": "0.1" }
+  ]
+}

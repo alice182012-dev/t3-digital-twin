@@ -1,0 +1,133 @@
+# TODOS
+
+## FloodNav Map Redesign
+
+### Tap-a-turn-step-to-highlight-that-segment-on-the-map
+
+**What:** Clicking a turn-by-turn instruction row highlights that segment on the map.
+
+**Why:** Delight/consistency detail — not shown in the mockup, but the app already has this exact
+pattern end-to-end for route-hint buttons, so it's cheap to extend once per-step depth ships.
+
+**Context:** Reuse `RHButton`'s click handler (`floodmap/graphhopper-maps/src/sidebar/RoutingResults.tsx:508-531`),
+which already dispatches `PathDetailsElevationSelected` (highlights a segment) and `SetBBox`
+(zooms/pans to it). Wire the same two actions from an `Instructions.tsx` step's `onClick` once
+per-step depth data exists (see the mockup-adaptation plan's Phase C item 10).
+
+**Effort:** XS (human ~2-3 hrs / CC ~15 min)
+**Priority:** P3
+**Depends on:** Phase C item 10 (per-step depth) landing first, so there's a segment to highlight.
+
+### Backend hardening/validation for the GraphHopper flood-road backend
+
+**What:** Harden and validate `floodmap/graphhopper-flood-road/backend/` (`server.py`,
+`flood_areas.py`) before or alongside stacking more infrastructure on it.
+
+**Why:** This backend is the result of a single commit (`6394e27`, "replace valhalla with
+grasshopper routing logic to embed flood as a cost factor more effectively") — no regression
+tests, no production soak time. The mockup-adaptation plan's Phase B (MinIO + rasterio) and
+Phase C (TimescaleDB dependency) all add new load and new dependencies on top of this same,
+unproven backend.
+
+**Context:** Surfaced by an outside-voice review during `/plan-ceo-review` on the mockup-adaptation
+plan (`~/.gstack/projects/alice182012-dev-t3-digital-twin/ceo-plans/2026-09-12-floodnav-mockup-adaptation.md`).
+Not this plan's own scope, but a real risk it depends on: Phase B/C effectively bet that the
+one-commit-old rewrite is solid. Consider a validation pass (regression tests against known
+routes/flood scenarios, a soak period, comparing behavior against the old Valhalla-based backend
+for known cases) before or in parallel with Phase B/C.
+
+**Effort:** M (human ~2-3 days / CC ~4-6 hrs)
+**Priority:** P2
+**Depends on:** None — doesn't block Phase A (pure frontend chrome). Ideally lands before or
+alongside Phase B/C, since those are what actually stack new load onto this backend.
+
+### Establish a project DESIGN.md
+
+**What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens
+(colors, typography, spacing scale).
+
+**Why:** This plan (and future ones) currently calibrate against a one-off approved mockup HTML
+file, read manually each review, rather than a reusable, versioned token set. Risk of drift over
+time as more screens get built without a shared vocabulary.
+
+**Context:** Surfaced by `/plan-design-review`'s Pass 5 (Design System Alignment) on the
+mockup-adaptation plan (`~/.claude/plans/dazzling-percolating-raven.md`). The mockup itself (Claude
+Design project "Flood-Aware Routing Map," screens 2a-2f) has real values worth extracting into a
+proper DESIGN.md rather than continuing to read the source HTML ad hoc.
+
+**Pros:** Reusable tokens, faster future design reviews, consistent vocabulary across screens.
+**Cons:** Upfront time investment; not blocking any current work.
+
+**Effort:** M (human ~half day / CC ~1-2 hrs)
+**Priority:** P3
+**Depends on:** None.
+
+### Accessibility spec for Phase A's new interactive elements
+
+**What:** Keyboard nav, ARIA roles, touch target sizing, and contrast requirements for
+`MapModeToggle`, `FloodLegend`, and the route tabs (e.g. `role="tablist"`/`"tab"` with arrow-key
+navigation, `aria-pressed` on the toggle, `aria-selected` on the active tab, 44px minimum touch
+targets, 4.5:1 minimum contrast on legend text).
+
+**Why:** Nothing in the current plan requires these new elements to be keyboard-operable or
+screen-reader-friendly — surfaced by `/plan-design-review`'s Pass 6 (Responsive & Accessibility),
+where this was explicitly deferred rather than specified now.
+
+**Context:** `PlainButton` (the base component `MapModeToggle` is built on, per the eng review's
+Code Quality finding) likely already covers baseline keyboard-operability, but the route tabs are
+a new interaction pattern with no existing ARIA precedent in this codebase to copy from.
+
+**Pros:** Real accessibility instead of an afterthought; avoids a compliance/usability gap.
+**Cons:** Needs a dedicated audit pass once Phase A actually exists to test against.
+
+**Effort:** S (human ~1-1.5 hrs / CC ~20-30 min)
+**Priority:** P2
+**Depends on:** Phase A implementation existing to audit against.
+
+### Pinned GraphHopper build rejects any new vehicle profile
+
+**What:** The `israelhikingmap/graphhopper` image pinned in `compose.yml` (digest
+`sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`, a 12.0-SNAPSHOT dated
+2026-06-18) fails at startup with `Cannot compile expression: '<name>_access' not available` for
+any vehicle encoded value beyond the three already baked into the current working graph
+(`car_access`, `hgv`, and friends — reused by both `car` and `truck`, and by `motorbike` via
+`motorbike.json`). Reproduced identically for `foot_access` (adding a `foot` profile per the
+user's 40cm-block requirement) and `bike_access` (a from-scratch isolation test with zero
+dependency on `foot`), so this is not specific to pedestrian routing — no new GraphHopper profile
+can be added to this image at all right now. The failure happens in
+`GraphHopper.checkProfilesConsistency()` before any OSM import runs (confirmed via logs: no
+import progress lines, `graph-cache` volume stays empty), so it isn't a stale-cache or
+config-syntax issue — `foot_custom.json`/`foot_avoid_private_node_custom.json` in
+`floodmap/graphhopper-flood-road/graphhopper/` are verbatim/trimmed copies of GraphHopper's own
+bundled `foot.json`, extracted directly from this exact jar, so the JSON itself is correct.
+
+**Why:** Blocks building the foot/walking profile the user asked for (pedestrians blocked at
+40cm depth) and any other new vehicle profile (e.g. exposing `truck` in the frontend). The
+backend side of the foot profile is already done and inert: `scripts/flood_utils.py`'s
+`VEHICLE_PROFILES["foot"]` (threshold 40cm) and the corrected `VEHICLE_PROFILES["truck"]`
+threshold (35cm, was 50cm) are both shipped and harmless — `derive_areas()`/`build_custom_model()`
+are vehicle-agnostic and need no further backend changes once a `foot` GraphHopper profile
+actually exists.
+
+**Context:** Investigated by trying GraphHopper's own bundled `foot.json` verbatim, then
+trimmed (dropping `hike_rating`/`mtb_rating`, which need encoded values this OSM extract has no
+use for — same precedent as `truck_custom.json` dropping `turn_costs`), then dropping
+`foot_priority` specifically, then testing a synthetic `bike_test` profile referencing only
+`bike_access` with zero other dependencies — all fail the same way. A raw `docker run` of the
+same image (bypassing `docker compose`) hung at ~100% CPU with no import progress for several
+minutes on two separate attempts, for unknown reasons unrelated to this bug — use
+`docker compose up --force-recreate graphhopper` for any further testing, not a standalone
+`docker run`.
+
+**Pros:** Once resolved (a different pinned digest/version, or a real fix upstream), the foot
+profile is a ~15-minute wire-up: restore the `foot` entries in `graphhopper/config.yml`
+(profiles/profiles_lm/graph.encoded_values — all still described in that file's comments), add
+`foot: {}` back to `graphhopper-maps/config-local.js.example`'s `profiles`, done — no other code
+changes needed (icon and backend logic already exist/work).
+**Cons:** Root-causing this fully means diffing against upstream GraphHopper's actual encoded-value
+factory for this exact snapshot commit, or just trying a different pinned build — neither
+attempted yet, since it's a bigger investigation than the original scope.
+
+**Effort:** M (human ~half day / CC ~1-2 hrs, mostly bisecting GraphHopper versions)
+**Priority:** P2
+**Depends on:** None — independent of Phase A/B/C.
