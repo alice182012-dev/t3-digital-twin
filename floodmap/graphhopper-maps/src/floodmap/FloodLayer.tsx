@@ -6,9 +6,13 @@ import { FloodStoreState, floodTileUrl, getFloodStore } from '@/floodmap/FloodSt
 
 const floodLayerKey = 'floodLayer'
 
-// Self-contained: subscribes to FloodStore itself so callers (App.tsx) only
-// need `useFloodLayer(map)`, no store plumbing at the call site.
-export default function useFloodLayer(map: Map) {
+// Self-contained: subscribes to FloodStore itself for timestep/tilesVisible state, so App.tsx
+// only has to pass the one thing it actually owns — MapModeToggle's on/off decision.
+//
+// `visible` (from MapModeToggle) is separate from `flood.tilesVisible` (TimeSlider's local-dev
+// override) on purpose: the product toggle and the dev escape hatch answer different questions,
+// and either one being off should hide the layer.
+export default function useFloodLayer(map: Map, visible: boolean) {
     const [flood, setFlood] = useState<FloodStoreState>(getFloodStore().state)
     const layerRef = useRef<TileLayer<XYZ> | null>(null)
 
@@ -38,6 +42,6 @@ export default function useFloodLayer(map: Map) {
         const layer = layerRef.current
         if (!layer) return
         if (step) layer.getSource()?.setUrl(floodTileUrl(step))
-        layer.setVisible(flood.tilesVisible && step != null)
-    }, [step?.run, step?.valid_time, flood.tilesVisible])
+        layer.setVisible(visible && flood.tilesVisible && step != null)
+    }, [step?.run, step?.valid_time, flood.tilesVisible, visible])
 }

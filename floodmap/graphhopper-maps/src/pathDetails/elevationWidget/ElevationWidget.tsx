@@ -20,7 +20,9 @@ interface ElevationWidgetProps {
     data: ChartData | null
     showDistanceInMiles: boolean
     onHover: (result: ChartHoverResult | null) => void
-    onDetailSelected: (detail: ChartPathDetail | null) => void
+    /** Optional: the chart colors its own canvas from `selectedKey` regardless, so a parent that
+     *  has nothing to do with the selection simply omits this. */
+    onDetailSelected?: (detail: ChartPathDetail | null) => void
     isExpanded: boolean
     onToggleExpanded: () => void
     onClose?: () => void
@@ -94,7 +96,7 @@ export default function ElevationWidget({
     useEffect(() => {
         const detail = data?.pathDetails.find(d => d.key === selectedKey) || null
         rendererRef.current?.setSelectedDetail(detail)
-        if (data) onDetailSelected(detail)
+        if (data) onDetailSelected?.(detail)
     }, [selectedKey, data])
 
     // Persist selected key across unmount/remount cycles

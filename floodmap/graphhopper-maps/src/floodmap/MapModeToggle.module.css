@@ -1,0 +1,58 @@
+/* Positioned bottom-left, own absolute layer independent of .onMapRightSide — exact values from
+   the approved mockup (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html). */
+.container {
+    position: absolute;
+    left: 30px;
+    bottom: 30px;
+    z-index: 1;
+    display: flex;
+    gap: 22px;
+}
+
+.thumb,
+.thumbActive {
+    width: 82px;
+    height: 82px;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    /* No live map-tile thumbnail wired up here (that would need a tile fetch this
+       presentational component has no business making) — a flat approximation of the
+       basemap's tone stands in for the mockup's tile-image background. */
+    background-color: #cfc9ba;
+}
+
+.thumb {
+    opacity: 0.65;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.thumbActive {
+    box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px #111;
+}
+
+/* The Flood thumbnail always carries this tint, active or not — only the ring and the
+   container's opacity (via .thumb vs .thumbActive) change with state. */
+.floodTint {
+    position: absolute;
+    inset: 0;
+    background: rgba(47, 111, 191, 0.45);
+}
+
+.thumbLabel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 5px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    background: rgba(17, 17, 17, 0.7);
+}

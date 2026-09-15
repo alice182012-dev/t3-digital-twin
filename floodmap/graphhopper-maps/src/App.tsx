@@ -42,7 +42,6 @@ import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
 import useMapBorderLayer from '@/layers/UseMapBorderLayer'
 import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
 import MapPopups from '@/map/MapPopups'
-import Menu from '@/sidebar/menu.svg'
 import Cross from '@/sidebar/times-solid.svg'
 import PlainButton from '@/PlainButton'
 import useAreasLayer from '@/layers/UseAreasLayer'
@@ -54,6 +53,12 @@ import maptoolkitImg from '@/map/maptoolkit-attribution.png'
 import useCurrentLocationLayer from '@/layers/UseCurrentLocationLayer'
 import useFloodLayer from '@/floodmap/FloodLayer'
 import TimeSlider from '@/floodmap/TimeSlider'
+import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
+import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
+import { selectForecastRecency } from '@/floodmap/floodSelectors'
+import MapModeToggle from '@/floodmap/MapModeToggle'
+import FloodLegend from '@/floodmap/FloodLegend'
+import Dispatcher from '@/stores/Dispatcher'
 
 // the Maptoolkit logo is only shown for their map styles
 function isMaptoolkitStyle(styleOption: StyleOption) {
@@ -75,6 +80,8 @@ export default function App() {
     const [mapFeatures, setMapFeatures] = useState(getMapFeatureStore().state)
     const [pois, setPOIs] = useState(getPOIsStore().state)
     const [currentLocation, setCurrentLocation] = useState(getCurrentLocationStore().state)
+    const flood = useFloodState()
+    useFloodBootstrap()
 
     const map = getMap()
 
@@ -132,23 +139,19 @@ export default function App() {
     useAreasLayer(map, settings.drawAreasEnabled, query.customModelStr, query.customModelEnabled)
     useRoutingGraphLayer(map, mapOptions.routingGraphEnabled)
     useUrbanDensityLayer(map, mapOptions.urbanDensityEnabled)
-    type PathDisplayMode = 'normal' | 'incline' | 'hidden'
-    const [pathDisplayMode, setPathDisplayMode] = useState<PathDisplayMode>('normal')
-    const showPaths = pathDisplayMode !== 'hidden'
-    const inclineOnMap = pathDisplayMode === 'incline'
     usePathsLayer(
         map,
         route.routingResult.paths,
         route.selectedPath,
         query.queryPoints,
-        showPaths,
+        true,
         settings.drawAreasEnabled,
     )
     useQueryPointsLayer(map, query.queryPoints)
-    usePathDetailsLayer(map, pathDetails, showPaths)
+    usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
     useCurrentLocationLayer(map, currentLocation)
-    useFloodLayer(map)
+    useFloodLayer(map, flood.mapMode === 'flood')
 
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     return (
@@ -172,12 +175,7 @@ export default function App() {
                         encodedValues={info.encoded_values}
                         drawAreas={settings.drawAreasEnabled}
                         currentLocation={currentLocation}
-                        pathDisplayMode={pathDisplayMode}
-                        onCyclePathDisplay={() =>
-                            setPathDisplayMode(m =>
-                                m === 'normal' ? 'incline' : m === 'incline' ? 'hidden' : 'normal',
-                            )
-                        }
+                        flood={flood}
                     />
                 ) : (
                     <LargeScreenLayout
@@ -189,43 +187,12 @@ export default function App() {
                         encodedValues={info.encoded_values}
                         drawAreas={settings.drawAreasEnabled}
                         currentLocation={currentLocation}
-                        pathDisplayMode={pathDisplayMode}
-                        onCyclePathDisplay={() =>
-                            setPathDisplayMode(m =>
-                                m === 'normal' ? 'incline' : m === 'incline' ? 'hidden' : 'normal',
-                            )
-                        }
+                        flood={flood}
                     />
                 )}
                 <TimeSlider />
             </div>
         </SettingsContext.Provider>
-    )
-}
-
-function InclineIcon({ mode }: { mode: 'normal' | 'incline' | 'hidden' }) {
-    if (mode === 'incline')
-        return (
-            <svg viewBox="0 0 14 14" fill="none">
-                <polyline points="3,11 5.5,5 8,9 11,3" stroke="#2E7D32" strokeWidth="1.2" fill="none" />
-                <circle cx="3" cy="11" r="1.5" fill="#2E7D32" />
-                <circle cx="11" cy="3" r="1.5" fill="#F44336" />
-            </svg>
-        )
-    if (mode === 'hidden')
-        return (
-            <svg viewBox="0 0 14 14" fill="none">
-                <polyline points="3,11 5.5,5 8,9 11,3" stroke="gray" strokeWidth="1.2" fill="none" opacity="0.3" />
-                <circle cx="3" cy="11" r="1.5" fill="gray" />
-                <circle cx="11" cy="3" r="1.5" fill="gray" />
-            </svg>
-        )
-    return (
-        <svg viewBox="0 0 14 14" fill="none">
-            <polyline points="3,11 5.5,5 8,9 11,3" stroke="gray" strokeWidth="1.2" fill="none" />
-            <circle cx="3" cy="11" r="1.5" fill="gray" />
-            <circle cx="11" cy="3" r="1.5" fill="gray" />
-        </svg>
     )
 }
 
@@ -238,8 +205,7 @@ interface LayoutProps {
     error: ErrorStoreState
     encodedValues: object[]
     drawAreas: boolean
-    pathDisplayMode: 'normal' | 'incline' | 'hidden'
-    onCyclePathDisplay: () => void
+    flood: FloodStoreState
 }
 
 function LargeScreenLayout({
@@ -251,10 +217,8 @@ function LargeScreenLayout({
     encodedValues,
     drawAreas,
     currentLocation,
-    pathDisplayMode,
-    onCyclePathDisplay,
+    flood,
 }: LayoutProps) {
-    const inclineOnMap = pathDisplayMode === 'incline'
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
     const [showSidebar, setShowSidebar] = useState(true)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
@@ -308,6 +272,7 @@ function LargeScreenLayout({
                             selectedPath={route.selectedPath}
                             currentRequest={query.currentRequest}
                             profile={query.routingProfile.name}
+                            floodActive={flood.mapMode === 'flood'}
                         />
                         <div>
                             <PoweredBy />
@@ -316,8 +281,12 @@ function LargeScreenLayout({
                 </div>
             ) : (
                 <div className={styles.sidebarWhenClosed} onClick={() => setShowSidebar(true)}>
+                    <span className={styles.sidebarOpenLabel}>Search Floodmap</span>
                     <PlainButton className={styles.sidebarOpenButton}>
-                        <Menu />
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 20V10a4 4 0 0 1 4-4h8" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M15 3l3 3-3 3" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                     </PlainButton>
                 </div>
             )}
@@ -325,28 +294,12 @@ function LargeScreenLayout({
             <div className={styles.onMapRightSide}>
                 <MapOptions {...mapOptions} />
                 <LocationButton currentLocation={currentLocation} />
-                {hasRoute && (
-                    <div
-                        className={
-                            styles.inclineButton +
-                            (pathDisplayMode === 'incline' ? ' ' + styles.inclineButtonActive : '')
-                        }
-                        onClick={onCyclePathDisplay}
-                        title={
-                            pathDisplayMode === 'normal'
-                                ? 'Show incline on map'
-                                : pathDisplayMode === 'incline'
-                                  ? 'Hide path'
-                                  : 'Show path'
-                        }
-                    >
-                        <InclineIcon mode={pathDisplayMode} />
-                    </div>
-                )}
             </div>
             <div className={styles.map}>
                 <MapComponent map={map} />
             </div>
+            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+            {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
 
             {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
             {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
@@ -378,7 +331,6 @@ function LargeScreenLayout({
                     isExpanded={elevationState === 'expanded'}
                     onToggleExpanded={() => setElevationState(s => (s === 'expanded' ? 'compact' : 'expanded'))}
                     onClose={() => setElevationState('closed')}
-                    inclineOnMap={inclineOnMap}
                 />
             </div>
         </>
@@ -394,10 +346,8 @@ function SmallScreenLayout({
     encodedValues,
     drawAreas,
     currentLocation,
-    pathDisplayMode,
-    onCyclePathDisplay,
+    flood,
 }: LayoutProps) {
-    const inclineOnMap = pathDisplayMode === 'incline'
     const hasPath = route.selectedPath.points.coordinates.length > 0
     const settings = useContext(SettingsContext)
 
@@ -435,26 +385,10 @@ function SmallScreenLayout({
                 <div className={styles.onMapRightSide}>
                     <MapOptions {...mapOptions} />
                     <LocationButton currentLocation={currentLocation} />
-                    {hasPath && (
-                        <div
-                            className={
-                                styles.inclineButton +
-                                (pathDisplayMode === 'incline' ? ' ' + styles.inclineButtonActive : '')
-                            }
-                            onClick={onCyclePathDisplay}
-                            title={
-                                pathDisplayMode === 'normal'
-                                    ? 'Show incline on map'
-                                    : pathDisplayMode === 'incline'
-                                      ? 'Hide path'
-                                      : 'Show path'
-                            }
-                        >
-                            <InclineIcon mode={pathDisplayMode} />
-                        </div>
-                    )}
                 </div>
             </div>
+            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+            {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (
@@ -476,7 +410,7 @@ function SmallScreenLayout({
                         selectedPath={route.selectedPath}
                         currentRequest={query.currentRequest}
                         profile={query.routingProfile.name}
-                        inclineOnMap={inclineOnMap}
+                        floodActive={flood.mapMode === 'flood'}
                     />
                     <PoweredBy />
                 </div>

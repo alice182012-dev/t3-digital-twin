@@ -72,29 +72,6 @@
     box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
 }
 
-.inclineButton {
-    position: absolute;
-    right: 10px;
-    top: 114px;
-    width: 34px;
-    height: 34px;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-.inclineButton svg {
-    width: 100%;
-    height: 100%;
-}
-
-.inclineButtonActive {
-    background-color: #e0f0e4 !important;
-    border: 1px solid #2e7d32 !important;
-}
-
 .pathDetails {
     grid-column: 1 / span 1;
     grid-row: 1 / span 1;
@@ -258,23 +235,41 @@
     color: black !important;
 }
 
+/* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar).
+   Exact values from the approved mockup
+   (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screen 2a). */
 .sidebarWhenClosed {
     z-index: 1;
     position: absolute;
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
-    padding: 0.25em;
-    margin: 0.5em;
+    left: 30px;
+    top: 30px;
+    width: 424px;
+    height: 60px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    background-color: #fff;
+    border-radius: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    padding: 0 20px 0 34px;
+    cursor: pointer;
+}
+
+.sidebarOpenLabel {
+    color: #6b7280;
+    font-size: 15px;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.sidebarWhenClosed:hover .sidebarOpenLabel {
+    color: #374151;
 }
 
 .sidebarOpenButton svg {
-    fill: gray;
-
-    width: 30px;
-    height: 24px;
-}
-
-.sidebarOpenButton:hover svg {
-    fill: black;
+    stroke: #111;
+    width: 28px;
+    height: 28px;
 }

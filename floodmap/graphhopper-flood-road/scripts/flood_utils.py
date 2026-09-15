@@ -50,6 +50,9 @@ VEHICLE_PROFILES = {
 
 DEFAULT_COSTING = VEHICLE_PROFILES["motorbike"]["costing"]
 
+# Not the same scale as the map legend's DISPLAY_DEPTH_BANDS (graphhopper-maps
+# src/floodmap/depthScale.ts): these are vehicle-relative routing costs, those are
+# absolute depths for a human reader, and the two are meant to drift independently.
 # Depth bands as a fraction of the vehicle's wading threshold, relative
 # multiplier applied via custom_model.priority. Ordered deepest-first —
 # callers must emit these as an if/else_if chain (never independent `if`
