@@ -2,8 +2,8 @@
 """Unit tests for backend/tiles.py.
 
 Covers the pure surface: run/valid_time path resolution against a real
-directory layout, the 404 miss cases, band coloring against the same
-`depth_bands_m` table routing uses, and the tile cache's size bound. No
+directory layout, the 404 miss cases, band coloring against the fixed-cm
+display bands the map legend uses, and the tile cache's size bound. No
 raster, no rio-tiler, no running server.
 """
 from __future__ import annotations
@@ -22,9 +22,6 @@ tiles = importlib.util.module_from_spec(_spec)
 # @dataclass resolves its own module out of sys.modules, so register before exec.
 sys.modules["tiles"] = tiles
 _spec.loader.exec_module(tiles)
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from flood_utils import depth_bands_m  # noqa: E402
 
 
 class NormalizeStampTest(unittest.TestCase):
@@ -91,29 +88,28 @@ class ResolveTifTest(unittest.TestCase):
 
 
 class ColorForDepthTest(unittest.TestCase):
-    """Motorbike wades to 20cm, so the routing bands sit at 0.10 / 0.15 /
-    0.20m. The tile legend has to land on exactly those edges."""
-
-    def test_band_edges_match_flood_utils(self):
-        edges = [band["band_min"] for band in depth_bands_m("motorbike")]
-        self.assertEqual(edges, [0.20, 0.15000000000000002, 0.1])
+    """Fixed-cm display bands (1/5/10/30/60cm), same edges and hex values as
+    depthScale.ts's DISPLAY_DEPTH_BANDS, converted to RGB tuples."""
 
     def test_below_shallowest_band_is_transparent(self):
         self.assertIsNone(tiles.color_for_depth(0.0))
-        self.assertIsNone(tiles.color_for_depth(0.099))
+        self.assertIsNone(tiles.color_for_depth(0.0099))
 
     def test_each_band_gets_its_own_color(self):
-        self.assertEqual(tiles.color_for_depth(0.10), (253, 187, 132))
-        self.assertEqual(tiles.color_for_depth(0.14), (253, 187, 132))
-        self.assertEqual(tiles.color_for_depth(0.16), (227, 74, 51))
-        self.assertEqual(tiles.color_for_depth(0.20), (127, 0, 0))
-        self.assertEqual(tiles.color_for_depth(0.706), (127, 0, 0))
+        self.assertEqual(tiles.color_for_depth(0.01), (207, 227, 247))  # d1: 1-5cm
+        self.assertEqual(tiles.color_for_depth(0.049), (207, 227, 247))
+        self.assertEqual(tiles.color_for_depth(0.05), (158, 197, 236))  # d2: 5-10cm
+        self.assertEqual(tiles.color_for_depth(0.10), (93, 154, 217))  # d3: 10-30cm
+        self.assertEqual(tiles.color_for_depth(0.30), (47, 111, 191))  # d4: 30-60cm
+        self.assertEqual(tiles.color_for_depth(0.60), (22, 63, 128))  # d5: >60cm
+        self.assertEqual(tiles.color_for_depth(2.0), (22, 63, 128))
 
-    def test_car_bands_are_deeper_than_motorbike(self):
-        # Car wades to 30cm, so 0.16m is impassable on a motorbike and
-        # untouched for a car.
-        self.assertEqual(tiles.color_for_depth(0.16, "car"), (253, 187, 132))
-        self.assertIsNone(tiles.color_for_depth(0.14, "car"))
+    def test_color_for_depth_takes_no_vehicle_type(self):
+        # Unlike routing's b2/b3/b4, the display palette has no per-vehicle variant, so the
+        # function signature must not accept one.
+        import inspect
+
+        self.assertEqual(list(inspect.signature(tiles.color_for_depth).parameters), ["depth_m"])
 
 
 class TileCacheTest(unittest.TestCase):
@@ -131,7 +127,7 @@ class TileCacheTest(unittest.TestCase):
     def test_size_stays_capped_under_a_long_pan(self):
         cache = tiles.TileCache(max_entries=10, ttl_seconds=600)
         for x in range(500):
-            cache.put(("run", "vt", 13, x, 3607, "motorbike"), b"png")
+            cache.put(("run", "vt", 13, x, 3607), b"png")
         self.assertEqual(len(cache), 10)
 
     def test_expired_entry_is_a_miss(self):

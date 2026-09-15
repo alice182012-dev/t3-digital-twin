@@ -170,7 +170,7 @@ class Handler(BaseHTTPRequestHandler):
                 request = parse_tile_path(parsed.path)
                 if request is None:
                     raise TileNotFound("malformed tile path")
-                self._send_png(render_tile(request, qs.get("vehicle_type", ["motorbike"])[0]))
+                self._send_png(render_tile(request))
             else:
                 self._send(404, {"error": "not found"})
         except TileNotFound as exc:

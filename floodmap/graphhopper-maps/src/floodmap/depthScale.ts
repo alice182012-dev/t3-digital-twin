@@ -1,12 +1,13 @@
 /**
- * Display-only water-depth palette for FloodLegend. Deliberately a different scale from the
- * routing-cost bands in scripts/flood_utils.py's DEPTH_BANDS, which answer a different question.
- *
- * Those bands (b2/b3/b4) are fractions of the vehicle's wading threshold, because what matters for
- * routing is whether this vehicle can pass. What matters for a human reading a map is absolute
- * depth. The id namespaces are kept disjoint ('d1'..'d5' vs 'b2'..'b4') so indexing FloodLayer's
- * BAND_STYLE with a DepthBandId, or this table with a feature's `band` property, is a type error
- * rather than a silent wrong color.
+ * Display water-depth palette. Used by FloodLegend, and mirrored exactly (same cm edges, same
+ * hex values converted to RGB) by the raster tile layer's colors in
+ * backend/tiles.py's DISPLAY_DEPTH_BANDS_CM — the map's own paint has to match what the legend
+ * promises. Deliberately a different scale from the routing-cost bands in
+ * scripts/flood_utils.py's DEPTH_BANDS, which answer a different question: those bands
+ * (b2/b3/b4) are fractions of the vehicle's wading threshold, because what matters for routing
+ * is whether this vehicle can pass, while what matters for a human reading the map is absolute
+ * depth. The id namespaces are kept disjoint ('d1'..'d5' vs 'b2'..'b4') so the two are never
+ * confused for each other.
  */
 export type DepthBandId = 'd1' | 'd2' | 'd3' | 'd4' | 'd5'
 

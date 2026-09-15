@@ -4,9 +4,11 @@
 Serves `GET /tiles/{run}/{valid_time}/{z}/{x}/{y}.png` straight off the
 depth GeoTIFFs the forecast pipeline writes, replacing the buffered
 road-sliver polygons the UI used to draw. Colors come from
-`scripts/flood_utils.depth_bands_m`, the same table `flood_areas.py` turns
-into `custom_model.priority`, so the legend a user reads and the cutoff
-routing enforces cannot drift apart.
+`DISPLAY_DEPTH_BANDS_CM` below, the same fixed-cm bands and exact hex
+values `graphhopper-maps/src/floodmap/depthScale.ts` uses for `FloodLegend`
+— this is the map's own paint, so it has to match what the legend promises,
+not `flood_utils.DEPTH_BANDS` (routing-cost bands, vehicle-relative, a
+different scale by design; see that file's own comment).
 
 `rio_tiler`, `rasterio` and `numpy` are imported inside the render path,
 not at module scope, so the pure functions here (path resolution, band
@@ -16,17 +18,12 @@ from __future__ import annotations
 
 import os
 import re
-import sys
 import threading
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import unquote
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-
-from flood_utils import depth_bands_m  # noqa: E402
 
 TIMESERIES_DIR = Path(os.environ.get("FLOOD_TIMESERIES_DIR", "/data/flood-timeseries"))
 TILE_CACHE_MAX_ENTRIES = int(os.environ.get("FLOOD_TILE_CACHE_MAX_ENTRIES", "750"))
@@ -41,12 +38,18 @@ TILE_PATH_RE = re.compile(r"^/tiles/([^/]+)/([^/]+)/(\d{1,2})/(\d{1,9})/(\d{1,9}
 
 COMPACT_STAMP_RE = re.compile(r"^\d{8}_\d{6}$")
 
-# Deepest band reads darkest. Keys are the band ids in flood_utils.DEPTH_BANDS.
-BAND_RGB = {
-    "b4": (127, 0, 0),
-    "b3": (227, 74, 51),
-    "b2": (253, 187, 132),
-}
+# Exact cm thresholds and hex colors from depthScale.ts's DISPLAY_DEPTH_BANDS (values taken
+# from the approved mockup's legend swatches). Ordered deepest-first: `color_for_depth`/
+# `colorize` scan top-to-bottom and the first band whose min a pixel clears wins, so a pixel
+# at 65cm gets d5, not d1. Anything shallower than d1's 1cm floor is left unpainted
+# (transparent) rather than invented a color for.
+DISPLAY_DEPTH_BANDS_CM: tuple[tuple[str, float, tuple[int, int, int]], ...] = (
+    ("d5", 60.0, (22, 63, 128)),
+    ("d4", 30.0, (47, 111, 191)),
+    ("d3", 10.0, (93, 154, 217)),
+    ("d2", 5.0, (158, 197, 236)),
+    ("d1", 1.0, (207, 227, 247)),
+)
 
 TILE_SIZE = 256
 
@@ -116,13 +119,14 @@ def resolve_tif(run: str, valid_time: str, root: Path | None = None) -> Path:
     raise TileNotFound(f"no raster for run {run!r} at valid_time {valid_time!r}")
 
 
-def color_for_depth(depth_m: float, vehicle_type: str = "motorbike") -> tuple[int, int, int] | None:
-    """`None` means transparent. Anything shallower than the shallowest
-    routing band has no color that would correspond to a routing decision,
-    so it is left unpainted rather than given an invented band."""
-    for band in depth_bands_m(vehicle_type):
-        if depth_m >= band["band_min"]:
-            return BAND_RGB[band["id"]]
+def color_for_depth(depth_m: float) -> tuple[int, int, int] | None:
+    """`None` means transparent. Anything shallower than d1's 1cm floor has
+    no display band, so it is left unpainted rather than given an invented
+    color."""
+    depth_cm = depth_m * 100.0
+    for _band_id, min_cm, rgb in DISPLAY_DEPTH_BANDS_CM:
+        if depth_cm >= min_cm:
+            return rgb
     return None
 
 
@@ -198,17 +202,17 @@ def ensure_overviews(tif_path: Path) -> None:
         _overviews_done.add(key)
 
 
-def colorize(depth, invalid, vehicle_type: str = "motorbike"):
+def colorize(depth, invalid):
     """Vectorized `color_for_depth`. Bands come back deepest-first, so the
     first band to claim a pixel is the deepest one that contains it."""
     import numpy
 
     height, width = depth.shape
+    depth_cm = depth * 100.0
     rgb = numpy.zeros((3, height, width), dtype="uint8")
     painted = numpy.zeros((height, width), dtype=bool)
-    for band in depth_bands_m(vehicle_type):
-        selected = (~painted) & (~invalid) & (depth >= band["band_min"])
-        red, green, blue = BAND_RGB[band["id"]]
+    for _band_id, min_cm, (red, green, blue) in DISPLAY_DEPTH_BANDS_CM:
+        selected = (~painted) & (~invalid) & (depth_cm >= min_cm)
         rgb[0][selected] = red
         rgb[1][selected] = green
         rgb[2][selected] = blue
@@ -216,8 +220,8 @@ def colorize(depth, invalid, vehicle_type: str = "motorbike"):
     return rgb, painted
 
 
-def render_tile(request: TileRequest, vehicle_type: str = "motorbike", root: Path | None = None) -> bytes:
-    key = (request.run, request.valid_time, request.z, request.x, request.y, vehicle_type)
+def render_tile(request: TileRequest, root: Path | None = None) -> bytes:
+    key = (request.run, request.valid_time, request.z, request.x, request.y)
     hit = _tile_cache.get(key)
     if hit is not None:
         return hit
@@ -236,7 +240,7 @@ def render_tile(request: TileRequest, vehicle_type: str = "motorbike", root: Pat
         band = image.array[0]
         depth = numpy.ma.filled(band, 0.0).astype("float64")
         invalid = numpy.ma.getmaskarray(band) | numpy.zeros(depth.shape, dtype=bool)
-        rgb, painted = colorize(depth, invalid, vehicle_type)
+        rgb, painted = colorize(depth, invalid)
     except TileOutsideBounds:
         rgb = numpy.zeros((3, TILE_SIZE, TILE_SIZE), dtype="uint8")
         painted = numpy.zeros((TILE_SIZE, TILE_SIZE), dtype=bool)
