@@ -84,7 +84,7 @@ describe('reanchorTimestepIndex', () => {
             timesteps,
             selectedIndex,
             vehicleType: 'motorbike',
-            areas: null,
+            tilesVisible: true,
             mapMode: 'map',
             userChoseMapMode: false,
         }
