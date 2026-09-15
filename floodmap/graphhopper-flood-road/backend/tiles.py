@@ -169,38 +169,6 @@ class TileCache:
 
 _tile_cache = TileCache()
 
-_overview_lock = threading.Lock()
-_overviews_done: set[str] = set()
-
-
-def ensure_overviews(tif_path: Path) -> None:
-    """Build overviews into the source `.tif` the first time it is served.
-
-    The pipeline writes these rasters without overviews, so a city-wide
-    zoom would otherwise decimate and warp the full-resolution grid for
-    every tile of every request. `ThreadingHTTPServer` can hand two first
-    touches of the same file to two threads at once, hence the lock.
-    """
-    key = str(tif_path)
-    if key in _overviews_done:
-        return
-    with _overview_lock:
-        if key in _overviews_done:
-            return
-        import rasterio
-        from rasterio.enums import Resampling
-
-        try:
-            with rasterio.open(tif_path, "r+") as dataset:
-                if not dataset.overviews(1):
-                    dataset.build_overviews([2, 4, 8, 16], Resampling.average)
-                    dataset.update_tags(ns="rio_overview", resampling="average")
-        except Exception as exc:
-            # A read-only mount or a concurrent writer costs latency, not
-            # correctness. Record the attempt so it is not retried per tile.
-            print(f"tiles: overview build skipped for {tif_path}: {exc}", flush=True)
-        _overviews_done.add(key)
-
 
 def colorize(depth, invalid):
     """Vectorized `color_for_depth`. Bands come back deepest-first, so the
@@ -227,7 +195,6 @@ def render_tile(request: TileRequest, root: Path | None = None) -> bytes:
         return hit
 
     tif_path = resolve_tif(request.run, request.valid_time, root)
-    ensure_overviews(tif_path)
 
     import numpy
     from rio_tiler.errors import TileOutsideBounds
@@ -236,7 +203,15 @@ def render_tile(request: TileRequest, root: Path | None = None) -> bytes:
 
     try:
         with Reader(str(tif_path)) as reader:
-            image = reader.tile(request.x, request.y, request.z, tilesize=TILE_SIZE)
+            # reproject_method="max": the source CRS differs from every tile's Web Mercator, so
+            # every read reprojects, and this raster's real flood cells are extremely sparse
+            # (often single isolated 1m pixels surrounded by dry cells). The default resampling
+            # ("nearest") picks one arbitrary source pixel per output pixel and mostly misses
+            # them; "max" instead keeps the deepest value in each output pixel's footprint, so
+            # downsampling never hides real depth. Confirmed against real data: a z14 tile over
+            # a known-flooded area showed 3 pixels >=1cm at "nearest" vs 55 at "max", including
+            # the tile's single deepest, most dangerous cell, which "nearest" dropped entirely.
+            image = reader.tile(request.x, request.y, request.z, tilesize=TILE_SIZE, reproject_method="max")
         band = image.array[0]
         depth = numpy.ma.filled(band, 0.0).astype("float64")
         invalid = numpy.ma.getmaskarray(band) | numpy.zeros(depth.shape, dtype=bool)
