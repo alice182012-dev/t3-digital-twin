@@ -13,7 +13,7 @@ export interface FloodStoreState {
     timesteps: FloodTimestep[]
     selectedIndex: number
     vehicleType: string
-    areas: GeoJSON.FeatureCollection | null
+    tilesVisible: boolean
 }
 
 export class FloodTimestepsReceived implements Action {
@@ -28,21 +28,25 @@ export class SelectFloodVehicle implements Action {
     constructor(readonly vehicleType: string) {}
 }
 
-export class FloodAreasReceived implements Action {
-    constructor(
-        readonly areas: GeoJSON.FeatureCollection,
-        readonly index: number,
-        readonly vehicleType: string,
-    ) {}
+export class ToggleFloodTiles implements Action {
+    constructor(readonly visible: boolean) {}
 }
 
-// '/flood/*' and '/route' live behind the same backend — see
-// backend/server.py and backend/flood_areas.py in floodmap-backend.
-const BACKEND_BASE: string = (config as any).floodBackend || (config as any).routingApi || '/api/gh/'
+// '/flood/*', '/tiles/*' and '/route' live behind the same backend — see
+// backend/server.py, backend/flood_areas.py and backend/tiles.py in
+// floodmap-backend.
+export const BACKEND_BASE: string = (config as any).floodBackend || (config as any).routingApi || '/api/gh/'
+
+/** XYZ template for the depth-raster tile layer. run and valid_time go in
+ * raw: server.py routes on urlparse(path).path and never unquotes, so a
+ * literal colon in the timestamp reaches it verbatim where '%3A' would not. */
+export function floodTileUrl(step: FloodTimestep): string {
+    return `${BACKEND_BASE}tiles/${step.run}/${step.valid_time}/{z}/{x}/{y}.png`
+}
 
 class FloodStore extends Store<FloodStoreState> {
     constructor() {
-        super({ timesteps: [], selectedIndex: -1, vehicleType: 'motorbike', areas: null })
+        super({ timesteps: [], selectedIndex: -1, vehicleType: 'motorbike', tilesVisible: true })
     }
 
     reduce(state: FloodStoreState, action: Action): FloodStoreState {
@@ -55,10 +59,9 @@ class FloodStore extends Store<FloodStoreState> {
         } else if (action instanceof SelectFloodTimestep) {
             return { ...state, selectedIndex: action.index }
         } else if (action instanceof SelectFloodVehicle) {
-            return { ...state, vehicleType: action.vehicleType, areas: null }
-        } else if (action instanceof FloodAreasReceived) {
-            if (action.index !== state.selectedIndex || action.vehicleType !== state.vehicleType) return state
-            return { ...state, areas: action.areas }
+            return { ...state, vehicleType: action.vehicleType }
+        } else if (action instanceof ToggleFloodTiles) {
+            return { ...state, tilesVisible: action.visible }
         }
         return state
     }
@@ -76,19 +79,6 @@ export async function loadFloodTimesteps() {
     if (!res.ok) return
     const data = await res.json()
     Dispatcher.dispatch(new FloodTimestepsReceived(data.timesteps || []))
-}
-
-export async function loadFloodAreas(index: number, vehicleType: string) {
-    const step = floodStore.state.timesteps[index]
-    if (!step) return
-    const url = new URL(`${BACKEND_BASE}flood/areas`, window.location.href)
-    url.searchParams.set('valid_time', step.valid_time)
-    url.searchParams.set('run', step.run)
-    url.searchParams.set('vehicle_type', vehicleType)
-    const res = await fetch(url.toString())
-    if (!res.ok) return
-    const areas = await res.json()
-    Dispatcher.dispatch(new FloodAreasReceived(areas, index, vehicleType))
 }
 
 /** Re-sends the current route request unchanged; the fetch interceptor

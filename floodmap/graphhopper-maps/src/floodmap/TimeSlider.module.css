@@ -12,7 +12,15 @@
     align-items: center;
     gap: 10px;
     font-size: 13px;
-    min-width: 360px;
+    min-width: 420px;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .slider {

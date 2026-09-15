@@ -1,55 +1,43 @@
 import { Map } from 'ol'
-import { useEffect, useState } from 'react'
-import VectorLayer from 'ol/layer/Vector'
-import VectorSource from 'ol/source/Vector'
-import { GeoJSON } from 'ol/format'
-import { Fill, Stroke, Style } from 'ol/style'
-import { getFloodStore } from '@/floodmap/FloodStore'
+import { useEffect, useRef, useState } from 'react'
+import TileLayer from 'ol/layer/Tile'
+import XYZ from 'ol/source/XYZ'
+import { FloodStoreState, floodTileUrl, getFloodStore } from '@/floodmap/FloodStore'
 
 const floodLayerKey = 'floodLayer'
-
-// b2/b3/b4 match backend/flood_utils.py's DEPTH_BANDS — deepest (b4,
-// impassable) drawn most opaque.
-const BAND_STYLE: Record<string, Style> = {
-    b2: new Style({ stroke: new Stroke({ color: '#f5c542', width: 1 }), fill: new Fill({ color: 'rgba(245,197,66,0.35)' }) }),
-    b3: new Style({ stroke: new Stroke({ color: '#f57c1f', width: 1 }), fill: new Fill({ color: 'rgba(245,124,31,0.45)' }) }),
-    b4: new Style({ stroke: new Stroke({ color: '#d32f2f', width: 1 }), fill: new Fill({ color: 'rgba(211,47,47,0.55)' }) }),
-}
-const DEFAULT_STYLE = BAND_STYLE.b3
 
 // Self-contained: subscribes to FloodStore itself so callers (App.tsx) only
 // need `useFloodLayer(map)`, no store plumbing at the call site.
 export default function useFloodLayer(map: Map) {
-    const [areas, setAreas] = useState(getFloodStore().state.areas)
+    const [flood, setFlood] = useState<FloodStoreState>(getFloodStore().state)
+    const layerRef = useRef<TileLayer<XYZ> | null>(null)
+
     useEffect(() => {
-        const onChange = () => setAreas(getFloodStore().state.areas)
+        const onChange = () => setFlood(getFloodStore().state)
         getFloodStore().register(onChange)
         return () => getFloodStore().deregister(onChange)
     }, [])
 
+    // The layer outlives every timestep change: depth colouring comes from the
+    // backend's rendered PNG, so switching timestep is a URL swap on one
+    // source, not the add/remove cycle the old GeoJSON VectorSource needed.
     useEffect(() => {
-        removeFloodLayer(map)
-        if (areas && areas.features.length > 0) addFloodLayer(map, areas)
-        return () => removeFloodLayer(map)
-    }, [map, areas])
-}
+        const layer = new TileLayer({ source: new XYZ({ crossOrigin: 'anonymous' }), visible: false })
+        layer.set(floodLayerKey, true)
+        layer.setZIndex(2)
+        map.addLayer(layer)
+        layerRef.current = layer
+        return () => {
+            map.removeLayer(layer)
+            layerRef.current = null
+        }
+    }, [map])
 
-function addFloodLayer(map: Map, areas: GeoJSON.FeatureCollection) {
-    const source = new VectorSource({
-        features: new GeoJSON({ featureProjection: 'EPSG:3857' }).readFeatures(areas),
-    })
-    const layer = new VectorLayer({
-        source,
-        style: feature => BAND_STYLE[feature.get('band')] || DEFAULT_STYLE,
-    })
-    layer.set(floodLayerKey, true)
-    layer.setZIndex(2)
-    map.addLayer(layer)
-}
-
-function removeFloodLayer(map: Map) {
-    map.getLayers()
-        .getArray()
-        .filter(l => l.get(floodLayerKey))
-        .forEach(l => map.removeLayer(l))
+    const step = flood.timesteps[flood.selectedIndex]
+    useEffect(() => {
+        const layer = layerRef.current
+        if (!layer) return
+        if (step) layer.getSource()?.setUrl(floodTileUrl(step))
+        layer.setVisible(flood.tilesVisible && step != null)
+    }, [step?.run, step?.valid_time, flood.tilesVisible])
 }
