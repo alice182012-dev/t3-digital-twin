@@ -53,6 +53,16 @@ DISPLAY_DEPTH_BANDS_CM: tuple[tuple[str, float, tuple[int, int, int]], ...] = (
 
 TILE_SIZE = 256
 
+# At this raster's native 1m resolution, a wet cell surrounded by dry ones can
+# render as a single output pixel, or even sub-pixel, at city zoom. "max"
+# resampling already keeps that pixel's real depth (see render_tile), but a
+# lone pixel against a huge dry backdrop reads as sensor noise to a human
+# viewer rather than a real, isolated hazard. Growing it to a small minimum
+# on-screen radius is a display choice only: it never touches the depth
+# values colorize() reads, just which already-painted pixels' color a nearby
+# unpainted pixel inherits.
+DISPLAY_MIN_FEATURE_RADIUS_PX = 2
+
 
 class TileNotFound(Exception):
     """No `.tif` on disk for this run/valid_time. A client-input problem,
@@ -188,6 +198,46 @@ def colorize(depth, invalid):
     return rgb, painted
 
 
+def dilate_painted(rgb, painted, radius: int = DISPLAY_MIN_FEATURE_RADIUS_PX):
+    """Grow `painted` outward by `radius` pixels, 8-connected, one ring per
+    iteration. A newly covered pixel inherits the color of whichever already-
+    painted neighbor reaches it first; for the isolated single-pixel case
+    this fix targets there is only one such neighbor, so the ambiguity this
+    creates when two differently colored regions grow into each other does
+    not arise in practice. No scipy dependency: shift-and-OR over the 8
+    neighbors is enough at this radius."""
+    import numpy
+
+    out_rgb = [channel.copy() for channel in rgb]
+    out_painted = painted.copy()
+    frontier = painted
+    for _ in range(radius):
+        newly_total = numpy.zeros_like(out_painted)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy == 0 and dx == 0:
+                    continue
+                shifted_frontier = numpy.roll(numpy.roll(frontier, dy, axis=0), dx, axis=1)
+                if dy == 1:
+                    shifted_frontier[0, :] = False
+                elif dy == -1:
+                    shifted_frontier[-1, :] = False
+                if dx == 1:
+                    shifted_frontier[:, 0] = False
+                elif dx == -1:
+                    shifted_frontier[:, -1] = False
+                newly = shifted_frontier & ~out_painted & ~newly_total
+                if not newly.any():
+                    continue
+                for c in range(3):
+                    shifted_channel = numpy.roll(numpy.roll(rgb[c], dy, axis=0), dx, axis=1)
+                    out_rgb[c][newly] = shifted_channel[newly]
+                newly_total |= newly
+        out_painted |= newly_total
+        frontier = newly_total
+    return numpy.stack(out_rgb), out_painted
+
+
 def render_tile(request: TileRequest, root: Path | None = None) -> bytes:
     key = (request.run, request.valid_time, request.z, request.x, request.y)
     hit = _tile_cache.get(key)
@@ -216,6 +266,7 @@ def render_tile(request: TileRequest, root: Path | None = None) -> bytes:
         depth = numpy.ma.filled(band, 0.0).astype("float64")
         invalid = numpy.ma.getmaskarray(band) | numpy.zeros(depth.shape, dtype=bool)
         rgb, painted = colorize(depth, invalid)
+        rgb, painted = dilate_painted(rgb, painted)
     except TileOutsideBounds:
         rgb = numpy.zeros((3, TILE_SIZE, TILE_SIZE), dtype="uint8")
         painted = numpy.zeros((TILE_SIZE, TILE_SIZE), dtype=bool)

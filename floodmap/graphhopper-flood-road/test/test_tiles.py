@@ -112,6 +112,63 @@ class ColorForDepthTest(unittest.TestCase):
         self.assertEqual(list(inspect.signature(tiles.color_for_depth).parameters), ["depth_m"])
 
 
+class DilatePaintedTest(unittest.TestCase):
+    """`dilate_painted` grows an isolated wet pixel to a minimum on-screen
+    radius so it doesn't vanish into a single dot at city zoom."""
+
+    def test_isolated_pixel_grows_to_a_block(self):
+        import numpy
+
+        depth = numpy.zeros((10, 10))
+        depth[5, 5] = 0.5
+        invalid = numpy.zeros((10, 10), dtype=bool)
+        rgb, painted = tiles.colorize(depth, invalid)
+
+        dilated_rgb, dilated_painted = tiles.dilate_painted(rgb, painted, radius=2)
+
+        self.assertEqual(painted.sum(), 1)
+        self.assertEqual(dilated_painted.sum(), 25)  # 5x5 block, radius=2, 8-connected
+        self.assertTrue(dilated_painted[3:8, 3:8].all())
+
+    def test_grown_pixels_inherit_source_color(self):
+        import numpy
+
+        depth = numpy.zeros((10, 10))
+        depth[5, 5] = 0.5  # d4: (47, 111, 191)
+        invalid = numpy.zeros((10, 10), dtype=bool)
+        rgb, painted = tiles.colorize(depth, invalid)
+
+        dilated_rgb, _ = tiles.dilate_painted(rgb, painted, radius=2)
+
+        self.assertEqual(tuple(dilated_rgb[:, 4, 4]), (47, 111, 191))
+        self.assertEqual(tuple(dilated_rgb[:, 6, 6]), (47, 111, 191))
+
+    def test_does_not_wrap_around_tile_edges(self):
+        import numpy
+
+        depth = numpy.zeros((10, 10))
+        depth[0, 0] = 0.5
+        invalid = numpy.zeros((10, 10), dtype=bool)
+        rgb, painted = tiles.colorize(depth, invalid)
+
+        _, dilated_painted = tiles.dilate_painted(rgb, painted, radius=2)
+
+        self.assertFalse(dilated_painted[9, 9])
+        self.assertFalse(dilated_painted[9, 0])
+        self.assertFalse(dilated_painted[0, 9])
+
+    def test_no_wet_pixels_stays_empty(self):
+        import numpy
+
+        depth = numpy.zeros((10, 10))
+        invalid = numpy.zeros((10, 10), dtype=bool)
+        rgb, painted = tiles.colorize(depth, invalid)
+
+        _, dilated_painted = tiles.dilate_painted(rgb, painted, radius=2)
+
+        self.assertEqual(dilated_painted.sum(), 0)
+
+
 class TileCacheTest(unittest.TestCase):
     def test_evicts_least_recently_used_past_the_cap(self):
         cache = tiles.TileCache(max_entries=3, ttl_seconds=600)
