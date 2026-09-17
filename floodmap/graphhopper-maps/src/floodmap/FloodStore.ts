@@ -160,8 +160,11 @@ class FloodStore extends Store<FloodStoreState> {
             selectedIndex: -1,
             vehicleType: 'motorbike',
             tilesVisible: true,
-            mapMode: 'map',
-            userChoseMapMode: false,
+            // Demo default: open straight into Flood mode rather than the recency-derived
+            // default (see defaultMapMode/I3-I4). userChoseMapMode: true so the first
+            // FloodTimestepsReceived doesn't immediately recompute it away.
+            mapMode: 'flood',
+            userChoseMapMode: true,
             availableRuns: [],
             selectedRun: null,
         })

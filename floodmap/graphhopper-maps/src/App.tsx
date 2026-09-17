@@ -52,7 +52,6 @@ import usePOIsLayer from '@/layers/UsePOIsLayer'
 import maptoolkitImg from '@/map/maptoolkit-attribution.png'
 import useCurrentLocationLayer from '@/layers/UseCurrentLocationLayer'
 import useFloodLayer from '@/floodmap/FloodLayer'
-import TimeSlider from '@/floodmap/TimeSlider'
 import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import { selectForecastRecency } from '@/floodmap/floodSelectors'
@@ -190,7 +189,6 @@ export default function App() {
                         flood={flood}
                     />
                 )}
-                <TimeSlider />
             </div>
         </SettingsContext.Provider>
     )
@@ -220,7 +218,7 @@ function LargeScreenLayout({
     flood,
 }: LayoutProps) {
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
-    const [showSidebar, setShowSidebar] = useState(true)
+    const [showSidebar, setShowSidebar] = useState(false)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
     const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
     const hasRoute = route.selectedPath.points.coordinates.length > 0

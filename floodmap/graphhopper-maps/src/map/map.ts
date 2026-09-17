@@ -13,8 +13,10 @@ export function createMap(): Map {
             enableRotation: false,
             multiWorld: false,
             constrainResolution: false,
-            center: fromLonLat([10, 10]),
-            zoom: 2,
+            // Fixed initial view over the flood-forecast area, not the routing graph's own bbox
+            // (see MapActionReceiver's InfoReceived handler, which no longer overrides this).
+            center: fromLonLat([105.74599494716486, 21.00753674005938]),
+            zoom: 17,
         }),
         controls: defaultControls({
             zoom: true,

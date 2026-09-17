@@ -65,11 +65,8 @@ export default class MapActionReceiver implements ActionReceiver {
             if (bbox) fitBounds(this.map, bbox, isSmallScreen)
             // if neither has a bbox just fall through to unchanged state
         } else if (action instanceof InfoReceived) {
-            if (JSON.stringify(action.result.bbox) === '[-180,-90,180,90]') {
-                // we play it safe in terms of initial page loading time and do nothing...
-            } else {
-                fitBounds(this.map, action.result.bbox, isSmallScreen)
-            }
+            // Do nothing: the map's initial view (map.ts's createMap) is a fixed center/zoom over
+            // the flood-forecast area, not the routing graph's own bbox.
         }
     }
 }
