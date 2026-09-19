@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import {
     FloodStoreState,
     getFloodStore,
-    loadFloodRuns,
     loadFloodTimesteps,
     reissueCurrentRoute,
 } from '@/floodmap/FloodStore'
@@ -24,28 +23,16 @@ export function useFloodState(): FloodStoreState {
 }
 
 /**
- * Owns the flood data lifecycle. App mounts it unconditionally, so timestep loading and route
- * re-issuing no longer depend on TimeSlider being mounted. TimeSlider keeps its own copy of the
- * route-reissue effect because it stays untouched as a local testing tool; both are idempotent
- * for the same (index, vehicleType), so the overlap is a redundant reissue, not a wrong state.
- *
- * No `loadFloodAreas` call here: the raster tile layer (FloodLayer.tsx) reads depth-colored PNGs
- * straight off the backend keyed by timestep, it doesn't need the polygon GeoJSON that endpoint
- * returns.
+ * Owns the flood data lifecycle: loads the timesteps routing derives its flood costs from, and
+ * re-issues the current route when the timestep or vehicle changes. The map's flood layer does not
+ * use these timesteps (see FloodExtentLayer).
  */
 export function useFloodBootstrap(): void {
-    const { selectedIndex, vehicleType, timesteps, selectedRun } = useFloodState()
+    const { selectedIndex, vehicleType, timesteps } = useFloodState()
 
-    useEffect(() => {
-        loadFloodRuns()
-    }, [])
-
-    // Keyed on selectedRun (not `[]`): fires on mount (selectedRun starts null, i.e. "latest")
-    // and again whenever TimeSlider's run picker changes it, so switching runs actually refetches
-    // instead of leaving the previous run's timesteps in the store under a new selectedRun.
     useEffect(() => {
         loadFloodTimesteps()
-    }, [selectedRun])
+    }, [])
 
     useEffect(() => {
         if (selectedIndex < 0 || timesteps.length === 0) return

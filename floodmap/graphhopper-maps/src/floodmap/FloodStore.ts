@@ -14,9 +14,9 @@ export type MapMode = 'map' | 'flood'
 /**
  * INVARIANTS held by the reducer and relied on by every reader:
  *  I1. selectedIndex === -1 when timesteps is empty, otherwise in [0, timesteps.length - 1].
- *      TimeSlider's <input max=...> used to be the only thing holding this; now the reducer does.
+ *      The reducer holds it, so a consumer never reads a stale or out-of-range index.
  *  I2. every timestep carries the same `run` (the backend pins list_timesteps to one run), so
- *      "latest timestep" and "N steps behind latest" are well defined.
+ *      "latest timestep" is well defined.
  *  I3. mapMode is concrete state, never recomputed from the clock at render time.
  *  I4. userChoseMapMode, once true, is never cleared by arriving data.
  */
@@ -24,19 +24,10 @@ export interface FloodStoreState {
     timesteps: FloodTimestep[]
     selectedIndex: number
     vehicleType: string
-    /** Dev-only override for the raster tile layer, toggled from TimeSlider (local testing tool).
-     *  Effective layer visibility is `mapMode === 'flood' && tilesVisible` — MapModeToggle is the
-     *  product-facing control, this is a secondary local-dev escape hatch. */
-    tilesVisible: boolean
     mapMode: MapMode
     /** True once the user has operated MapModeToggle. Suppresses the recency-derived default
      *  on every later FloodTimestepsReceived. This is user intent, not a cached derivation. */
     userChoseMapMode: boolean
-    /** Every distinct ingestion run the backend has data for, newest first (GET /flood/runs). */
-    availableRuns: string[]
-    /** null means "latest" — the backend's own default when no `run` query param is sent.
-     *  Explicit once the user picks a run from TimeSlider's dev-only run picker. */
-    selectedRun: string | null
 }
 
 /** Data is fresh enough to default into Flood mode when the newest timestep's valid_time is
@@ -57,38 +48,13 @@ export class SetMapMode implements Action {
     constructor(readonly mode: MapMode) {}
 }
 
-export class SelectFloodTimestep implements Action {
-    constructor(readonly index: number) {}
-}
-
 export class SelectFloodVehicle implements Action {
     constructor(readonly vehicleType: string) {}
 }
 
-export class ToggleFloodTiles implements Action {
-    constructor(readonly visible: boolean) {}
-}
-
-export class FloodRunsReceived implements Action {
-    constructor(readonly runs: string[]) {}
-}
-
-/** `null` re-selects "latest". Explicit user action from TimeSlider's run picker. */
-export class SelectFloodRun implements Action {
-    constructor(readonly run: string | null) {}
-}
-
-// '/flood/*', '/tiles/*' and '/route' live behind the same backend — see
-// backend/server.py, backend/flood_areas.py and backend/tiles.py in
-// floodmap-backend.
+// '/flood/*' and '/route' live behind the same backend — see
+// backend/server.py and backend/flood_areas.py in floodmap-backend.
 export const BACKEND_BASE: string = (config as any).floodBackend || (config as any).routingApi || '/api/gh/'
-
-/** XYZ template for the depth-raster tile layer. run and valid_time go in
- * raw: server.py routes on urlparse(path).path and never unquotes, so a
- * literal colon in the timestamp reaches it verbatim where '%3A' would not. */
-export function floodTileUrl(step: FloodTimestep): string {
-    return `${BACKEND_BASE}tiles/${step.run}/${step.valid_time}/{z}/{x}/{y}.png`
-}
 
 /**
  * Index of the timestep whose valid_time is closest to `now`, in either direction.
@@ -114,13 +80,6 @@ export function findNearestTimestepIndex(timesteps: readonly FloodTimestep[], no
         }
     }
     return best
-}
-
-/** Clamps `index` into the range invariant I1 permits for `timesteps`. */
-export function clampTimestepIndex(index: number, timesteps: readonly FloodTimestep[]): number {
-    if (timesteps.length === 0) return -1
-    if (!Number.isInteger(index)) return -1
-    return Math.min(Math.max(index, 0), timesteps.length - 1)
 }
 
 /**
@@ -159,14 +118,11 @@ class FloodStore extends Store<FloodStoreState> {
             timesteps: [],
             selectedIndex: -1,
             vehicleType: 'motorbike',
-            tilesVisible: true,
             // Demo default: open straight into Flood mode rather than the recency-derived
             // default (see defaultMapMode/I3-I4). userChoseMapMode: true so the first
             // FloodTimestepsReceived doesn't immediately recompute it away.
             mapMode: 'flood',
             userChoseMapMode: true,
-            availableRuns: [],
-            selectedRun: null,
         })
     }
 
@@ -178,25 +134,11 @@ class FloodStore extends Store<FloodStoreState> {
                 selectedIndex: reanchorTimestepIndex(state, action.timesteps, action.receivedAt),
                 mapMode: state.userChoseMapMode ? state.mapMode : defaultMapMode(action.timesteps, action.receivedAt),
             }
-        } else if (action instanceof SelectFloodTimestep) {
-            const next = clampTimestepIndex(action.index, state.timesteps)
-            // Returning the identical object makes Store.receive() skip the notify, so a no-op
-            // select costs no re-render and no areas refetch.
-            return next === state.selectedIndex ? state : { ...state, selectedIndex: next }
         } else if (action instanceof SetMapMode) {
             if (action.mode === state.mapMode && state.userChoseMapMode) return state
             return { ...state, mapMode: action.mode, userChoseMapMode: true }
         } else if (action instanceof SelectFloodVehicle) {
             return { ...state, vehicleType: action.vehicleType }
-        } else if (action instanceof ToggleFloodTiles) {
-            return { ...state, tilesVisible: action.visible }
-        } else if (action instanceof FloodRunsReceived) {
-            return { ...state, availableRuns: action.runs }
-        } else if (action instanceof SelectFloodRun) {
-            if (action.run === state.selectedRun) return state
-            // Old run's timesteps don't apply to the new run; clear them so the map doesn't
-            // keep showing a stale selection until the refetch lands.
-            return { ...state, selectedRun: action.run, timesteps: [], selectedIndex: -1 }
         }
         return state
     }
@@ -209,14 +151,8 @@ export function getFloodStore() {
     return floodStore
 }
 
-/** Reads `state.selectedRun` at call time rather than taking it as a parameter, so every call
- *  site (mount, TimeSlider's run picker, a future refresh timer) stays in sync with the store
- *  without threading the value through each one. */
 export async function loadFloodTimesteps() {
-    const run = floodStore.state.selectedRun
-    const url = new URL(`${BACKEND_BASE}flood/timesteps`, window.location.href)
-    if (run) url.searchParams.set('run', run)
-    const res = await fetch(url)
+    const res = await fetch(new URL(`${BACKEND_BASE}flood/timesteps`, window.location.href))
     if (!res.ok) return
     const data = await res.json()
     // Read the clock after the await: "nearest to now" should be nearest to the moment the user
@@ -224,17 +160,10 @@ export async function loadFloodTimesteps() {
     Dispatcher.dispatch(new FloodTimestepsReceived(data.timesteps || [], Date.now()))
 }
 
-export async function loadFloodRuns() {
-    const res = await fetch(`${BACKEND_BASE}flood/runs`)
-    if (!res.ok) return
-    const data = await res.json()
-    Dispatcher.dispatch(new FloodRunsReceived(data.runs || []))
-}
-
 /** Re-sends the current route request unchanged; the fetch interceptor
  * below is what actually attaches the flood parameters, so this is the
  * only bit of app.tsx-side plumbing needed to make the map re-plan when
- * the slider moves. */
+ * the timestep changes. */
 export function reissueCurrentRoute() {
     const last = getQueryStore().state.currentRequest.subRequests[0]?.args
     if (last) getApi().routeWithDispatch(last, false)

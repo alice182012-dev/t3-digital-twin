@@ -1,5 +1,4 @@
 import {
-    clampTimestepIndex,
     defaultMapMode,
     findNearestTimestepIndex,
     FloodStoreState,
@@ -58,37 +57,14 @@ describe('findNearestTimestepIndex', () => {
     })
 })
 
-describe('clampTimestepIndex', () => {
-    it('returns -1 for an empty list', () => {
-        expect(clampTimestepIndex(0, [])).toEqual(-1)
-    })
-
-    it('keeps an in-range index', () => {
-        expect(clampTimestepIndex(1, HOURLY)).toEqual(1)
-    })
-
-    it('clamps below and above the range', () => {
-        expect(clampTimestepIndex(-5, HOURLY)).toEqual(0)
-        expect(clampTimestepIndex(99, HOURLY)).toEqual(2)
-    })
-
-    it('rejects a non-integer index', () => {
-        expect(clampTimestepIndex(1.5, HOURLY)).toEqual(-1)
-        expect(clampTimestepIndex(NaN, HOURLY)).toEqual(-1)
-    })
-})
-
 describe('reanchorTimestepIndex', () => {
     function stateWith(timesteps: FloodTimestep[], selectedIndex: number): FloodStoreState {
         return {
             timesteps,
             selectedIndex,
             vehicleType: 'motorbike',
-            tilesVisible: true,
             mapMode: 'map',
             userChoseMapMode: false,
-            availableRuns: [],
-            selectedRun: null,
         }
     }
 

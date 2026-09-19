@@ -43,19 +43,3 @@
     height: 12px;
     border-radius: 2px;
 }
-
-.footer,
-.footerStale {
-    font-size: 11px;
-    padding-top: 4px;
-    border-top: 1px solid #e5e7eb;
-}
-
-.footer {
-    color: #6b7280;
-}
-
-.footerStale {
-    color: #b45309;
-    font-weight: 600;
-}

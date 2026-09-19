@@ -51,10 +51,9 @@ import { SettingsContext } from '@/contexts/SettingsContext'
 import usePOIsLayer from '@/layers/UsePOIsLayer'
 import maptoolkitImg from '@/map/maptoolkit-attribution.png'
 import useCurrentLocationLayer from '@/layers/UseCurrentLocationLayer'
-import useFloodLayer from '@/floodmap/FloodLayer'
+import useFloodExtentLayer from '@/floodmap/FloodExtentLayer'
 import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
-import { selectForecastRecency } from '@/floodmap/floodSelectors'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
 import Dispatcher from '@/stores/Dispatcher'
@@ -150,7 +149,7 @@ export default function App() {
     usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
     useCurrentLocationLayer(map, currentLocation)
-    useFloodLayer(map, flood.mapMode === 'flood')
+    useFloodExtentLayer(map, flood.mapMode === 'flood')
 
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     return (
@@ -297,7 +296,7 @@ function LargeScreenLayout({
                 <MapComponent map={map} />
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
+            {flood.mapMode === 'flood' && <FloodLegend />}
 
             {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
             {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
@@ -386,7 +385,7 @@ function SmallScreenLayout({
                 </div>
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend recency={selectForecastRecency(flood)} />}
+            {flood.mapMode === 'flood' && <FloodLegend />}
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (
