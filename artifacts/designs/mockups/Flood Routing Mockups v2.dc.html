@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics=""><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><style>body{margin:0;background:#f0eee9;font-family:Inter,system-ui,sans-serif}a{color:#111}a:hover{color:#0b6bbf}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 Inter,system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Inter,system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 Inter,system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Rebuilt to match your Floodmap screens · 1366×768 · black/white UI, blue route</span></div>
+<div style="max-width:760px;margin:0 0 22px;font:12px/1.55 Inter,system-ui,sans-serif;color:rgba(0,0,0,.6)">Search pill opens the routing panel. Map / Flood thumbnails bottom-left toggle layers; the depth legend appears top-right while Flood is on. Modes: car · motorbike · walking · truck (line icons, travel time under each once a route exists). Alternatives are tabs by road name. Chart: 5 × 30-min columns, "now" (11:30 PM) is the 2nd column in green; dashed line = route average at now; only the following full hours are labelled. Steps show turn + "distance / depth" on one row. Previous round: <a class="dv-oid" href="Flood Routing Mockups.dc.html">turn 1</a>.</div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>First load — search pill, Map on, Flood off</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2a First load">
+  {{ tileGrid }}
+  <div style="position:absolute;left:30px;top:30px;width:424px;height:60px;border-radius:30px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);display:flex;align-items:center;gap:12px;padding:0 20px 0 34px;box-sizing:border-box">
+    <span style="font-size:15px;color:#6b7280;flex:1">Search Floodmap</span>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10a4 4 0 0 1 4-4h8"></path><path d="M15 3l3 3-3 3"></path></svg>
+  </div>
+  <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+    <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+    <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;opacity:.65;box-shadow:0 0 0 2px #fff"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+  </div>
+  <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+</div></div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Place popup — Flood on, legend top-right, depth at point</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2b Place popup">
+  {{ tileGrid }}
+  <svg width="920" height="800" viewBox="0 0 920 800" style="position:absolute;left:220px;top:0;mix-blend-mode:multiply;opacity:{{ floodOpacity }}" data-om-raster=""> <path d="M180 380 C220 300 380 290 440 350 C500 410 470 520 400 540 C320 560 240 520 200 470 C170 430 165 410 180 380Z" fill="#cfe3f7"></path><path d="M230 390 C260 340 360 330 410 370 C450 410 440 490 380 510 C320 525 260 495 240 450Z" fill="#9ec5ec"></path><path d="M270 400 C300 370 350 365 385 395 C410 425 400 470 360 480 C320 490 285 465 275 435Z" fill="#5d9ad9"></path><path d="M300 410 C320 395 350 395 365 415 C378 435 365 458 345 462 C320 465 300 445 300 410Z" fill="#2f6fbf"></path><path d="M320 420 C335 412 350 418 352 432 C352 445 338 452 328 445 C318 438 312 428 320 420Z" fill="#163f80"></path>
+    <path d="M580 220 C610 170 700 170 730 220 C760 270 720 330 660 330 C600 330 560 270 580 220Z" fill="#cfe3f7"></path><path d="M615 230 C640 200 695 200 715 235 C735 275 700 310 660 305 C620 300 600 265 615 230Z" fill="#9ec5ec"></path><path d="M640 245 C655 230 685 232 695 255 C705 280 680 295 660 290 C640 285 630 262 640 245Z" fill="#5d9ad9"></path>
+    <path d="M640 600 C680 560 760 560 800 600 C840 650 800 700 740 700 C680 700 620 660 640 600Z" fill="#cfe3f7"></path><path d="M680 610 C705 585 755 590 775 620 C795 655 760 680 730 675 C700 670 665 640 680 610Z" fill="#9ec5ec"></path><path d="M705 620 C720 605 745 610 755 630 C765 650 745 662 730 658 C715 655 695 640 705 620Z" fill="#5d9ad9"></path><path d="M718 628 C728 620 740 625 744 636 C748 646 738 652 730 648 C722 644 712 636 718 628Z" fill="#2f6fbf"></path>
+  </svg>
+  <div style="position:absolute;left:30px;top:30px;width:424px;height:60px;border-radius:30px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);display:flex;align-items:center;gap:12px;padding:0 20px 0 34px;box-sizing:border-box">
+    <span style="font-size:15px;color:#111;flex:1">Đại Mỗ</span>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10a4 4 0 0 1 4-4h8"></path><path d="M15 3l3 3-3 3"></path></svg>
+  </div>
+  <svg width="32" height="32" viewBox="0 0 24 24" style="position:absolute;left:534px;top:412px" fill="#111"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg>
+  <div style="position:absolute;left:574px;top:396px;width:300px;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-size:15px;font-weight:600">Đại Mỗ</div><div style="font-size:13px;color:#6b7280">Nam Từ Liêm, Hà Nội</div></div>
+      <div style="width:36px;height:36px;border-radius:50%;background:#0b6bbf;display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V10a4 4 0 0 1 4-4h8"></path><path d="M15 3l3 3-3 3"></path></svg></div>
+    </div>
+    <div style="height:1px;background:#e5e7eb"></div>
+    <div style="display:flex;flex-direction:column;gap:4px;font-size:13px"><div style="color:#6b7280">20.992987, 105.773723</div><div>Water depth now:&nbsp;<span style="font-weight: 600;">30 cm</span> </div></div>
+  </div>
+  <div style="position:absolute;right:30px;top:30px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12px">
+    <div style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:.04em;text-transform:uppercase">Flood depth</div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#cfe3f7"></span>1–5 cm</div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#9ec5ec"></span>5–10 cm</div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#5d9ad9"></span>10–30 cm</div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#2f6fbf"></span>30–60 cm</div>
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#163f80"></span>&gt; 60 cm</div>
+    <div style="font-size:11px;color:#6b7280;padding-top:4px;border-top:1px solid #e5e7eb">Updated 12/09/2026 23:24</div>
+  </div>
+  <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+    <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+    <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+  </div>
+  <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+</div></div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Routing panel — empty</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;display:flex;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2c Routing empty">
+  <aside style="width:460px;flex:none;background:#fff;border-right:1px solid #e5e7eb;position:relative;z-index:2;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;padding:16px 24px 0 40px;gap:14px">
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v5H3z"></path><path d="M3 13h18M7 8V6M17 8V6"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="17" cy="18" r="1.5"></circle></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3"></circle><circle cx="18.5" cy="17" r="3"></circle><path d="M5.5 17l4-6h4l3 6M13.5 11l2-4h3"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;background:#111;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 3 2v4M12 15l-2-4 3-3 3 3 2 1M10 11l-3 2"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="12" height="9"></rect><path d="M14 10h5l3 4v2h-8z"></path><circle cx="6" cy="19" r="1.5"></circle><circle cx="18" cy="19" r="1.5"></circle></svg></div>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" style="margin-left:auto"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+    </div>
+    <div style="display:flex;gap:14px;padding:18px 24px 20px 26px;border-bottom:1px solid #e5e7eb">
+      <div style="width:14px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0 10px"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #111;box-sizing:border-box"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><svg width="14" height="18" viewBox="0 0 24 24" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:#6b7280">Choose starting point, or click on the map</div>
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:#6b7280">Choose destination</div>
+      </div>
+    </div>
+  </aside>
+  <div style="flex:1;position:relative;overflow:hidden">
+    {{ tileGrid }}
+    <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;opacity:.65;box-shadow:0 0 0 2px #fff"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+    </div>
+    <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2f"><div class="dv-olabel"><a class="dv-oid" href="#2f">2f</a>After "route to" on a place — panel opens, destination pre-filled</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;display:flex;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2f Route to place">
+  <aside style="width:460px;flex:none;background:#fff;border-right:1px solid #e5e7eb;position:relative;z-index:2;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;padding:16px 24px 0 40px;gap:14px">
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v5H3z"></path><path d="M3 13h18M7 8V6M17 8V6"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="17" cy="18" r="1.5"></circle></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3"></circle><circle cx="18.5" cy="17" r="3"></circle><path d="M5.5 17l4-6h4l3 6M13.5 11l2-4h3"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;background:#111;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 3 2v4M12 15l-2-4 3-3 3 3 2 1M10 11l-3 2"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="12" height="9"></rect><path d="M14 10h5l3 4v2h-8z"></path><circle cx="6" cy="19" r="1.5"></circle><circle cx="18" cy="19" r="1.5"></circle></svg></div>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" style="margin-left:auto"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+    </div>
+    <div style="display:flex;gap:14px;padding:18px 24px 20px 26px;border-bottom:1px solid #e5e7eb">
+      <div style="width:14px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0 10px"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #111;box-sizing:border-box"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><svg width="14" height="18" viewBox="0 0 24 24" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div style="height:44px;border:2px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 15px;font-size:13px;color:#6b7280;box-sizing:border-box">Choose starting point, or click on the map</div>
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:#111">Đại Mỗ<span style="margin-left:auto;color:#6b7280;font-size:14px">×</span></div>
+      </div>
+    </div>
+  </aside>
+  <div style="flex:1;position:relative;overflow:hidden">
+    {{ tileGrid }}
+    <svg width="920" height="800" viewBox="0 0 920 800" style="position:absolute;left:0;top:0;mix-blend-mode:multiply;opacity:{{ floodOpacity }}" data-om-raster="">
+      <path d="M180 380 C220 300 380 290 440 350 C500 410 470 520 400 540 C320 560 240 520 200 470 C170 430 165 410 180 380Z" fill="#cfe3f7"></path><path d="M230 390 C260 340 360 330 410 370 C450 410 440 490 380 510 C320 525 260 495 240 450Z" fill="#9ec5ec"></path><path d="M270 400 C300 370 350 365 385 395 C410 425 400 470 360 480 C320 490 285 465 275 435Z" fill="#5d9ad9"></path><path d="M300 410 C320 395 350 395 365 415 C378 435 365 458 345 462 C320 465 300 445 300 410Z" fill="#2f6fbf"></path>
+      <path d="M580 220 C610 170 700 170 730 220 C760 270 720 330 660 330 C600 330 560 270 580 220Z" fill="#cfe3f7"></path><path d="M615 230 C640 200 695 200 715 235 C735 275 700 310 660 305 C620 300 600 265 615 230Z" fill="#9ec5ec"></path><path d="M640 245 C655 230 685 232 695 255 C705 280 680 295 660 290 C640 285 630 262 640 245Z" fill="#5d9ad9"></path>
+    </svg>
+    <svg width="32" height="32" viewBox="0 0 24 24" style="position:absolute;left:314px;top:412px" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg>
+    <div style="position:absolute;left:350px;top:416px;background:#fff;font-size:13px;font-weight:500;padding:4px 8px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.2)">Đại Mỗ</div>
+    <div style="position:absolute;right:30px;top:30px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12px">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:.04em;text-transform:uppercase">Flood depth</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#cfe3f7"></span>1–5 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#9ec5ec"></span>5–10 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#5d9ad9"></span>10–30 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#2f6fbf"></span>30–60 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#163f80"></span>&gt; 60 cm</div>
+      <div style="font-size:11px;color:#6b7280;padding-top:4px;border-top:1px solid #e5e7eb">Updated 12/09/2026 23:24</div>
+    </div>
+    <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+    </div>
+    <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2d"><div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Routing panel — typing, autofill suggestions</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;display:flex;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2d Autofill">
+  <aside style="width:460px;flex:none;background:#fff;border-right:1px solid #e5e7eb;position:relative;z-index:2;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;padding:16px 24px 0 40px;gap:14px">
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v5H3z"></path><path d="M3 13h18M7 8V6M17 8V6"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="17" cy="18" r="1.5"></circle></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3"></circle><circle cx="18.5" cy="17" r="3"></circle><path d="M5.5 17l4-6h4l3 6M13.5 11l2-4h3"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;background:#111;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 3 2v4M12 15l-2-4 3-3 3 3 2 1M10 11l-3 2"></path></svg></div>
+      <div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="12" height="9"></rect><path d="M14 10h5l3 4v2h-8z"></path><circle cx="6" cy="19" r="1.5"></circle><circle cx="18" cy="19" r="1.5"></circle></svg></div>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" style="margin-left:auto"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+    </div>
+    <div style="display:flex;gap:14px;padding:18px 24px 20px 26px;border-bottom:1px solid #e5e7eb">
+      <div style="width:14px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0 10px"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #111;box-sizing:border-box"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><svg width="14" height="18" viewBox="0 0 24 24" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div style="height:44px;border:2px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 15px;font-size:13px;color:#111;box-sizing:border-box">C5<span style="width:1px;height:16px;background:#111;margin-left:1px"></span></div>
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px;color:#6b7280">Choose destination</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;padding:8px 0;border-bottom:1px solid #e5e7eb">
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 24px 10px 40px;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6"></circle></svg><span><span style="font-weight:600">C5</span> Giảng Võ</span><span style="margin-left:auto;color:#6b7280">Ba Đình</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 24px 10px 40px;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6"></circle></svg><span><span style="font-weight:600">C5</span> Thanh Xuân Bắc</span><span style="margin-left:auto;color:#6b7280">Thanh Xuân</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 24px 10px 40px;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6"></circle></svg><span><span style="font-weight:600">C5</span> Nghĩa Tân</span><span style="margin-left:auto;color:#6b7280">Cầu Giấy</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 24px 10px 40px;font-size:13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6"></circle></svg><span><span style="font-weight:600">C5</span> Trung Tự</span><span style="margin-left:auto;color:#6b7280">Đống Đa</span></div>
+    </div>
+  </aside>
+  <div style="flex:1;position:relative;overflow:hidden">
+    {{ tileGrid }}
+    <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;opacity:.65;box-shadow:0 0 0 2px #fff"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+    </div>
+    <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2e"><div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Route result — times per mode, route tabs, hourly depth chart, steps</div><div class="dv-card" style="width:1366px;height:768px;position:relative;overflow:hidden;display:flex;background:#e9e5dc;font-family:Inter,system-ui,sans-serif;color:#111" data-screen-label="2e Route result">
+  <aside style="width:460px;flex:none;background:#fff;border-right:1px solid #e5e7eb;position:relative;z-index:2;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;align-items:flex-start;padding:16px 24px 0 40px;gap:14px">
+      <div style="width:76px;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v5H3z"></path><path d="M3 13h18M7 8V6M17 8V6"></path><circle cx="7" cy="18" r="1.5"></circle><circle cx="17" cy="18" r="1.5"></circle></svg></div><span style="font-size:12px;color:#6b7280">4 min</span></div>
+      <div style="width:76px;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3"></circle><circle cx="18.5" cy="17" r="3"></circle><path d="M5.5 17l4-6h4l3 6M13.5 11l2-4h3"></path></svg></div><span style="font-size:12px;color:#6b7280">4 min</span></div>
+      <div style="width:76px;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:76px;height:44px;border-radius:22px;background:#111;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 3 2v4M12 15l-2-4 3-3 3 3 2 1M10 11l-3 2"></path></svg></div><span style="font-size:12px;font-weight:600">14 min</span></div>
+      <div style="width:76px;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:76px;height:44px;border-radius:22px;display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="12" height="9"></rect><path d="M14 10h5l3 4v2h-8z"></path><circle cx="6" cy="19" r="1.5"></circle><circle cx="18" cy="19" r="1.5"></circle></svg></div><span style="font-size:12px;color:#6b7280">4 min</span></div>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" style="margin-left:auto;margin-top:9px"><path d="M5 5l14 14M19 5L5 19"></path></svg>
+    </div>
+    <div style="display:flex;gap:14px;padding:12px 24px 18px 26px;border-bottom:1px solid #e5e7eb">
+      <div style="width:14px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0 10px"><span style="width:10px;height:10px;border-radius:50%;border:2px solid #111;box-sizing:border-box"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><span style="width:3px;height:3px;border-radius:50%;background:#111"></span><svg width="14" height="18" viewBox="0 0 24 24" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px">GO Thăng Long</div>
+        <div style="height:44px;border:1px solid #111;border-radius:8px;display:flex;align-items:center;padding:0 16px;font-size:13px">FPT Shop</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;padding:14px 24px 0 26px">
+      <div style="padding:8px 14px;border-radius:999px;background:#111;color:#fff;font-size:12px;font-weight:500">Via Phạm Hùng</div>
+      <div style="padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px;color:#374151">Via Lê Đức Thọ</div>
+      <div style="padding:8px 14px;border-radius:999px;border:1px solid #e5e7eb;font-size:12px;color:#374151">Via Mễ Trì</div>
+    </div>
+    <div style="padding:16px 24px 16px 26px;border-bottom:1px solid #e5e7eb;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:8px;font-size:13px"><span>Average water depth</span><span style="margin-left:auto;font-size:12px;color:#6b7280">1.1 km · 14 min</span></div>
+      <div style="position:relative;height:130px;border-bottom:1px solid #111">
+        <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:end;padding:0 2px">
+          <div style="height:30%;background:#3b3b3b"></div>
+          <div style="height:78%;background:#5cc97a"></div>
+          <div style="height:92%;background:#3b3b3b"></div>
+          <div style="height:80%;background:#3b3b3b"></div>
+          <div style="height:56%;background:#3b3b3b"></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:78%;border-top:1.5px dashed #111"></div>
+        <div style="position:absolute;right:0;bottom:78%;transform:translateY(-6px);font-size:12px;font-weight:600;background:#fff;padding:0 4px">20 cm</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;font-size:12px;color:#374151;text-align:center;padding:0 2px">
+        <span></span><span style="font-weight:600;color:#111">Now</span><span>12:00 AM</span><span></span><span>1:00 AM</span>
+      </div>
+    </div>
+    <div style="flex:1;overflow:auto;padding:14px 24px 20px 26px;display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:13px;padding-bottom:10px">Steps</div>
+      <div style="display:flex;align-items:center;gap:14px;padding:8px 0;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#111"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg><span style="font-weight:500">GO Thăng Long</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 14l6 6 6-6"></path></svg><span style="flex:1">Head north on Phạm Hùng</span><span style="color:#6b7280;white-space:nowrap">320 m · 8 cm</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12a4 4 0 0 1 4 4v4M8 8l-4 4 4 4"></path></svg><span style="flex:1">Turn right onto Trần Duy Hưng</span><span style="color:#6b7280;white-space:nowrap">260 m · <span style="color:#111;font-weight:500">22 cm</span></span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H8a4 4 0 0 0-4 4v4M16 8l4 4-4 4"></path></svg><span style="flex:1">Turn left onto Hoàng Đạo Thúy</span><span style="color:#6b7280;white-space:nowrap">410 m · 5 cm</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12a4 4 0 0 1 4 4v4M8 8l-4 4 4 4"></path></svg><span style="flex:1">Turn right, destination ahead</span><span style="color:#6b7280;white-space:nowrap">110 m · 0 cm</span></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid #e5e7eb;font-size:13px"><svg width="20" height="20" viewBox="0 0 24 24" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg><span style="font-weight:500">FPT Shop</span></div>
+    </div>
+  </aside>
+  <div style="flex:1;position:relative;overflow:hidden">
+    {{ tileGrid }}
+    <svg width="920" height="800" viewBox="0 0 920 800" style="position:absolute;left:0;top:0;mix-blend-mode:multiply;opacity:{{ floodOpacity }}" data-om-raster="">
+      <path d="M180 380 C220 300 380 290 440 350 C500 410 470 520 400 540 C320 560 240 520 200 470 C170 430 165 410 180 380Z" fill="#cfe3f7"></path><path d="M230 390 C260 340 360 330 410 370 C450 410 440 490 380 510 C320 525 260 495 240 450Z" fill="#9ec5ec"></path><path d="M270 400 C300 370 350 365 385 395 C410 425 400 470 360 480 C320 490 285 465 275 435Z" fill="#5d9ad9"></path><path d="M300 410 C320 395 350 395 365 415 C378 435 365 458 345 462 C320 465 300 445 300 410Z" fill="#2f6fbf"></path>
+      <path d="M580 220 C610 170 700 170 730 220 C760 270 720 330 660 330 C600 330 560 270 580 220Z" fill="#cfe3f7"></path><path d="M615 230 C640 200 695 200 715 235 C735 275 700 310 660 305 C620 300 600 265 615 230Z" fill="#9ec5ec"></path><path d="M640 245 C655 230 685 232 695 255 C705 280 680 295 660 290 C640 285 630 262 640 245Z" fill="#5d9ad9"></path>
+      <path d="M640 600 C680 560 760 560 800 600 C840 650 800 700 740 700 C680 700 620 660 640 600Z" fill="#cfe3f7"></path><path d="M680 610 C705 585 755 590 775 620 C795 655 760 680 730 675 C700 670 665 640 680 610Z" fill="#9ec5ec"></path>
+    </svg>
+    <svg width="920" height="800" viewBox="0 0 920 800" style="position:absolute;left:0;top:0" data-om-raster="">
+      <polyline points="340,580 345,455 610,445 620,195 400,150" fill="none" stroke="#fff" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"></polyline>
+      <polyline points="340,580 345,455 610,445 620,195 400,150" fill="none" stroke="{{ routeColor }}" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"></polyline>
+    </svg>
+    <div style="position:absolute;left:356px;top:506px;display:flex;align-items:center;gap:6px;background:#fff;font-size:12px;padding:3px 8px 3px 6px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)"><span style="width:10px;height:10px;border-radius:50%;background:#9ec5ec"></span>8 cm</div>
+    <div style="position:absolute;left:455px;top:456px;display:flex;align-items:center;gap:6px;background:#fff;font-size:12px;font-weight:500;padding:3px 8px 3px 6px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)"><span style="width:10px;height:10px;border-radius:50%;background:#5d9ad9"></span>22 cm</div>
+    <div style="position:absolute;left:630px;top:310px;display:flex;align-items:center;gap:6px;background:#fff;font-size:12px;padding:3px 8px 3px 6px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)"><span style="width:10px;height:10px;border-radius:50%;background:#cfe3f7"></span>5 cm</div>
+    <div style="position:absolute;left:485px;top:182px;display:flex;align-items:center;gap:6px;background:#fff;font-size:12px;padding:3px 8px 3px 6px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)"><span style="width:10px;height:10px;border-radius:50%;background:#e5e7eb"></span>0 cm</div>
+    <div style="position:absolute;left:331px;top:571px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #111;box-sizing:border-box"></div>
+    <div style="position:absolute;left:356px;top:568px;background:#fff;font-size:13px;font-weight:500;padding:4px 8px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.2)">GO Thăng Long</div>
+    <svg width="30" height="30" viewBox="0 0 24 24" style="position:absolute;left:385px;top:122px" fill="#d61f1f"><path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z"></path><circle cx="12" cy="10" r="2.6" fill="#fff"></circle></svg>
+    <div style="position:absolute;left:418px;top:124px;background:#fff;font-size:13px;font-weight:500;padding:4px 8px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.2)">FPT Shop</div>
+    <div style="position:absolute;right:30px;top:30px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12px">
+      <div style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:.04em;text-transform:uppercase">Flood depth</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#cfe3f7"></span>1–5 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#9ec5ec"></span>5–10 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#5d9ad9"></span>10–30 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#2f6fbf"></span>30–60 cm</div>
+      <div style="display:flex;align-items:center;gap:10px"><span style="width:18px;height:12px;border-radius:2px;background:#163f80"></span>&gt; 60 cm</div>
+      <div style="font-size:11px;color:#6b7280;padding-top:4px;border-top:1px solid #e5e7eb">Updated 12/09/2026 23:24</div>
+    </div>
+    <div style="position:absolute;left:30px;bottom:30px;display:flex;gap:22px">
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Map</div></div>
+      <div style="width:82px;height:82px;border-radius:14px;overflow:hidden;position:relative;background-image:url(https://tile.openstreetmap.de/14/13009/7212.png);background-size:200%;background-position:center;box-shadow:0 0 0 2px #fff,0 0 0 4px #111"><div style="position:absolute;inset:0;background:rgba(47,111,191,.45)"></div><div style="position:absolute;left:0;right:0;bottom:0;padding:5px 0;text-align:center;font-size:13px;font-weight:500;color:#fff;background:rgba(17,17,17,.7)">Flood</div></div>
+    </div>
+    <div style="position:absolute;right:8px;bottom:6px;font-size:10px;color:#374151;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:3px">© OpenStreetMap contributors</div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "show the depth chart for the selected mode's limit as a second dashed line" · "make the route tabs show time + max depth" · "mobile version of <a class="dv-oid" href="#2e">2e</a>"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;routeColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#0b6bbf&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#0b6bbf&quot;,&quot;#111111&quot;,&quot;#e85d04&quot;,&quot;#0b7a3b&quot;],&quot;section&quot;:&quot;Route&quot;},&quot;floodOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.8,&quot;min&quot;:0.3,&quot;max&quot;:1,&quot;step&quot;:0.05,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Flood layer&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const imgs = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++)
+      imgs.push(React.createElement('img', { key: r * 6 + c, src: `https://tile.openstreetmap.de/14/${13007 + c}/${7211 + r}.png`, alt: '', style: { position: 'absolute', left: c * 256, top: r * 256, width: 256, height: 256, display: 'block' } }));
+    const tileGrid = React.createElement('div', { style: { position: 'absolute', left: -100, top: -130, width: 1536, height: 1024 } }, imgs);
+    return {
+      tileGrid,
+      routeColor: this.props.routeColor ?? '#0b6bbf',
+      floodOpacity: this.props.floodOpacity ?? 0.8,
+    };
+  }
+}
+</script>
+</body>
+</html>

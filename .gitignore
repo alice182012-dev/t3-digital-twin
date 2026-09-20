@@ -57,6 +57,4 @@ floodmap/valhalla-flood-road-test/valhalla/custom_files/valhalla_tiles.tar
 floodmap/valhalla-flood-road-test/valhalla/source/vietnam-latest.osm.pbf
 .claude
 .SynologyWorkingDirectory
-artifacts/
-docs\designs/
 CLAUDE.md
