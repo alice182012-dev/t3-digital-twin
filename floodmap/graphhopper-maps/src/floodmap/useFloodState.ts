@@ -23,9 +23,8 @@ export function useFloodState(): FloodStoreState {
 }
 
 /**
- * Owns the flood data lifecycle: loads the timesteps routing derives its flood costs from, and
- * re-issues the current route when the timestep or vehicle changes. The map's flood layer does not
- * use these timesteps (see FloodExtentLayer).
+ * Owns the flood data lifecycle: loads the timesteps that both the map's flood layer and routing
+ * follow, and re-issues the current route when the timestep or vehicle changes.
  */
 export function useFloodBootstrap(): void {
     const { selectedIndex, vehicleType, timesteps } = useFloodState()

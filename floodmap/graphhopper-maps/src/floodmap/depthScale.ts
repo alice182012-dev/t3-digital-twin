@@ -25,7 +25,7 @@ export interface DepthBand {
  *  are a deliberate linear interpolation from the mockup's lightest color, not copied from any
  *  QGIS-generated gradient. The mockup itself still shows the old 5-band legend and needs its
  *  own redesign pass. Depths under 5 cm are not painted, matching the 0 code in
- *  scripts/flood_extent/flood_extent.ipynb. */
+ *  scripts/flood_extent/flood_extent.py. */
 export const DISPLAY_DEPTH_BANDS: readonly DepthBand[] = [
     { id: 'd1', minCm: 5, maxCm: 10, label: '5–10 cm', color: '#b5cce6' },
     { id: 'd2', minCm: 10, maxCm: 20, label: '10–20 cm', color: '#9ab4d5' },
@@ -36,7 +36,7 @@ export const DISPLAY_DEPTH_BANDS: readonly DepthBand[] = [
     { id: 'd7', minCm: 60, maxCm: null, label: '> 60 cm', color: '#163f80' },
 ]
 
-/** Maps a `DN` code from scripts/flood_extent/flood_extent.ipynb's `BAND_TABLE` to its display
+/** Maps a `DN` code from scripts/flood_extent/flood_extent.py's `BAND_TABLE` to its display
  *  band. Codes 10 to 60 are the band's upper limit in cm, and `TOP_CODE` (600) is the open-ended
  *  band. Returns undefined for 0 (dry) and for any code the notebook doesn't emit. */
 export function bandForExtentCode(code: number): DepthBand | undefined {

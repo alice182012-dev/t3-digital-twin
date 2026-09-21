@@ -149,7 +149,7 @@ export default function App() {
     usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
     useCurrentLocationLayer(map, currentLocation)
-    useFloodExtentLayer(map, flood.mapMode === 'flood')
+    useFloodExtentLayer(map, flood.mapMode === 'flood', flood.timesteps[flood.selectedIndex])
 
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     return (

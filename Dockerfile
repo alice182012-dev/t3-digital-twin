@@ -21,8 +21,13 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
     libproj-dev \
-    gdal-bin \
-    libgdal-dev \
+    # ===== GDAL pinned to Debian 12's 3.6.2: the base image also has the PGDG repo, which offers
+    # 3.13 headers that the gdal==3.6.2 Python package below can't compile against =====
+    gdal-bin=3.6.2+dfsg-1+b2 \
+    python3-gdal=3.6.2+dfsg-1+b2 \
+    gdal-data=3.6.2+dfsg-1 \
+    libgdal32=3.6.2+dfsg-1+b2 \
+    libgdal-dev=3.6.2+dfsg-1+b2 \
     g++ \
     # ===== fix OpenCV errors =====
     libgl1 \
@@ -73,8 +78,18 @@ RUN pip install --no-cache-dir "setuptools>=67" wheel
 
 USER root
 
+# GRASS GIS is last so that changing it rebuilds only this layer. scripts/flood_extent uses it
+# to close the gaps between wet cells. The GDAL pins repeat the ones in the first apt layer:
+# without them, grass-core pulls the PGDG 3.13.2 packages over the 3.6.2 ones that the
+# gdal==3.6.2 Python package was built against.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
+    grass-core \
+    gdal-bin=3.6.2+dfsg-1+b2 \
+    python3-gdal=3.6.2+dfsg-1+b2 \
+    gdal-data=3.6.2+dfsg-1 \
+    libgdal32=3.6.2+dfsg-1+b2 \
+    libgdal-dev=3.6.2+dfsg-1+b2 \
     && rm -rf /var/lib/apt/lists/*
 
 USER airflow

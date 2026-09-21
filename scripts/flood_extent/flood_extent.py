@@ -1,25 +1,37 @@
 #!/usr/bin/env python3
-"""Build a flood-extent layer from one timestep of a 3Di depth raster.
+"""Build flood-extent vector tiles from 3Di depth rasters.
 
-Runs the same steps as flood_extent.ipynb, end to end: reclassify the depth into band codes,
-close the small gaps between wet cells, polygonize, dissolve by band, delete small holes and
-specks, and cut vector tiles. It needs GDAL 3.3 or later (with the Python bindings) and GRASS GIS 8
-on the command line.
+This is the engine behind the map's flood layer. For one timestep it reclassifies the depth into
+band codes, closes the small gaps between wet cells, polygonizes, dissolves by band, deletes small
+holes and specks, and cuts vector tiles. It needs GDAL 3.3 or later (with the Python bindings) and
+GRASS GIS 8 on the command line.
 
-    python3 flood_extent.py DEPTH_TIF OUT_DIR [--band 1] [--radius 8] [--min-area 20]
+Every intermediate file (the GRASS project, the rasters, the GeoPackages) lives in a temporary
+folder that is deleted when the build ends, whether it succeeds or fails. The tile folder is the
+only thing left on disk, and it is swapped in only once it is complete.
 
-`OUT_DIR` holds every intermediate file, the GRASS project, `cleaned.gpkg`, and the `mvt` tile
-folder. Rerunning deletes the GRASS project, the intermediate layers, and the tiles.
+Library use (what the Airflow DAG does):
+
+    build_flood_extent(depth_tif, tiles_dir)              # one timestep
+    build_run_tiles(depth_dir, run_ts, tiles_root)        # every depth_*.tif of one run
+
+Command line, for one timestep:
+
+    python3 flood_extent.py DEPTH_TIF TILES_DIR [--band 1] [--radius 8] [--min-area 20]
 """
 
 import argparse
+import re
 import shutil
 import subprocess
+import sys
+import tempfile
 import time
-from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from osgeo import ogr
+from osgeo import gdal, ogr
 
 ogr.UseExceptions()
 
@@ -28,16 +40,39 @@ TOP_CODE = 600
 DEPTH_NODATA = -9999
 EXPECTED_CODES = {code for _, code in BAND_TABLE if code > 0} | {TOP_CODE}
 
+DEPTH_FILE = re.compile(r"^depth_(\d{8})_(\d{6})\.tif$")
+RUN_DIR = re.compile(r"^\d{8}T\d{6}$")
+
+
+class FloodExtentError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class FloodExtentResult:
+    tile_count: int
+    area_by_band: dict = field(default_factory=dict)  # band code -> m2
+
+    @property
+    def is_empty(self):
+        return not self.area_by_band
+
 
 class Pipeline:
-    def __init__(self, depth_tif, out_dir, band, radius, min_area, min_zoom, max_zoom):
+    def __init__(self, depth_tif, tiles_dir, band, radius, min_area, min_zoom, max_zoom,
+                 tmp_root=None, verbose=False):
         self.depth_tif = Path(depth_tif)
+        self.tiles_dir = Path(tiles_dir)
         self.band = band
         self.radius = radius
         self.min_area = min_area
         self.min_zoom = min_zoom
         self.max_zoom = max_zoom
-        self.work = Path(out_dir).resolve()
+        self.tmp_root = tmp_root
+        self.verbose = verbose
+
+    def bind(self, work):
+        self.work = Path(work)
         self.project = self.work / "grass_project"
         self.depth_bands = self.work / "re-classify_depth.tif"
         self.final_tif = self.work / "final.tif"
@@ -46,32 +81,25 @@ class Pipeline:
         self.cleaned = self.work / "cleaned.gpkg"
         self.tiles = self.work / "mvt"
 
-    @contextmanager
-    def timed(self, label):
-        start = time.time()
-        yield
-        print(f"{label}: {time.time() - start:.1f} s", flush=True)
+    def say(self, message):
+        if self.verbose:
+            print(message, flush=True)
 
     @staticmethod
     def run(*args):
-        subprocess.run([str(a) for a in args], check=True)
+        result = subprocess.run([str(a) for a in args], capture_output=True, text=True)
+        if result.returncode != 0:
+            command = " ".join(str(a) for a in args[:2])
+            raise FloodExtentError(f"{command} failed ({result.returncode}): {result.stderr.strip()[-2000:]}")
+        return result.stdout
 
     def grass(self, module, *args):
         self.run("grass", self.project / "PERMANENT", "--exec", module, *args, "--overwrite", "--quiet")
 
     def band_counts(self, raster):
-        out = subprocess.run(
-            ["grass", str(self.project / "PERMANENT"), "--exec", "r.stats", "-c", "-n", f"input={raster}"],
-            check=True, capture_output=True, text=True,
-        ).stdout
-        print(out, flush=True)
-
-    def reset(self):
-        self.work.mkdir(parents=True, exist_ok=True)
-        shutil.rmtree(self.project, ignore_errors=True)
-        shutil.rmtree(self.tiles, ignore_errors=True)
-        for path in (self.depth_bands, self.final_tif, self.poly, self.dissolved, self.cleaned):
-            path.unlink(missing_ok=True)
+        if self.verbose:
+            print(self.run("grass", self.project / "PERMANENT", "--exec", "r.stats", "-c", "-n",
+                           f"input={raster}"), flush=True)
 
     def reclassify_depth(self):
         expression = str(TOP_CODE)
@@ -81,6 +109,13 @@ class Pipeline:
                  f"--outfile={self.depth_bands}", f"--calc={expression}",
                  f"--NoDataValue={DEPTH_NODATA}", "--type=Int16", "--co=COMPRESS=DEFLATE",
                  "--overwrite", "--quiet")
+
+    def has_wet_cells(self):
+        dataset = gdal.Open(str(self.depth_bands))
+        if dataset is None:
+            raise FloodExtentError(f"Cannot read the reclassified depth raster of {self.depth_tif}")
+        data = dataset.GetRasterBand(1).ReadAsArray()
+        return bool((data > 0).any())
 
     def close_bands(self):
         self.run("grass", "-c", self.depth_bands, self.project, "--exec", "r.in.gdal",
@@ -128,6 +163,10 @@ class Pipeline:
             cleaned.SetGeometry(geom)
             out.CreateFeature(cleaned)
 
+    def cleaned_feature_count(self):
+        dataset = ogr.Open(str(self.cleaned))  # keep the dataset alive while its layer is read
+        return dataset.GetLayer().GetFeatureCount()
+
     def cut_tiles(self):
         self.run("ogr2ogr", "-q", "-f", "MVT", self.tiles, self.cleaned,
                  "-dsco", "NAME=flood_extent", "-dsco", f"MINZOOM={self.min_zoom}",
@@ -135,39 +174,53 @@ class Pipeline:
                  "-dsco", "SIMPLIFICATION=0", "-dsco", "MAX_SIZE=5000000",
                  "-dsco", "MAX_FEATURES=1000000",
                  "-dsco", f"TEMPORARY_DB={self.work / 'mvt_tmp.sqlite'}")
-        (self.work / "mvt_tmp.sqlite").unlink(missing_ok=True)
 
     def check(self):
+        """Reads the cleaned polygons and the cut tiles back, and fails if they disagree."""
         dataset = ogr.Open(str(self.cleaned))
         layer = dataset.GetLayer()
         areas = {feature.GetField("DN"): feature.GetGeometryRef().GetArea() for feature in layer}
-        tile_count = sum(1 for _ in self.tiles.rglob("*.pbf"))
-        print("Area per band (m2):", {code: round(area) for code, area in sorted(areas.items())})
-        print(f"Tiles: {tile_count} in {self.tiles}")
+        tile_count = sum(1 for _ in self.tiles.rglob("*.pbf")) if self.tiles.exists() else 0
+        self.say(f"Area per band (m2): { {code: round(area) for code, area in sorted(areas.items())} }")
+        self.say(f"Tiles: {tile_count}")
         unexpected = set(areas) - EXPECTED_CODES
         if unexpected:
-            raise SystemExit(f"Unexpected band codes: {sorted(unexpected)}")
+            raise FloodExtentError(f"Unexpected band codes: {sorted(unexpected)}")
         if areas and tile_count == 0:
-            raise SystemExit("Polygons exist but no tiles were written")
-        if not areas:
-            print("No wet cells above 5 cm in this timestep, so there are no polygons or tiles.")
+            raise FloodExtentError("Polygons exist but no tiles were written")
+        return FloodExtentResult(tile_count=tile_count, area_by_band=areas)
+
+    def timed(self, label, step):
+        start = time.time()
+        step()
+        self.say(f"{label}: {time.time() - start:.1f} s")
 
     def execute(self):
-        self.reset()
-        steps = [
-            ("reclassify depth", self.reclassify_depth),
-            ("close bands", self.close_bands),
-            ("polygonize", self.polygonize),
-            ("dissolve", self.dissolve),
-            ("clean", self.clean),
-            ("cut tiles", self.cut_tiles),
-        ]
-        total = time.time()
-        for label, step in steps:
-            with self.timed(label):
-                step()
-        print(f"total: {time.time() - total:.1f} s", flush=True)
-        self.check()
+        with tempfile.TemporaryDirectory(prefix="flood_extent_", dir=self.tmp_root) as work:
+            self.bind(work)
+            self.timed("reclassify depth", self.reclassify_depth)
+            if not self.has_wet_cells():
+                self.say("No wet cells above 5 cm in this timestep, so there are no polygons or tiles.")
+                remove_tiles(self.tiles_dir)
+                return FloodExtentResult(tile_count=0)
+            for label, step in [
+                ("close bands", self.close_bands),
+                ("polygonize", self.polygonize),
+                ("dissolve", self.dissolve),
+                ("clean", self.clean),
+            ]:
+                self.timed(label, step)
+            if self.cleaned_feature_count() == 0:
+                self.say("Every flooded patch was smaller than the minimum area, so there are no tiles.")
+                remove_tiles(self.tiles_dir)
+                return FloodExtentResult(tile_count=0)
+            self.timed("cut tiles", self.cut_tiles)
+            result = self.check()
+            if result.is_empty:
+                remove_tiles(self.tiles_dir)
+            else:
+                publish_tiles(self.tiles, self.tiles_dir)
+            return result
 
 
 def ring_area(ring):
@@ -190,18 +243,108 @@ def clean_multipolygon(geom, min_area):
     return cleaned
 
 
+def remove_tiles(tiles_dir):
+    """A timestep with nothing flooded has no tiles, and must not keep an older build's tiles."""
+    shutil.rmtree(tiles_dir, ignore_errors=True)
+
+
+def publish_tiles(built, tiles_dir):
+    """Puts a finished tile folder at `tiles_dir`, so a reader never sees a half-written one.
+
+    The copy goes to a sibling folder first, since the build folder may be on another filesystem,
+    and the rename that follows is what makes the new tiles appear.
+    """
+    tiles_dir = Path(tiles_dir)
+    tiles_dir.parent.mkdir(parents=True, exist_ok=True)
+    staging = tiles_dir.with_name(f".{tiles_dir.name}.partial")
+    previous = tiles_dir.with_name(f".{tiles_dir.name}.previous")
+    for leftover in (staging, previous):
+        shutil.rmtree(leftover, ignore_errors=True)
+    shutil.copytree(built, staging)
+    if tiles_dir.exists():
+        tiles_dir.rename(previous)
+    staging.rename(tiles_dir)
+    shutil.rmtree(previous, ignore_errors=True)
+
+
+def build_flood_extent(depth_tif, tiles_dir, *, band=1, radius=8, min_area=20,
+                       min_zoom=10, max_zoom=16, tmp_root=None, verbose=False):
+    """Builds the tiles of one depth raster timestep into `tiles_dir` and returns a summary.
+
+    `tiles_dir` is replaced as a whole, or removed when nothing is flooded. `tmp_root` is where the
+    temporary build folder goes (the system temp folder by default).
+    """
+    return Pipeline(depth_tif, tiles_dir, band, radius, min_area, min_zoom, max_zoom,
+                    tmp_root=tmp_root, verbose=verbose).execute()
+
+
+def stamp_key(depth_file):
+    """depth_20260811_014000.tif -> '20260811T014000', the folder name for that timestep."""
+    match = DEPTH_FILE.match(Path(depth_file).name)
+    if not match:
+        raise FloodExtentError(f"Not a depth_<date>_<time>.tif file: {depth_file}")
+    return f"{match.group(1)}T{match.group(2)}"
+
+
+def build_run_tiles(depth_dir, run_ts, tiles_root, *, workers=2, keep_runs=3, **engine_options):
+    """Builds tiles for every depth_*.tif in `depth_dir` into `tiles_root/<run_ts>/<timestep>/`.
+
+    `run_ts` is the run's name in the database (`YYYYMMDDTHHMMSS`, the earliest timestep), so the
+    UI can find a timestep's tiles from the (run, valid_time) pair it already holds. A failed
+    timestep does not stop the others; they all finish, then the failures are raised together.
+    Runs older than the newest `keep_runs` are deleted afterwards, and `run_ts` is never one of them.
+    Returns {timestep key: FloodExtentResult}.
+    """
+    depth_dir, tiles_root = Path(depth_dir), Path(tiles_root)
+    if not RUN_DIR.match(run_ts):
+        raise FloodExtentError(f"run_ts must look like 20260811T014000, got {run_ts!r}")
+    depth_files = sorted(p for p in depth_dir.iterdir() if DEPTH_FILE.match(p.name))
+    if not depth_files:
+        raise FloodExtentError(f"No depth_*.tif files in {depth_dir}")
+
+    def build(depth_file):
+        return build_flood_extent(depth_file, tiles_root / run_ts / stamp_key(depth_file), **engine_options)
+
+    results, failures = {}, []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for depth_file, future in [(p, pool.submit(build, p)) for p in depth_files]:
+            key = stamp_key(depth_file)
+            try:
+                results[key] = future.result()
+                print(f"{key}: {results[key].tile_count} tiles", flush=True)
+            except Exception as error:
+                failures.append(f"{key}: {error}")
+    if failures:
+        raise FloodExtentError(f"{len(failures)}/{len(depth_files)} timesteps failed: " + "; ".join(failures))
+
+    prune_runs(tiles_root, keep_runs, always_keep=run_ts)
+    return results
+
+
+def prune_runs(tiles_root, keep_runs, always_keep):
+    runs = sorted((p for p in Path(tiles_root).iterdir() if p.is_dir() and RUN_DIR.match(p.name)),
+                  key=lambda p: p.name, reverse=True)
+    for old in runs[keep_runs:]:
+        if old.name != always_keep:
+            shutil.rmtree(old, ignore_errors=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("depth_tif", help="3Di depth raster, one band per timestep")
-    parser.add_argument("out_dir", help="working folder for every intermediate and final file")
+    parser.add_argument("depth_tif", help="3Di depth raster")
+    parser.add_argument("tiles_dir", help="folder the finished tiles are written to; the only output")
     parser.add_argument("--band", type=int, default=1, help="timestep band, counting from 1")
     parser.add_argument("--radius", type=int, default=8, help="closing radius in cells")
     parser.add_argument("--min-area", type=float, default=20, help="smallest hole or polygon in m2")
     parser.add_argument("--min-zoom", type=int, default=10)
     parser.add_argument("--max-zoom", type=int, default=16)
     args = parser.parse_args()
-    Pipeline(args.depth_tif, args.out_dir, args.band, args.radius, args.min_area,
-             args.min_zoom, args.max_zoom).execute()
+    try:
+        build_flood_extent(args.depth_tif, args.tiles_dir, band=args.band, radius=args.radius,
+                           min_area=args.min_area, min_zoom=args.min_zoom, max_zoom=args.max_zoom,
+                           verbose=True)
+    except FloodExtentError as error:
+        sys.exit(str(error))
 
 
 if __name__ == "__main__":

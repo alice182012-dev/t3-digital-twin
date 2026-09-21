@@ -118,3 +118,49 @@ Tests: the UTC+7 conversion, key layout, manifest contents, and that the manifes
 - Frontend: run `tsc --noEmit` and `jest` in a Node container against `floodmap/graphhopper-maps` (host `npm install` is blocked).
 - End to end: step 4 above, with screenshots.
 - Performance: the numbers from step 6 go into the plan file when measured.
+
+## Status: first milestone built without MinIO
+
+Built on `flood-tile-t6t7`, not committed. This milestone chose display-only
+scope and precomputed tiles, and it skips MinIO, the manifest, and view-time
+selection by the clock. Steps 1 to 4 and 6 to 7 of this plan remain open.
+
+Implemented:
+
+- `scripts/flood_extent/flood_extent.py` is an importable engine.
+  `build_flood_extent` builds one timestep, and `build_run_tiles` builds a run.
+  Every intermediate file lives in a temporary folder that is always deleted.
+  The tile folder is swapped in only when it is complete.
+- Task `9_build_flood_tiles` in `dags/flood_mapping_dag.py` runs after
+  `5_merge_geojson`. It reuses that task's `run_ts` as the run name.
+- Tiles go to `data/flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf`, where both
+  names are `YYYYMMDDTHHMMSS` in Vietnam time. `compose.yml` mounts that folder
+  into `flood-routing-frontend`. The task keeps the newest three runs.
+- `FloodExtentLayer.tsx` follows the timestep selected in `FloodStore` and
+  re-points one layer as the timeline moves.
+- `Dockerfile` installs `grass-core` in the last apt block.
+
+Checked: the engine ran on a real raster in a container with GRASS 8.2.1 (187
+tiles, no files left in `/tmp`), including dry, one-cell, and corrupt inputs.
+`tsc` and the floodmap Jest suites pass.
+
+Open:
+
+- Recreate the worker from the full image. On 2026-09-21 the `Dockerfile` built
+  `airflow-worker` successfully (GRASS 8.2.1, all GDAL packages at 3.6.2, the
+  last apt layer pins them), and the engine gave identical results in it. The
+  running worker still uses the earlier stopgap image (`pre-grass` plus
+  `grass-core` saved with `docker commit`). Recreate it when no DAG task is
+  running.
+- Tiles for run `20260904T140500` (four timesteps) were built inside the
+  worker with `build_run_tiles` in 1 minute 42 seconds, and the frontend
+  serves them. The first real DAG run through task 9 hasn't happened yet.
+- Tiles for the five test rasters in `test/waterdepth_steps` (run
+  `20251006T000000`, 9901 by 5656 cells, up to 7.5 million wet cells) were built
+  in 971 seconds with 2 workers. Those timesteps aren't in the database, so
+  the UI can't select them.
+- Confirm the layer against real tiles. The event raster
+  `depth_event20251007_Ver03.tif` was still being copied when tested.
+- Decide whether to continue toward MinIO and the manifest, or keep the
+  volume-based layout.
+

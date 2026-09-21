@@ -19,6 +19,7 @@ sys.path.append(SCRIPTS_PATH)
 # database/*.py import `db_config` as a top-level module (not `database.db_config`),
 # so its directory needs to be importable directly too.
 sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
+sys.path.append(os.path.join(SCRIPTS_PATH, "flood_extent"))
 
 try:
     import create_simulation
@@ -32,6 +33,7 @@ try:
     import database.geojson_to_pg
     import database.netcdf_to_pg
     import database.create_geojson_tables
+    import flood_extent
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -44,6 +46,11 @@ DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
 ROADS_GEOJSON_PATH = os.path.join(DATA_PATH, "inputs", "toa-do-duong-hanoi.geojson")
 GEOJSON_ROOT_DIR = os.path.join(DATA_PATH, "output_geojsons")
 FINAL_OUTPUT_ROOT_DIR = os.path.join(DATA_PATH, "output_final")
+# Vector tiles of the flood extent, one folder per run and timestep, served by the frontend at
+# /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
+FLOOD_EXTENT_TILES_DIR = os.getenv("FLOOD_EXTENT_OUTPUT_DIR", os.path.join(BASE_PATH, "data", "flood-extent"))
+FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
+FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "3"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900"))
 
@@ -267,6 +274,34 @@ def task_upload_postgres(**kwargs):
     return inserted
 
 
+def task_build_flood_tiles(**kwargs):
+    """Cut the map's flood-extent tiles from every depth raster of this run.
+
+    Only the tiles are kept; the engine deletes every intermediate file itself. The run name is
+    the one task 5 gave the database rows, so the UI finds the tiles from the (run, valid_time)
+    pair it already selects.
+    """
+    ti = kwargs["ti"]
+    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
+    run_ts = ti.xcom_pull(task_ids="5_merge_geojson", key="run_ts")
+    if not depth_dir or not os.path.isdir(str(depth_dir)):
+        raise ValueError(f"❌ Depth directory is missing: {depth_dir}")
+    if not run_ts:
+        raise ValueError("❌ run_ts is missing from task 5_merge_geojson XCom")
+
+    print(f"🌊 9. Building flood-extent tiles: {depth_dir} -> {FLOOD_EXTENT_TILES_DIR}/{run_ts}")
+    results = flood_extent.build_run_tiles(
+        depth_dir,
+        run_ts,
+        FLOOD_EXTENT_TILES_DIR,
+        workers=FLOOD_EXTENT_WORKERS,
+        keep_runs=FLOOD_EXTENT_KEEP_RUNS,
+    )
+    flooded = sum(1 for result in results.values() if not result.is_empty)
+    print(f"✅ Tiles done: {flooded}/{len(results)} timesteps have flooding")
+    return {"run_ts": run_ts, "timesteps": len(results), "flooded_timesteps": flooded}
+
+
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -325,7 +360,12 @@ with DAG(
         task_id="8_upload_postgres", python_callable=task_upload_postgres
     )
 
+    t9 = PythonOperator(
+        task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
+    )
+
     t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
+    t5 >> t9
     t2 >> t3b
     t1 >> t_ddl
     t_ddl >> t3b
