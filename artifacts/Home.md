@@ -5,7 +5,7 @@ type: home
 # t3-digital-twin knowledge base
 
 Vault root is this `artifacts/` folder. It holds engineering logs, plans, design docs, and the
-project backlog (`../TODOS.md`) for the flood-mapping digital twin. See
+project backlog (`TODOS.md`) for the flood-mapping digital twin. See
 [[SW Architecture]] for the system architecture.
 
 ## Raw sources
@@ -24,7 +24,7 @@ synthesis in those folders, never back into `raw/`.
 
 ```dataview
 TABLE Priority AS "Priority", Status AS "Status"
-FROM "../TODOS.md"
+FROM "TODOS.md"
 ```
 
 ## Active plans

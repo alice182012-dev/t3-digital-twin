@@ -38,7 +38,7 @@ VEHICLE_PROFILES = {
     },
     # No corresponding GraphHopper profile exists yet: this pinned GraphHopper build rejects
     # any newly-declared vehicle encoded value at startup (reproduced for both foot_access and
-    # bike_access — see graphhopper/config.yml's comment and TODOS.md). Once that's resolved and
+    # bike_access — see graphhopper/config.yml's comment and artifacts/TODOS.md). Once that's resolved and
     # a "foot" profile is wired up, this is the only change needed on the backend side.
     "foot": {
         "costing": "foot",
