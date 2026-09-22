@@ -156,9 +156,12 @@ restored the `foot` profile and its encoded values (`foot_access`, `foot_average
 `foot` registered with its encoded values, and an actual walking route returned end to end.
 
 **Still open:** `truck` is still missing from `config-local.js.example`'s `profiles`, a separate,
-already-understood config gap — see [[routing-foot-truck-profiles]]. Also surfaced while verifying
-this fix in the UI: routing itself (any profile) fails with "No safe route available" whenever a
-flood timestep is attached, unrelated to this fix — see [[flood-route-missing-geom-column]].
+already-understood config gap — see [[routing-foot-truck-profiles]].
+
+A separate P1 bug was found and fixed the same day while verifying this in the UI: routing (any
+profile) failed with "No safe route available" whenever a flood timestep was attached, i.e.
+always. Unrelated root cause to this item — see [[flood-route-missing-geom-column]] (resolved
+2026-09-23).
 
 **Blocker tracking:** [[graphhopper-vehicle-profile-rejection]] (full investigation, all 5
 approaches, and verification steps)

@@ -1,12 +1,12 @@
 ---
 date_open: 2026-09-23
-date_closed:
+date_closed: 2026-09-23
 type: blocker
-status: open
+status: resolved
 severity: P1
 subsystem: flood-routing-backend
-approaches_tried: 0
-approaches_remaining: 1
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, postgis, routing]
 related: ["[[graphhopper-vehicle-profile-rejection]]", "[[graphhopper-backend]]", "[[2026-09-23]]"]
 last_updated: 2026-09-23
@@ -42,8 +42,17 @@ since before this session.
 
 ## Approaches tried
 
-None yet; root cause found directly by reading `flood_areas.py`'s SQL against the live schema, no
-trial fixes attempted.
+### Approach 1: run the existing migration script (worked)
+
+Root cause found directly by reading `flood_areas.py`'s SQL against the live schema, no trial
+fixes needed before the real one. Ran `scripts/database/create_geojson_tables.py` inside the
+`floodmap-backend` container (same network, same `DB_CONFIG` env vars already present), against
+the live database. Output: `Tables created successfully. Backfilled geom_4326 for 1303752 rows.`
+Re-ran the direct backend test from the Root cause section: both the no-`valid_time` and
+with-`valid_time` cases now return `200` with a real path. Confirmed end to end in the live UI
+(`/browse`, gstack's headless driver): selected the `foot` profile, set the same two points, and
+got a real rendered route ("21 min, 1.8 km", "Route avoids flooded areas" — flood grading is
+actually applying now, not merely not-erroring).
 
 ## Root cause
 
@@ -70,16 +79,19 @@ now holds 1,303,752 rows (406 MB), all with a non-null `geom` and therefore all 
 
 ## Decision and explanation
 
-Pending. One untried direction: run `scripts/database/create_geojson_tables.py` against the live
-database. It's additive only (`ADD COLUMN IF NOT EXISTS`, `UPDATE ... WHERE geom_4326 IS NULL`),
-touches no other column or table, and at 406 MB / 1.3M rows should complete in well under a minute.
+Resolved 2026-09-23 by running the migration (Approach 1). No code change was needed: the SQL in
+`flood_areas.py` and the `INSERT` in `geojson_to_pg.py` were both already correct, and had been
+since whichever commit introduced them. Only the database itself was missing the column and its
+backfill. The migration completed well under a minute, as expected for 406 MB / 1.3M rows.
 
 ## Concerns
 
-If the Airflow ingestion DAG that calls `geojson_to_pg.py` has been running against this same
-database all along, every one of its `INSERT`s referencing `geom_4326` should have failed outright
-with the same "column does not exist" error — worth checking DAG run history once this is fixed,
-in case ingestion itself has been silently broken rather than merely the read path.
+Not yet checked: if the Airflow ingestion DAG that calls `geojson_to_pg.py` has been running
+against this same database all along, every one of its `INSERT`s referencing `geom_4326` should
+have failed outright with the same "column does not exist" error before this fix. Worth checking
+DAG run history, in case ingestion itself was silently broken rather than merely the read path —
+if so, whichever rows landed via a different path in the meantime need auditing for correctness,
+separate from today's backfill of the pre-existing 1.3M rows.
 
 ## Related topics
 
@@ -91,3 +103,6 @@ in case ingestion itself has been silently broken rather than merely the read pa
 
 - **2026-09-23, open.** Root cause found directly (missing `geom_4326` column, migration never
   run), no attempts made yet.
+- **2026-09-23, resolved.** Ran `scripts/database/create_geojson_tables.py` against the live
+  database; backfilled `geom_4326` for all 1,303,752 rows. Verified with a direct backend call and
+  in the live UI: a real `foot`-profile route rendered, with flood grading actually applying.

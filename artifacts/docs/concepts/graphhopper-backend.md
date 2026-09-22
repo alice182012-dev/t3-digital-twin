@@ -103,10 +103,13 @@ All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
 - `floodmap/graphhopper-maps/config-local.js.example` now lists `foot` alongside `motorbike` and
   `car`, but not `truck`, which GraphHopper already serves. `flood-routing-frontend` was rebuilt
   and redeployed 2026-09-23; `foot` is confirmed selectable in the live UI.
-- Routing through the UI (any profile, not just `foot`) fails with a safety-framed "No safe route
-  available" error whenever a `valid_time` is attached, which happens on every request since
-  `TimeSlider` always supplies one. Root cause: a missing `geom_4326` column on
-  `flood_road_values`. See [[flood-route-missing-geom-column]].
+- Routing through the UI was failing with a safety-framed "No safe route available" error on every
+  request, for every vehicle profile, whenever a `valid_time` was attached — which is always,
+  since `TimeSlider` supplies one on mount. Root cause was a missing `geom_4326` column on
+  `flood_road_values`; fixed 2026-09-23 by running the migration that was supposed to add and
+  backfill it. See [[flood-route-missing-geom-column]] for the full investigation. Worth checking
+  Airflow's ingestion DAG history for the same period, since its `INSERT`s reference that column
+  too and may have been failing silently.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite), with no regression tests and no soak time yet (P2 in
   TODOS.md).
