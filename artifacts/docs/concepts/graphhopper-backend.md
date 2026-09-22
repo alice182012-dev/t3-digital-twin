@@ -81,10 +81,10 @@ That same build rejects any newly declared vehicle encoded value at startup:
 build, not to pedestrian routing. `graphhopper/config.yml` currently registers only three profiles
 (`motorbike`, `car`, `truck`) for this reason. `foot_custom.json` and
 `foot_avoid_private_node_custom.json` already exist in that directory, trimmed from GraphHopper's
-own bundled `foot.json`, ready for whoever resolves the build issue. See TODOS.md's "Pinned
-GraphHopper build rejects any new vehicle profile" item for the four approaches already tried, and
-[[routing-foot-truck-profiles]] for why `truck` is also missing from the frontend despite already
-working server-side (a config gap, not this same bug).
+own bundled `foot.json`, ready for whoever resolves the build issue. See
+[[graphhopper-vehicle-profile-rejection]] for the four approaches already tried and what's left,
+and [[routing-foot-truck-profiles]] for why `truck` is also missing from the frontend despite
+already working server-side (a config gap, not this same bug).
 
 ## Vehicle thresholds
 

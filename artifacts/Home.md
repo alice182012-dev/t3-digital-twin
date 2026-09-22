@@ -27,12 +27,16 @@ scripts, data) happens in `einstein/`, never in `raw/ideas/` itself. If an exper
 
 ## Blockers
 
-One page per blocker, with a `status` that gets edited in place as it changes, instead of a fact
-buried in a log or a `TODOS.md` item's prose. A blocker page tracks state; `TODOS.md` tracks the
-work needed to clear it, and the two cross-link rather than duplicate each other's detail.
+One page per blocker: description, why it matters, every approach tried, the eventual decision.
+Start a new one from `.templates/blocker.md`. Its `status` and `date_closed` get edited in place as
+the blocker's state changes, unlike a log entry, which is never rewritten. `TODOS.md` tracks the
+work item (effort, priority) and links to the blocker page for the deep record, not the other way
+around.
 
 ```dataview
-TABLE severity AS "Severity", status AS "Status", subsystem AS "Subsystem", last_updated AS "Last updated"
+TABLE severity AS "Severity", status AS "Status", subsystem AS "Subsystem",
+  approaches_tried AS "Tried", approaches_remaining AS "Remaining",
+  (date(date_closed) - date(date_open)).days AS "Days open/to close"
 FROM "docs/blockers"
 SORT status ASC, last_updated DESC
 ```
@@ -87,13 +91,15 @@ FROM "designs"
   asked casually in passing; if the user wants something in `raw/` changed, they do it themselves,
   or say so explicitly enough that there's no ambiguity this is what they mean.
 - Every log, plan, decision, concept, and blocker doc gets a YAML frontmatter block: `date` (or
-  `date_discovered` for a blocker), `type` (`log`/`plan`/`decision`/`concept`/`blocker`), `status`
+  `date_open` for a blocker), `type` (`log`/`plan`/`decision`/`concept`/`blocker`), `status`
   (`active`/`parked`/`done`/`superseded` for most; `open`/`monitoring`/`resolved`/`wont-fix` for a
   blocker), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
-- A blocker page (`docs/blockers/`) tracks one blocker's live state: edit its `status` field in
-  place as it changes, and add a dated bullet to its "Status history" section each time, even for
-  a failed attempt. Keep the deep technical narrative (root cause, what's been tried) in the
-  relevant concept page or `TODOS.md` item; the blocker page links to that instead of repeating it.
+- A blocker page (`docs/blockers/`) is the deep record for one blocker: description, why it
+  matters, one subsection per approach tried, and the eventual decision. It is the one place this
+  detail lives; a concept page or `TODOS.md` item links to the blocker page rather than repeating
+  the approach-by-approach narrative. Edit `status`, `date_closed`, `approaches_tried`, and
+  `approaches_remaining` in place as the blocker's state changes, and add a dated bullet to its
+  "Status history" section on every status change or new attempt, including a failed one.
 - A concept page (`docs/concepts/`) is the standing reference for one subsystem: what it is, how
   it works, and its open items, cited against real file paths. When a log or plan changes
   something a concept page describes, update that page in the same pass instead of leaving the
