@@ -10,7 +10,7 @@ Mode: Startup
 
 ## Problem Statement
 
-FloodNav has a fully-specified 12-month target architecture (`artifacts/SW Architecture.md`): dual-horizon 3Di simulation, gauge hot-start, citizen app, city council dashboard, FCM/APNs alerting, Phase-3 partner API. It is not what's currently being built — a prior CEO/eng review already cut a much narrower Phase 1 (single 3Di slot, no gauge access, raster-only depth source, single 2h cycle, citizen floodmap + routing only). This session pressure-tested the *product* reasoning behind continuing to build toward the full platform, given the current commercial reality: one active pilot relationship (GreenSM, a Vietnamese taxi/ride-hailing provider) with infrastructure committed but no data shipped yet, and no government relationship started.
+FloodNav has a fully-specified 12-month target architecture (`artifacts/raw/SW Architecture.md`): dual-horizon 3Di simulation, gauge hot-start, citizen app, city council dashboard, FCM/APNs alerting, Phase-3 partner API. It is not what's currently being built — a prior CEO/eng review already cut a much narrower Phase 1 (single 3Di slot, no gauge access, raster-only depth source, single 2h cycle, citizen floodmap + routing only). This session pressure-tested the *product* reasoning behind continuing to build toward the full platform, given the current commercial reality: one active pilot relationship (GreenSM, a Vietnamese taxi/ride-hailing provider) with infrastructure committed but no data shipped yet, and no government relationship started.
 
 ## Demand Evidence
 

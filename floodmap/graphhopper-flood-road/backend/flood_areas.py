@@ -8,7 +8,7 @@ min_area=400m2).
 
 Reads `flood_road_values`, a separate table and pipeline from
 `flood_extent_polygon` (see flood_extent_runs.py, which backs the map's
-timestep picker). See artifacts/SW Architecture.md #8 for why routing and
+timestep picker). See artifacts/raw/SW Architecture.md #8 for why routing and
 map-display visualization intentionally read different flood tables.
 """
 

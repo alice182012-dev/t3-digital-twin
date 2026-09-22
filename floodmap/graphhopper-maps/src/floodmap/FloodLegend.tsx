@@ -3,7 +3,7 @@ import { DISPLAY_DEPTH_BANDS } from '@/floodmap/depthScale'
 
 /**
  * Display-only, positioned top-right per the approved mockup
- * (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screens 2b/2e).
+ * (artifacts/raw/mockups/Flood Routing Mockups v2.dc.html, screens 2b/2e).
  */
 export default function FloodLegend() {
     return (

@@ -36,7 +36,7 @@ The backend reads from two separate PostGIS tables, and they are not interchange
 
 Routing and map display run on different cadences and different upstream pipelines on purpose. Do
 not point the routing derivation at `flood_extent_polygon`, and do not point the timestep picker at
-`flood_road_values`. `artifacts/SW Architecture.md`, section 8, records the decision.
+`flood_road_values`. `artifacts/raw/SW Architecture.md`, section 8, records the decision.
 
 ## Request flow for POST /route
 

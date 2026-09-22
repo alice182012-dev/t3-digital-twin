@@ -3,7 +3,7 @@
 `flood_extent_polygon` is written by scripts/flood_extent/publish.py per (run_ts,
 valid_time_utc) — a separate table and pipeline from flood_areas.py's
 `flood_road_values`, which the routing engine reads instead. See
-artifacts/SW Architecture.md #8 for why the split is intentional: this module backs
+artifacts/raw/SW Architecture.md #8 for why the split is intentional: this module backs
 GET /flood/runs and GET /flood/timesteps (map display only), never routing.
 
 `run_ts` is already the MinIO tile folder name (e.g. "20260922T133131"), lexically

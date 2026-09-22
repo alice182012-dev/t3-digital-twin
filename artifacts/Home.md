@@ -8,6 +8,18 @@ Vault root is this `artifacts/` folder. It holds engineering logs, plans, design
 project backlog (`../TODOS.md`) for the flood-mapping digital twin. See
 [[SW Architecture]] for the system architecture.
 
+## Raw sources
+
+```dataview
+LIST
+FROM "raw"
+```
+
+`raw/` is the source of truth: the user's own material, dropped in directly. Claude reads from it
+but never creates, edits, moves, or deletes anything inside it. New ideas and research go here
+first, as plain notes; Claude reads them to write plans, logs, and concept pages, and files the
+synthesis in those folders, never back into `raw/`.
+
 ## Backlog
 
 ```dataview
@@ -54,6 +66,9 @@ FROM "designs"
 
 ## Conventions
 
+- `raw/` is read-only for Claude. Never write, rename, move, or delete a file inside it, even if
+  asked casually in passing; if the user wants something in `raw/` changed, they do it themselves,
+  or say so explicitly enough that there's no ambiguity this is what they mean.
 - Every log, plan, decision, and concept doc gets a YAML frontmatter block: `date`, `type`
   (`log`/`plan`/`decision`/`concept`), `status` (`active`/`parked`/`done`/`superseded`), `tags`,
   and `related` (a list of `[[wikilinks]]` to the plan, log, or concept page it's tied to).

@@ -11,7 +11,7 @@ the time).
 (`artifacts/logs/2026-09-18.md`). May already be resolved by that change — needs a fresh look
 before treating as open.
 
-Status:: needs-revalidation
+Status:: done
 **Priority:** unknown (needs revalidation)
 
 ### Tile and TIF data don't match
@@ -23,7 +23,7 @@ the TIF's data.
 (`artifacts/logs/2026-09-18.md`, `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`)
 — may already be resolved or superseded.
 
-Status:: needs-revalidation
+Status:: done
 **Priority:** unknown (needs revalidation)
 
 ### Loading is very slow
@@ -47,6 +47,35 @@ UX still matches the ask before treating as open; likely closeable.
 
 Status:: needs-revalidation
 **Priority:** unknown (needs revalidation)
+
+## Infrastructure
+
+### compose.yml's storage-backend/storage-frontend build from a removed directory
+
+**What:** `docker compose up --build` cannot build `storage-backend` or `storage-frontend`:
+`compose.yml` still points their `build.context` at `./minio_custom/backend` and
+`./minio_custom/frontend`, but `minio_custom/` was deleted in commit `0a166f0` ("Update flood
+pipeline scripts, add 3Di client/tests, remove minio_custom, add SW architecture doc").
+`README.md` still lists this Django/React storage UI as part of the stack and still instructs
+running `docker compose exec storage-backend python manage.py createsuperuser`.
+
+**Why:** Found while writing [[storage-backend-django-layer]] (a concept page in
+`artifacts/docs/concepts/`). The removal commit's message is mostly about an unrelated 3Di client
+change; nothing in it explains whether dropping `minio_custom` was deliberate scope-narrowing or
+incidental, and `compose.yml`/`README.md` were never updated to match either way.
+
+**Context:** See [[storage-backend-django-layer]] for what the removed Django app did (JWT auth,
+role/visibility models, a `boto3`-backed MinIO wrapper) and what still references it in
+`compose.yml` (the `storage-postgres` dependency, env vars). The flood pipeline's own MinIO use
+(`scripts/mapping/upload_minio.py`, `scripts/flood_extent/publish.py`) does not depend on this
+service.
+
+**Effort:** S to remove the dead service blocks and the README steps; larger if the decision is to
+restore `minio_custom` from commit `dd9f3e4`'s tree instead.
+**Priority:** P2 — blocks a clean `docker compose up --build` per the README's own instructions.
+**Depends on:** A decision on restore vs. remove.
+
+Status:: needs-decision
 
 ## FloodNav Map Redesign
 

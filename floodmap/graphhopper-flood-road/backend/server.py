@@ -11,7 +11,7 @@ never drift apart.
 
 /flood/runs and /flood/timesteps are a separate concern: they back the
 map's timestep picker, not routing, and read flood_extent_runs.py's
-flood_extent_polygon table instead. See artifacts/SW Architecture.md #8.
+flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
 """
 from __future__ import annotations
 

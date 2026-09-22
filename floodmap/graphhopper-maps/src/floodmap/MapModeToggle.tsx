@@ -4,7 +4,7 @@ import { MapMode } from '@/floodmap/FloodStore'
 
 /**
  * Two square thumbnail buttons, bottom-left, per the approved mockup
- * (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screens 2a/2b/2c/2d/2e/2f).
+ * (artifacts/raw/mockups/Flood Routing Mockups v2.dc.html, screens 2a/2b/2c/2d/2e/2f).
  * Not modeled on MapOptions — that control's hover-to-expand single button doesn't fit an
  * always-visible two-button toggle; this is its own absolutely-positioned sibling.
  *
