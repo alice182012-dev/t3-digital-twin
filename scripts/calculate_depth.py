@@ -1,12 +1,12 @@
 import os
 import re
 import shutil
+import subprocess
 import uuid
 import numpy as np
 import billiard as multiprocessing
 from datetime import datetime, timedelta
 from osgeo import gdal
-from threedidepth import calculate_waterdepth
 from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
 
 import fiona
@@ -136,14 +136,28 @@ def process_single_step(args):
     temp_path = os.path.join(output_dir, temp_filename)
 
     try:
-
-        calculate_waterdepth(
-            gridadmin_path=grid_path,
-            results_3di_path=nc_path,
-            dem_path=dem_path,
-            waterdepth_path=temp_path,
-            calculation_steps=[step_index],
+        # Shell out to threedidepth's own packaged CLI (same entrypoint as
+        # `threedidepth gridadmin results_3di dem waterdepth -s STEP` from the
+        # command line) instead of importing calculate_waterdepth() in-process,
+        # matching how every other step of this pipeline (GRASS, gdal_polygonize,
+        # ogr2ogr) already shells out to a CLI tool. A single -s value keeps the
+        # output single-band; passing more than one step here is what produces
+        # a combined multi-band raster, which this pipeline must not do.
+        result = subprocess.run(
+            [
+                "threedidepth",
+                grid_path,
+                nc_path,
+                dem_path,
+                temp_path,
+                "-s", str(step_index),
+            ],
+            capture_output=True,
+            text=True,
         )
+        if result.returncode != 0:
+            stderr_tail = result.stderr.strip().splitlines()[-1] if result.stderr.strip() else "no stderr"
+            return f"❌ Step {step_index}: threedidepth CLI exited {result.returncode} ({stderr_tail})"
 
         is_valid, invalid_reason = validate_depth_raster(temp_path)
         if not is_valid:
