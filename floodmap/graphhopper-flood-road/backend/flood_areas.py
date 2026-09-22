@@ -1,9 +1,15 @@
 """PostGIS-derived flood polygons for a (run, valid_time, vehicle) cell.
 
-Single source of truth for both the map overlay (GET /flood/areas) and the
-custom_model.areas gate GraphHopper actually routes against (POST /route) —
-see Workstream A/B of the Phase 2 plan. Buffer/simplify/min-area defaults
-match the values Phase A's D2 sweep validated (buffer=22m, min_area=400m2).
+Single source of truth for the custom_model.areas gate GraphHopper actually
+routes against (POST /route) and the equivalent map overlay (GET
+/flood/areas) — see Workstream A/B of the Phase 2 plan. Buffer/simplify/
+min-area defaults match the values Phase A's D2 sweep validated (buffer=22m,
+min_area=400m2).
+
+Reads `flood_road_values`, a separate table and pipeline from
+`flood_extent_polygon` (see flood_extent_runs.py, which backs the map's
+timestep picker). See artifacts/SW Architecture.md #8 for why routing and
+map-display visualization intentionally read different flood tables.
 """
 
 from __future__ import annotations
@@ -44,43 +50,6 @@ WITH seg AS (
 SELECT ST_AsGeoJSON(ST_Transform(ST_SimplifyPreserveTopology(g, %(simplify_m)s), 4326), 6)
 FROM parts WHERE ST_Area(g) >= %(min_area_m2)s;
 """
-
-
-def list_runs(conn) -> list[str]:
-    with conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT timestamp FROM flood_road_values ORDER BY timestamp DESC;")
-        return [row[0].isoformat() for row in cur.fetchall()]
-
-
-def latest_run(conn) -> str | None:
-    """The newest ingestion run timestamp, or None when the table is empty."""
-    with conn.cursor() as cur:
-        cur.execute("SELECT max(timestamp) FROM flood_road_values;")
-        row = cur.fetchone()
-    return row[0].isoformat() if row and row[0] is not None else None
-
-
-def list_timesteps(conn, run: str | None = None) -> list[dict[str, str]]:
-    """Forecast times for exactly ONE run, ascending by forecast_time.
-
-    Every dict in the result carries the same `run`. The frontend's nearest-to-now
-    selection and its "N steps behind latest" indicator both assume a single ordered
-    forecast series; the previous no-run branch returned a DISTINCT ON (forecast_time)
-    composite in which each forecast_time could come from a DIFFERENT run (whichever
-    produced that forecast_time most recently), and such a view has no "latest step"
-    to be behind.
-
-    run=None or "latest" resolves to latest_run(conn); an empty table yields [].
-    """
-    resolved = run if run and run != "latest" else latest_run(conn)
-    if resolved is None:
-        return []
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT DISTINCT forecast_time FROM flood_road_values WHERE timestamp = %(run)s ORDER BY forecast_time;",
-            {"run": resolved},
-        )
-        return [{"valid_time": row[0].isoformat(), "run": resolved} for row in cur.fetchall()]
 
 
 def derive_areas(

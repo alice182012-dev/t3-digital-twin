@@ -93,7 +93,7 @@ The first startup can take several minutes because Docker has to build local ima
 After startup, open:
 
 - Airflow: http://localhost:8080
-- Floodmap: http://localhost:8081
+- Floodmap: http://localhost:8082
 - MinIO custom UI: http://localhost:5173
 - MinIO API: http://localhost:9000
 - MinIO console: http://localhost:9001

@@ -2,8 +2,11 @@ from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 import sys
 import os
+import boto3
+import psycopg2
 
 
 BASE_PATH = "/opt/airflow"
@@ -11,11 +14,17 @@ SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
 DATA_PATH = os.path.join(BASE_PATH, "data/mapping")
 
 sys.path.append(SCRIPTS_PATH)
+sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
+sys.path.append(os.path.join(SCRIPTS_PATH, "flood_extent"))
 
 try:
     import create_simulation
     import download_result
     import calculate_depth
+    import flood_extent
+    import publish
+    import database.create_flood_extent_tables
+    from db_config import DB_CONFIG
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -39,6 +48,13 @@ EVENT1_DURATION_HOURS = 2
 # Event 2: consecutive 2h event that hotstarts from Event 1's saved state.
 EVENT2_RAIN_MM_HR = 5
 EVENT2_DURATION_HOURS = 2
+
+FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
+FLOOD_EXTENT_WORK_DIR = os.path.join(TEST_ROOT, "flood_extent_work")
+# A generous keep_runs, not the production default: this test tree's run_ts values come from
+# datetime.now() at trigger time, so they sort alongside real production runs in the same
+# bucket. A small keep_runs here could prune a still-good production run out from under it.
+TEST_KEEP_RUNS = 1000
 
 
 def task_trigger_event1(**kwargs):
@@ -142,6 +158,55 @@ def task_calculate_depth_event2(**kwargs):
     return output_dir
 
 
+def task_ensure_schema(**kwargs):
+    print("🛠️ 0. Ensuring flood_extent_polygon schema exists...")
+    database.create_flood_extent_tables.main()
+
+
+def build_and_publish_tiles(depth_dir):
+    """Shared by both events: publishes one event's depth tifs to the flood-extent bucket, the
+    same code path production uses (dags/flood_mapping_dag.py's task 9), so a run of this DAG
+    validates the CLI-subprocess calculate_depth rewrite through the whole downstream pipeline,
+    not just calculate_depth in isolation."""
+    depth_files = sorted(Path(depth_dir).glob("depth_*.tif"))
+    if not depth_files:
+        raise ValueError(f"❌ No depth_*.tif files in {depth_dir}")
+    run_ts = flood_extent.stamp_key(depth_files[0])
+
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=os.environ["MINIO_ENDPOINT"],
+        aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
+    )
+    db_conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        results = publish.publish_run(
+            depth_dir, run_ts, FLOOD_EXTENT_WORK_DIR, s3, FLOOD_EXTENT_BUCKET,
+            db_conn=db_conn, keep_runs=TEST_KEEP_RUNS,
+            cleanup_dirs=[os.path.join(TEST_ROOT, "output_depths"), FLOOD_EXTENT_WORK_DIR],
+        )
+    finally:
+        db_conn.close()
+    flooded = sum(1 for result in results.values() if not result.is_empty)
+    print(f"✅ Published {run_ts}: {flooded}/{len(results)} timesteps have flooding")
+    return {"run_ts": run_ts, "timesteps": len(results), "flooded_timesteps": flooded}
+
+
+def task_build_tiles_event1(**kwargs):
+    ti = kwargs["ti"]
+    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth_event1")
+    print("🌊 3b. Publishing flood-extent tiles for Event 1...")
+    return build_and_publish_tiles(depth_dir)
+
+
+def task_build_tiles_event2(**kwargs):
+    ti = kwargs["ti"]
+    depth_dir = ti.xcom_pull(task_ids="6_calculate_depth_event2")
+    print("🌊 6b. Publishing flood-extent tiles for Event 2...")
+    return build_and_publish_tiles(depth_dir)
+
+
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -161,18 +226,27 @@ with DAG(
     tags=["3di", "flood", "manual-test", "state-test"],
 ) as dag:
 
+    t0 = PythonOperator(task_id="0_ensure_schema", python_callable=task_ensure_schema)
     t1 = PythonOperator(task_id="1_trigger_event1", python_callable=task_trigger_event1)
     t2 = PythonOperator(task_id="2_download_event1", python_callable=task_download_event1)
     t3 = PythonOperator(task_id="3_calculate_depth_event1", python_callable=task_calculate_depth_event1)
+    t3b = PythonOperator(task_id="3b_build_tiles_event1", python_callable=task_build_tiles_event1)
     t4 = PythonOperator(task_id="4_trigger_event2", python_callable=task_trigger_event2)
     t5 = PythonOperator(task_id="5_download_event2", python_callable=task_download_event2)
     t6 = PythonOperator(task_id="6_calculate_depth_event2", python_callable=task_calculate_depth_event2)
+    t6b = PythonOperator(task_id="6b_build_tiles_event2", python_callable=task_build_tiles_event2)
 
     # Event 2 is triggered as soon as Event 1's result is downloaded (it only
     # needs Event 1's saved state, not its depth calc). Depth calc for Event 2
     # waits for Event 1's depth calc to finish so the two heavy multiprocessing
     # jobs don't run concurrently.
+    t0 >> t3b
+    t0 >> t6b
     t1 >> t2
     t2 >> t3
+    t3 >> t3b
     t2 >> t4 >> t5
-    [t3, t5] >> t6
+    # t6 (event2's depth calc, also heavy multiprocessing) waits for t3b too, not just t3, so
+    # it never overlaps event1's tile build either.
+    [t3b, t5] >> t6
+    t6 >> t6b

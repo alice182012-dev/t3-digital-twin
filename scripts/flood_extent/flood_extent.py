@@ -10,10 +10,13 @@ Every intermediate file (the GRASS project, the rasters, the GeoPackages) lives 
 folder that is deleted when the build ends, whether it succeeds or fails. The tile folder is the
 only thing left on disk, and it is swapped in only once it is complete.
 
-Library use (what the Airflow DAG does):
+Library use:
 
-    build_flood_extent(depth_tif, tiles_dir)              # one timestep
-    build_run_tiles(depth_dir, run_ts, tiles_root)        # every depth_*.tif of one run
+    build_flood_extent(depth_tif, tiles_dir)              # one timestep, straight to a local folder
+
+For every depth_*.tif of one run, published to MinIO and the flood_extent_polygon audit table
+(what the Airflow DAG actually does), see publish.py's publish_run — the worker and the frontend
+run on separate hosts in production, so a local tiles_root can't reach the frontend on its own.
 
 Command line, for one timestep:
 
@@ -27,11 +30,10 @@ import subprocess
 import sys
 import tempfile
 import time
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from osgeo import gdal, ogr
+from osgeo import gdal, ogr, osr
 
 ogr.UseExceptions()
 
@@ -52,6 +54,7 @@ class FloodExtentError(RuntimeError):
 class FloodExtentResult:
     tile_count: int
     area_by_band: dict = field(default_factory=dict)  # band code -> m2
+    polygons_4326: dict = field(default_factory=dict)  # band code -> WKB geometry, reprojected
 
     @property
     def is_empty(self):
@@ -179,7 +182,16 @@ class Pipeline:
         """Reads the cleaned polygons and the cut tiles back, and fails if they disagree."""
         dataset = ogr.Open(str(self.cleaned))
         layer = dataset.GetLayer()
-        areas = {feature.GetField("DN"): feature.GetGeometryRef().GetArea() for feature in layer}
+        transform = reprojection_to_4326(layer.GetSpatialRef())
+        areas, polygons = {}, {}
+        for feature in layer:
+            code = feature.GetField("DN")
+            geom = feature.GetGeometryRef()
+            areas[code] = geom.GetArea()
+            geom_4326 = geom.Clone()
+            if transform is not None:
+                geom_4326.Transform(transform)
+            polygons[code] = geom_4326.ExportToWkb()
         tile_count = sum(1 for _ in self.tiles.rglob("*.pbf")) if self.tiles.exists() else 0
         self.say(f"Area per band (m2): { {code: round(area) for code, area in sorted(areas.items())} }")
         self.say(f"Tiles: {tile_count}")
@@ -188,7 +200,7 @@ class Pipeline:
             raise FloodExtentError(f"Unexpected band codes: {sorted(unexpected)}")
         if areas and tile_count == 0:
             raise FloodExtentError("Polygons exist but no tiles were written")
-        return FloodExtentResult(tile_count=tile_count, area_by_band=areas)
+        return FloodExtentResult(tile_count=tile_count, area_by_band=areas, polygons_4326=polygons)
 
     def timed(self, label, step):
         start = time.time()
@@ -221,6 +233,21 @@ class Pipeline:
             else:
                 publish_tiles(self.tiles, self.tiles_dir)
             return result
+
+
+def reprojection_to_4326(source_srs):
+    """A transform from `source_srs` to EPSG:4326, or None if the source has no defined SRS.
+
+    `flood_extent_polygon` stores geometry(Geometry,4326), so every polygon written there needs
+    reprojecting from the depth raster's own CRS (typically a projected, metric one, since
+    `Pipeline.check()`'s areas are already in m2).
+    """
+    if source_srs is None:
+        return None
+    target_srs = osr.SpatialReference()
+    target_srs.ImportFromEPSG(4326)
+    target_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+    return osr.CoordinateTransformation(source_srs, target_srs)
 
 
 def ring_area(ring):
@@ -284,49 +311,6 @@ def stamp_key(depth_file):
     if not match:
         raise FloodExtentError(f"Not a depth_<date>_<time>.tif file: {depth_file}")
     return f"{match.group(1)}T{match.group(2)}"
-
-
-def build_run_tiles(depth_dir, run_ts, tiles_root, *, workers=2, keep_runs=3, **engine_options):
-    """Builds tiles for every depth_*.tif in `depth_dir` into `tiles_root/<run_ts>/<timestep>/`.
-
-    `run_ts` is the run's name in the database (`YYYYMMDDTHHMMSS`, the earliest timestep), so the
-    UI can find a timestep's tiles from the (run, valid_time) pair it already holds. A failed
-    timestep does not stop the others; they all finish, then the failures are raised together.
-    Runs older than the newest `keep_runs` are deleted afterwards, and `run_ts` is never one of them.
-    Returns {timestep key: FloodExtentResult}.
-    """
-    depth_dir, tiles_root = Path(depth_dir), Path(tiles_root)
-    if not RUN_DIR.match(run_ts):
-        raise FloodExtentError(f"run_ts must look like 20260811T014000, got {run_ts!r}")
-    depth_files = sorted(p for p in depth_dir.iterdir() if DEPTH_FILE.match(p.name))
-    if not depth_files:
-        raise FloodExtentError(f"No depth_*.tif files in {depth_dir}")
-
-    def build(depth_file):
-        return build_flood_extent(depth_file, tiles_root / run_ts / stamp_key(depth_file), **engine_options)
-
-    results, failures = {}, []
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        for depth_file, future in [(p, pool.submit(build, p)) for p in depth_files]:
-            key = stamp_key(depth_file)
-            try:
-                results[key] = future.result()
-                print(f"{key}: {results[key].tile_count} tiles", flush=True)
-            except Exception as error:
-                failures.append(f"{key}: {error}")
-    if failures:
-        raise FloodExtentError(f"{len(failures)}/{len(depth_files)} timesteps failed: " + "; ".join(failures))
-
-    prune_runs(tiles_root, keep_runs, always_keep=run_ts)
-    return results
-
-
-def prune_runs(tiles_root, keep_runs, always_keep):
-    runs = sorted((p for p in Path(tiles_root).iterdir() if p.is_dir() and RUN_DIR.match(p.name)),
-                  key=lambda p: p.name, reverse=True)
-    for old in runs[keep_runs:]:
-        if old.name != always_keep:
-            shutil.rmtree(old, ignore_errors=True)
 
 
 def main():

@@ -5,7 +5,9 @@ from airflow.providers.standard.sensors.time_delta import TimeDeltaSensor
 from datetime import datetime, timedelta
 import sys
 import os
+import boto3
 import pandas as pd
+import psycopg2
 
 sys.path.append(os.path.join("/opt/airflow", "plugins"))
 from vn_timetable import VNContinuousTimetable
@@ -33,7 +35,10 @@ try:
     import database.geojson_to_pg
     import database.netcdf_to_pg
     import database.create_geojson_tables
+    import database.create_flood_extent_tables
     import flood_extent
+    import publish
+    from db_config import DB_CONFIG
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -48,9 +53,13 @@ GEOJSON_ROOT_DIR = os.path.join(DATA_PATH, "output_geojsons")
 FINAL_OUTPUT_ROOT_DIR = os.path.join(DATA_PATH, "output_final")
 # Vector tiles of the flood extent, one folder per run and timestep, served by the frontend at
 # /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
-FLOOD_EXTENT_TILES_DIR = os.getenv("FLOOD_EXTENT_OUTPUT_DIR", os.path.join(BASE_PATH, "data", "flood-extent"))
 FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
 FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "3"))
+# scripts/flood_extent/publish.py's own scratch space, per timestep, deleted as each timestep's
+# tiles finish uploading — never the final destination, just where the raster pipeline works.
+FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")
+FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
+FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS", "24"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900"))
 
@@ -110,6 +119,7 @@ def task_download_result(**kwargs):
 def task_ensure_schema(**kwargs):
     print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
     database.create_geojson_tables.main()
+    database.create_flood_extent_tables.main()
 
 
 def task_upload_netcdf_postgres(**kwargs):
@@ -275,11 +285,13 @@ def task_upload_postgres(**kwargs):
 
 
 def task_build_flood_tiles(**kwargs):
-    """Cut the map's flood-extent tiles from every depth raster of this run.
+    """Cut the map's flood-extent tiles from every depth raster of this run, publish them to
+    MinIO, and write one PostGIS audit row per dissolved band polygon per timestep.
 
-    Only the tiles are kept; the engine deletes every intermediate file itself. The run name is
-    the one task 5 gave the database rows, so the UI finds the tiles from the (run, valid_time)
-    pair it already selects.
+    Only uploaded tiles and DB rows are kept; publish_run deletes every local intermediate itself
+    as each timestep finishes. The run name is the one task 5 gave the database rows, so the UI
+    finds the tiles from the (run, valid_time) pair it already selects. Tiles go to MinIO, not a
+    local folder, because the worker and the frontend run on separate hosts in production.
     """
     ti = kwargs["ti"]
     depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
@@ -289,14 +301,29 @@ def task_build_flood_tiles(**kwargs):
     if not run_ts:
         raise ValueError("❌ run_ts is missing from task 5_merge_geojson XCom")
 
-    print(f"🌊 9. Building flood-extent tiles: {depth_dir} -> {FLOOD_EXTENT_TILES_DIR}/{run_ts}")
-    results = flood_extent.build_run_tiles(
-        depth_dir,
-        run_ts,
-        FLOOD_EXTENT_TILES_DIR,
-        workers=FLOOD_EXTENT_WORKERS,
-        keep_runs=FLOOD_EXTENT_KEEP_RUNS,
+    print(f"🌊 9. Publishing flood-extent tiles: {depth_dir} -> s3://{FLOOD_EXTENT_BUCKET}/runs/{run_ts}")
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=os.environ["MINIO_ENDPOINT"],
+        aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
     )
+    db_conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        results = publish.publish_run(
+            depth_dir,
+            run_ts,
+            FLOOD_EXTENT_WORK_DIR,
+            s3,
+            FLOOD_EXTENT_BUCKET,
+            workers=FLOOD_EXTENT_WORKERS,
+            db_conn=db_conn,
+            keep_runs=FLOOD_EXTENT_KEEP_RUNS,
+            cleanup_dirs=[DEPTH_ROOT_DIR, FLOOD_EXTENT_WORK_DIR],
+            cleanup_max_age_hours=FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS,
+        )
+    finally:
+        db_conn.close()
     flooded = sum(1 for result in results.values() if not result.is_empty)
     print(f"✅ Tiles done: {flooded}/{len(results)} timesteps have flooding")
     return {"run_ts": run_ts, "timesteps": len(results), "flooded_timesteps": flooded}
@@ -370,4 +397,5 @@ with DAG(
     t1 >> t_ddl
     t_ddl >> t3b
     t_ddl >> t8
+    t_ddl >> t9
     t0 >> wait_for_next_check

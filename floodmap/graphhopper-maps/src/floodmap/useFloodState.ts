@@ -4,6 +4,7 @@ import {
     getFloodStore,
     loadFloodTimesteps,
     reissueCurrentRoute,
+    TIMESTEP_REFRESH_INTERVAL_MS,
 } from '@/floodmap/FloodStore'
 
 /**
@@ -29,8 +30,13 @@ export function useFloodState(): FloodStoreState {
 export function useFloodBootstrap(): void {
     const { selectedIndex, vehicleType, timesteps } = useFloodState()
 
+    // Refetching (not just re-picking from the existing list) is deliberate: a session left open
+    // past FRESH_DATA_WINDOW_MS needs the newer run a fresh fetch would surface, not just a
+    // different index into data that's already stale.
     useEffect(() => {
         loadFloodTimesteps()
+        const id = setInterval(loadFloodTimesteps, TIMESTEP_REFRESH_INTERVAL_MS)
+        return () => clearInterval(id)
     }, [])
 
     useEffect(() => {

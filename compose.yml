@@ -35,6 +35,7 @@ x-airflow-common: &airflow-common
     KEEP_LOCAL_GEOJSON: ${KEEP_LOCAL_GEOJSON:-false}
     FLOOD_EXTENT_WORKERS: ${FLOOD_EXTENT_WORKERS:-2}
     FLOOD_EXTENT_KEEP_RUNS: ${FLOOD_EXTENT_KEEP_RUNS:-3}
+    FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}
     SIMULATION_DURATION: ${SIMULATION_DURATION:-7200}
     UPDATE_INTERVAL: ${UPDATE_INTERVAL:-900}
     FLOOD_TEST_RAIN_MM_HR: ${FLOOD_TEST_RAIN_MM_HR:-}
@@ -89,6 +90,7 @@ services:
       FLOOD_MINIO_BUCKET: ${FLOOD_MINIO_BUCKET:-flood-results-full}
       INITIAL_WL_MINIO_BUCKET: ${INITIAL_WL_MINIO_BUCKET:-initial-wl}
       MANHOLES_MINIO_BUCKET: ${MANHOLES_MINIO_BUCKET:-manholes-data}
+      FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}
     entrypoint:
       - /bin/sh
       - -c
@@ -100,7 +102,12 @@ services:
         mc mb --ignore-existing "local/$${FLOOD_MINIO_BUCKET}"
         mc mb --ignore-existing "local/$${INITIAL_WL_MINIO_BUCKET}"
         mc mb --ignore-existing "local/$${MANHOLES_MINIO_BUCKET}"
-        echo "MinIO buckets ready: $${FLOOD_MINIO_BUCKET}, $${INITIAL_WL_MINIO_BUCKET}, $${MANHOLES_MINIO_BUCKET}"
+        mc mb --ignore-existing "local/$${FLOOD_EXTENT_BUCKET}"
+        # Only this bucket serves tiles straight to the browser (via nginx), so only this one
+        # gets anonymous read. The MinIO API port itself stays bound to 127.0.0.1 (see the
+        # `minio` service's `ports:`), so this bucket is public only through nginx's proxy.
+        mc anonymous set download "local/$${FLOOD_EXTENT_BUCKET}"
+        echo "MinIO buckets ready: $${FLOOD_MINIO_BUCKET}, $${INITIAL_WL_MINIO_BUCKET}, $${MANHOLES_MINIO_BUCKET}, $${FLOOD_EXTENT_BUCKET}"
 
   storage-postgres:
     # The official postgis/postgis:17-3.5 tag is amd64-only (no arm64 manifest as of
@@ -368,10 +375,12 @@ services:
       context: ./floodmap/graphhopper-maps
     depends_on:
       - floodmap-backend
-    volumes:
-      # Vector tiles of the flood extent, one folder per run and timestep. The Airflow task
-      # 9_build_flood_tiles writes them with scripts/flood_extent/flood_extent.py.
-      - ${FLOOD_EXTENT_TILES_DIR:-./data/flood-extent}:/usr/share/nginx/html/flood-extent:ro
+    # Vector tiles of the flood extent live in MinIO now (scripts/flood_extent/publish.py), not
+    # a bind-mounted folder — the Airflow worker and this frontend run on separate hosts in
+    # production, so a bind mount can't carry files between them. nginx.conf proxies
+    # /flood-extent/ to the `minio` service's flood-extent bucket instead of serving a local
+    # folder (nginx.conf can't read compose env vars — the bucket name there must be kept in
+    # sync with FLOOD_EXTENT_BUCKET's default below if that default ever changes).
     ports:
       - "${FLOOD_ROUTING_FRONTEND_PORT:-8082}:80"
     restart: unless-stopped

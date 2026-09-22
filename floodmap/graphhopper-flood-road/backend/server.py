@@ -8,6 +8,10 @@ GraphHopper's custom_model.areas replaces Valhalla's linear_cost_factors /
 exclude_locations. /flood/areas and POST /route share one derivation
 (flood_areas.derive_areas) so the map overlay and the routing gate can
 never drift apart.
+
+/flood/runs and /flood/timesteps are a separate concern: they back the
+map's timestep picker, not routing, and read flood_extent_runs.py's
+flood_extent_polygon table instead. See artifacts/SW Architecture.md #8.
 """
 from __future__ import annotations
 
@@ -26,7 +30,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from db import get_connection  # noqa: E402
-from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas, list_runs, list_timesteps  # noqa: E402
+from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
+from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
 from place_search import (  # noqa: E402
     PlaceSearchTimeout,
     PlaceSearchUnavailable,

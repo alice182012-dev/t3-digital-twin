@@ -34,6 +34,11 @@ export interface FloodStoreState {
  *  within this window of now. */
 export const FRESH_DATA_WINDOW_MS = 45 * 60 * 1000
 
+/** How often useFloodBootstrap re-fetches timesteps. Well under FRESH_DATA_WINDOW_MS, so a
+ *  session left open re-anchors selectedIndex to the clock long before data goes stale, instead
+ *  of freezing on whatever was nearest at page load. */
+export const TIMESTEP_REFRESH_INTERVAL_MS = 5 * 60 * 1000
+
 /** `receivedAt` is the clock read, taken once at the fetch boundary, so the reducer stays pure
  *  and every time-dependent decision in this store is reproducible in a test. */
 export class FloodTimestepsReceived implements Action {
