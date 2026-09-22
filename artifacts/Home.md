@@ -78,6 +78,35 @@ FROM "docs/concepts"
 SORT last_updated DESC
 ```
 
+## PRDs
+
+One page per feature or change big enough to need a stated problem, goals, and a definition of
+done before work starts. Start a new one from `.templates/prd.md`. A PRD comes before its
+`docs/claude-plan/` entry: the PRD says what and why, the plan says how. Its **Dependencies and
+assumptions** section exists because of blockers such as
+[[graphhopper-vehicle-profile-rejection]] and [[storage-backend-build-context-missing]], both
+caused by a dependency nothing had written down. When a PRD grew out of a note in `raw/ideas/`,
+its `source_ideas` frontmatter field links back to that note instead of retyping its argument.
+
+```dataview
+TABLE status AS "Status", subsystem AS "Subsystem", date_drafted AS "Drafted"
+FROM "docs/prds"
+SORT status ASC, date_drafted DESC
+```
+
+## Lessons learned
+
+Short, checkable rules distilled from resolved blockers, one page per lesson. Start a new one from
+`.templates/lesson-learned.md` when closing a blocker whose cause would generalize to other
+subsystems. A lesson links back to its source blocker for the full incident; it doesn't retell the
+approach-by-approach history itself.
+
+```dataview
+TABLE status AS "Status", subsystem AS "Subsystem", date_captured AS "Captured"
+FROM "docs/lessons"
+SORT status ASC, date_captured DESC
+```
+
 ## Design docs
 
 ```dataview
@@ -90,10 +119,22 @@ FROM "designs"
 - `raw/` is read-only for Claude. Never write, rename, move, or delete a file inside it, even if
   asked casually in passing; if the user wants something in `raw/` changed, they do it themselves,
   or say so explicitly enough that there's no ambiguity this is what they mean.
-- Every log, plan, decision, concept, and blocker doc gets a YAML frontmatter block: `date` (or
-  `date_open` for a blocker), `type` (`log`/`plan`/`decision`/`concept`/`blocker`), `status`
+- Every log, plan, decision, concept, blocker, PRD, lesson, and idea doc gets a YAML frontmatter
+  block: `date` (`date_open` for a blocker, `date_drafted` for a PRD, `date_captured` for a lesson
+  or idea), `type` (`log`/`plan`/`decision`/`concept`/`blocker`/`prd`/`lesson`/`idea`), `status`
   (`active`/`parked`/`done`/`superseded` for most; `open`/`monitoring`/`resolved`/`wont-fix` for a
-  blocker), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
+  blocker; `draft`/`approved`/`in-progress`/`shipped`/`abandoned` for a PRD; `active`/`retired` for
+  a lesson; `unexplored`/`exploring`/`go`/`needs-clarification`/`killed` for an idea), `tags`, and
+  `related` (a list of `[[wikilinks]]` to what it's tied to).
+- A PRD (`docs/prds/`) states the problem, goals, and definition of done for a feature or change
+  before its implementation plan (`docs/claude-plan/`) is written. Its **Dependencies and
+  assumptions** section states every fact the design relies on that isn't visible from reading the
+  code cold, and **Definition of done** states an operational check rather than a proxy like "it
+  compiles" or "no errors in the logs".
+- A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
+  retelling of the incident. Write one when closing a blocker whose cause would generalize past
+  the one subsystem it happened in, and link the source blocker in `source_blockers` instead of
+  copying its approach history.
 - A blocker page (`docs/blockers/`) is the deep record for one blocker: description, why it
   matters, one subsection per approach tried, and the eventual decision. It is the one place this
   detail lives; a concept page or `TODOS.md` item links to the blocker page rather than repeating
