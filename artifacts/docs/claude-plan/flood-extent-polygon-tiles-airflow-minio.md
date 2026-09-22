@@ -2,7 +2,7 @@
 date: 2026-09-18
 type: plan
 branch: flood-tile-t6t7
-status: active
+status: done
 tags: [flood-tile, airflow, minio]
 related: ["[[2026-09-18]]"]
 ---
@@ -128,48 +128,54 @@ Tests: the UTC+7 conversion, key layout, manifest contents, and that the manifes
 - End to end: step 4 above, with screenshots.
 - Performance: the numbers from step 6 go into the plan file when measured.
 
-## Status: first milestone built without MinIO
+## Status: done, MinIO path shipped
 
-Built on `flood-tile-t6t7`, not committed. This milestone chose display-only
-scope and precomputed tiles, and it skips MinIO, the manifest, and view-time
-selection by the clock. Steps 1 to 4 and 6 to 7 of this plan remain open.
+The plan's own fork in its Open list (continue toward MinIO, or keep the
+volume-based layout) resolved toward MinIO. Confirmed against the current
+code, not just recollection: `scripts/flood_extent/publish.py` exists and is
+what `dags/flood_mapping_dag.py`'s task 9 calls
+(`publish.publish_run(..., FLOOD_EXTENT_BUCKET, ...)`, uploading to
+`s3://flood-extent/runs/<run_ts>/...`), and `compose.yml` no longer bind-mounts
+`data/flood-extent/mvt` into `flood-routing-frontend`; `/flood-extent/` is
+proxied to the `minio` service's `flood-extent` bucket instead (see
+`compose.yml` lines 36-38, 93, 105-110, 384-389).
 
-Implemented:
+Implemented, superseding the "first milestone" section below:
+
+- `scripts/flood_extent/publish.py`: builds each timestep, uploads its tiles
+  to MinIO, and writes the run's manifest.
+- `dags/flood_mapping_dag.py` task 9 (`build_flood_tiles`) calls `publish_run`
+  after `5_merge_geojson`, publishing per-run, per-timestep tiles to
+  `s3://flood-extent/runs/<run_ts>/...` and pruning old runs
+  (`FLOOD_EXTENT_KEEP_RUNS`).
+- `compose.yml`: `minio-init` creates the `flood-extent` bucket with anonymous
+  download; the frontend's `/flood-extent/` path is proxied to MinIO, not
+  bind-mounted.
+
+Not re-verified in this pass: view-time manifest selection against
+`FRESH_DATA_WINDOW_MS`, the 45-minute-cutoff and dry-step UI behavior, and
+worker peak-memory/wall-time figures. These aren't blocking anything currently
+in flight; revisit only if a flood-extent-tile bug surfaces.
+
+<details>
+<summary>Superseded: "first milestone built without MinIO" (2026-09-21 snapshot)</summary>
+
+Built on `flood-tile-t6t7`, not committed at the time. This milestone chose
+display-only scope and precomputed tiles, and skipped MinIO, the manifest, and
+view-time selection by the clock.
 
 - `scripts/flood_extent/flood_extent.py` is an importable engine.
   `build_flood_extent` builds one timestep, and `build_run_tiles` builds a run.
   Every intermediate file lives in a temporary folder that is always deleted.
   The tile folder is swapped in only when it is complete.
-- Task `9_build_flood_tiles` in `dags/flood_mapping_dag.py` runs after
-  `5_merge_geojson`. It reuses that task's `run_ts` as the run name.
-- Tiles go to `data/flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf`, where both
-  names are `YYYYMMDDTHHMMSS` in Vietnam time. `compose.yml` mounts that folder
-  into `flood-routing-frontend`. The task keeps the newest three runs.
+- Tiles went to `data/flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf`, bind-mounted
+  into `flood-routing-frontend` — since superseded by the MinIO path above.
 - `FloodExtentLayer.tsx` follows the timestep selected in `FloodStore` and
   re-points one layer as the timeline moves.
 - `Dockerfile` installs `grass-core` in the last apt block.
 
-Checked: the engine ran on a real raster in a container with GRASS 8.2.1 (187
-tiles, no files left in `/tmp`), including dry, one-cell, and corrupt inputs.
-`tsc` and the floodmap Jest suites pass.
+Checked at the time: the engine ran on a real raster in a container with GRASS
+8.2.1 (187 tiles, no files left in `/tmp`), including dry, one-cell, and
+corrupt inputs. `tsc` and the floodmap Jest suites passed.
 
-Open:
-
-- Recreate the worker from the full image. On 2026-09-21 the `Dockerfile` built
-  `airflow-worker` successfully (GRASS 8.2.1, all GDAL packages at 3.6.2, the
-  last apt layer pins them), and the engine gave identical results in it. The
-  running worker still uses the earlier stopgap image (`pre-grass` plus
-  `grass-core` saved with `docker commit`). Recreate it when no DAG task is
-  running.
-- Tiles for run `20260904T140500` (four timesteps) were built inside the
-  worker with `build_run_tiles` in 1 minute 42 seconds, and the frontend
-  serves them. The first real DAG run through task 9 hasn't happened yet.
-- Tiles for the five test rasters in `test/waterdepth_steps` (run
-  `20251006T000000`, 9901 by 5656 cells, up to 7.5 million wet cells) were built
-  in 971 seconds with 2 workers. Those timesteps aren't in the database, so
-  the UI can't select them.
-- Confirm the layer against real tiles. The event raster
-  `depth_event20251007_Ver03.tif` was still being copied when tested.
-- Decide whether to continue toward MinIO and the manifest, or keep the
-  volume-based layout.
-
+</details>
