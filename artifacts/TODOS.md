@@ -91,6 +91,12 @@ for known cases) before or in parallel with Phase B/C.
 **Depends on:** None — doesn't block Phase A (pure frontend chrome). Ideally lands before or
 alongside Phase B/C, since those are what actually stack new load onto this backend.
 
+**Progress (2026-09-23):** [[point-depth-lookup-backend]]'s Story 1 added
+`backend/test_flood_areas.py` and `backend/test_server.py`, a regression pass against a real
+PostGIS and a stub GraphHopper covering `derive_areas()`, `build_custom_model()`, and `server.py`'s
+full HTTP surface. Still open: a soak period and a side-by-side comparison against the old
+Valhalla-based backend for known routes and flood scenarios.
+
 Status:: active
 
 ### Establish a project DESIGN.md

@@ -15,13 +15,19 @@ raster-backed point-depth lookup. Rows carry Priority, Estimate, and Sprint in a
 standard Epic fields, per this vault's user-story sprint-delegation convention (see
 `.claude/CLAUDE.md`, "User stories and sprint planning").
 
-- **Story 1: Regression-harden `floodmap-backend` before adding new load.**
+- **Story 1 (done): Regression-harden `floodmap-backend` before adding new load.**
   As an engineer, I want `server.py` and `flood_areas.py` covered by a regression or test pass, so
   I can add a new endpoint without debugging two unknowns (new code, an unproven backend) at once.
   Given the architecture doc's §11 flags `floodmap-backend` as untested since the
   Valhalla-to-GraphHopper rewrite, when a regression or test pass runs against its existing routing
   and flood-grading behavior, then a real request and response confirms both still work before any
   new endpoint work starts.
+  `backend/test_flood_areas.py` and `backend/test_server.py` cover `derive_areas()`,
+  `build_custom_model()`, and `server.py`'s full HTTP surface (`/health`, `/flood/areas`,
+  `POST /route` graded and ungraded) against a real PostGIS and a stub GraphHopper. Both ran clean
+  against `postgis/postgis:15-3.4`. `artifacts/TODOS.md`'s broader hardening item (a soak period, a
+  side-by-side comparison against the old Valhalla backend) is still open; this story covered only
+  the regression-test half of that item.
   Priority: P0. Estimate: M. Sprint: 1. Dependencies: None.
 
 - **Story 2: Load `depth.tif` into PostGIS as a raster.**
@@ -56,3 +62,6 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
 
 - **2026-09-23, draft.** Drafted from [[t3-digital-twin-architecture-gaps]]'s Goals, Dependencies
   and assumptions, and Definition of done sections.
+- **2026-09-23, draft.** Story 1 done: added `backend/test_flood_areas.py` and
+  `backend/test_server.py`, both passing against a real PostGIS and a stub GraphHopper. Story 2
+  (raster load) is next.

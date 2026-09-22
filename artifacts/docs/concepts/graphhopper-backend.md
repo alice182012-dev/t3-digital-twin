@@ -111,5 +111,7 @@ All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
   Airflow's ingestion DAG history for the same period, since its `INSERT`s reference that column
   too and may have been failing silently.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
-  Valhalla-to-GraphHopper rewrite), with no regression tests and no soak time yet (P2 in
-  TODOS.md).
+  Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
+  (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
+  with a real PostGIS and a stub GraphHopper. Still no soak time or a side-by-side comparison
+  against the old Valhalla backend (P2 in TODOS.md).
