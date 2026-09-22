@@ -155,10 +155,10 @@ restored the `foot` profile and its encoded values (`foot_access`, `foot_average
 `graphhopper-maps/config-local.js.example`. Verified live on the remote host: real OSM import,
 `foot` registered with its encoded values, and an actual walking route returned end to end.
 
-**Still open:** `flood-routing-frontend` needs a Docker image rebuild before `foot` shows up in the
-UI (`config-local.js` is baked in at build time). `truck` is still missing from
-`config-local.js.example`'s `profiles`, a separate, already-understood config gap — see
-[[routing-foot-truck-profiles]].
+**Still open:** `truck` is still missing from `config-local.js.example`'s `profiles`, a separate,
+already-understood config gap — see [[routing-foot-truck-profiles]]. Also surfaced while verifying
+this fix in the UI: routing itself (any profile) fails with "No safe route available" whenever a
+flood timestep is attached, unrelated to this fix — see [[flood-route-missing-geom-column]].
 
 **Blocker tracking:** [[graphhopper-vehicle-profile-rejection]] (full investigation, all 5
 approaches, and verification steps)

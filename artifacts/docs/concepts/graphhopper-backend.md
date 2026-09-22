@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]", "[[graphhopper-vehicle-profile-rejection]]"]
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]"]
 last_updated: 2026-09-23
 ---
 
@@ -101,10 +101,12 @@ All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
 ## Open items
 
 - `floodmap/graphhopper-maps/config-local.js.example` now lists `foot` alongside `motorbike` and
-  `car`, but not `truck`, which GraphHopper already serves. The `flood-routing-frontend` image also
-  needs rebuilding (`config-local.js` is baked in at Docker build time via
-  `cp config-local.js.example config-local.js`) before `foot` routing shows up in the UI; that
-  rebuild had not run as of this page's `last_updated` date.
+  `car`, but not `truck`, which GraphHopper already serves. `flood-routing-frontend` was rebuilt
+  and redeployed 2026-09-23; `foot` is confirmed selectable in the live UI.
+- Routing through the UI (any profile, not just `foot`) fails with a safety-framed "No safe route
+  available" error whenever a `valid_time` is attached, which happens on every request since
+  `TimeSlider` always supplies one. Root cause: a missing `geom_4326` column on
+  `flood_road_values`. See [[flood-route-missing-geom-column]].
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite), with no regression tests and no soak time yet (P2 in
   TODOS.md).

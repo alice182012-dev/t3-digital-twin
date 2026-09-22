@@ -116,10 +116,12 @@ Landed as: `compose.yml` (entrypoint `-o` flag), `graphhopper/config.yml` (resto
 and encoded values), `graphhopper-maps/config-local.js.example` and the gitignored local
 `config-local.js` (added `foot: {}`).
 
-Not yet done: the `flood-routing-frontend` Docker image needs a rebuild before `foot` shows up in
-the UI, since `config-local.js` is baked in at image build time
-(`cp config-local.js.example config-local.js` in that service's `Dockerfile`). See
-[[graphhopper-backend]]'s Open items.
+`flood-routing-frontend` was rebuilt the same day (image bakes `config-local.js` in at build time
+via `cp config-local.js.example config-local.js`) and redeployed. Confirmed in the running UI: the
+routing panel's profile picker now shows a "Walking" option alongside "Car" and the motorbike
+icon, and selecting it and setting two points sends a `profile=foot` request end to end. Routing
+itself then hit a separate, unrelated bug — see [[flood-route-missing-geom-column]] — not a
+regression from this fix, since it reproduces identically for `car` and `motorbike`.
 
 ## Concerns
 
