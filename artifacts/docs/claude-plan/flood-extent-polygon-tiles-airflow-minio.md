@@ -1,3 +1,12 @@
+---
+date: 2026-09-18
+type: plan
+branch: flood-tile-t6t7
+status: active
+tags: [flood-tile, airflow, minio]
+related: ["[[2026-09-18]]"]
+---
+
 # Flood-extent polygon tiles: Airflow, MinIO, and view-time serving
 
 ## Context

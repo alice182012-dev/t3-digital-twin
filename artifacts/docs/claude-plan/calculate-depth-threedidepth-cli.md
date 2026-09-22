@@ -1,3 +1,11 @@
+---
+date: 2026-09-18
+type: plan
+branch: flood-tile-t6t7
+status: done
+tags: [flood-tile, threedidepth]
+---
+
 # calculate_depth CLI pattern + production polygon pipeline
 
 ## Context

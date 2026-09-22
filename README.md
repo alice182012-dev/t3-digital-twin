@@ -6,6 +6,9 @@ This repository now has one top-level Docker Compose app that connects:
 - `minio_custom`: MinIO plus Django/React storage UI.
 - `floodmap/valhalla-flood-road-test`: Valhalla-backed flood-aware routing map.
 
+For engineering logs, plans, and the project backlog, see `artifacts/Home.md` (an Obsidian
+vault rooted at `artifacts/`; readable as plain markdown without Obsidian too).
+
 ## Run the Entire Stack
 
 These steps start the integrated Docker Compose stack:

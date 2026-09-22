@@ -39,13 +39,14 @@ build/
 .cache/
 local_geojson/
 
-# Airflow local state
-data/
-state/
-logs/
-config/
-plugins/
-flood/
+# Airflow local state (anchored to repo root — an unanchored "logs/" also matched
+# artifacts/logs/, silently excluding the engineering diary from git)
+/data/
+/state/
+/logs/
+/config/
+/plugins/
+/flood/
 
 # MinIO / Django local state
 db.sqlite3
@@ -58,3 +59,6 @@ floodmap/valhalla-flood-road-test/valhalla/source/vietnam-latest.osm.pbf
 .claude
 .SynologyWorkingDirectory
 CLAUDE.md
+
+# Obsidian personal workspace state (artifacts/ is the vault root)
+artifacts/.obsidian/
