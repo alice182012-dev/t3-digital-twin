@@ -140,53 +140,27 @@ a new interaction pattern with no existing ARIA precedent in this codebase to co
 
 Status:: active
 
-### Pinned GraphHopper build rejects any new vehicle profile
+### Pinned GraphHopper build rejects any new vehicle profile — RESOLVED 2026-09-23
 
-**What:** The `israelhikingmap/graphhopper` image pinned in `compose.yml` (digest
-`sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`, a 12.0-SNAPSHOT dated
-2026-06-18) fails at startup with `Cannot compile expression: '<name>_access' not available` for
-any vehicle encoded value beyond the three already baked into the current working graph
-(`car_access`, `hgv`, and friends — reused by both `car` and `truck`, and by `motorbike` via
-`motorbike.json`). Reproduced identically for `foot_access` (adding a `foot` profile per the
-user's 40cm-block requirement) and `bike_access` (a from-scratch isolation test with zero
-dependency on `foot`), so this is not specific to pedestrian routing — no new GraphHopper profile
-can be added to this image at all right now. The failure happens in
-`GraphHopper.checkProfilesConsistency()` before any OSM import runs (confirmed via logs: no
-import progress lines, `graph-cache` volume stays empty), so it isn't a stale-cache or
-config-syntax issue — `foot_custom.json`/`foot_avoid_private_node_custom.json` in
-`floodmap/graphhopper-flood-road/graphhopper/` are verbatim/trimmed copies of GraphHopper's own
-bundled `foot.json`, extracted directly from this exact jar, so the JSON itself is correct.
+**What it was:** Not a broken build. The pinned image's `graphhopper.sh` entrypoint always injects
+`-Ddw.graphhopper.graph.location=/data/default-gh` (its own default) as a JVM system property,
+which overrides `config.yml`'s `graph.location: /data/graph-cache`. `compose.yml`'s entrypoint
+never passed `-o` to change that default, so every start loaded a graph frozen into the image at
+build time, with only `car_access`/`hgv`/friends encoded, and the real mounted `graph-cache` volume
+was never used at all.
 
-**Why:** Blocks building the foot/walking profile the user asked for (pedestrians blocked at
-40cm depth) and any other new vehicle profile (e.g. exposing `truck` in the frontend). The
-backend side of the foot profile is already done and inert: `scripts/flood_utils.py`'s
-`VEHICLE_PROFILES["foot"]` (threshold 40cm) and the corrected `VEHICLE_PROFILES["truck"]`
-threshold (35cm, was 50cm) are both shipped and harmless — `derive_areas()`/`build_custom_model()`
-are vehicle-agnostic and need no further backend changes once a `foot` GraphHopper profile
-actually exists.
+**Fix:** Added `-o /data/graph-cache` to the `graphhopper` service's `entrypoint` in `compose.yml`,
+restored the `foot` profile and its encoded values (`foot_access`, `foot_average_speed`,
+`foot_road_access`) in `graphhopper/config.yml`, and added `foot: {}` to
+`graphhopper-maps/config-local.js.example`. Verified live on the remote host: real OSM import,
+`foot` registered with its encoded values, and an actual walking route returned end to end.
 
-**Context:** Investigated by trying GraphHopper's own bundled `foot.json` verbatim, then
-trimmed (dropping `hike_rating`/`mtb_rating`, which need encoded values this OSM extract has no
-use for — same precedent as `truck_custom.json` dropping `turn_costs`), then dropping
-`foot_priority` specifically, then testing a synthetic `bike_test` profile referencing only
-`bike_access` with zero other dependencies — all fail the same way. A raw `docker run` of the
-same image (bypassing `docker compose`) hung at ~100% CPU with no import progress for several
-minutes on two separate attempts, for unknown reasons unrelated to this bug — use
-`docker compose up --force-recreate graphhopper` for any further testing, not a standalone
-`docker run`.
+**Still open:** `flood-routing-frontend` needs a Docker image rebuild before `foot` shows up in the
+UI (`config-local.js` is baked in at build time). `truck` is still missing from
+`config-local.js.example`'s `profiles`, a separate, already-understood config gap — see
+[[routing-foot-truck-profiles]].
 
-**Pros:** Once resolved (a different pinned digest/version, or a real fix upstream), the foot
-profile is a ~15-minute wire-up: restore the `foot` entries in `graphhopper/config.yml`
-(profiles/profiles_lm/graph.encoded_values — all still described in that file's comments), add
-`foot: {}` back to `graphhopper-maps/config-local.js.example`'s `profiles`, done — no other code
-changes needed (icon and backend logic already exist/work).
-**Cons:** Root-causing this fully means diffing against upstream GraphHopper's actual encoded-value
-factory for this exact snapshot commit, or just trying a different pinned build — neither
-attempted yet, since it's a bigger investigation than the original scope.
+**Blocker tracking:** [[graphhopper-vehicle-profile-rejection]] (full investigation, all 5
+approaches, and verification steps)
 
-**Effort:** M (human ~half day / CC ~1-2 hrs, mostly bisecting GraphHopper versions)
-**Priority:** P2
-**Depends on:** None — independent of Phase A/B/C.
-**Blocker tracking:** [[graphhopper-vehicle-profile-rejection]]
-
-Status:: active
+Status:: resolved

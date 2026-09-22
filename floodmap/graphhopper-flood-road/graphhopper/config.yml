@@ -7,15 +7,6 @@ graphhopper:
   # built-in profiles, even when overridden with our own content — hence the
   # _custom suffix (motorbike.json isn't reserved since there's no built-in
   # "motorbike" profile, only "motorcycle").
-  #
-  # A "foot" profile is NOT wired up here yet: this pinned GraphHopper build
-  # (israelhikingmap/graphhopper, see the image digest comment below) rejects
-  # ANY newly-declared vehicle encoded value at startup with "Cannot compile
-  # expression: '<name>_access' not available" — reproduced identically for
-  # both foot_access and bike_access, before any OSM import even runs (see
-  # artifacts/TODOS.md). foot_custom.json/foot_avoid_private_node_custom.json in this
-  # directory are ready (verbatim/trimmed copies of GraphHopper's own bundled
-  # foot.json) for whoever resolves the underlying GraphHopper build issue.
   profiles:
     - name: motorbike
       custom_model_files: [motorbike.json]
@@ -23,6 +14,8 @@ graphhopper:
       custom_model_files: [car_custom.json]
     - name: truck
       custom_model_files: [truck_custom.json]
+    - name: foot
+      custom_model_files: [foot_custom.json]
 
   # Every flood request supplies its own custom_model with ch.disable in the
   # body, so every query runs in flexible mode anyway — landmarks (LM) keep
@@ -32,10 +25,13 @@ graphhopper:
     - profile: motorbike
     - profile: car
     - profile: truck
+    - profile: foot
 
-  # Union of what motorbike.json (upstream motorcycle.json), car.json and truck.json need.
+  # Union of what motorbike.json (upstream motorcycle.json), car.json, truck.json
+  # and foot_custom.json need.
   graph.encoded_values: car_access, car_average_speed, road_access, road_class, track_type, surface,
-    max_speed, ferry_speed, hgv, max_width, max_height, max_weight, max_weight_except, road_environment
+    max_speed, ferry_speed, hgv, max_width, max_height, max_weight, max_weight_except, road_environment,
+    foot_access, foot_average_speed, foot_road_access
 
   prepare.min_network_size: 200
 

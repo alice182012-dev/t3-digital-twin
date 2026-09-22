@@ -330,7 +330,13 @@ services:
       - ./floodmap/graphhopper-flood-road/graphhopper/truck_custom.json:/graphhopper/truck_custom.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/foot_custom.json:/graphhopper/foot_custom.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/foot_avoid_private_node_custom.json:/graphhopper/foot_avoid_private_node_custom.json:ro
-    entrypoint: ["./graphhopper.sh", "-c", "config.yml"]
+    # -o pins the graph-cache output dir. Without it, this build's graphhopper.sh
+    # defaults GRAPH to /data/default-gh and passes it as a -D system property
+    # that overrides config.yml's graph.location, so the app silently loads
+    # whatever graph is baked into the image instead of importing the mounted
+    # OSM extract into the graphhopper-graph-cache volume. See
+    # artifacts/docs/blockers/graphhopper-vehicle-profile-rejection.md.
+    entrypoint: ["./graphhopper.sh", "-c", "config.yml", "-o", "/data/graph-cache"]
     ports:
       - "${GRAPHHOPPER_PORT:-8989}:8989"
     healthcheck:

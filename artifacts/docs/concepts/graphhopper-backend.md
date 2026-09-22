@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]", "[[graphhopper-vehicle-profile-rejection]]"]
-last_updated: 2026-09-22
+last_updated: 2026-09-23
 ---
 
 # GraphHopper flood-road backend
@@ -65,7 +65,7 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
 | `/route` | POST | Flood-graded route; see the flow above. |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
 
-## The pinned image and the routing profile blocker
+## The pinned image, and why the `foot` profile was blocked
 
 `compose.yml` pins the `graphhopper` service to
 `israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`,
@@ -73,29 +73,38 @@ a 12.0-SNAPSHOT build, by digest rather than `:latest`. The `ch.disable`-in-body
 routing flow above depends on is undocumented in that build and could change without notice, so the
 pin is deliberate: re-pull only after re-running the `ch.disable` smoke test.
 
-That same build rejects any newly declared vehicle encoded value at startup:
-`Cannot compile expression: '<name>_access' not available`, thrown from GraphHopper's own
-`checkProfilesConsistency()` before any OSM import runs. This was reproduced identically for
-`foot_access` (needed for a walking profile) and, as an isolation test, for a synthetic
-`bike_access` profile with no dependency on `foot` at all. The failure is specific to this pinned
-build, not to pedestrian routing. `graphhopper/config.yml` currently registers only three profiles
-(`motorbike`, `car`, `truck`) for this reason. `foot_custom.json` and
-`foot_avoid_private_node_custom.json` already exist in that directory, trimmed from GraphHopper's
-own bundled `foot.json`, ready for whoever resolves the build issue. See
-[[graphhopper-vehicle-profile-rejection]] for the four approaches already tried and what's left,
-and [[routing-foot-truck-profiles]] for why `truck` is also missing from the frontend despite
-already working server-side (a config gap, not this same bug).
+Adding any new vehicle profile used to fail at startup with `Cannot compile expression:
+'<name>_access' not available`, thrown from GraphHopper's own `checkProfilesConsistency()`. This
+was not a broken build. This pinned image's `graphhopper.sh` entrypoint defaults its graph output
+directory to `/data/default-gh` and always passes it as a `-Ddw.graphhopper.graph.location` JVM
+system property, which overrides `config.yml`'s `graph.location: /data/graph-cache` setting
+(Dropwizard system-property overrides win over the YAML file). `compose.yml`'s entrypoint never
+passed the `-o` flag that changes that default, so the app always loaded a graph baked into the
+image at `/data/default-gh`, imported once with only `car_access`, `hgv`, and the other three
+built-in profiles' encoded values, before this repository's history starts. `/data/graph-cache`,
+the actual mounted volume, was never used at all, which is why every earlier attempt saw no import
+progress and an empty cache directory. Fixed by adding `-o /data/graph-cache` to the `graphhopper`
+service's `entrypoint` in `compose.yml`, which makes the app import the mounted OSM extract into
+the real, persistent volume using whatever `graph.encoded_values` `config.yml` declares.
+`graphhopper/config.yml` now registers a fourth profile, `foot`, backed by `foot_custom.json`
+(`foot_priority` stays trimmed out; see that file's own comment for why). See
+[[graphhopper-vehicle-profile-rejection]] for the full investigation, and
+[[routing-foot-truck-profiles]] for why `truck` was still missing from the frontend despite already
+working server-side (a config gap, not this bug; also now fixed, see below).
 
 ## Vehicle thresholds
 
 `floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth a
 segment becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot 40 cm.
-`foot`'s entry is already correct and unused, since no GraphHopper profile exists to apply it to
-yet.
+All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
 
 ## Open items
 
-- The routing profile blocker above (P2 in TODOS.md; live status in [[graphhopper-vehicle-profile-rejection]]).
+- `floodmap/graphhopper-maps/config-local.js.example` now lists `foot` alongside `motorbike` and
+  `car`, but not `truck`, which GraphHopper already serves. The `flood-routing-frontend` image also
+  needs rebuilding (`config-local.js` is baked in at Docker build time via
+  `cp config-local.js.example config-local.js`) before `foot` routing shows up in the UI; that
+  rebuild had not run as of this page's `last_updated` date.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite), with no regression tests and no soak time yet (P2 in
   TODOS.md).

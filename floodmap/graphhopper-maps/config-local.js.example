@@ -29,10 +29,12 @@ const config = {
     request: {
         details: ['road_class', 'road_environment', 'road_access', 'surface', 'max_speed', 'average_speed', 'track_type'],
     },
-    // Only the two profiles graphhopper/config.yml actually serves.
+    // truck is also served by graphhopper/config.yml but not listed here yet;
+    // see artifacts/docs/routing-foot-truck-profiles.md.
     profiles: {
         motorbike: {},
         car: {},
+        foot: {},
     },
     profile_group_mapping: {},
     // Consumed directly by src/floodmap/FloodStore.ts — not an upstream field.

@@ -1,15 +1,15 @@
 ---
 date_open: 2026-09-14
-date_closed: 
+date_closed: 2026-09-23
 type: blocker
-status: open
+status: resolved
 severity: P2
 subsystem: graphhopper
-approaches_tried: 4
-approaches_remaining: 2
+approaches_tried: 5
+approaches_remaining: 0
 tags: [blocker, graphhopper]
 related: ["[[graphhopper-backend]]", "[[2026-09-14]]"]
-last_updated: 2026-09-22
+last_updated: 2026-09-23
 ---
 
 # GraphHopper pinned image rejects any new vehicle profile
@@ -60,18 +60,66 @@ A raw `docker run` of the same image (bypassing `docker compose`) hung at ~100% 
 progress for several minutes on two separate attempts, for reasons unrelated to this bug; see
 Concerns below.
 
+### Approach 5: read the entrypoint script instead of the config (root cause)
+
+The prior four approaches all diagnosed from the Java-side error and config.yml. The actual cause
+was in `graphhopper.sh`, the image's entrypoint script:
+
+```bash
+: "${GRAPH:=/data/default-gh}"
+...
+exec "$JAVA" $JAVA_OPTS ... -Ddw.graphhopper.graph.location="$GRAPH" $GH_WEB_OPTS -jar "$JAR" $ACTION $CONFIG
+```
+
+`GRAPH` only changes if the container command passes `-o <dir>` / `--graph-cache <dir>`.
+`compose.yml`'s `entrypoint: ["./graphhopper.sh", "-c", "config.yml"]` never did, so every start
+injected `-Ddw.graphhopper.graph.location=/data/default-gh` as a JVM system property, and Dropwizard
+system-property overrides win over the YAML file. `config.yml`'s own `graph.location:
+/data/graph-cache` was silently ignored on every single start.
+
+Confirmed directly on the running container: `docker exec ... cat /graphhopper/config.yml` showed
+the real, correct config, but the startup log said `loaded graph at:/data/default-gh` anyway.
+`/data/graph-cache`, the actual mounted named volume declared in `compose.yml`, was empty (just `.`
+and `..`) — genuinely never used, which is why every earlier attempt saw the cache stay empty and
+took that as evidence the failure predated import. `/data/default-gh`, not declared in `compose.yml`
+at all, held a real, fully-imported graph matching the Hanoi bounding box, with files dated hours
+before the container was even recreated: it survives `--force-recreate` because it's baked into the
+image's own layers, not the container's writable layer. That graph's `EncodingManager` only knew
+`car_access`, `hgv`, and the other built-in-profile values, frozen at whatever point this pinned
+digest was originally built. No config change could ever add a new encoded value to it, because no
+import ever ran on this deployment, for any of the four earlier attempts.
+
 ## Decision and explanation
 
-Pending. Two untried directions, from `TODOS.md`'s matching item:
+Resolved 2026-09-23. Fix: add `-o /data/graph-cache` to the `graphhopper` service's `entrypoint` in
+`compose.yml`, so the app imports the mounted OSM extract into the real, persistent volume instead
+of loading the image's frozen `/data/default-gh` graph. Verified live on the remote host
+(`100.67.84.55`, `airflow_new` compose project):
 
-- Diff against upstream GraphHopper's actual encoded-value factory for this exact snapshot commit
-  to find what changed.
-- Try a different pinned digest or version instead of root-causing this one.
+1. Applied the entrypoint change alone (config.yml still car/motorbike/truck only) and
+   force-recreated; no volume wipe needed yet, `graph-cache` already started empty. Logs showed
+   `start creating graph from /data/hanoi-model-area.osm.pbf` (a real import, ~7 seconds for this
+   extract) and `loaded graph at:/data/graph-cache`. `/info` returned all three existing profiles,
+   container healthy.
+2. Restored `foot` to `config.yml` (profile, `profiles_lm` entry, and `foot_access` /
+   `foot_average_speed` / `foot_road_access` in `graph.encoded_values`) and recreated again. This
+   failed identically to approaches 1-4, because `graph-cache` was now non-empty from step 1's
+   import and GraphHopper loaded that instead of re-importing — same underlying mechanism, one layer
+   later. Reverted to the known-good no-foot config to stop the resulting restart loop.
+3. Wiped `/data/graph-cache`'s contents (`docker exec ... rm -rf /data/graph-cache/*`; cheap, since
+   the volume holds only a derived index of the read-only-mounted `.osm.pbf`, not source data) and
+   recreated with `foot` back in `config.yml`. Real import completed, container healthy, `/info`
+   listed `foot` with all three new encoded values, and an actual `POST/GET /route?profile=foot`
+   between two `/nearest`-snapped points returned a real turn-by-turn walking route.
 
-Once resolved, wiring up `foot` is a roughly 15-minute change: restore the `foot` entries in
-`graphhopper/config.yml` (`profiles`, `profiles_lm`, `graph.encoded_values`, all still described in
-that file's comments) and add `foot: {}` back to `graphhopper-maps/config-local.js.example`'s
-`profiles`. No other code changes are needed; the icon and backend logic already exist and work.
+Landed as: `compose.yml` (entrypoint `-o` flag), `graphhopper/config.yml` (restored `foot` profile
+and encoded values), `graphhopper-maps/config-local.js.example` and the gitignored local
+`config-local.js` (added `foot: {}`).
+
+Not yet done: the `flood-routing-frontend` Docker image needs a rebuild before `foot` shows up in
+the UI, since `config-local.js` is baked in at image build time
+(`cp config-local.js.example config-local.js` in that service's `Dockerfile`). See
+[[graphhopper-backend]]'s Open items.
 
 ## Concerns
 
@@ -92,7 +140,7 @@ standalone `docker run`, to avoid re-triggering that separate issue.
   pedestrian-specific: a synthetic `bike_access` profile with no dependency on `foot` fails
   identically.
 - **2026-09-22, still open.** No new attempt since 2026-09-14.
-
-Update `status` to `monitoring` if a fix is attempted but not yet confirmed, or `resolved` once a
-`foot` profile actually starts; set `date_closed` at that point. Add a dated bullet above each time
-the status changes or a new attempt is made, even if it fails.
+- **2026-09-23, resolved.** Root cause: the entrypoint script overrides `graph.location` via a JVM
+  system property, so the app always loaded a graph frozen into the image, never the mounted
+  volume. Fixed with `-o /data/graph-cache` on the entrypoint. Verified live: real import, `foot`
+  registered with its three new encoded values, and an actual walking route returned.
