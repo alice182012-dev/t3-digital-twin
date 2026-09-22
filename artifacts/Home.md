@@ -16,9 +16,14 @@ FROM "raw"
 ```
 
 `raw/` is the source of truth: the user's own material, dropped in directly. Claude reads from it
-but never creates, edits, moves, or deletes anything inside it. New ideas and research go here
-first, as plain notes; Claude reads them to write plans, logs, and concept pages, and files the
-synthesis in those folders, never back into `raw/`.
+but never creates, edits, moves, or deletes anything inside it.
+
+`raw/ideas/` holds ideas for experimentation: short notes on something worth trying, written before
+any code exists for it. It pairs with `../einstein/`, the disposable scratch folder at the repo
+root: an idea in `raw/ideas/` describes what to try, and the actual experimenting (code, test
+scripts, data) happens in `einstein/`, never in `raw/ideas/` itself. If an experiment in
+`einstein/` works out, it graduates into a real plan, script, or concept page; the idea note in
+`raw/ideas/` stays as the record of where it started.
 
 ## Backlog
 
