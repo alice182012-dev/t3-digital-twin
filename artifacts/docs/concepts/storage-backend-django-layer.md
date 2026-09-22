@@ -2,35 +2,35 @@
 date: 2026-09-22
 type: concept
 status: active
-tags: [minio, storage-backend, broken]
+tags: [minio, storage-backend]
 related: ["[[minio-flood-extent-pipeline]]", "[[storage-backend-build-context-missing]]"]
 last_updated: 2026-09-22
 ---
 
-# Storage-backend (Django/MinIO UI): removed, but still wired into compose.yml
+# Storage-backend (Django/MinIO UI)
 
-`compose.yml` still defines `storage-backend` and `storage-frontend` services, but the source
-directories they build from do not exist in this repository. `docker compose up --build` cannot
-build either service as the compose file stands on 2026-09-22.
+`compose.yml` defines `storage-backend` and `storage-frontend` services, building from
+`./minio_custom/backend` and `./minio_custom/frontend`. Both source directories are present in the
+repository again as of 2026-09-22.
 
 ## What's actually there
 
 `compose.yml`'s `storage-backend` service builds from `./minio_custom/backend`
 (`gunicorn config.wsgi:application`), and `storage-frontend` builds from `./minio_custom/frontend`.
-Neither directory exists in this checkout. `git log --oneline --all -- minio_custom` shows why:
-commit `dd9f3e4` (`init`) added the `minio_custom/` subproject, and commit `0a166f0`
-("Update flood pipeline scripts, add 3Di client/tests, remove minio_custom, add SW architecture
-doc") deleted it, as one part of a commit whose message is mostly about an unrelated 3Di client
-change. `compose.yml` and `README.md` were not updated in that same commit, so both still describe
-a service that can no longer build.
+`git log --oneline --all -- minio_custom` shows the full history: commit `dd9f3e4` (`init`) added
+the `minio_custom/` subproject, commit `0a166f0` ("Update flood pipeline scripts, add 3Di
+client/tests, remove minio_custom, add SW architecture doc") deleted it as one part of a commit
+whose message is mostly about an unrelated 3Di client change, and `minio_custom/` was restored from
+`dd9f3e4`'s tree on 2026-09-22 (see [[storage-backend-build-context-missing]]) once the user
+confirmed restoring, rather than removing, was the right call.
 
-`README.md` line 6 still lists "`minio_custom`: MinIO plus Django/React storage UI" as part of the
-stack, and its setup steps still instruct
-`docker compose exec storage-backend python manage.py createsuperuser` (line 124).
+`README.md` line 6 lists "`minio_custom`: MinIO plus Django/React storage UI" as part of the
+stack, and its setup steps instruct `docker compose exec storage-backend python manage.py
+createsuperuser` (line 124). Both now match the checked-out tree.
 
-## What it used to do
+## What it does
 
-Before removal, `minio_custom/backend` was a Django REST app (`storage_api`), authenticating with
+`minio_custom/backend` is a Django REST app (`storage_api`), authenticating with
 JWT (`storage_api/authentication.py`) and talking to MinIO through a `boto3` S3 client
 (`storage_api/minio_client.py`, reading `settings.MINIO_ENDPOINT` /
 `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`). It had its own Postgres-backed models for roles,
@@ -51,12 +51,4 @@ used directly by the GraphHopper backend regardless of whether `storage-backend`
 
 ## Open items
 
-- Decide whether `storage-backend`/`storage-frontend` should be restored (from `dd9f3e4`'s tree, if
-  wanted), or removed from `compose.yml` and `README.md` to match what commit `0a166f0` actually
-  did (live status in [[storage-backend-build-context-missing]]). Either way, `compose.yml` and
-  `README.md` currently describe a stack that cannot fully build,
-  which is worth its own TODOS.md item.
-- If removed for good, check whether anything outside `minio_custom/` (scripts, other services)
-  still assumes a human-facing bucket browser exists, versus the flood pipeline's own direct
-  `boto3` use (`scripts/mapping/upload_minio.py`, `scripts/flood_extent/publish.py`), which does
-  not depend on this service at all.
+None. The build-context blocker is resolved: see [[storage-backend-build-context-missing]].

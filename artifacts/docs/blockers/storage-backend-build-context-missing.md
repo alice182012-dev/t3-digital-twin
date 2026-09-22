@@ -1,12 +1,12 @@
 ---
 date_open: 2026-09-22
-date_closed: 
+date_closed: 2026-09-22
 type: blocker
-status: open
+status: resolved
 severity: P2
 subsystem: storage-backend
-approaches_tried: 0
-approaches_remaining: 2
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, storage-backend]
 related: ["[[storage-backend-django-layer]]"]
 last_updated: 2026-09-22
@@ -30,19 +30,18 @@ setup, so a new contributor following the README hits a build failure on the doc
 
 ## Approaches tried
 
-None yet. Found while writing [[storage-backend-django-layer]]; no attempt made to fix it.
+- **Restore.** `git checkout dd9f3e4 -- minio_custom/` brought back the full directory (Django
+  backend, React frontend, both Dockerfiles) exactly as it stood in the last commit before
+  removal. `docker compose -f compose.yml config --services` now resolves `storage-backend` and
+  `storage-frontend` without error, confirming both build contexts exist again. Worked, no further
+  attempts needed.
 
 ## Decision and explanation
 
-Pending. Two options, neither attempted:
-
-- **Restore** `minio_custom/` from commit `dd9f3e4`'s tree (the last commit before removal).
-- **Remove** the dead `storage-backend`/`storage-frontend` blocks from `compose.yml` and the
-  matching setup steps from `README.md`, so the repo matches what commit `0a166f0` actually did.
-
-The removal commit's own message is mostly about an unrelated 3Di client change; nothing in it
-explains whether dropping `minio_custom` was deliberate scope-narrowing or incidental, so the
-decision needs the user's input, not a guess from the commit history alone.
+Restored, per the user's direction. `minio_custom/` is back at the repo root, matching the path
+`compose.yml` already expected. The removal commit (`0a166f0`) never explained why `minio_custom`
+was dropped, and its message is mostly about an unrelated 3Di client change, so restoring rather
+than guessing that the drop was deliberate was the safer read.
 
 ## Concerns
 
@@ -60,6 +59,6 @@ because `storage-backend` depends on it.
 ## Status history
 
 - **2026-09-22, open.** Found while writing [[storage-backend-django-layer]]. No decision made yet.
-
-Update `status` to `resolved` once `compose.yml` and `README.md` agree with whichever decision gets
-made; set `date_closed` at that point. Note which direction was chosen in a new dated bullet above.
+- **2026-09-22, resolved.** Restored `minio_custom/` from `dd9f3e4`. `compose.yml`'s build contexts
+  for `storage-backend` and `storage-frontend` resolve again; no changes needed to `README.md`, since
+  its documented setup steps now match the restored tree.
