@@ -7,7 +7,8 @@ This repository now has one top-level Docker Compose app that connects:
 - `floodmap/valhalla-flood-road-test`: Valhalla-backed flood-aware routing map.
 
 For engineering logs, plans, and the project backlog, see `artifacts/Home.md` (an Obsidian
-vault rooted at `artifacts/`; readable as plain markdown without Obsidian too).
+vault rooted at `artifacts/`; readable as plain markdown without Obsidian too). For scratch
+work and experiments, see `einstein/README.md`.
 
 ## Run the Entire Stack
 
