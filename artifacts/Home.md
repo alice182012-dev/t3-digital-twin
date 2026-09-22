@@ -25,6 +25,18 @@ scripts, data) happens in `einstein/`, never in `raw/ideas/` itself. If an exper
 `einstein/` works out, it graduates into a real plan, script, or concept page; the idea note in
 `raw/ideas/` stays as the record of where it started.
 
+## Blockers
+
+One page per blocker, with a `status` that gets edited in place as it changes, instead of a fact
+buried in a log or a `TODOS.md` item's prose. A blocker page tracks state; `TODOS.md` tracks the
+work needed to clear it, and the two cross-link rather than duplicate each other's detail.
+
+```dataview
+TABLE severity AS "Severity", status AS "Status", subsystem AS "Subsystem", last_updated AS "Last updated"
+FROM "docs/blockers"
+SORT status ASC, last_updated DESC
+```
+
 ## Backlog
 
 ```dataview
@@ -74,9 +86,14 @@ FROM "designs"
 - `raw/` is read-only for Claude. Never write, rename, move, or delete a file inside it, even if
   asked casually in passing; if the user wants something in `raw/` changed, they do it themselves,
   or say so explicitly enough that there's no ambiguity this is what they mean.
-- Every log, plan, decision, and concept doc gets a YAML frontmatter block: `date`, `type`
-  (`log`/`plan`/`decision`/`concept`), `status` (`active`/`parked`/`done`/`superseded`), `tags`,
-  and `related` (a list of `[[wikilinks]]` to the plan, log, or concept page it's tied to).
+- Every log, plan, decision, concept, and blocker doc gets a YAML frontmatter block: `date` (or
+  `date_discovered` for a blocker), `type` (`log`/`plan`/`decision`/`concept`/`blocker`), `status`
+  (`active`/`parked`/`done`/`superseded` for most; `open`/`monitoring`/`resolved`/`wont-fix` for a
+  blocker), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
+- A blocker page (`docs/blockers/`) tracks one blocker's live state: edit its `status` field in
+  place as it changes, and add a dated bullet to its "Status history" section each time, even for
+  a failed attempt. Keep the deep technical narrative (root cause, what's been tried) in the
+  relevant concept page or `TODOS.md` item; the blocker page links to that instead of repeating it.
 - A concept page (`docs/concepts/`) is the standing reference for one subsystem: what it is, how
   it works, and its open items, cited against real file paths. When a log or plan changes
   something a concept page describes, update that page in the same pass instead of leaving the

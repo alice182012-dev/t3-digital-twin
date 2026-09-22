@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]"]
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]", "[[graphhopper-vehicle-profile-rejection]]"]
 last_updated: 2026-09-22
 ---
 
@@ -95,7 +95,7 @@ yet.
 
 ## Open items
 
-- The routing profile blocker above (P2 in TODOS.md).
+- The routing profile blocker above (P2 in TODOS.md; live status in [[graphhopper-vehicle-profile-rejection]]).
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite), with no regression tests and no soak time yet (P2 in
   TODOS.md).

@@ -74,6 +74,7 @@ service.
 restore `minio_custom` from commit `dd9f3e4`'s tree instead.
 **Priority:** P2 — blocks a clean `docker compose up --build` per the README's own instructions.
 **Depends on:** A decision on restore vs. remove.
+**Blocker tracking:** [[storage-backend-build-context-missing]]
 
 Status:: needs-decision
 
@@ -216,5 +217,6 @@ attempted yet, since it's a bigger investigation than the original scope.
 **Effort:** M (human ~half day / CC ~1-2 hrs, mostly bisecting GraphHopper versions)
 **Priority:** P2
 **Depends on:** None — independent of Phase A/B/C.
+**Blocker tracking:** [[graphhopper-vehicle-profile-rejection]]
 
 Status:: active

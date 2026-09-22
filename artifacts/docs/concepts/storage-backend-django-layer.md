@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, storage-backend, broken]
-related: ["[[minio-flood-extent-pipeline]]"]
+related: ["[[minio-flood-extent-pipeline]]", "[[storage-backend-build-context-missing]]"]
 last_updated: 2026-09-22
 ---
 
@@ -53,7 +53,8 @@ used directly by the GraphHopper backend regardless of whether `storage-backend`
 
 - Decide whether `storage-backend`/`storage-frontend` should be restored (from `dd9f3e4`'s tree, if
   wanted), or removed from `compose.yml` and `README.md` to match what commit `0a166f0` actually
-  did. Either way, `compose.yml` and `README.md` currently describe a stack that cannot fully build,
+  did (live status in [[storage-backend-build-context-missing]]). Either way, `compose.yml` and
+  `README.md` currently describe a stack that cannot fully build,
   which is worth its own TODOS.md item.
 - If removed for good, check whether anything outside `minio_custom/` (scripts, other services)
   still assumes a human-facing bucket browser exists, versus the flood pipeline's own direct
