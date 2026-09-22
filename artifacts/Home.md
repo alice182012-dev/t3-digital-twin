@@ -94,6 +94,23 @@ FROM "docs/prds"
 SORT status ASC, date_drafted DESC
 ```
 
+## User stories
+
+One page per user story, or per epic grouping several stories, delegated into a sprint once its
+dependencies are known. Start a new one from `.templates/user-story.md`; see
+[[user-story-types]] for which shape (Simple, Epic, Thematic, SAFe) fits. A user story comes after
+its PRD's goals are settled: the PRD says what and why, the user story breaks it into sprint-sized
+work. An Epic-shaped story's rows carry Priority, Estimate, and Sprint in addition to the shape's
+own fields (an extension past what `.templates/user-story.md` and [[user-story-types]] show alone;
+see `.claude/CLAUDE.md`, "User stories and sprint planning", for why). A story with no sprint number
+is unscheduled, not forgotten: its Status history says what it's blocked on.
+
+```dataview
+TABLE status AS "Status", subsystem AS "Subsystem", date_drafted AS "Drafted"
+FROM "docs/user-stories"
+SORT status ASC, date_drafted DESC
+```
+
 ## Lessons learned
 
 Short, checkable rules distilled from resolved blockers, one page per lesson. Start a new one from
@@ -119,18 +136,24 @@ FROM "designs"
 - `raw/` is read-only for Claude. Never write, rename, move, or delete a file inside it, even if
   asked casually in passing; if the user wants something in `raw/` changed, they do it themselves,
   or say so explicitly enough that there's no ambiguity this is what they mean.
-- Every log, plan, decision, concept, blocker, PRD, lesson, and idea doc gets a YAML frontmatter
-  block: `date` (`date_open` for a blocker, `date_drafted` for a PRD, `date_captured` for a lesson
-  or idea), `type` (`log`/`plan`/`decision`/`concept`/`blocker`/`prd`/`lesson`/`idea`), `status`
-  (`active`/`parked`/`done`/`superseded` for most; `open`/`monitoring`/`resolved`/`wont-fix` for a
-  blocker; `draft`/`approved`/`in-progress`/`shipped`/`abandoned` for a PRD; `active`/`retired` for
-  a lesson; `unexplored`/`exploring`/`go`/`needs-clarification`/`killed` for an idea), `tags`, and
-  `related` (a list of `[[wikilinks]]` to what it's tied to).
+- Every log, plan, decision, concept, blocker, PRD, lesson, idea, and user story doc gets a YAML
+  frontmatter block: `date` (`date_open` for a blocker, `date_drafted` for a PRD, `date_captured`
+  for a lesson or idea), `type` (`log`/`plan`/`decision`/`concept`/`blocker`/`prd`/`lesson`/`idea`/
+  `user-story`/`reference`), `status` (`active`/`parked`/`done`/`superseded` for most;
+  `open`/`monitoring`/`resolved`/`wont-fix` for a blocker; `draft`/`approved`/`in-progress`/
+  `shipped`/`abandoned` for a PRD; `draft`/`ready`/`in-progress`/`done` for a user story;
+  `active`/`retired` for a lesson; `unexplored`/`exploring`/`go`/`needs-clarification`/`killed` for
+  an idea), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
 - A PRD (`docs/prds/`) states the problem, goals, and definition of done for a feature or change
   before its implementation plan (`docs/claude-plan/`) is written. Its **Dependencies and
   assumptions** section states every fact the design relies on that isn't visible from reading the
   code cold, and **Definition of done** states an operational check rather than a proxy like "it
   compiles" or "no errors in the logs".
+- A user story (`docs/user-stories/`) breaks an approved PRD goal into sprint-sized work; it comes
+  after the PRD, not instead of it. Pick its shape from [[user-story-types]]. An Epic file's rows
+  are delegated to a sprint (Priority, Estimate, and Sprint per row, an extension past the shape's
+  own documented fields) and cross-linked to the sprint plan that assigned them; see
+  `.claude/CLAUDE.md`, "User stories and sprint planning", for the full convention.
 - A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of

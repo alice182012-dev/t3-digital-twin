@@ -46,6 +46,17 @@ given the starting state, when this action runs, then this is the result that co
 What could go wrong, and what isn't decided yet. Link a blocker page if one already exists for a
 specific risk instead of restating it here.
 
+## Decisions
+
+A running log of questions this PRD raised that got settled during drafting or review, so the
+answer survives past the conversation that produced it. One row per settled question: the date,
+the question, the decision, and why. Move a question here from Risks and open questions once it's
+resolved instead of deleting it; leave it in Risks and open questions if it's still open.
+
+| Date | Question | Decision | Why |
+| ---- | -------- | -------- | --- |
+|      |          |          |     |
+
 ## Rollback
 
 What to revert, and to what state, if this turns out wrong after shipping.

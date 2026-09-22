@@ -1,0 +1,231 @@
+User Story Templates
+for Product Managers
+
+
+Start Here!
+Read these articles to understand what makes a great User Story:
+What Are Agile User Stories? 
+Mastering Agile Product Management: The Complete Guide
+Stories, Epics, Themes and Initiatives for Product Managers
+Acceptance Criteria: From Theory to Practice
+Collaborate with your team to refine and validate each story.
+Solicit stakeholder feedback to align with user needs and business goals.
+User Story Template > Introduction
+Get all our Product Management Templates!
+Notes
+
+ℹ️Presentation Information:
+
+On the next slide you will find more details into when, where and how students can upload their presentation for you to review. Here is some context into what students will be creating. 
+
+Context: Imagine you're a newly certified Product Marketing Manager ready to impress potential hiring managers. There’s a startup with an open PMM role, and the company wants to clearly understand how you can contribute to their success.  So here's the task for your presentation— build a set of recommendations based on what you will have learned in this Product Marketing Manager Certification course and wow the managers to get hired! You will have 5 minutes to present individually on the final day of class.
+
+💡For more information about specifics to include, be sure to read through the full brief.
+
+Good luck, and show us the value you can bring to the table!
+
+4 Types of User Stories
+Simple
+Straightforward and to the point. Great for stories that span a single sprint.
+Big-picture and ambitious. Perfect for features that need to be broken down over multiple sprints.
+Bigger and broader. Ideal for grouping epics under a common product goal or focus area.
+Structured and strategic. Built for Scaled Agile teams focusing on program-level objectives.
+SAFe
+Thematic
+Epic
+User Story Template > Types of User Stories
+
+Simple
+USER STORY
+A simple user story template is ideal for capturing clear, straightforward tasks with a single objective.
+Included in this template: 
+Title
+Priority
+Estimate
+User Story
+Acceptance Criteria
+Simple user stories are great for when the feature can be completed within a sprint, keeping the focus on the core user need and expected outcome for quick understanding and prioritization. 
+Notes
+
+06. 	Case Study: Insights in Action at Spotify
+
+So — let’s put it all together!
+
+
+Simple User Story
+Template > Simple
+TITLE
+Add a title for your story
+PRIORITY
+Priority level
+ESTIMATE
+# of story points or estimated  effort
+USER STORY
+As a [type of user] I want to [task], so that I can [objective]. 
+ACCEPTANCE CRITERIA
+Given [initial context], when [action performed], then [expected outcome], and [additional outcomes, if any]. 
+Notes
+
+Epic
+USER STORY
+The Epic User Story Template is designed for larger, overarching features that can be broken down into multiple smaller stories.
+Included in this template: 
+Epic title and description
+User Stories
+Acceptance Criteria
+Use this template to outline high-level functionality that spans across sprints or releases, providing a roadmap for achieving a broader user goal.
+Notes
+
+06. 	Case Study: Insights in Action at Spotify
+
+So — let’s put it all together!
+
+
+Epic User Story 
+EPIC NAME
+USER STORIES
+ACCEPTANCE CRITERIA
+Epic 1
+User story 1 As a [type of user] I want to [task], so that I can [objective]. 
+Given [initial context], when [action performed], then [expected outcome].
+User story 2
+User story 3
+Epic 2
+User story 1
+User story 2
+Epic 3
+User story 1
+User story 2
+Template > Epic
+Notes
+
+Thematic
+USER STORY
+The Thematic User Story Template groups related user stories under specific themes, the highest level of strategic focus in Agile methodology. Themes are large-scale initiatives  connected to business goals.
+Included in this template: 
+Theme
+User Story
+Priority
+Estimate (# of story points)
+Acceptance Criteria
+Release
+ The thematic user story template is ideal for organizing stories that contribute to a common objective, allowing for streamlined planning and release alignment.
+Notes
+
+06. 	Case Study: Insights in Action at Spotify
+
+So — let’s put it all together!
+
+
+Thematic User Story
+THEME
+USER STORY
+PRIORITY
+ESTIMATE
+ACCEPTANCE CRITERIA
+RELEASE
+Theme 1
+User story 1 As a [type of user] I want to [task], so that I can [objective]. 
+Level
+# story pts
+Given [initial context], when [action performed], then [expected outcome].
+Sprint or version
+User story 2
+User story 3
+Theme 2
+User story 1
+User story 2
+Template > Thematic
+Notes
+
+SAFe 
+USER STORY
+It includes SAFe-specific fields to ensure each story contributes to program-level objectives while delivering incremental user value. 
+Included in this template: 
+The SAFe™ User Story Template is designed for teams using the Scaled Agile Framework, aligning user stories with broader organizational goals. 
+1. 
+User Story
+2. 
+Description
+3. 
+Hypothesis
+4.
+Nonfunctional Requirements
+5.
+Acceptance Criteria
+6.
+User Business Value
+6. 
+Cost of Delay
+7. 
+Time Criticality
+8. 
+Job Size
+9.
+Risk Reductions
+10.
+Weighted ShortestJob First (WSJF)
+11.
+Notes
+Notes
+
+06. 	Case Study: Insights in Action at Spotify
+
+So — let’s put it all together!
+
+
+User Story 
+As a [type of user] I want to [task], so that I can [objective]. 
+Description 
+Brief summary of the story or feature.
+Hypothesis
+Proposed measurable benefit of the feature.
+Nonfunctional Requirements
+Performance, security, or compliance criteria.
+Acceptance 
+Criteria
+Given [initial context], when [action performed], then [expected outcome].
+User Business
+Value
+Value level or description, e.g., "High," "Medium," or specific value points.
+Cost Of Delay
+Indicate time-sensitivity, e.g., "Critical," "Low," or value points.
+Time Criticality
+Indicate urgency, e.g., "Immediate," "End of Quarter."
+Job Size
+Indicate urgency, e.g., "Immediate," "End of Quarter."
+Risk Reductions
+Expected risk reduction or impact, e.g., "Mitigates compliance risk."
+Weighted Shortest Job First (WSJF)
+Priority score
+Notes
+Additional context
+SAFe User Story
+Template > SAFe 
+Notes
+
+More Resources
+The Product Management Blog
+
+User Story Templates: How to Use Them and Why
+Articles & Books
+
+Digital User Journeys: The Key to Winning the Product Experience Game,
+The Product Management Blog
+
+Acceptance Criteria: From Theory to Practice
+Template
+
+Customer Journey Map
+
+User Story Template > Resources
+🗂 More Resources
+
+Here are some additional resources students can learn to deepen their knowledge of what we have covered in this section: 
+Post
+Blog
+Webinar
+Podcast
+
+
+Thank you 💥

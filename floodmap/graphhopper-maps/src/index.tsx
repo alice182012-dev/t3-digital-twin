@@ -40,7 +40,11 @@ console.log(`Source code: https://github.com/graphhopper/graphhopper-maps/tree/$
 
 const url = new URL(window.location.href)
 const locale = url.searchParams.get('locale')
-setTranslation(locale || navigator.language)
+// Default to Vietnamese: this app only ever routes within a Vietnam flood-simulation area, and
+// the geocoding query's locale (Api.ts's geocode()) is derived from this translation language, so
+// leaving it to navigator.language let a non-Vietnamese browser's search results drift toward
+// same-name places outside Vietnam (see artifacts/docs/prds/flood-routing-mockup-frontend-gap.md).
+setTranslation(locale || 'vi')
 
 setDistanceFormat(new Intl.NumberFormat(navigator.language, { maximumFractionDigits: 1 }))
 AddressParseResult.setPOITriggerPhrases(getTranslation())
