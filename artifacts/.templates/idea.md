@@ -41,7 +41,7 @@ The condition that makes this worth doing now instead of leaving parked
 - **<% tp.date.now("YYYY-MM-DD") %>, unexplored.** Captured from <source>.
 
 Move `status` to `exploring` once the cost-benefit and what's-already-covered sections are
-filled in, then to a decision once one is reached: `go` (worth building, moves to `einstein/` or a
+filled in, then to a decision once one is reached: `go` (worth building, moves to `marie-curie/` or a
 PRD), `needs-clarification` (worth another look once a specific unknown resolves, name it in
 "Trigger to revisit"), or `killed` (evaluated and rejected, keep the page as the record of why so
 it isn't re-litigated). Add a dated bullet to "Status history" on every change.

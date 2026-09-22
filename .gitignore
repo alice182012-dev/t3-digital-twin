@@ -64,5 +64,5 @@ CLAUDE.md
 artifacts/.obsidian/
 
 # Scratch space for experiments; everything but the folder's own README is disposable
-/einstein/*
-!/einstein/README.md
+/marie-curie/*
+!/marie-curie/README.md

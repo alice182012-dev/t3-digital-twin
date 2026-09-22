@@ -8,7 +8,7 @@ This repository now has one top-level Docker Compose app that connects:
 
 For engineering logs, plans, and the project backlog, see `artifacts/Home.md` (an Obsidian
 vault rooted at `artifacts/`; readable as plain markdown without Obsidian too). For scratch
-work and experiments, see `einstein/README.md`.
+work and experiments, see `marie-curie/README.md`.
 
 ## Run the Entire Stack
 

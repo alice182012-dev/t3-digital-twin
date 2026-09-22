@@ -19,10 +19,10 @@ FROM "raw"
 but never creates, edits, moves, or deletes anything inside it.
 
 `raw/ideas/` holds ideas for experimentation: short notes on something worth trying, written before
-any code exists for it. It pairs with `../einstein/`, the disposable scratch folder at the repo
+any code exists for it. It pairs with `../marie-curie/`, the disposable scratch folder at the repo
 root: an idea in `raw/ideas/` describes what to try, and the actual experimenting (code, test
-scripts, data) happens in `einstein/`, never in `raw/ideas/` itself. If an experiment in
-`einstein/` works out, it graduates into a real plan, script, or concept page; the idea note in
+scripts, data) happens in `marie-curie/`, never in `raw/ideas/` itself. If an experiment in
+`marie-curie/` works out, it graduates into a real plan, script, or concept page; the idea note in
 `raw/ideas/` stays as the record of where it started.
 
 ## Blockers
