@@ -18,6 +18,7 @@ import { tr } from '@/translation/Translation'
 import Chevron from '@/sidebar/search/routingProfiles/chevron.svg'
 import { findIcon } from '@/sidebar/search/routingProfiles/profileIcons'
 import { RoutingProfile } from '@/api/graphhopper'
+import { ProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
 
 type MobileSidebarProps = {
     query: QueryStoreState
@@ -26,9 +27,10 @@ type MobileSidebarProps = {
     encodedValues: object[]
     drawAreas: boolean
     map: Map
+    profileTimes: ProfileTimes
 }
 
-export default function ({ query, route, error, encodedValues, drawAreas, map }: MobileSidebarProps) {
+export default function ({ query, route, error, encodedValues, drawAreas, map, profileTimes }: MobileSidebarProps) {
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
     // the following three elements control, whether the small search view is displayed
     const isShortScreen = useMediaQuery({ query: '(max-height: 55rem)' })
@@ -75,6 +77,7 @@ export default function ({ query, route, error, encodedValues, drawAreas, map }:
                             showCustomModelBox={showCustomModelBox}
                             toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
                             customModelBoxEnabled={query.customModelEnabled}
+                            profileTimes={profileTimes}
                         />
                         {showCustomModelBox && (
                             <CustomModelBox

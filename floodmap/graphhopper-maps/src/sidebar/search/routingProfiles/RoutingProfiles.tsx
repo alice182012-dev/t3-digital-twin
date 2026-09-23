@@ -10,6 +10,8 @@ import CustomModelBoxSVG from '@/sidebar/open_custom_model.svg'
 import { icons } from '@/sidebar/search/routingProfiles/profileIcons'
 import * as config from 'config'
 import { ProfileGroupMap } from '@/utils'
+import { ProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
+import { milliSecondsToText } from '@/Converters'
 
 export default function ({
     routingProfiles,
@@ -18,6 +20,7 @@ export default function ({
     showCustomModelBox,
     toggleCustomModelBox,
     customModelBoxEnabled,
+    profileTimes,
 }: {
     routingProfiles: RoutingProfile[]
     selectedProfile: RoutingProfile
@@ -25,6 +28,7 @@ export default function ({
     showCustomModelBox: boolean
     toggleCustomModelBox: () => void
     customModelBoxEnabled: boolean
+    profileTimes: ProfileTimes
 }) {
     const [profileScroll, setProfileScroll] = useState(0)
     const [profileWidth, setProfileWidth] = useState(0)
@@ -121,8 +125,9 @@ export default function ({
                                 ? memorizedProfilePerGroup[groupName] || profile.name
                                 : profile.name
                             const iconName = icons[activeProfileName] ? activeProfileName : profile.name
+                            const time = profileTimes[activeProfileName]
                             return (
-                                <li key={profile.name}>
+                                <li key={profile.name} className={styles.profileItem}>
                                     <PlainButton
                                         title={tr(activeProfileName)}
                                         onClick={() =>
@@ -139,6 +144,11 @@ export default function ({
                                         )}
                                         {getIcon(iconName, customProfiles)}
                                     </PlainButton>
+                                    {time !== undefined && (
+                                        <span className={isProfileSelected ? styles.selectedTime : styles.time}>
+                                            {milliSecondsToText(time)}
+                                        </span>
+                                    )}
                                 </li>
                             )
                         })}

@@ -56,6 +56,7 @@ import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
+import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
 import Dispatcher from '@/stores/Dispatcher'
 
 // the Maptoolkit logo is only shown for their map styles
@@ -80,6 +81,7 @@ export default function App() {
     const [currentLocation, setCurrentLocation] = useState(getCurrentLocationStore().state)
     const flood = useFloodState()
     useFloodBootstrap()
+    const profileTimes = useProfileTimes(query, flood, route.routingResult.paths.length > 0)
 
     const map = getMap()
 
@@ -174,6 +176,7 @@ export default function App() {
                         drawAreas={settings.drawAreasEnabled}
                         currentLocation={currentLocation}
                         flood={flood}
+                        profileTimes={profileTimes}
                     />
                 ) : (
                     <LargeScreenLayout
@@ -186,6 +189,7 @@ export default function App() {
                         drawAreas={settings.drawAreasEnabled}
                         currentLocation={currentLocation}
                         flood={flood}
+                        profileTimes={profileTimes}
                     />
                 )}
             </div>
@@ -203,6 +207,7 @@ interface LayoutProps {
     encodedValues: object[]
     drawAreas: boolean
     flood: FloodStoreState
+    profileTimes: ProfileTimes
 }
 
 function LargeScreenLayout({
@@ -215,6 +220,7 @@ function LargeScreenLayout({
     drawAreas,
     currentLocation,
     flood,
+    profileTimes,
 }: LayoutProps) {
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
     const [showSidebar, setShowSidebar] = useState(false)
@@ -251,6 +257,7 @@ function LargeScreenLayout({
                             showCustomModelBox={showCustomModelBox}
                             toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
                             customModelBoxEnabled={query.customModelEnabled}
+                            profileTimes={profileTimes}
                         />
                         {showCustomModelBox && (
                             <CustomModelBox
@@ -344,6 +351,7 @@ function SmallScreenLayout({
     drawAreas,
     currentLocation,
     flood,
+    profileTimes,
 }: LayoutProps) {
     const hasPath = route.selectedPath.points.coordinates.length > 0
     const settings = useContext(SettingsContext)
@@ -366,6 +374,7 @@ function SmallScreenLayout({
                     encodedValues={encodedValues}
                     drawAreas={drawAreas}
                     map={map}
+                    profileTimes={profileTimes}
                 />
             </div>
             <div className={styles.smallScreenMap}>
