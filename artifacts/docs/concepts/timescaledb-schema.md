@@ -1,0 +1,97 @@
+---
+date: 2026-09-23
+type: concept
+status: draft
+tags: [timescaledb, schema, histogram, sprint-1]
+related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[sprint-plan]]"]
+last_updated: 2026-09-23
+---
+
+# TimescaleDB schema for histograms, forecast series, and depth history
+
+TimescaleDB holds three kinds of data that `storage-postgres` doesn't: institution histograms,
+the `background_cycle` forecast series, and depth history. The architecture doc lists these three
+in its data-store table (section 5) and specifies the histogram split in section 4.9.
+`scripts/database/create_timescale_tables.py` creates the schema. No DAG runs that script yet.
+
+The route histogram is not stored. Section 4.9 says the route controller computes it at query time
+from PostGIS per-segment forecast depths, so it has no table here.
+
+## Tables
+
+The script creates one enum type and three hypertables.
+
+| Table | Time column | Primary key | One row is |
+| --- | --- | --- | --- |
+| `institution_histogram_bar` | `issued_at` | `institution_id, cycle, issued_at, bar_index` | One hourly bar of one institution's histogram, from one simulation run |
+| `background_forecast_depth` | `issued_at` | `segment_id, issued_at, valid_time` | One road segment's forecast depth at one hour, from one `background_cycle` run |
+| `depth_history` | `valid_time` | `segment_id, valid_time` | The depth kept on record for one road segment at one moment |
+
+`simulation_cycle` is an enum with the values `constant_cycle` and `background_cycle`. The
+`cycle` column in `institution_histogram_bar` and `depth_history` uses it, so a typo or a third
+cycle name fails on insert.
+
+`issued_at` is the start time of the simulation run that produced the row, in UTC. For a
+`constant_cycle` run, it matches the `timestamp` column in `flood_road_values`. `valid_time` is
+the moment a depth applies to. Every time column is `TIMESTAMPTZ`, unlike the naive `TIMESTAMP`
+columns in `storage-postgres`, because the depth files are named in Vietnam local time (UTC+7) and
+a naive column leaves the zone to convention.
+
+## The histogram split lives in a CHECK
+
+Section 4.9 gives each institution histogram 24 hourly bars. Bars 1-6 come from `constant_cycle`,
+which refreshes every 30 minutes. Bars 7-24 come from `background_cycle`, which refreshes every
+3-6 hours. The `bar_index_matches_cycle` constraint encodes that rule.
+
+```sql
+CHECK (
+	(cycle = 'constant_cycle' AND bar_index BETWEEN 1 AND 6)
+	OR (cycle = 'background_cycle' AND bar_index BETWEEN 7 AND 24)
+)
+```
+
+Each cycle writes only its own bars, under its own `issued_at`. A `constant_cycle` refresh adds six
+rows and never rewrites the 18 `background_cycle` rows. To serve a histogram, read bars 1-6 from the
+latest `constant_cycle` `issued_at` for that institution, and bars 7-24 from the latest
+`background_cycle` `issued_at`. The primary key starts with `institution_id, cycle, issued_at`, so
+both lookups use the key's index.
+
+A generated `cycle` column, derived from `bar_index`, would also make a mismatch impossible. It
+would do so by relabeling the row, though. If a `constant_cycle` loader wrote bar 7 by mistake, a
+generated column would file that bar under `background_cycle` without an error. The CHECK rejects
+the write instead, and the loader bug shows up on the first run.
+
+Each bar also stores `valid_time`, the start of the clock hour it covers. `bar_index` and
+`issued_at` alone don't fix that hour, because a 30-minute cadence starts runs at half past the
+hour. The `valid_time_on_the_hour` constraint rejects any `valid_time` that isn't on a whole UTC
+hour. Vietnam's offset is a whole number of hours, so a whole UTC hour is also a whole local hour.
+
+The bar value is `max_depth_m`, the highest depth during that hour. A `constant_cycle` run writes
+four 15-minute timesteps per hour, so each bar needs one aggregate. The maximum is the safe choice
+for a question like "is the clinic reachable at 14:00".
+
+## Forecast series and depth history
+
+`background_forecast_depth` holds only `background_cycle` output. The per-segment series from
+`constant_cycle` is already in `flood_road_values`, and the scope PRD adds TimescaleDB only for data
+those tables don't hold. A CHECK rejects a `valid_time` earlier than `issued_at`.
+
+`depth_history` keeps one depth per segment per moment, with `valid_time` as its time column,
+because history queries ask "what was the depth on this road over the last week". The
+`cycle` and `issued_at` columns record which run supplied the value. The primary key allows one row
+per segment and moment, so the loader must pick which run wins. The expected rule is an upsert that
+keeps the row with the later `issued_at`.
+
+## Open items
+
+- Road segments have no stable ID. `flood_road_values` stores `road_name` and a geometry, not a
+  segment key. `segment_id` is `TEXT` so the loader in Story 4 can choose a derived key, such as a
+  hash of the segment geometry, without a schema change. That choice must be made before any
+  segment rows land.
+- Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
+  foreign key because the planned institutions table lives in `storage-postgres`, a different
+  database.
+- No compression or retention policy is set. Add them once real row counts exist.
+- The script ran against a plain PostgreSQL 16 server with the TimescaleDB calls stubbed out. That
+  run checked the tables, the enum, every CHECK, and idempotency. The `create_hypertable` calls have
+  not run against a real TimescaleDB server yet.
