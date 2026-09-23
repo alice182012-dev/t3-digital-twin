@@ -35,19 +35,22 @@ endpoint or query that is not built yet.
   [[frontend-depth-features]]'s three `GET /flood/points`-dependent stories, plus
   [[depth-forecast-chart]], now unblocked (see its Status history).
 
+Each story's Status is `Not started`, `In progress`, `Blocked`, or `Done`. Update it here and in
+the story's epic file together.
+
 ## Sprint 1: backend prerequisites and independent frontend wins
 
 **Sprint goal:** every prerequisite the rest of the backlog depends on is in place, and the two
 frontend stories with no backend dependency ship.
 
-| Priority | Story | Estimate | Epic | Dependencies |
-| -------- | ----- | -------- | ---- | ------------ |
-| P0 | Regression-harden `floodmap-backend` before adding new load | M | [[point-depth-lookup-backend]] | None |
-| P0 | Load `depth.tif` into PostGIS as a raster | M | [[point-depth-lookup-backend]] | None |
-| P1 | Design TimescaleDB's histogram and forecast-series schema | S | [[timescaledb-and-flood-metrics]] | None |
-| P1 | Stand up the TimescaleDB service | S | [[timescaledb-and-flood-metrics]] | Schema design story, same sprint |
-| P2 | Add per-mode travel time under the four mode icons | M | [[frontend-polish]] | None |
-| P2 | Add the "Updated `date` `time`" line to the flood legend | S | [[frontend-polish]] | None |
+| Priority | Story | Estimate | Epic | Dependencies | Status |
+| -------- | ----- | -------- | ---- | ------------ | ------ |
+| P0 | Regression-harden `floodmap-backend` before adding new load | M | [[point-depth-lookup-backend]] | None | Done |
+| P0 | Load `depth.tif` into PostGIS as a raster | M | [[point-depth-lookup-backend]] | None | Done |
+| P1 | Design TimescaleDB's histogram and forecast-series schema | S | [[timescaledb-and-flood-metrics]] | None | Not started |
+| P1 | Stand up the TimescaleDB service | S | [[timescaledb-and-flood-metrics]] | Schema design story, same sprint | Not started |
+| P2 | Add per-mode travel time under the four mode icons | M | [[frontend-polish]] | None | Not started |
+| P2 | Add the "Updated `date` `time`" line to the flood legend | S | [[frontend-polish]] | None | Not started |
 
 Already done, logged for traceability: switching the search geocoder's default locale to `vi` (see
 [[frontend-polish]]).
@@ -57,25 +60,25 @@ Already done, logged for traceability: switching the search geocoder's default l
 **Sprint goal:** `GET /flood/points` is live and timing-validated, and the flood metric extractor
 is writing real output into TimescaleDB.
 
-| Priority | Story | Estimate | Epic | Dependencies |
-| -------- | ----- | -------- | ---- | ------------ |
-| P0 | Build `GET /flood/points` | M | [[point-depth-lookup-backend]] | Sprint 1's harden and raster-load stories |
-| P0 | Validate `GET /flood/points`'s latency under concurrent taps | S | [[point-depth-lookup-backend]] | This sprint's endpoint story |
-| P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story |
-| P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads `calculate_depth.py` output directly) |
-| P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story |
+| Priority | Story | Estimate | Epic | Dependencies | Status |
+| -------- | ----- | -------- | ---- | ------------ | ------ |
+| P0 | Build `GET /flood/points` | M | [[point-depth-lookup-backend]] | Sprint 1's harden and raster-load stories | Not started |
+| P0 | Validate `GET /flood/points`'s latency under concurrent taps | S | [[point-depth-lookup-backend]] | This sprint's endpoint story | Not started |
+| P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story | Not started |
+| P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads `calculate_depth.py` output directly) | Not started |
+| P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story | Not started |
 
 ## Sprint 3: frontend depth features
 
 **Sprint goal:** the four frontend goals that were blocked on Sprint 2's backend work are live in
 the UI, matching the mockup.
 
-| Priority | Story | Estimate | Epic | Dependencies |
-| -------- | ----- | -------- | ---- | ------------ |
-| P0 | Place-depth popup on map tap | M | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories |
-| P0 | Per-step depth in turn-by-turn instructions | S | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories |
-| P0 | Per-point depth badges along the route polyline | M | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories |
-| P0 | Depth-versus-time forecast chart | M | [[depth-forecast-chart]] | Sprint 2's route-forecast query story |
+| Priority | Story | Estimate | Epic | Dependencies | Status |
+| -------- | ----- | -------- | ---- | ------------ | ------ |
+| P0 | Place-depth popup on map tap | M | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories | Not started |
+| P0 | Per-step depth in turn-by-turn instructions | S | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories | Not started |
+| P0 | Per-point depth badges along the route polyline | M | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories | Not started |
+| P0 | Depth-versus-time forecast chart | M | [[depth-forecast-chart]] | Sprint 2's route-forecast query story | Not started |
 
 ## Risks
 
@@ -100,3 +103,5 @@ Status history.
   added [[route-forecast-query]] to Sprint 2: `flood_road_values` already holds the forecast
   chart's data, reversing the earlier "no data source" conclusion. See
   [[verify-table-capability-against-write-path-not-summary-or-current-query]].
+- **2026-09-23, active.** Added a Status column to every sprint table. Marked the harden-first
+  story and the raster-load story (commit `118e04a`) `Done`. Every other story is `Not started`.

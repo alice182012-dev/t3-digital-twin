@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-22
+related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]"]
+last_updated: 2026-09-23
 ---
 
 # MinIO flood-extent tile pipeline
@@ -60,6 +60,20 @@ Each dissolved band polygon for each timestep gets one row in `flood_extent_poly
 `(run_ts, valid_time_utc, dn_code)` so a retried publish replaces its own row instead of
 duplicating it. `flood_extent_runs.py` reads only this table; it never touches the tile files
 directly.
+
+## PostGIS depth raster
+
+`flood_depth_raster` (`run_ts, valid_time_utc, rast`) holds each timestep's `depth.tif` as a PostGIS
+raster, upserted on `(run_ts, valid_time_utc)`. It exists so `GET /flood/points`
+([[point-depth-lookup-backend]]) can answer the exact depth at an arbitrary point, which
+`flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges) cannot.
+
+The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and reads the same `run_ts` from
+task 5's XCom, so both tables share one (run, valid time) key. `scripts/flood_extent/raster_load.py`
+reprojects each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`, then loads it with
+`ST_FromGDALRaster`. The loader sets `postgis.gdal_enabled_drivers = 'GTiff'` for its session,
+because PostGIS disables every GDAL driver by default and the load otherwise fails with "Could not
+open bytea with GDAL". Nothing reads the table yet, and no retention job prunes it.
 
 ## Retention
 

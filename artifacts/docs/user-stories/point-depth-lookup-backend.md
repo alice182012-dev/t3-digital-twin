@@ -30,13 +30,21 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   the regression-test half of that item.
   Priority: P0. Estimate: M. Sprint: 1. Dependencies: None.
 
-- **Story 2: Load `depth.tif` into PostGIS as a raster.**
+- **Story 2 (done): Load `depth.tif` into PostGIS as a raster.**
   As the point-depth lookup endpoint, I want each timestep's `depth.tif` available as a PostGIS
   raster, so I can answer an arbitrary-point depth query without reading the file from disk per
   request.
   Given a completed run and the `postgis_raster` extension enabled on `storage-postgres`, when the
   raster-load step runs for that run's `depth.tif`, then querying the raster table for that
   `valid_time` returns a non-null raster whose extent matches the source file.
+  `scripts/flood_extent/raster_load.py` reprojects each `depth_*.tif` from EPSG:3405 to EPSG:4326
+  with `gdal.Warp`, then loads it into `flood_depth_raster` (`run_ts`, `valid_time_utc`, `rast`)
+  with `ST_FromGDALRaster`. `scripts/database/create_flood_depth_raster_tables.py` creates the
+  table, and `dags/flood_mapping_dag.py`'s `9b_load_depth_raster` task runs beside
+  `9_build_flood_tiles`. The loader sets `postgis.gdal_enabled_drivers = 'GTiff'` per session,
+  because PostGIS disables every GDAL driver by default. `ST_Value` at one spot-checked point
+  matched the source pixel of a real 9901x5656 `depth.tif` to float32 precision. Shipped in commit
+  `118e04a`.
   Priority: P0. Estimate: M. Sprint: 1. Dependencies: None.
 
 - **Story 3: Build `GET /flood/points`.**
@@ -65,3 +73,5 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
 - **2026-09-23, draft.** Story 1 done: added `backend/test_flood_areas.py` and
   `backend/test_server.py`, both passing against a real PostGIS and a stub GraphHopper. Story 2
   (raster load) is next.
+- **2026-09-23, draft.** Story 2 done in commit `118e04a`: the `flood_depth_raster` table and the
+  `9b_load_depth_raster` task. Story 3 (`GET /flood/points`) is next.
