@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[routing-foot-truck-profiles]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]"]
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]"]
 last_updated: 2026-09-23
 ---
 
@@ -88,9 +88,9 @@ service's `entrypoint` in `compose.yml`, which makes the app import the mounted 
 the real, persistent volume using whatever `graph.encoded_values` `config.yml` declares.
 `graphhopper/config.yml` now registers a fourth profile, `foot`, backed by `foot_custom.json`
 (`foot_priority` stays trimmed out; see that file's own comment for why). See
-[[graphhopper-vehicle-profile-rejection]] for the full investigation, and
-[[routing-foot-truck-profiles]] for why `truck` was still missing from the frontend despite already
-working server-side (a config gap, not this bug; also now fixed, see below).
+[[graphhopper-vehicle-profile-rejection]] for the full investigation. `truck` is a separate,
+still-open config gap: GraphHopper already serves it server-side, but
+`config-local.js.example`'s `profiles` object never lists it (see Open items below).
 
 ## Vehicle thresholds
 

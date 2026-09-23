@@ -162,7 +162,9 @@ restored the `foot` profile and its encoded values (`foot_access`, `foot_average
 `foot` registered with its encoded values, and an actual walking route returned end to end.
 
 **Still open:** `truck` is still missing from `config-local.js.example`'s `profiles`, a separate,
-already-understood config gap — see [[routing-foot-truck-profiles]].
+already-understood config gap: add `truck: {}` to its `profiles` object and rebuild the frontend.
+GraphHopper already serves the profile, so no backend change is needed. See
+`artifacts/docs/concepts/graphhopper-backend.md`'s Open items.
 
 A separate P1 bug was found and fixed the same day while verifying this in the UI: routing (any
 profile) failed with "No safe route available" whenever a flood timestep was attached, i.e.
