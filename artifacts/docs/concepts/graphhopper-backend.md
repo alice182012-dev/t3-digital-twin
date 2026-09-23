@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]"]
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]"]
 last_updated: 2026-09-23
 ---
 
@@ -23,9 +23,9 @@ Both `GET /flood/areas` (the map overlay) and `POST /route` (routing) call the s
 function, `flood_areas.derive_areas`, so the overlay a user sees and the areas GraphHopper actually
 routes around can never drift apart.
 
-## Two flood tables, one intentional split
+## Three flood tables, one intentional split
 
-The backend reads from two separate PostGIS tables, and they are not interchangeable:
+The backend reads from three separate PostGIS tables, and they are not interchangeable:
 
 - `flood_road_values`, keyed by `(timestamp, forecast_time)`. `flood_areas.py` reads this table to
   build the `custom_model` for routing. Its own ingestion pipeline is separate from the tile
@@ -33,6 +33,10 @@ The backend reads from two separate PostGIS tables, and they are not interchange
 - `flood_extent_polygon`, keyed by `(run_ts, valid_time)`. `flood_extent_runs.py` reads this table
   to back `GET /flood/runs` and `GET /flood/timesteps`, the map's timestep picker. See
   [[minio-flood-extent-pipeline]] for how this table gets populated.
+- `flood_depth_raster`, keyed by `(run_ts, valid_time_utc)`, one EPSG:4326 raster per timestep.
+  `flood_points.py` reads it to back `GET /flood/points`. `scripts/flood_extent/raster_load.py`
+  loads it from the same `depth.tif` files as `flood_extent_polygon`, so both tables share run and
+  timestep keys.
 
 Routing and map display run on different cadences and different upstream pipelines on purpose. Do
 not point the routing derivation at `flood_extent_polygon`, and do not point the timestep picker at
@@ -62,8 +66,44 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
 | `/flood/runs` | GET | Distinct `run_ts` values from `flood_extent_polygon`. |
 | `/flood/timesteps` | GET | Timesteps for one run, converted back to Vietnam local time. |
 | `/flood/areas` | GET | The same flood polygons `POST /route` grades against, for the map overlay. |
+| `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster`. |
 | `/route` | POST | Flood-graded route; see the flow above. |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
+
+## Point depth lookup
+
+`GET /flood/points?lat=LAT&lon=LON&valid_time=VALID_TIME&run=RUN` returns the depth that
+`ST_Value` reads from the run's raster at that point. `run` is optional and defaults to `latest`.
+`valid_time` needs a UTC offset, as `GET /flood/timesteps` returns it, for example
+`2026-05-22T16:00:00+07:00`. URL-encode it, because a bare `+` in a query string decodes as a space.
+
+The endpoint picks a run with the rule `list_timesteps` uses. An explicit `run` pins that run.
+`latest` resolves through `flood_extent_runs.latest_run()`, the newest `run_ts` in
+`flood_extent_polygon`. If the newest run has no raster for that `valid_time`, the endpoint returns
+404. It never falls back to an older run.
+
+A 200 response has this shape:
+
+```json
+{"lat": 21.0398, "lon": 105.8019, "valid_time": "2026-05-22T16:00:00+07:00",
+ "run": "20260522T120000", "status": "wet", "depth_m": 12.53}
+```
+
+| `status` | `depth_m` | Meaning |
+|---|---|---|
+| `wet` | the raster value, in meters | The pixel at the point holds a depth greater than 0. |
+| `dry` | `0.0` | The point is inside the raster, and its pixel is 0 or NoData. |
+| `no_data` | `null` | The point is outside the raster extent. |
+
+`calculate_depth.py` rewrites NoData, negative, and out-of-range pixels to 0, then declares 0 as
+NoData. Inside the raster, the source can't tell a dry cell from a cell the model didn't cover, so
+both read as `dry`. Only a point outside the raster is detectably `no_data`.
+
+| HTTP status | Cause |
+|---|---|
+| 400 | `lat` or `lon` is missing, not a number, or out of range. |
+| 400 | `valid_time` is missing, not ISO 8601, or has no UTC offset. |
+| 404 | No run is loaded, or the chosen run has no raster for `valid_time`. |
 
 ## The pinned image, and why the `foot` profile was blocked
 
@@ -115,3 +155,10 @@ All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
   with a real PostGIS and a stub GraphHopper. Still no soak time or a side-by-side comparison
   against the old Valhalla backend (P2 in TODOS.md).
+- `GET /flood/points` has no measured latency under concurrent popup taps yet. Story 4 of
+  [[point-depth-lookup-backend]] covers that check. `backend/test_server.py` checks its depth
+  against `gdallocationinfo` on a synthetic `depth.tif` only, not a real run.
+- `raster_load.load_raster` and `publish.py` insert a timezone-aware UTC `datetime` into
+  `TIMESTAMP` columns. PostgreSQL converts it with the session `TimeZone`, so the stored value is
+  UTC only when `storage-postgres` runs in UTC. `list_timesteps` and `GET /flood/points` both read
+  the column as UTC.
