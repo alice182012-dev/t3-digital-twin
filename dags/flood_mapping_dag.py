@@ -36,8 +36,10 @@ try:
     import database.netcdf_to_pg
     import database.create_geojson_tables
     import database.create_flood_extent_tables
+    import database.create_flood_depth_raster_tables
     import flood_extent
     import publish
+    import raster_load
     from db_config import DB_CONFIG
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
@@ -60,6 +62,9 @@ FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "3"))
 FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")
 FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
 FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS", "24"))
+# scripts/flood_extent/raster_load.py's own scratch space for the EPSG:4326-reprojected copy of
+# each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
+DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900"))
 
@@ -120,6 +125,7 @@ def task_ensure_schema(**kwargs):
     print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
     database.create_geojson_tables.main()
     database.create_flood_extent_tables.main()
+    database.create_flood_depth_raster_tables.main()
 
 
 def task_upload_netcdf_postgres(**kwargs):
@@ -329,6 +335,30 @@ def task_build_flood_tiles(**kwargs):
     return {"run_ts": run_ts, "timesteps": len(results), "flooded_timesteps": flooded}
 
 
+def task_load_depth_raster(**kwargs):
+    """Loads every depth_*.tif of this run into flood_depth_raster, reprojected to EPSG:4326, so
+    GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
+    of reading the file from disk. Same run_ts as task 9, so both tables key off the (run,
+    valid_time) pair the frontend already selects.
+    """
+    ti = kwargs["ti"]
+    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
+    run_ts = ti.xcom_pull(task_ids="5_merge_geojson", key="run_ts")
+    if not depth_dir or not os.path.isdir(str(depth_dir)):
+        raise ValueError(f"❌ Depth directory is missing: {depth_dir}")
+    if not run_ts:
+        raise ValueError("❌ run_ts is missing from task 5_merge_geojson XCom")
+
+    print(f"🗺️ 9b. Loading depth rasters into PostGIS: {depth_dir} (run {run_ts})")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        loaded = raster_load.load_run(conn, depth_dir, run_ts, DEPTH_RASTER_WORK_DIR)
+    finally:
+        conn.close()
+    print(f"✅ Depth rasters loaded: {len(loaded)} timesteps")
+    return {"run_ts": run_ts, "timesteps": len(loaded)}
+
+
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -390,12 +420,17 @@ with DAG(
     t9 = PythonOperator(
         task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
     )
+    t9b = PythonOperator(
+        task_id="9b_load_depth_raster", python_callable=task_load_depth_raster
+    )
 
     t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
     t5 >> t9
+    t5 >> t9b
     t2 >> t3b
     t1 >> t_ddl
     t_ddl >> t3b
     t_ddl >> t8
     t_ddl >> t9
+    t_ddl >> t9b
     t0 >> wait_for_next_check
