@@ -127,6 +127,21 @@ the legend so no band is hidden, with the panel collapsed and expanded.
 
 Status:: active
 
+### Mount flood_utils.py where Airflow can import it
+
+**What:** The flood metric extractor imports `flood_utils.py` from `floodmap/graphhopper-flood-road/scripts`,
+which the Airflow containers do not mount, so it fails with `ImportError` inside Airflow. Mount that
+folder read-only into the Airflow services and point the extractor at it, before wiring the extractor
+into a DAG.
+
+**Effort:** S (human ~1-2 hrs / CC ~30 min)
+**Priority:** P2
+**Depends on:** None. Blocks [[timescaledb-and-flood-metrics]]'s Story 4.
+
+**Blocker tracking:** [[airflow-cannot-import-flood-utils]]
+
+Status:: active
+
 ### Establish a project DESIGN.md
 
 **What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens

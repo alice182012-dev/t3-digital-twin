@@ -4,7 +4,7 @@ type: user-story
 status: draft
 subsystem: architecture-backend
 source_ideas: []
-related: ["[[t3-digital-twin-architecture-gaps]]", "[[sprint-plan]]", "[[minio-flood-extent-pipeline]]"]
+related: ["[[t3-digital-twin-architecture-gaps]]", "[[sprint-plan]]", "[[minio-flood-extent-pipeline]]", "[[airflow-cannot-import-flood-utils]]"]
 tags: [user-story, epic, backend, sprint-1, sprint-2]
 ---
 
@@ -69,3 +69,6 @@ planning").
   `flood_road` sample, one segment matches a hand computation. Status is `Reviewed`, not `Done`,
   because the loader and writer SQL has never run against Postgres, and the check from raster to
   segment has not run.
+- **2026-09-23, draft.** The extractor cannot run inside Airflow until `flood_utils.py` is
+  importable there. Tracked as [[airflow-cannot-import-flood-utils]]. It blocks Story 4's DAG
+  wiring, not Story 3's own status.
