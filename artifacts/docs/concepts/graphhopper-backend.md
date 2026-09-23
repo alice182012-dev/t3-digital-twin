@@ -97,6 +97,8 @@ still-open config gap: GraphHopper already serves it server-side, but
 `floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth a
 segment becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot 40 cm.
 All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
+The frontend does not use them yet: `FloodStore` sends `vehicle_type=motorbike` with every route
+request, so only the motorbike limit applies. See [[flood-routing-vehicle-type-always-motorbike]].
 
 ## Open items
 

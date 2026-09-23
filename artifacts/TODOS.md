@@ -99,6 +99,34 @@ Valhalla-based backend for known routes and flood scenarios.
 
 Status:: active
 
+### Route each vehicle with its own flood depth limit
+
+**What:** Every route request sends `vehicle_type=motorbike`, so car, foot, and truck routes use the
+20 cm motorbike limit instead of 30, 40, and 35 cm. `FloodStore.ts`'s `SelectFloodVehicle` action is
+never dispatched. Make the route follow the selected routing profile.
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P2
+**Depends on:** None. Should land before [[truck-routing-profile]] reaches real users.
+
+**Blocker tracking:** [[flood-routing-vehicle-type-always-motorbike]]
+
+Status:: active
+
+### Keep the flood legend visible on mobile
+
+**What:** On a phone-width screen, the mobile search panel covers the top of the flood legend, and
+the "Updated" line added by [[frontend-polish]]'s Story 2 makes the legend one line taller. Position
+the legend so no band is hidden, with the panel collapsed and expanded.
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P2
+**Depends on:** None.
+
+**Blocker tracking:** [[mobile-flood-legend-covered-by-search-panel]]
+
+Status:: active
+
 ### Establish a project DESIGN.md
 
 **What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens
@@ -163,7 +191,7 @@ restored the `foot` profile and its encoded values (`foot_access`, `foot_average
 
 **Still open:** `truck` is still missing from `config-local.js.example`'s `profiles`, a separate,
 already-understood config gap: add `truck: {}` to its `profiles` object and rebuild the frontend.
-GraphHopper already serves the profile, so no backend change is needed. See
+GraphHopper already serves the profile, so no backend change is needed. Scheduled as [[truck-routing-profile]] in Sprint 4. See
 `artifacts/docs/concepts/graphhopper-backend.md`'s Open items.
 
 A separate P1 bug was found and fixed the same day while verifying this in the UI: routing (any
