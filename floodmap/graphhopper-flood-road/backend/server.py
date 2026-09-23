@@ -12,6 +12,8 @@ never drift apart.
 /flood/runs and /flood/timesteps are a separate concern: they back the
 map's timestep picker, not routing, and read flood_extent_runs.py's
 flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
+/flood/points reads the exact depth at one point from flood_depth_raster;
+see flood_points.py.
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from db import get_connection  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
+from flood_points import FloodPointNotFound, lookup_point_depth, parse_point_query  # noqa: E402
 from place_search import (  # noqa: E402
     PlaceSearchTimeout,
     PlaceSearchUnavailable,
@@ -151,6 +154,13 @@ class Handler(BaseHTTPRequestHandler):
                 simplify_m = float(qs.get("simplify", [DEFAULT_SIMPLIFY_M])[0])
                 min_area_m2 = float(qs.get("min_area", [DEFAULT_MIN_AREA_M2])[0])
                 self._send(200, cached_areas(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2))
+            elif parsed.path == "/flood/points":
+                query = parse_point_query(qs)
+                conn = get_connection()
+                try:
+                    self._send(200, lookup_point_depth(conn, query))
+                finally:
+                    conn.close()
             elif parsed.path == "/places/search":
                 results = search_places(
                     qs.get("q", [""])[0],
@@ -163,6 +173,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, geocode_gh_shape(qs.get("q", [""])[0], qs.get("locale", ["en"])[0]))
             else:
                 self._send(404, {"error": "not found"})
+        except FloodPointNotFound as exc:
+            self._send(404, {"error": str(exc)})
         except PlaceSearchValidationError as exc:
             self._send(400, {"error": str(exc)})
         except PlaceSearchTimeout:

@@ -5,11 +5,12 @@ class, and a stub GraphHopper server records exactly what body it received, so t
 regression in the flood-grading-to-routing wiring, not just in derive_areas() in isolation
 (see test_flood_areas.py for that).
 
-Run it against a throwaway PostGIS (needs the postgis extension, not plain Postgres):
+Run it against a throwaway PostGIS with postgis_raster, and a Python with GDAL (osgeo) and
+gdallocationinfo on PATH:
 
     docker run -d --rm --name flood-verify-pg -e POSTGRES_PASSWORD=test \
         -e POSTGRES_DB=floodtest -p 55432:5432 postgis/postgis:15-3.4
-    PYTHONPATH=../scripts \
+    PYTHONPATH=../scripts:../../../scripts/flood_extent:../../../scripts/database \
         FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
         python test_server.py
 """
@@ -18,14 +19,25 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import threading
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
-from urllib.parse import quote, urlparse
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from urllib.parse import quote, urlencode, urlparse
 
+import numpy as np
 import psycopg2
+from osgeo import gdal, osr
+
+import create_flood_depth_raster_tables
+import create_flood_extent_tables
+import raster_load
+
+gdal.UseExceptions()
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
 RUN = "2026-05-22T06:00:00+00:00"
@@ -35,6 +47,87 @@ RUN = "2026-05-22T06:00:00+00:00"
 FLOODED_SEGMENT = "LINESTRING(105.7610 21.0214, 105.7615 21.0216)"
 
 GRAPHHOPPER_RESPONSE = {"paths": [{"distance": 123.4, "time": 4560, "points": "stub"}]}
+
+OLD_RUN = "20260522T060000"
+NEW_RUN = "20260522T120000"
+# depth_*.tif filenames are Vietnam local time. 16:00 local exists in both runs; 19:00 local only
+# in OLD_RUN, so "latest" must 404 on it instead of falling back to the older run.
+SHARED_FILE, SHARED_VALID_TIME = "depth_20260522_160000.tif", "2026-05-22T16:00:00+07:00"
+OLD_ONLY_FILE, OLD_ONLY_VALID_TIME = "depth_20260522_190000.tif", "2026-05-22T19:00:00+07:00"
+
+# A 20x20 grid of 10 m pixels in EPSG:3405 near Hanoi, the source SRID of real depth.tif files.
+ORIGIN_X, ORIGIN_Y, PIXEL_M, SIZE = 583000.0, 2327000.0, 10.0, 20
+WET_PIXEL, DRY_PIXEL = (12, 12), (2, 2)
+
+
+def depth_grid(offset: float) -> np.ndarray:
+    """Distinct value per pixel, so a lookup that lands one pixel off fails the equality check.
+    The top-left 5x5 block is 0, which calculate_depth.py also declares as NoData."""
+    grid = (np.arange(SIZE * SIZE, dtype=np.float32).reshape(SIZE, SIZE) + 1) * 0.01 + offset
+    grid[:5, :5] = 0
+    return grid
+
+
+def write_depth_tif(path: Path, grid: np.ndarray) -> None:
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(3405)
+    ds = gdal.GetDriverByName("GTiff").Create(str(path), SIZE, SIZE, 1, gdal.GDT_Float32)
+    ds.SetGeoTransform([ORIGIN_X, PIXEL_M, 0.0, ORIGIN_Y, 0.0, -PIXEL_M])
+    ds.SetProjection(srs.ExportToWkt())
+    band = ds.GetRasterBand(1)
+    band.WriteArray(grid)
+    band.SetNoDataValue(0)
+    ds.FlushCache()
+    ds = None
+
+
+def pixel_centre_lonlat(row: int, col: int) -> tuple[float, float]:
+    src, dst = osr.SpatialReference(), osr.SpatialReference()
+    src.ImportFromEPSG(3405)
+    dst.ImportFromEPSG(4326)
+    dst.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+    x = ORIGIN_X + (col + 0.5) * PIXEL_M
+    y = ORIGIN_Y - (row + 0.5) * PIXEL_M
+    lon, lat, _ = osr.CoordinateTransformation(src, dst).TransformPoint(x, y)
+    return lon, lat
+
+
+def gdallocationinfo_value(tif: Path, lon: float, lat: float) -> float:
+    out = subprocess.run(
+        ["gdallocationinfo", "-valonly", "-wgs84", str(tif), repr(lon), repr(lat)],
+        check=True, capture_output=True, text=True,
+    )
+    return float(out.stdout.strip())
+
+
+def load_depth_runs(conn, workdir: Path) -> Path:
+    """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
+    Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
+    with conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster, flood_extent_polygon;")
+        cur.execute(create_flood_depth_raster_tables.SQL)
+        cur.execute(create_flood_extent_tables.SQL)
+    conn.commit()
+
+    runs = {OLD_RUN: ([SHARED_FILE, OLD_ONLY_FILE], 0.0), NEW_RUN: ([SHARED_FILE], 10.0)}
+    for run, (files, offset) in runs.items():
+        depth_dir = workdir / run
+        depth_dir.mkdir()
+        for name in files:
+            write_depth_tif(depth_dir / name, depth_grid(offset))
+        for valid_time in raster_load.load_run(conn, depth_dir, run, workdir / "warp"):
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO flood_extent_polygon (run_ts, valid_time_utc, dn_code, area_m2, geom)"
+                    " VALUES (%s, %s, 1, 100, ST_GeomFromText('POINT(105.8 21.0)', 4326));",
+                    (run, valid_time),
+                )
+    conn.commit()
+    return workdir / NEW_RUN / SHARED_FILE
+
+
+def points_url(base: str, **params) -> str:
+    return f"{base}/flood/points?{urlencode(params)}"
 
 
 def reset(conn) -> None:
@@ -110,10 +203,14 @@ def main() -> int:
         return 0
 
     parsed = urlparse(dsn)
+    workdir = TemporaryDirectory()
     conn = psycopg2.connect(dsn)
     with conn.cursor() as cur:
+        # raster_load writes a tz-aware UTC datetime into a TIMESTAMP column, so the stored value
+        # is UTC only when the session is, as on storage-postgres.
         cur.execute("SET TIME ZONE 'UTC';")
     reset(conn)
+    source_tif = load_depth_runs(conn, Path(workdir.name))
     conn.close()
 
     import db  # noqa: E402  (backend dir is on sys.path when run from there)
@@ -186,9 +283,63 @@ def main() -> int:
         plain_body = StubGraphHopper.received_bodies[0]
         assert "ch.disable" not in plain_body, plain_body
         assert "custom_model" not in plain_body, plain_body
+
+        wet_lon, wet_lat = pixel_centre_lonlat(*WET_PIXEL)
+        expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
+        status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME))
+        assert status == 200, (status, payload)
+        # gdallocationinfo prints 15 significant digits, the endpoint the full double of the same
+        # float32 pixel, so compare at the raster's own precision.
+        assert np.float32(payload.pop("depth_m")) == np.float32(expected_depth), (payload, expected_depth)
+        assert payload == {
+            "lat": wet_lat,
+            "lon": wet_lon,
+            "valid_time": SHARED_VALID_TIME,
+            "run": NEW_RUN,
+            "status": "wet",
+        }, payload
+
+        status, payload = request(
+            points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME, run=OLD_RUN)
+        )
+        assert status == 200, (status, payload)
+        assert payload["run"] == OLD_RUN, payload
+        assert np.float32(payload["depth_m"]) == depth_grid(0.0)[WET_PIXEL], payload
+
+        dry_lon, dry_lat = pixel_centre_lonlat(*DRY_PIXEL)
+        status, payload = request(points_url(base, lat=dry_lat, lon=dry_lon, valid_time=SHARED_VALID_TIME))
+        assert status == 200, (status, payload)
+        assert (payload["status"], payload["depth_m"]) == ("dry", 0.0), payload
+
+        status, payload = request(points_url(base, lat=10.0, lon=100.0, valid_time=SHARED_VALID_TIME))
+        assert status == 200, (status, payload)
+        assert (payload["status"], payload["depth_m"]) == ("no_data", None), payload
+
+        status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=OLD_ONLY_VALID_TIME))
+        assert status == 404, (status, payload)
+        assert NEW_RUN in payload["error"], payload
+
+        status, payload = request(
+            points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME, run="20260101T000000")
+        )
+        assert status == 404, (status, payload)
+
+        bad_requests = [
+            ({"lon": wet_lon, "valid_time": SHARED_VALID_TIME}, "lat is required"),
+            ({"lat": "abc", "lon": wet_lon, "valid_time": SHARED_VALID_TIME}, "lat is not a number"),
+            ({"lat": 95, "lon": wet_lon, "valid_time": SHARED_VALID_TIME}, "lat must be between"),
+            ({"lat": wet_lat, "lon": "nan", "valid_time": SHARED_VALID_TIME}, "lon must be between"),
+            ({"lat": wet_lat, "lon": wet_lon}, "valid_time is required"),
+            ({"lat": wet_lat, "lon": wet_lon, "valid_time": "yesterday"}, "not ISO 8601"),
+            ({"lat": wet_lat, "lon": wet_lon, "valid_time": "2026-05-22T16:00:00"}, "UTC offset"),
+        ]
+        for params, message in bad_requests:
+            status, payload = request(points_url(base, **params))
+            assert status == 400 and message in payload["error"], (params, status, payload)
     finally:
         backend.shutdown()
         stub.shutdown()
+        workdir.cleanup()
 
     print("ok")
     return 0
