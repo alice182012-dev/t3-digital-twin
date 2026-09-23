@@ -303,7 +303,7 @@ function LargeScreenLayout({
                 <MapComponent map={map} />
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend />}
+            {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
 
             {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
             {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
@@ -394,7 +394,7 @@ function SmallScreenLayout({
                 </div>
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend />}
+            {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (

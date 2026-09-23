@@ -38,6 +38,13 @@
     gap: 10px;
 }
 
+.updated {
+    font-size: 11px;
+    color: #6b7280;
+    padding-top: 4px;
+    border-top: 1px solid #e5e7eb;
+}
+
 .swatch {
     width: 18px;
     height: 12px;
