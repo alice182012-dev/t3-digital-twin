@@ -4,20 +4,20 @@ type: plan
 status: active
 plan_number: 1
 tags: [user-story, sprint-plan]
-related: ["[[flood-routing-mockup-frontend-gap]]", "[[t3-digital-twin-architecture-gaps]]", "[[point-depth-lookup-backend]]", "[[timescaledb-and-flood-metrics]]", "[[frontend-polish]]", "[[frontend-depth-features]]", "[[depth-forecast-chart]]", "[[route-forecast-query]]"]
+related: ["[[flood-routing-mockup-frontend-gap]]", "[[t3-digital-twin-architecture-gaps]]", "[[point-depth-lookup-backend]]", "[[timescaledb-and-flood-metrics]]", "[[frontend-polish]]", "[[frontend-depth-features]]", "[[depth-forecast-chart]]", "[[route-forecast-query]]", "[[truck-routing-profile]]"]
 ---
 
 # Sprint plan: PRD backlog, 2026-09
 
-Sixteen stories, drawn from [[flood-routing-mockup-frontend-gap]] and
-[[t3-digital-twin-architecture-gaps]], sequenced into three sprints with nothing left unscheduled.
+Seventeen stories, drawn from [[flood-routing-mockup-frontend-gap]] and
+[[t3-digital-twin-architecture-gaps]], sequenced into four sprints with nothing left unscheduled.
 No team roster or calendar is connected for this project, so this plan sizes work by dependency
 order and relative estimate, not by tracked capacity in hours or points per person. Revise the
 per-sprint story count once real velocity is known.
 
 ## How many sprints, and why
 
-Three. The backlog splits along one hard dependency: four frontend stories
+Four. Three of them come from one hard dependency: four frontend stories
 ([[frontend-depth-features]], [[depth-forecast-chart]]) call an endpoint or query that does not
 exist until Sprint 2's backend stories land. That single dependency is what forces a third sprint
 rather than two: everything else in the backlog (TimescaleDB, the metric extractor, the two
@@ -34,9 +34,13 @@ endpoint or query that is not built yet.
 - **Sprint 3** builds the four frontend stories that were blocked on Sprint 2's backend work:
   [[frontend-depth-features]]'s three `GET /flood/points`-dependent stories, plus
   [[depth-forecast-chart]], now unblocked (see its Status history).
+- **Sprint 4** shows the truck routing profile in the frontend ([[truck-routing-profile]]). It
+  depends on nothing above, and sits last because the user placed it there.
 
-Each story's Status is `Not started`, `In progress`, `Blocked`, or `Done`. Update it here and in
-the story's epic file together.
+Each story's Status is `Not started`, `In progress`, `Reviewed`, `Blocked`, or `Done`.
+`Reviewed` means the code is built and read through but its acceptance check has not run yet. Each story carries the
+same Status in its epic file, as a `Status:` field on its Priority line or a Status section in a
+single-story file. Update both together.
 
 ## Sprint 1: backend prerequisites and independent frontend wins
 
@@ -47,10 +51,10 @@ frontend stories with no backend dependency ship.
 | -------- | ----- | -------- | ---- | ------------ | ------ |
 | P0 | Regression-harden `floodmap-backend` before adding new load | M | [[point-depth-lookup-backend]] | None | Done |
 | P0 | Load `depth.tif` into PostGIS as a raster | M | [[point-depth-lookup-backend]] | None | Done |
-| P1 | Design TimescaleDB's histogram and forecast-series schema | S | [[timescaledb-and-flood-metrics]] | None | Not started |
-| P1 | Stand up the TimescaleDB service | S | [[timescaledb-and-flood-metrics]] | Schema design story, same sprint | Not started |
-| P2 | Add per-mode travel time under the four mode icons | M | [[frontend-polish]] | None | Not started |
-| P2 | Add the "Updated `date` `time`" line to the flood legend | S | [[frontend-polish]] | None | Not started |
+| P1 | Design TimescaleDB's histogram and forecast-series schema | S | [[timescaledb-and-flood-metrics]] | None | Reviewed |
+| P1 | Stand up the TimescaleDB service | S | [[timescaledb-and-flood-metrics]] | Schema design story, same sprint | Reviewed |
+| P2 | Add per-mode travel time under the four mode icons | M | [[frontend-polish]] | None | Reviewed |
+| P2 | Add the "Updated `date` `time`" line to the flood legend | S | [[frontend-polish]] | None | Reviewed |
 
 Already done, logged for traceability: switching the search geocoder's default locale to `vi` (see
 [[frontend-polish]]).
@@ -62,10 +66,10 @@ is writing real output into TimescaleDB.
 
 | Priority | Story | Estimate | Epic | Dependencies | Status |
 | -------- | ----- | -------- | ---- | ------------ | ------ |
-| P0 | Build `GET /flood/points` | M | [[point-depth-lookup-backend]] | Sprint 1's harden and raster-load stories | Not started |
+| P0 | Build `GET /flood/points` | M | [[point-depth-lookup-backend]] | Sprint 1's harden and raster-load stories | Reviewed |
 | P0 | Validate `GET /flood/points`'s latency under concurrent taps | S | [[point-depth-lookup-backend]] | This sprint's endpoint story | Not started |
 | P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story | Not started |
-| P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads `calculate_depth.py` output directly) | Not started |
+| P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads `calculate_depth.py` output directly) | Reviewed |
 | P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story | Not started |
 
 ## Sprint 3: frontend depth features
@@ -79,6 +83,19 @@ the UI, matching the mockup.
 | P0 | Per-step depth in turn-by-turn instructions | S | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories | Not started |
 | P0 | Per-point depth badges along the route polyline | M | [[frontend-depth-features]] | Sprint 2's `GET /flood/points` stories | Not started |
 | P0 | Depth-versus-time forecast chart | M | [[depth-forecast-chart]] | Sprint 2's route-forecast query story | Not started |
+
+## Sprint 4: truck routing profile
+
+**Sprint goal:** the frontend offers the truck profile, matching the four vehicle modes the
+backend already serves.
+
+| Priority | Story | Estimate | Epic | Dependencies | Status |
+| -------- | ----- | -------- | ---- | ------------ | ------ |
+| P2 | Show the truck routing profile in the frontend | S | [[truck-routing-profile]] | None | Not started |
+
+This sprint holds one story. It has no dependency on Sprints 1 to 3, so it can move earlier if
+capacity allows. The user placed it in Sprint 4. See the story's Known risk about the flood depth
+limit that a truck route uses.
 
 ## Risks
 
@@ -105,3 +122,12 @@ Status history.
   [[verify-table-capability-against-write-path-not-summary-or-current-query]].
 - **2026-09-23, active.** Added a Status column to every sprint table. Marked the harden-first
   story and the raster-load story (commit `118e04a`) `Done`. Every other story is `Not started`.
+- **2026-09-23, active.** Added the `Reviewed` status. Marked the TimescaleDB schema and service
+  stories `Reviewed`, pending the remote-host check.
+- **2026-09-23, active.** Marked both [[frontend-polish]] stories `Reviewed`, pending a run
+  against the live backend.
+- **2026-09-23, active.** Added Sprint 4 with [[truck-routing-profile]], at the user's request.
+  This extends the plan instead of starting `sprint-plan-2.md`, to keep every story's Status in
+  one file.
+- **2026-09-23, active.** Marked `GET /flood/points` and the flood metric extractor `Reviewed`,
+  pending checks against real data and a real database.

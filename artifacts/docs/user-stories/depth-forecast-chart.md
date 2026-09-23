@@ -24,6 +24,10 @@ P0
 
 M
 
+## Status
+
+Not started
+
 ## Acceptance criteria
 
 Given a route exists, when the route result panel renders, then it shows a 30-minute-column depth

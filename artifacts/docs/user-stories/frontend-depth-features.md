@@ -22,7 +22,7 @@ planning").
   Given the app is open with a route already showing on screen (any two points, any mode), when the
   user taps a point on the map that isn't a query point, then a card opens at that point showing its
   name, its address, and a "Water depth now: `N` cm" line, matching mockup screen 2b.
-  Priority: P0. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3
+  Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3
   (`GET /flood/points`), Story 4 (latency validation). Also needs a reverse-geocoding source for the
   place name and address. Check `AddressInputAutocomplete.tsx`'s geocoder first (see
   [[flood-routing-mockup-frontend-gap]]'s Dependencies and assumptions).
@@ -33,7 +33,7 @@ planning").
   Given a route exists, when each turn-by-turn step in the expanded instructions list renders, then
   it shows its depth next to its distance on the same line ("320 m · 8 cm"), matching mockup screen
   2e.
-  Priority: P0. Estimate: S. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
+  Priority: P0. Status: Not started. Estimate: S. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
 
 - **Story 3: Per-point depth badges along the route polyline.**
   As a user viewing a rendered route, I want to see depth badges at the points where depth changes
@@ -41,7 +41,7 @@ planning").
   Given a route exists, when the route renders on the map, then the map shows depth badges at
   points along the route polyline where the depth changes, matching the four badges in mockup screen
   2e (not fewer, and not one badge per turn regardless of whether depth changed there).
-  Priority: P0. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
+  Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
 
 ## Status history
 

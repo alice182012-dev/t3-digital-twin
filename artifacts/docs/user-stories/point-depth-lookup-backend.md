@@ -28,7 +28,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   against `postgis/postgis:15-3.4`. `artifacts/TODOS.md`'s broader hardening item (a soak period, a
   side-by-side comparison against the old Valhalla backend) is still open; this story covered only
   the regression-test half of that item.
-  Priority: P0. Estimate: M. Sprint: 1. Dependencies: None.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
 
 - **Story 2 (done): Load `depth.tif` into PostGIS as a raster.**
   As the point-depth lookup endpoint, I want each timestep's `depth.tif` available as a PostGIS
@@ -45,7 +45,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   because PostGIS disables every GDAL driver by default. `ST_Value` at one spot-checked point
   matched the source pixel of a real 9901x5656 `depth.tif` to float32 precision. Shipped in commit
   `118e04a`.
-  Priority: P0. Estimate: M. Sprint: 1. Dependencies: None.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
 
 - **Story 3: Build `GET /flood/points`.**
   As a frontend developer, I want an endpoint that returns the exact depth at an arbitrary lat/lon
@@ -55,7 +55,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   `GET /flood/points?lat=&lon=&valid_time=` is called for a point inside the flooded extent, then
   the response's depth value matches the value read directly from `depth.tif` at that pixel with
   `gdallocationinfo`, for one spot-checked point.
-  Priority: P0. Estimate: M. Sprint: 2. Dependencies: Story 1, Story 2.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: Story 1, Story 2.
 
 - **Story 4: Validate `GET /flood/points`'s latency under concurrent taps.**
   As an engineer, I want to know whether a live `ST_Value` query holds up under concurrent popup
@@ -64,7 +64,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
   popup-tap traffic, then response times land within the same interactive latency budget the
   existing `GET /flood/areas` call already meets.
-  Priority: P0. Estimate: S. Sprint: 2. Dependencies: Story 3.
+  Priority: P0. Status: Not started. Estimate: S. Sprint: 2. Dependencies: Story 3.
 
 ## Status history
 
@@ -75,3 +75,8 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   (raster load) is next.
 - **2026-09-23, draft.** Story 2 done in commit `118e04a`: the `flood_depth_raster` table and the
   `9b_load_depth_raster` task. Story 3 (`GET /flood/points`) is next.
+- **2026-09-23, draft.** Story 3 built and reviewed on branch `worktree-agent-af5d6b004a774583a`
+  (commits `80c6843` and `e3a0a95`). `GET /flood/points` returns `wet`, `dry`, or `no_data`. Its
+  tests pass against a local PostGIS, and the wet case matches `gdallocationinfo` on a synthetic
+  `depth.tif` to float32 precision. Status is `Reviewed`, not `Done`, because the acceptance check
+  names a real `depth.tif`, and none has run against the real `storage-postgres`.
