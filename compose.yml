@@ -67,7 +67,11 @@ x-airflow-common: &airflow-common
 
 services:
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # Pulled from quay.io, not Docker Hub: MinIO restricted anonymous Docker Hub
+    # pulls of minio/minio as part of their 2024 licensing change, so
+    # docker.io/minio/minio now returns a misleading "pull access denied" even
+    # though the image itself hasn't moved off Docker Hub for existing pulls.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
@@ -80,7 +84,8 @@ services:
     restart: unless-stopped
 
   minio-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    # See the minio service's image comment: pulled from quay.io for the same reason.
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
     depends_on:
       minio:
         condition: service_started
