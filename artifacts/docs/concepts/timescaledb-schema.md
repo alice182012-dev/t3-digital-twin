@@ -86,8 +86,9 @@ keeps the row with the later `issued_at`.
 
 - Road segments have no stable ID. `flood_road_values` stores `road_name` and a geometry, not a
   segment key. `segment_id` is `TEXT` so the loader in Story 4 can choose a derived key, such as a
-  hash of the segment geometry, without a schema change. That choice must be made before any
-  segment rows land.
+  hash of the segment geometry, without a schema change. The metric extractor uses
+  `md5(ST_AsEWKB(geom_4326))` as its `segment_key` (see [[flood-metric-extractor]]). Story 4 can
+  reuse that key as `segment_id`.
 - Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
   foreign key because the planned institutions table lives in `storage-postgres`, a different
   database.
