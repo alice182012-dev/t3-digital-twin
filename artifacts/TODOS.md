@@ -142,6 +142,21 @@ into a DAG.
 
 Status:: active
 
+### Make place search work with the vi locale
+
+**What:** The frontend sends `locale=vi`, `place_search.py` passes it to Photon as `lang=vi`, and Photon
+rejects it (it supports only `default`, `de`, `en`, `fr`), so the backend answers 502 and search shows no
+suggestions on the live UI. Map unsupported locales to `default` in `geocode_gh_shape`, rebuild the
+backend, and check that "Hồ Gươm" returns the Hanoi lake first.
+
+**Effort:** S (human ~2 hrs / CC ~30 min)
+**Priority:** P1
+**Depends on:** None.
+
+**Blocker tracking:** [[photon-rejects-vi-locale]]
+
+Status:: active
+
 ### Establish a project DESIGN.md
 
 **What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens
