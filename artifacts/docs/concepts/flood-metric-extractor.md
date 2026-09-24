@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
 related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]"]
-last_updated: 2026-09-23
+last_updated: 2026-09-24
 ---
 
 # Flood metric extractor
@@ -101,3 +101,8 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
 - The only real sample available locally, `flood_road_20260522T103000.geojson`, has two
   timesteps with equal depths on every segment. It checks the flat case, but not rising or falling
   depths. A 25-timestep `constant_cycle` run is still needed for a real check of those cases.
+- The row key changes. `segment_key` is `md5(ST_AsEWKB(geom_4326))` today. It will become the
+  `segment_id` of the `road_segment` table ([[raster-first-flood-pipeline]], Phase 4), so a road
+  piece has one ID across routing, TimescaleDB, and the route-forecast query. Rows already in
+  `flood_segment_metrics` use the old key and must be rebuilt after the change.
+

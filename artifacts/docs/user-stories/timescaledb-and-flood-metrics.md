@@ -66,7 +66,8 @@ planning").
   hourly bars, then bars 1 through 6 return `constant_cycle` data and bars 7 through 24 return
   `background_cycle` data, per the architecture doc's §4.9 split. No serving endpoint exists yet.
   this checks the stored data directly.
-  Priority: P1. Status: Not started. Estimate: M. Sprint: 2. Dependencies: Story 2, Story 3.
+  Priority: P1. Status: Not started. Estimate: M. Sprint: 2. Dependencies: Story 2, Story 3, [[raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
+  [[airflow-cannot-import-flood-utils]].
 
 ## Status history
 
@@ -89,3 +90,8 @@ planning").
   hypertables and three tables, and `bar_index_matches_cycle` rejected bar 7 for `constant_cycle`.
   Story 3 stays `Reviewed`: the extractor's loader and writer have not run against a real run, and
   [[airflow-cannot-import-flood-utils]] blocks running it in Airflow.
+- **2026-09-24, draft.** The extractor's row key will change from `md5(ST_AsEWKB(geom_4326))` to the
+  `segment_id` of the `road_segment` table ([[raster-first-pipeline-stories]] Story 1). Story 3 is
+  `Reviewed` with the old key, and its `flood_segment_metrics` rows on the server must be rebuilt after
+  the change. Story 4 waits for the new key and for [[airflow-cannot-import-flood-utils]].
+
