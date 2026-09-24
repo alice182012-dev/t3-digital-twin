@@ -28,6 +28,7 @@ try:
     import calculate_depth
     import netcdf_input
     import database.netcdf_to_pg
+    import database.create_netcdf_tables
     import database.create_geojson_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
@@ -117,6 +118,7 @@ def task_ensure_schema(**kwargs):
     database.create_geojson_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
+    database.create_netcdf_tables.create_tables()
 
 
 def task_upload_netcdf_postgres(**kwargs):

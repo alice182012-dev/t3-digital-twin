@@ -137,6 +137,18 @@ class FloodMappingDagGraphTests(unittest.TestCase):
     def test_edges_are_exactly_the_raster_first_set(self):
         self.assertEqual(self.dag.edges, EXPECTED_EDGES)
 
+    def test_ensure_schema_creates_the_tables_its_downstream_tasks_write(self):
+        database = MagicMock()
+        self.dag_module.database = database
+
+        with patch("builtins.print"):
+            self.dag_module.task_ensure_schema()
+
+        database.create_netcdf_tables.create_tables.assert_called_once_with()
+        database.create_geojson_tables.main.assert_called_once_with()
+        database.create_flood_extent_tables.main.assert_called_once_with()
+        database.create_flood_depth_raster_tables.main.assert_called_once_with()
+
 
 class DepthRunTests(unittest.TestCase):
     """Tasks 9 and 9b name the run from the depth folder, not from an XCom of a removed task."""
