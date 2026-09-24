@@ -40,11 +40,10 @@ console.log(`Source code: https://github.com/graphhopper/graphhopper-maps/tree/$
 
 const url = new URL(window.location.href)
 const locale = url.searchParams.get('locale')
-// Default to Vietnamese: this app only ever routes within a Vietnam flood-simulation area, and
-// the geocoding query's locale (Api.ts's geocode()) is derived from this translation language, so
-// leaving it to navigator.language let a non-Vietnamese browser's search results drift toward
-// same-name places outside Vietnam (see artifacts/docs/prds/flood-routing-mockup-frontend-gap.md).
-setTranslation(locale || 'vi')
+// Default to English: the geocoding query's locale (Api.ts's geocode()) is derived from this
+// translation language, and Photon accepts only default, de, en, and fr for `lang`. 'vi' made
+// every place search fail with a 502 (see artifacts/docs/blockers/photon-rejects-vi-locale.md).
+setTranslation(locale || 'en')
 
 setDistanceFormat(new Intl.NumberFormat(navigator.language, { maximumFractionDigits: 1 }))
 AddressParseResult.setPOITriggerPhrases(getTranslation())
