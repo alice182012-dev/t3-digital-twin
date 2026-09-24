@@ -82,3 +82,6 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
 ## Status
 
 - **2026-09-24.** Plan written. Phase 1 starting.
+- **2026-09-24.** No push until `flood_mapping_full` is ready to deploy, at the user's request. Commit
+  locally, and do not update PR #1 before then.
+
