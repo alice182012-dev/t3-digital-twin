@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]"]
-last_updated: 2026-09-23
+related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]"]
+last_updated: 2026-09-24
 ---
 
 # MinIO flood-extent tile pipeline
@@ -63,17 +63,55 @@ directly.
 
 ## PostGIS depth raster
 
-`flood_depth_raster` (`run_ts, valid_time_utc, rast`) holds each timestep's `depth.tif` as a PostGIS
-raster, upserted on `(run_ts, valid_time_utc)`. It exists so `GET /flood/points`
-([[point-depth-lookup-backend]]) can answer the exact depth at an arbitrary point, which
-`flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges) cannot.
+`flood_depth_raster_tile` (`run_ts, valid_time_utc, tile_x, tile_y, rast`) holds each timestep's
+`depth.tif` as 256 x 256 pixel PostGIS raster tiles. Its primary key is
+`(run_ts, valid_time_utc, tile_y, tile_x)`, and a GIST index covers `ST_ConvexHull(rast)`. The table
+exists so `GET /flood/points` ([[point-depth-lookup-backend]]) can answer the exact depth at an
+arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges)
+cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
+twice is safe.
 
 The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and reads the same `run_ts` from
-task 5's XCom, so both tables share one (run, valid time) key. `scripts/flood_extent/raster_load.py`
-reprojects each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`, then loads it with
-`ST_FromGDALRaster`. The loader sets `postgis.gdal_enabled_drivers = 'GTiff'` for its session,
+task 5's XCom, so both tables share one (run, valid time) key. `raster_load.load_run` reprojects
+each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`. Then it uploads the GeoTIFF once,
+and PostGIS cuts it with `ST_Tile` inside the same `INSERT`. For each timestep the loader deletes
+that timestep's tiles and inserts the new ones in one transaction, so a retried load ends with the
+same rows as a clean one. The loader sets `postgis.gdal_enabled_drivers = 'GTiff'` for its session,
 because PostGIS disables every GDAL driver by default and the load otherwise fails with "Could not
-open bytea with GDAL". Nothing reads the table yet, and no retention job prunes it.
+open bytea with GDAL".
+
+### Why tiles
+
+A whole timestep of the real grid is about 10,000 x 5,500 pixels, 209 MB once decoded. The first
+version stored it as one row in `flood_depth_raster`, and `ST_Value` on that row decodes the whole
+value for every lookup. With tiles, the lookup selects the tile under the point through the GIST
+index and decodes 256 KB. Storage barely changes. The real `depth_20260924_170639.tif` (22 MB) takes
+26 MB stored as 880 tiles and 27 MB as one row.
+
+The tile size came from loading that file at four sizes into a local PostGIS 3.6.4 on PostgreSQL 18
+and timing a bare `ST_Value` at six points. The endpoint's own query also reads
+`ST_BandNoDataValue`, which roughly doubles the one-row time (see [[graphhopper-backend]]). "Evicted" means the table, its TOAST data, and its indexes were
+evicted from `shared_buffers` first. The operating system cache stayed warm.
+
+| Tile size | Tiles per timestep | Warm lookup, median | Evicted lookup, median |
+|---|---|---|---|
+| One row, no tiles | 1 | 34.9 ms | 62.1 ms |
+| 64 x 64 | 13,430 | 0.13 ms | 0.9 ms |
+| 128 x 128 | 3,397 | 0.11 ms | 0.7 ms |
+| 256 x 256 | 880 | 0.15 ms | 0.8 ms |
+| 512 x 512 | 220 | 0.31 ms | 1.0 ms |
+
+128 and 256 tie on lookup time. The loader uses 256 because it writes a quarter of the rows, which
+keeps the index and the per-timestep delete smaller.
+
+### Why a new table
+
+The tile table sits next to `flood_depth_raster` instead of replacing its columns. The old table's
+`UNIQUE (run_ts, valid_time_utc)` allows one row per timestep, and the old loader's
+`ON CONFLICT (run_ts, valid_time_utc)` depends on it. Changing that table under a DAG run in progress
+would fail the load. With a second table, a deploy only adds a table, and nothing reads or writes
+`flood_depth_raster` after it. The table holds only the rows loaded before the switch, and Phase 3 of
+[[raster-first-flood-pipeline]] can drop it.
 
 ## Retention
 
@@ -84,6 +122,11 @@ Local scratch space (`FLOOD_EXTENT_WORK_DIR`, plus the depth directory itself) i
 by `cleanup_old_files`, which deletes any top-level child older than
 `FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS` (default 24), using each child's newest file's mtime as its
 age so a folder still being written is never mistaken for a stale one.
+
+`raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
+the newest `FLOOD_RASTER_KEEP_RUNS` runs by `run_ts` (default 3) and deletes every tile of older
+runs. It never deletes the run it just loaded, even when an older run is loaded again later. A
+value below 1 fails the load.
 
 ## How the frontend picks a timestep
 

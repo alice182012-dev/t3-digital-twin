@@ -1,8 +1,9 @@
 """Exact flood depth at one lat/lon and timestep, for GET /flood/points.
 
-Reads `flood_depth_raster` (run_ts, valid_time_utc, rast in EPSG:4326), which
-scripts/flood_extent/raster_load.py fills from each run's depth_*.tif. See Story 3 of
-artifacts/docs/user-stories/point-depth-lookup-backend.md.
+Reads `flood_depth_raster_tile` (run_ts, valid_time_utc, one EPSG:4326 tile per row), which
+scripts/flood_extent/raster_load.py fills from each run's depth_*.tif. A lookup selects the tile
+under the point through the GIST index on ST_ConvexHull(rast), so it unpacks one tile instead of
+the whole timestep. See Story 3 of artifacts/docs/user-stories/point-depth-lookup-backend.md.
 
 Run selection matches flood_extent_runs.list_timesteps: an explicit `run` pins that run, and
 "latest" resolves to flood_extent_runs.latest_run(), the newest run overall. A valid_time the
@@ -33,11 +34,20 @@ from flood_extent_runs import latest_run
 
 PointStatus = Literal["wet", "dry", "no_data"]
 
+# A point on a shared tile edge intersects up to four hulls, but only the tile that owns its pixel
+# returns a value; ST_Value is NULL on the others, where the point is one past the last column.
 _POINT_VALUE_SQL = """
-SELECT ST_Value(rast, 1, ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326), false),
-       ST_BandNoDataValue(rast, 1)
-FROM flood_depth_raster
-WHERE run_ts = %(run)s AND valid_time_utc = %(valid_time_utc)s;
+SELECT ST_Value(rast, 1, point, false), ST_BandNoDataValue(rast, 1)
+FROM flood_depth_raster_tile, ST_SetSRID(ST_MakePoint(%(lon)s, %(lat)s), 4326) AS point
+WHERE run_ts = %(run)s
+  AND valid_time_utc = %(valid_time_utc)s
+  AND ST_Intersects(ST_ConvexHull(rast), point);
+"""
+
+_TIMESTEP_LOADED_SQL = """
+SELECT EXISTS (
+    SELECT 1 FROM flood_depth_raster_tile WHERE run_ts = %(run)s AND valid_time_utc = %(valid_time_utc)s
+);
 """
 
 
@@ -110,15 +120,15 @@ def lookup_point_depth(conn, query: PointQuery) -> dict:
     run = query.run if query.run != "latest" else latest_run(conn)
     if run is None:
         raise FloodPointNotFound("no flood run is loaded")
+    params = {"lat": query.lat, "lon": query.lon, "run": run, "valid_time_utc": query.valid_time_utc}
     with conn.cursor() as cur:
-        cur.execute(
-            _POINT_VALUE_SQL,
-            {"lat": query.lat, "lon": query.lon, "run": run, "valid_time_utc": query.valid_time_utc},
-        )
-        row = cur.fetchone()
-    if row is None:
-        raise FloodPointNotFound(f"no depth raster for run {run} at valid_time {query.valid_time}")
-    depth = classify(*row)
+        cur.execute(_POINT_VALUE_SQL, params)
+        pixel = next((row for row in cur.fetchall() if row[0] is not None), None)
+        if pixel is None:
+            cur.execute(_TIMESTEP_LOADED_SQL, params)
+            if not cur.fetchone()[0]:
+                raise FloodPointNotFound(f"no depth raster for run {run} at valid_time {query.valid_time}")
+    depth = classify(*(pixel or (None, None)))
     return {
         "lat": query.lat,
         "lon": query.lon,

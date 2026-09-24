@@ -12,7 +12,7 @@ never drift apart.
 /flood/runs and /flood/timesteps are a separate concern: they back the
 map's timestep picker, not routing, and read flood_extent_runs.py's
 flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
-/flood/points reads the exact depth at one point from flood_depth_raster;
+/flood/points reads the exact depth at one point from flood_depth_raster_tile;
 see flood_points.py.
 """
 from __future__ import annotations
