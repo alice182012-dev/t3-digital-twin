@@ -24,7 +24,11 @@ planning").
   `background_cycle` data sources without needing a later migration.
   Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
   Evidence: ![[timescaledb-schema.png|420]]
-  Details: What: three hypertables and a `simulation_cycle` enum. How: `create_timescale_tables.py`, with a `CHECK` that ties bars 1 to 6 to `constant_cycle` and bars 7 to 24 to `background_cycle`. Why: no migration when `background_cycle` data arrives. Effect: Story 4 loads into these tables, and must first choose a segment key, since road segments have no stable ID.
+  Details:
+  1. What: three hypertables and a `simulation_cycle` enum.
+  2. How: `create_timescale_tables.py`, with a `CHECK` that ties bars 1 to 6 to `constant_cycle` and bars 7 to 24 to `background_cycle`.
+  3. Why: no migration when `background_cycle` data arrives.
+  4. Effect: Story 4 loads into these tables, and must first choose a segment key, since road segments have no stable ID.
 
 - **Story 2: Stand up the TimescaleDB service.**
   As an engineer, I want TimescaleDB running as its own Docker service, distinct from
@@ -34,7 +38,11 @@ planning").
   Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: Story 1 (schema informs what the service needs
   to support, though standing up the service itself has no hard technical blocker).
   Evidence: ![[timescaledb-service.png|420]]
-  Details: What: a `timescaledb` container apart from `storage-postgres`. How: `compose.yml`, image `timescale/timescaledb:2.30.1-pg17`, bound to `127.0.0.1:5434`. Why: the extractor's output needs a time-series store. Effect: `compose.yml` requires `TIMESCALE_PASSWORD`, so every compose command fails without it. The image comes from Docker Hub.
+  Details:
+  1. What: a `timescaledb` container apart from `storage-postgres`.
+  2. How: `compose.yml`, image `timescale/timescaledb:2.30.1-pg17`, bound to `127.0.0.1:5434`.
+  3. Why: the extractor's output needs a time-series store.
+  4. Effect: `compose.yml` requires `TIMESCALE_PASSWORD`, so every compose command fails without it. The image comes from Docker Hub.
 
 - **Story 3: Build the flood metric extractor.**
   As a downstream consumer (internal reporting, or a future endpoint), I want time-to-peak,

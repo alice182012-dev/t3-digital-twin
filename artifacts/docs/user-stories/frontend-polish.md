@@ -26,7 +26,11 @@ planning").
   requests per query may add visible delay. Accepted for now since this isn't shown to real users
   yet (see [[flood-routing-mockup-frontend-gap]]'s Decisions).
   Evidence: ![[frontend-per-mode-travel-time.png|420]]
-  Details: What: a travel time under each mode icon, with the selected mode in bold. How: `useProfileTimes` sends one route request per profile for each query. Why: compare modes without switching. Effect: four requests per query. Truck is missing until Sprint 4, and every mode uses the motorbike flood limit ([[flood-routing-vehicle-type-always-motorbike]]).
+  Details:
+  1. What: a travel time under each mode icon, with the selected mode in bold.
+  2. How: `useProfileTimes` sends one route request per profile for each query.
+  3. Why: compare modes without switching.
+  4. Effect: four requests per query. Truck is missing until Sprint 4, and every mode uses the motorbike flood limit ([[flood-routing-vehicle-type-always-motorbike]]).
 
 - **Story 2: Add the "Updated `date` `time`" line to the flood legend.**
   As a user reading the flood legend, I want to know how current the flood-depth data is, so I can
@@ -35,7 +39,11 @@ planning").
   bands with the selected timestep's date and time.
   Priority: P2. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
   Evidence: ![[frontend-legend-updated-line.png|420]]
-  Details: What: an "Updated" line under the legend bands. How: `FloodLegend` formats the selected timestep with `formatTimestepTime`, in the viewer's local time. Why: it shows how current the flood data is. Effect: the legend is one line taller, and the mobile search panel covers it ([[mobile-flood-legend-covered-by-search-panel]]).
+  Details:
+  1. What: an "Updated" line under the legend bands.
+  2. How: `FloodLegend` formats the selected timestep with `formatTimestepTime`, in the viewer's local time.
+  3. Why: it shows how current the flood data is.
+  4. Effect: the legend is one line taller, and the mobile search panel covers it ([[mobile-flood-legend-covered-by-search-panel]]).
 
 - **Story 3 (blocked): Switch the search geocoder's default locale to `vi`.**
   As a user searching for a Vietnamese address, I want Vietnam-relevant results, so I'm not shown
@@ -48,7 +56,11 @@ planning").
   Priority: P2. Status: Blocked. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
   Dependencies: None.
   Evidence: ![[frontend-vi-geocoder-check.png|420]]
-  Details: What: the frontend sends `locale=vi` to the geocoder. How: the request now carries `locale=vi` with the accents encoded correctly. Why: Vietnam-relevant suggestions. Effect: place search fails on the live UI, because Photon rejects `lang=vi` and the backend answers 502. See [[photon-rejects-vi-locale]].
+  Details:
+  1. What: the frontend sends `locale=vi` to the geocoder.
+  2. How: the request now carries `locale=vi` with the accents encoded correctly.
+  3. Why: Vietnam-relevant suggestions.
+  4. Effect: place search fails on the live UI, because Photon rejects `lang=vi` and the backend answers 502. See [[photon-rejects-vi-locale]].
 
 ## Status history
 
