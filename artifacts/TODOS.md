@@ -146,8 +146,9 @@ Status:: active
 
 **What:** The frontend sends `locale=vi`, `place_search.py` passes it to Photon as `lang=vi`, and Photon
 rejects it (it supports only `default`, `de`, `en`, `fr`), so the backend answers 502 and search shows no
-suggestions on the live UI. Fix in progress: the frontend default is now `en` (`index.tsx`). Rebuild the frontend and
-check that place search returns suggestions and that "Hồ Gươm" returns the Hanoi lake first.
+suggestions on the live UI. Deployed 2026-09-24: the frontend default is now `en` and place search works on the live UI. Still open:
+results are not biased toward Hanoi ("Hồ Gươm" lists Ottawa and Munich, and the lake is third), because
+`place_search.py` ignores the request's `point` and `location_bias_scale`.
 
 **Effort:** S (human ~2 hrs / CC ~30 min)
 **Priority:** P1

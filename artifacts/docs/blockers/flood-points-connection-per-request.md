@@ -29,8 +29,20 @@ delegate measured this on a laptop with PostGIS 3.6.4 on PostgreSQL 18:
 | Old whole raster | 69.3 ms | 149.5 ms |
 | New tiles | 0.20 ms | 58.2 ms |
 
-Loading the raster library took 57.3 ms in a new session, against 1.4 ms for a plain connect. These
-numbers are from a laptop. Nothing has been measured on the server, and concurrency is untested.
+Loading the raster library took 57.3 ms in a new session, against 1.4 ms for a plain connect.
+
+The server shows the same shape (measured 2026-09-24 from inside the `floodmap-backend` container, run
+`20260924T153638`, four timesteps loaded):
+
+| | Median | Slowest |
+| --- | --- | --- |
+| Tile lookup in the database | 0.56 ms | 84.5 ms (the first call in a session) |
+| Full request, 30 sequential | 80.7 ms | 96.2 ms |
+| Full request, 5 at once (20 requests) | 99.4 ms | 111.5 ms |
+| Full request, 10 at once (40 requests) | 126.8 ms | 145.1 ms |
+
+The lookup is about 0.5 ms and the request is about 80 ms, so nearly all of the time is connection
+setup and the first-call library load.
 
 ## Why this matters
 
@@ -70,3 +82,6 @@ request can leave the next one in an aborted transaction. The pool size must sta
 - **2026-09-24, open.** Logged at the user's request from the tiled-raster delegate's report. The
   per-request connection is confirmed in `server.py` and `db.py`. The 57 ms cost is a laptop
   measurement.
+- **2026-09-24, open.** Measured on the server after the Stage A deploy: the 0.56 ms lookup sits inside an
+  81 ms request. The fix (a pool in `db.py`) is still untried.
+

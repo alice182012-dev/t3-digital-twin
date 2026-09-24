@@ -2,7 +2,7 @@
 date_open: 2026-09-24
 date_closed: 
 type: blocker
-status: open
+status: monitoring
 severity: P1
 subsystem: floodmap-frontend
 approaches_tried: 1
@@ -50,8 +50,15 @@ Change the frontend default from `vi` to `en`, at the user's request, in `src/in
 the request now carries `locale=en`, and Photon answers HTTP 200 for `lang=en` (checked from the
 server on 2026-09-24). This is the second candidate below, done on the frontend side only.
 
-Not yet confirmed. The frontend must be rebuilt on the server, and place search must return
-suggestions on the live UI. One side effect: `setTranslation` also sets the UI language, so every
+Confirmed on 2026-09-24 after the frontend was rebuilt on the server. Place search returns
+suggestions again, the request carries `locale=en`, and the browser console has no errors.
+
+![[frontend-en-geocoder-check.png|500]]
+
+Still open: relevance. The search for "Hồ Gươm" lists "Hồ Gươm Plaza" in Hanoi first, then "Ho Guom" in
+Ottawa, the Hoàn Kiếm Lake third, and another "Ho Guom" in Munich. `place_search.py` passes only `q`,
+`lang`, and `limit` to Photon, so the `point` and `location_bias_scale` the frontend sends are ignored.
+Passing them on, or limiting results to a Vietnam bounding box, is the remaining candidate. One side effect: `setTranslation` also sets the UI language, so every
 label switches from Vietnamese to English ("Từ" becomes "From", "Ô tô" becomes "Car").
 
 ## Decision and explanation
@@ -88,4 +95,7 @@ bias as well, so check "Hồ Gươm" after the change and confirm the Hanoi lake
 - **2026-09-24, open (pending).** Deferred at the user's request. The `en` default is committed
   (`88e821b`) but not pushed, deployed, or checked on the live UI. The `TODOS.md` item stays active.
   Pick this up later by rebuilding `flood-routing-frontend` on the server and checking place search.
+- **2026-09-24, monitoring.** Deployed the `en` default (commit `6155f09`). Place search works on the live
+  UI. Relevance is the remaining issue: results from Ottawa and Munich appear. Close the blocker when
+  the user accepts that, or after results are biased toward Hanoi.
 
