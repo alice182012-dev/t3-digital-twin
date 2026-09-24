@@ -31,11 +31,15 @@ empty one rather than an error.
 ## The Airflow task
 
 `dags/flood_mapping_dag.py`'s `task_build_flood_tiles` (task 9 in the DAG, named
-`9_build_flood_tiles`) runs after `3_calculate_depth` and `5_merge_geojson`. It reads the run's
-depth directory from task 3's XCom, reads `run_ts` from task 5's XCom, and calls
-`scripts/flood_extent/publish.py`'s `publish_run` once for the whole run. This tile branch does not
-block the existing road-mapping chain (extract GeoJSON, merge, map roads, upload, write to
-Postgres), which keeps writing `flood_road_values` as before.
+`9_build_flood_tiles`) runs after `3_calculate_depth` and `0b_ensure_schema`. It reads the run's
+depth directory from task 3's XCom, takes `run_ts` from `flood_extent.run_ts_for_depth_dir` (the
+`stamp_key` of the earliest `depth_*.tif`), and calls `scripts/flood_extent/publish.py`'s
+`publish_run` once for the whole run.
+
+The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
+on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
+which routing reads. No DAG task writes `flood_road_values` until Story 3 of
+[[raster-first-pipeline-stories]] lands, so the DAG must not be deployed before then.
 
 `publish_run` builds and uploads one timestep at a time, `FLOOD_EXTENT_WORKERS` (default 2) of them
 in parallel. If any timestep fails, `publish_run` raises without deleting tiles or rows already

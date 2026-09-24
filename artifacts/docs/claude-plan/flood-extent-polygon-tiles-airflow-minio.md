@@ -4,7 +4,7 @@ type: plan
 branch: flood-tile-t6t7
 status: done
 tags: [flood-tile, airflow, minio]
-related: ["[[2026-09-18]]"]
+related: ["[[2026-09-18]]", "[[raster-first-flood-pipeline]]"]
 ---
 
 # Flood-extent polygon tiles: Airflow, MinIO, and view-time serving
@@ -179,3 +179,15 @@ Checked at the time: the engine ran on a real raster in a container with GRASS
 corrupt inputs. `tsc` and the floodmap Jest suites passed.
 
 </details>
+
+## Note, 2026-09-24: the road-mapping chain left the DAG
+
+Two statements in this plan no longer hold. The "Decisions already made" section says the
+road-mapping chain stays, and the Status section says task 9 runs after `5_merge_geojson`. Both were
+true when written. The plan [[raster-first-flood-pipeline]] removed tasks `4_extract_geojson_full`
+to `8_upload_postgres` from `dags/flood_mapping_dag.py`. Task `9_build_flood_tiles` runs after
+`3_calculate_depth` and takes `run_ts` from `flood_extent.run_ts_for_depth_dir`, the `stamp_key` of
+the earliest `depth_*.tif`. The tile path this plan built is otherwise unchanged.
+
+No DAG task writes `flood_road_values` until Story 3 of [[raster-first-pipeline-stories]] lands, and
+routing still reads that table. Do not deploy the DAG before then.
