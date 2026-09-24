@@ -29,6 +29,8 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   side-by-side comparison against the old Valhalla backend) is still open; this story covered only
   the regression-test half of that item.
   Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
+  Evidence: ![[harden-floodmap-backend-tests.png|420]]
+  Details: What: regression tests for `server.py` and `flood_areas.py`. How: `test_flood_areas.py` and `test_server.py` run against a real PostGIS and a stub GraphHopper. Why: `GET /flood/points` would otherwise land on an unproven backend. Effect: unblocks the point-depth stories. The soak period and the Valhalla comparison stay open in `TODOS.md`.
 
 - **Story 2 (done): Load `depth.tif` into PostGIS as a raster.**
   As the point-depth lookup endpoint, I want each timestep's `depth.tif` available as a PostGIS
@@ -46,6 +48,8 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   matched the source pixel of a real 9901x5656 `depth.tif` to float32 precision. Shipped in commit
   `118e04a`.
   Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
+  Evidence: ![[depth-raster-postgis-load.png|420]]
+  Details: What: each timestep's `depth.tif` becomes a row in `flood_depth_raster`. How: `raster_load.py` reprojects EPSG:3405 to EPSG:4326 and loads it with `ST_FromGDALRaster`, in DAG task `9b_load_depth_raster`. Why: a point lookup needs the exact pixel. Effect: unblocks `GET /flood/points`. On the server, the row for run `20260924T153638` matches the source file's size and corner. The DAG task has not run there yet.
 
 - **Story 3: Build `GET /flood/points`.**
   As a frontend developer, I want an endpoint that returns the exact depth at an arbitrary lat/lon
@@ -55,7 +59,9 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   `GET /flood/points?lat=&lon=&valid_time=` is called for a point inside the flooded extent, then
   the response's depth value matches the value read directly from `depth.tif` at that pixel with
   `gdallocationinfo`, for one spot-checked point.
-  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: Story 1, Story 2.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: Story 1, Story 2.
+  Evidence: ![[flood-points-endpoint.png|420]]
+  Details: What: `GET /flood/points` returns the depth at a lat/lon and timestep. How: `flood_points.py` reads `flood_depth_raster` with `ST_Value`. A pixel of 0 reads `dry`, and a point outside the raster reads `no_data`. Why: the popup and badges need the exact pixel, not a band. Effect: unblocks the latency check and the three Sprint 3 point stories. Without `run=`, it returns 404 when the newest run has no raster. On a real `depth.tif`, it matched `gdallocationinfo` at three points.
 
 - **Story 4: Validate `GET /flood/points`'s latency under concurrent taps.**
   As an engineer, I want to know whether a live `ST_Value` query holds up under concurrent popup
@@ -80,3 +86,9 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   tests pass against a local PostGIS, and the wet case matches `gdallocationinfo` on a synthetic
   `depth.tif` to float32 precision. Status is `Reviewed`, not `Done`, because the acceptance check
   names a real `depth.tif`, and none has run against the real `storage-postgres`.
+- **2026-09-24, draft.** Story 3 done. On the remote host, `GET /flood/points` matched
+  `gdallocationinfo` on a real `depth.tif` (`depth_20260924_170639.tif`, run `20260924T153638`) at
+  three points: 6.812467575073242 against 6.81246757507324, 0.17372192442417145 against
+  0.173721924424171, and 0.0 against 0. A point outside the raster returned `no_data`, an unknown
+  `valid_time` returned 404, and a latitude of 95 returned 400. `storage-postgres` runs in
+  `Etc/UTC`, so the timestamp handling holds. Story 4 (latency) is next.

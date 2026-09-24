@@ -22,15 +22,19 @@ planning").
   Given the architecture doc's §4.9 describes the histogram split this schema must support, when the
   schema design is reviewed against that section, then it accounts for both `constant_cycle` and
   `background_cycle` data sources without needing a later migration.
-  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 1. Dependencies: None.
+  Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
+  Evidence: ![[timescaledb-schema.png|420]]
+  Details: What: three hypertables and a `simulation_cycle` enum. How: `create_timescale_tables.py`, with a `CHECK` that ties bars 1 to 6 to `constant_cycle` and bars 7 to 24 to `background_cycle`. Why: no migration when `background_cycle` data arrives. Effect: Story 4 loads into these tables, and must first choose a segment key, since road segments have no stable ID.
 
 - **Story 2: Stand up the TimescaleDB service.**
   As an engineer, I want TimescaleDB running as its own Docker service, distinct from
   `storage-postgres`, so the metric extractor and population job have somewhere to write.
   Given the schema design from Story 1, when the service is added to `compose.yml` and deployed on
   the remote host, then it starts cleanly and accepts the designed schema's tables.
-  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 1. Dependencies: Story 1 (schema informs what the service needs
+  Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: Story 1 (schema informs what the service needs
   to support, though standing up the service itself has no hard technical blocker).
+  Evidence: ![[timescaledb-service.png|420]]
+  Details: What: a `timescaledb` container apart from `storage-postgres`. How: `compose.yml`, image `timescale/timescaledb:2.30.1-pg17`, bound to `127.0.0.1:5434`. Why: the extractor's output needs a time-series store. Effect: `compose.yml` requires `TIMESCALE_PASSWORD`, so every compose command fails without it. The image comes from Docker Hub.
 
 - **Story 3: Build the flood metric extractor.**
   As a downstream consumer (internal reporting, or a future endpoint), I want time-to-peak,
@@ -72,3 +76,8 @@ planning").
 - **2026-09-23, draft.** The extractor cannot run inside Airflow until `flood_utils.py` is
   importable there. Tracked as [[airflow-cannot-import-flood-utils]]. It blocks Story 4's DAG
   wiring, not Story 3's own status.
+- **2026-09-24, draft.** Stories 1 and 2 done. On the remote host, the `timescaledb` container is
+  healthy on TimescaleDB 2.30.1, the schema script's SQL ran twice with no errors and left three
+  hypertables and three tables, and `bar_index_matches_cycle` rejected bar 7 for `constant_cycle`.
+  Story 3 stays `Reviewed`: the extractor's loader and writer have not run against a real run, and
+  [[airflow-cannot-import-flood-utils]] blocks running it in Airflow.

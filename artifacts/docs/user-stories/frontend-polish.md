@@ -4,7 +4,7 @@ type: user-story
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
-related: ["[[flood-routing-mockup-frontend-gap]]", "[[sprint-plan]]", "[[mobile-flood-legend-covered-by-search-panel]]"]
+related: ["[[flood-routing-mockup-frontend-gap]]", "[[sprint-plan]]", "[[mobile-flood-legend-covered-by-search-panel]]", "[[photon-rejects-vi-locale]]"]
 tags: [user-story, epic, frontend, sprint-1]
 ---
 
@@ -22,18 +22,22 @@ planning").
   icons in the profile row shows a travel time below it, and the selected mode's time is visually
   distinguished (bold, matching mockup screen 2e), without the user selecting each mode in turn to
   see its time.
-  Priority: P2. Status: Reviewed. Estimate: M. Sprint: 1. Dependencies: None. Known risk: four separate route
+  Priority: P2. Status: Done. Estimate: M. Sprint: 1. Dependencies: None. Known risk: four separate route
   requests per query may add visible delay. Accepted for now since this isn't shown to real users
   yet (see [[flood-routing-mockup-frontend-gap]]'s Decisions).
+  Evidence: ![[frontend-per-mode-travel-time.png|420]]
+  Details: What: a travel time under each mode icon, with the selected mode in bold. How: `useProfileTimes` sends one route request per profile for each query. Why: compare modes without switching. Effect: four requests per query. Truck is missing until Sprint 4, and every mode uses the motorbike flood limit ([[flood-routing-vehicle-type-always-motorbike]]).
 
 - **Story 2: Add the "Updated `date` `time`" line to the flood legend.**
   As a user reading the flood legend, I want to know how current the flood-depth data is, so I can
   judge whether the map reflects the latest simulation cycle.
   Given flood mode is on, when the legend renders, then it shows an "Updated" line below the color
   bands with the selected timestep's date and time.
-  Priority: P2. Status: Reviewed. Estimate: S. Sprint: 1. Dependencies: None.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
+  Evidence: ![[frontend-legend-updated-line.png|420]]
+  Details: What: an "Updated" line under the legend bands. How: `FloodLegend` formats the selected timestep with `formatTimestepTime`, in the viewer's local time. Why: it shows how current the flood data is. Effect: the legend is one line taller, and the mobile search panel covers it ([[mobile-flood-legend-covered-by-search-panel]]).
 
-- **Story 3 (done): Switch the search geocoder's default locale to `vi`.**
+- **Story 3 (blocked): Switch the search geocoder's default locale to `vi`.**
   As a user searching for a Vietnamese address, I want Vietnam-relevant results, so I'm not shown
   same-name places outside Vietnam mixed into the suggestion list.
   Given the search input's autofill geocoding, when a query like "Hồ Gươm" is typed, then the
@@ -41,8 +45,10 @@ planning").
   unrelated same-name places elsewhere. Verified live against `http://100.67.84.55:8082` before the
   code fix (correct encoding, wrong relevance). Not yet re-verified after the fix, which needs a
   rebuild and redeploy on the remote host.
-  Priority: P2. Status: Done. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
+  Priority: P2. Status: Blocked. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
   Dependencies: None.
+  Evidence: ![[frontend-vi-geocoder-check.png|420]]
+  Details: What: the frontend sends `locale=vi` to the geocoder. How: the request now carries `locale=vi` with the accents encoded correctly. Why: Vietnam-relevant suggestions. Effect: place search fails on the live UI, because Photon rejects `lang=vi` and the backend answers 502. See [[photon-rejects-vi-locale]].
 
 ## Status history
 
@@ -55,3 +61,12 @@ planning").
 - **2026-09-23, draft.** Story 2's legend is covered by the mobile search panel at phone width.
   Tracked as [[mobile-flood-legend-covered-by-search-panel]]. The story stays `Reviewed`: the line
   renders, but the legend is not fully visible on mobile.
+- **2026-09-24, draft.** Stories 1 and 2 done. On the live frontend at `100.67.84.55:8082`, with a
+  route loaded, the profile row shows a travel time under every mode at once and the selected mode
+  is bold, and the flood legend shows "Updated 24/09/2026 17:36" below the depth bands. The browser
+  console had no errors. The row lists three modes, since `truck` is not in the deployed config
+  ([[truck-routing-profile]]). The mobile legend overlap remains open.
+- **2026-09-24, draft.** Story 3 moved from `Done` to `Blocked`. Checking it on the live UI for
+  evidence showed that place search returns no suggestions: the frontend sends `locale=vi`, Photon
+  rejects that language, and the backend answers 502. See [[photon-rejects-vi-locale]]. Stories 1
+  and 2 now carry evidence and details.
