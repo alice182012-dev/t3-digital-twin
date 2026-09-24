@@ -70,8 +70,8 @@ is writing real output into TimescaleDB.
 | P0 | Validate `GET /flood/points`'s latency under concurrent taps | S | [[point-depth-lookup-backend]] | This sprint's endpoint story | None yet | - | Not started |
 | P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story | None yet | - | Not started |
 | P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads`calculate_depth.py` output directly) | None yet | 1. What: the flood metric extractor, covered by 19 unit tests.<br />2. How: a pure function turns one segment's depth series into its metrics, and `extract_run.py` reads `flood_road_values` for a run and writes `flood_segment_metrics`.<br />3. Why: real flood-impact metrics (time to peak, recession onset, passability restoration, T+1h and T+2h depth, pre-closure time) instead of raw depth rasters alone.<br />4. Effect: it has not run against a real run, and it cannot run in Airflow until [[airflow-cannot-import-flood-utils]] is fixed. | Reviewed |
-| P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story | None yet | - | Not started |
-| P0 | Load the roads into PostGIS with a stable segment ID | M | [[raster-first-pipeline-stories]] | None | None yet | - | Not started |
+| P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story, the `segment_id` story of the new epic, [[airflow-cannot-import-flood-utils]] | None yet | - | Not started |
+| P0 | Load the roads into PostGIS with a stable segment ID | M | [[raster-first-pipeline-stories]] | None | None yet | 1. What: a `road_segment` table with one row per road piece, keyed by `segment_id` such as `way/11835354#0`.<br />2. How: `load_road_segments.py` cuts each of the 12,431 ways into equal pieces of at most 50 m in EPSG:3405 and upserts them in one transaction, so a second load changes nothing.<br />3. Why: routing data, TimescaleDB, and the route-forecast query need one stable road ID, and the old mapping step dropped the OSM id.<br />4. Effect: unblocks Stories 3 and 4 and the TimescaleDB key change. Checked only on a local PostGIS with the real roads file: 35,652 pieces, worst length error under 1e-5 m. Not run on the server. IDs shift if the roads file or the piece length changes. | Reviewed |
 | P0 | Store depth rasters as tiles and read them through a spatial index | M | [[raster-first-pipeline-stories]] | None | None yet | - | Not started |
 | P0 | Compute flood on roads from the raster into a shadow table | L | [[raster-first-pipeline-stories]] | Stories 1 and 2 of the new epic | None yet | - | Not started |
 | P0 | Switch routing to the new task and retire the GeoJSON tasks | M | [[raster-first-pipeline-stories]] | Story 3 of the new epic | None yet | - | Not started |
@@ -162,3 +162,7 @@ Status history.
 - **2026-09-24, active.** Added five stories to Sprint 2 from [[raster-first-pipeline-stories]]: roads
   in PostGIS, tiled rasters, flood on roads, retiring the GeoJSON tasks, and the netcdf schema fix.
   Sprint 2 is now the largest sprint. Rebalance if capacity is short.
+- **2026-09-24, active.** TimescaleDB's Story 4 now also waits for the `segment_id` story of
+  [[raster-first-pipeline-stories]] and for [[airflow-cannot-import-flood-utils]].
+- **2026-09-24, active.** [[raster-first-pipeline-stories]] Story 1 (`road_segment`) is `Reviewed`.
+

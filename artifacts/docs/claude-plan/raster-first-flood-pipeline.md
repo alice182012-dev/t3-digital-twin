@@ -84,4 +84,6 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
 - **2026-09-24.** Plan written. Phase 1 starting.
 - **2026-09-24.** No push until `flood_mapping_full` is ready to deploy, at the user's request. Commit
   locally, and do not update PR #1 before then.
+- **2026-09-24.** Story 1 (`road_segment`) merged locally and `Reviewed`. It cuts ways into equal pieces of
+  at most 50 m (35,652 pieces from 12,431 ways). Story 2 (tiles) and the DAG retirement are in progress.
 

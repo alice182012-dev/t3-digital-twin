@@ -21,7 +21,12 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Given `toa-do-duong-hanoi.geojson` (12,431 ways, each with a unique OSM id in `@id`), when the
   loader runs twice, then `road_segment` holds the same `segment_id` values both times, every way
   is present, and the pieces of each way add up to that way's length within 0.5 m.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 2. Dependencies: None.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: None.
+  Details:
+  1. What: a `road_segment` table with one row per road piece, keyed by `segment_id` such as `way/11835354#0`.
+  2. How: `load_road_segments.py` cuts each of the 12,431 ways into equal pieces of at most 50 m in EPSG:3405 and upserts them in one transaction, so a second load changes nothing.
+  3. Why: routing data, TimescaleDB, and the route-forecast query need one stable road ID, and the old mapping step dropped the OSM id.
+  4. Effect: unblocks Stories 3 and 4 and the TimescaleDB key change. Checked only on a local PostGIS with the real roads file: 35,652 pieces, worst length error under 1e-5 m. Not run on the server. IDs shift if the roads file or the piece length changes.
 
 - **Story 2: Store depth rasters as tiles and read them through a spatial index.**
   As the point-depth endpoint, I want each timestep stored as tiles, so a lookup touches one tile
@@ -60,3 +65,6 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
 - **2026-09-24, draft.** Drafted from the plan [[raster-first-flood-pipeline]] after the user chose to
   retire the GeoJSON tasks. All five stories go in Sprint 2, since [[route-forecast-query]] and
   [[timescaledb-and-flood-metrics]]'s Story 4 need the segment ID and the new roads table.
+- **2026-09-24, draft.** Story 1 built and reviewed (`ff18140`, `fcc4a03`, `23fad9c`, merged). Status is
+  `Reviewed`: it passed on a local PostGIS with the real roads file, and has not run on the server.
+
