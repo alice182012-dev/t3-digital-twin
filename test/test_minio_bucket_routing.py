@@ -48,30 +48,6 @@ class FixedDatetime:
 
 
 class MinioBucketRoutingTests(unittest.TestCase):
-    def test_flood_mapping_upload_uses_flood_bucket_and_keeps_key(self):
-        client = MagicMock()
-        pandas = types.ModuleType("pandas")
-        environment = {"FLOOD_MINIO_BUCKET": "flood-custom", "MINIO_SECRET_KEY": "test-secret"}
-        with patch.dict(os.environ, environment, clear=False):
-            module = load_module(
-                "scripts/mapping/upload_minio.py",
-                "test_mapping_upload",
-                minio_stubs(client, {"pandas": pandas}),
-            )
-
-        with patch("builtins.print"), patch.object(module.os.path, "exists", return_value=True):
-            result = module.run_upload(
-                "/tmp/road.geojson",
-                delete_local_file_after_upload=False,
-                run_ts="20260710T123456",
-            )
-
-        self.assertEqual(
-            client.upload_file.call_args.args,
-            ("/tmp/road.geojson", "flood-custom", "20260710T123456/flood_road_20260710T123456.geojson"),
-        )
-        self.assertEqual(result["bucket"], "flood-custom")
-
     def test_initial_wl_producer_and_consumer_use_same_bucket_and_prefix(self):
         producer_client = MagicMock()
         consumer_client = MagicMock()
@@ -169,15 +145,19 @@ class MinioBucketRoutingTests(unittest.TestCase):
         ))
 
     def test_compose_initializes_and_routes_named_buckets(self):
-        compose = (ROOT.parent / "compose.yml").read_text(encoding="utf-8")
-        floodmap_server = (ROOT.parent / "floodmap/valhalla-flood-road-test/backend/server.py").read_text(encoding="utf-8")
-        self.assertIn('bucket = os.environ.get("FLOOD_MINIO_BUCKET")', floodmap_server)
+        compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
         self.assertIn('INITIAL_WL_MINIO_BUCKET: ${INITIAL_WL_MINIO_BUCKET:-initial-wl}', compose)
         self.assertIn('MANHOLES_MINIO_BUCKET: ${MANHOLES_MINIO_BUCKET:-manholes-data}', compose)
-        self.assertIn('mc mb --ignore-existing "local/$${FLOOD_MINIO_BUCKET}"', compose)
+        self.assertIn('FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}', compose)
         self.assertIn('mc mb --ignore-existing "local/$${INITIAL_WL_MINIO_BUCKET}"', compose)
         self.assertIn('mc mb --ignore-existing "local/$${MANHOLES_MINIO_BUCKET}"', compose)
-        self.assertIn('FLOOD_MINIO_BUCKET: ${FLOOD_MINIO_BUCKET:-flood-results-full}', compose)
+        self.assertIn('mc mb --ignore-existing "local/$${FLOOD_EXTENT_BUCKET}"', compose)
+        self.assertIn('mc anonymous set download "local/$${FLOOD_EXTENT_BUCKET}"', compose)
+
+    def test_compose_no_longer_creates_flood_results_bucket(self):
+        compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
+        self.assertNotIn("FLOOD_MINIO_BUCKET", compose)
+        self.assertNotIn("flood-results-full", compose)
 
 
 if __name__ == "__main__":

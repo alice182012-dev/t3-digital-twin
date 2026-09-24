@@ -16,10 +16,16 @@ routing; see [[graphhopper-backend]] for why those two stay on separate tables.
 ## Where the data lives
 
 MinIO runs one bucket per pipeline (`compose.yml`'s `minio-init` service creates them):
-`flood-results-full`, `initial-wl`, `manholes-data`, and `flood-extent`. Only `flood-extent` is set
+`initial-wl`, `manholes-data`, and `flood-extent`. Only `flood-extent` is set
 to public, anonymous download (`mc anonymous set download`), because it is the one bucket served
 straight to the browser. The MinIO API port itself stays bound to `127.0.0.1`, so that bucket is
 public only through nginx's proxy, never directly.
+
+A fourth bucket, `flood-results-full`, held the GeoJSON of the retired road-mapping chain.
+`compose.yml` stopped creating it on 2026-09-24. The bucket and its objects on the server go at
+the Stage B deploy of [[raster-first-flood-pipeline]]. `scripts/mapping/upload_minio.py`,
+`scripts/mapping/merge_geojson.py`, and `scripts/database/geojson_to_pg.py` still default to that
+bucket name until they are deleted after the flood-on-roads comparison.
 
 Inside `flood-extent`, tiles land at `runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf`. `run_ts` is a
 fixed-width `YYYYMMDDTHHMMSS` string, chosen so lexical sort order matches chronological order.
