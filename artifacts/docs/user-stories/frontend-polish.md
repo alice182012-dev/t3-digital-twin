@@ -82,3 +82,8 @@ planning").
   evidence showed that place search returns no suggestions: the frontend sends `locale=vi`, Photon
   rejects that language, and the backend answers 502. See [[photon-rejects-vi-locale]]. Stories 1
   and 2 now carry evidence and details.
+- **2026-09-24, draft.** Story 3's goal changes. The default locale moves from `vi` to `en`, because
+  Photon rejects `vi` ([[photon-rejects-vi-locale]]). The story stays `Blocked` until place search is
+  checked on the live UI after a rebuild. `en` also switches the UI labels to English, and it no
+  longer biases results toward Vietnam. Check "Hồ Gươm" after the rebuild.
+
