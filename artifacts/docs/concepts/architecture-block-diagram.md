@@ -3,8 +3,8 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [architecture, diagram]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-23
+related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]"]
+last_updated: 2026-09-24
 ---
 
 # Block diagram: T3-Digital-Twin architecture
@@ -30,7 +30,7 @@ flowchart TB
   subgraph PIPE["Simulation & postprocessing"]
     AIRFLOW["Airflow DAG<br/>flood_mapping_dag.py"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
-    ROUTEEXT["extract_geojson.py"]:::built
+    ROUTEEXT["flood-on-roads task<br/>(raster-first Story 3)"]:::designed
     TILEEXT["flood_extent.py + publish.py<br/>(GRASS raster→polygon)"]:::built
   end
 
@@ -57,9 +57,9 @@ flowchart TB
   GAUGE -->|water levels| AIRFLOW
   HE -.->|model, templates| ThreeDI
   AIRFLOW --> DEPTH
-  DEPTH --> ROUTEEXT
+  DEPTH -.-> ROUTEEXT
   DEPTH --> TILEEXT
-  ROUTEEXT -->|flood_road_values| PG
+  ROUTEEXT -.->|flood_road_values| PG
   TILEEXT -->|flood_extent_polygon| PG
   TILEEXT -->|.pbf tiles| MINIO
   PG --> BACKEND
@@ -81,3 +81,9 @@ flowchart TB
   classDef built fill:#dff5e1,stroke:#2f9e44,stroke-width:1px;
   classDef designed fill:#f1f3f5,stroke:#adb5bd,stroke-width:1px,stroke-dasharray: 4 3;
 ```
+
+The flood-on-roads node is Designed, not built. The GeoJSON chain that used to write
+`flood_road_values` (`scripts/mapping/extract_geojson_full.py` through
+`scripts/database/geojson_to_pg.py`) left `dags/flood_mapping_dag.py` on 2026-09-24. Until Story 3 of
+[[raster-first-pipeline-stories]] lands, no DAG task writes `flood_road_values`, although
+`floodmap-backend` still reads it for routing. The plan is [[raster-first-flood-pipeline]].
