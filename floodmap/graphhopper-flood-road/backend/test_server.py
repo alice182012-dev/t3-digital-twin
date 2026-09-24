@@ -113,7 +113,7 @@ def load_depth_runs(conn, workdir: Path) -> Path:
     """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
     Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_depth_raster, flood_depth_raster_tile, flood_extent_polygon;")
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon;")
         cur.execute(create_flood_depth_raster_tables.SQL)
         cur.execute(create_flood_extent_tables.SQL)
     conn.commit()

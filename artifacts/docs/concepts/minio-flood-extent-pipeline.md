@@ -120,8 +120,10 @@ The tile table sits next to `flood_depth_raster` instead of replacing its column
 `UNIQUE (run_ts, valid_time_utc)` allows one row per timestep, and the old loader's
 `ON CONFLICT (run_ts, valid_time_utc)` depends on it. Changing that table under a DAG run in progress
 would fail the load. With a second table, a deploy only adds a table, and nothing reads or writes
-`flood_depth_raster` after it. The table holds only the rows loaded before the switch, and Phase 3 of
-[[raster-first-flood-pipeline]] can drop it.
+`flood_depth_raster` after it. Since 2026-09-24, `create_flood_depth_raster_tables.py` no longer
+creates `flood_depth_raster`. A database set up before then still holds the table and the rows
+loaded before the switch, until the deploy runbook in [[raster-first-flood-pipeline]] runs
+`DROP TABLE IF EXISTS flood_depth_raster;`.
 
 ## Retention
 
