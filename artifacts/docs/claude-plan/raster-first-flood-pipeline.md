@@ -99,3 +99,9 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   at most 50 m (35,652 pieces from 12,431 ways). Story 2 (tiles) and the DAG retirement are in progress.
 - **2026-09-24.** Story 2 (tiles) merged locally and `Reviewed`. Lookup 69 ms to 0.2 ms warm on a local
   PostGIS. The DAG retirement is in progress.
+- **2026-09-24.** Stage A deployed to the server at `6155f09` (everything except the DAG retirement). The
+  backend and frontend images were built from the Mac (`docker compose build`), because Docker's
+  credential helper fails in an SSH session on the server, and the containers were recreated on the
+  server with `--no-deps`. `flood_mapping_full` was already paused and stays paused. Tiles for run
+  `20260924T153638` were loaded by hand. The next steps are Story 3 (flood on roads) and Story 4.
+

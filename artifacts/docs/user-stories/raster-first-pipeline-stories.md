@@ -35,11 +35,12 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   points matches `gdallocationinfo`, a lookup on the server is faster than the current 80 to 280 ms,
   and only the newest runs are kept (default 3).
   Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: None.
+  Evidence: ![[raster-tiles-server-check.png|420]]
   Details:
   1. What: each timestep's depth raster is stored as 256 by 256 tiles in `flood_depth_raster_tile`, read through a spatial index, and runs older than the newest 3 are pruned.
   2. How: `load_run` reprojects to EPSG:4326 and cuts tiles with `ST_Tile` in one delete-and-insert transaction. `GET /flood/points` selects the tile under the point, then runs `ST_Value`.
-  3. Why: the whole-raster lookup unpacked 209 MB per request and took about 69 ms.
-  4. Effect: on a local PostGIS with the real file, a lookup takes 0.2 ms warm. The full request is still about 58 ms, because each new connection loads the raster library. Not measured on the server. The backend must not deploy before `create_flood_depth_raster_tables.py` has run, and until the next raster load the endpoint returns 404.
+  3. Why: the whole-raster lookup unpacked 209 MB per request and took 80 to 280 ms on the server.
+  4. Effect: deployed on 2026-09-24 (commit `6155f09`). On the server a tile lookup takes a median of 0.56 ms in the database, and a full request about 81 ms, because each request opens a new connection ([[flood-points-connection-per-request]]). Retention has not run on the server, since only one run has tiles, so the story stays `Reviewed`.
 
 - **Story 3: Compute flood on roads from the raster into a shadow table.**
   As the routing backend, I want each road piece's depth per timestep computed from the raster in
@@ -74,4 +75,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   `Reviewed`: it passed on a local PostGIS with the real roads file, and has not run on the server.
 - **2026-09-24, draft.** Story 2 built and reviewed (`b239491`, `1238616`, `bc158e5`, `876cbe5`, merged).
   Status is `Reviewed`: the numbers come from a local PostGIS, and none is measured on the server.
+- **2026-09-24, draft.** Story 2 deployed to the server (commit `6155f09`) and checked there: 4 timesteps of
+  880 tiles, values equal to the earlier `gdallocationinfo` reference, tile lookup median 0.56 ms.
+  Still `Reviewed`, because pruning needs a fourth run to show on the server.
 

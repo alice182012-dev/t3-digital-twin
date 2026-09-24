@@ -86,4 +86,7 @@ planning").
   Photon rejects `vi` ([[photon-rejects-vi-locale]]). The story stays `Blocked` until place search is
   checked on the live UI after a rebuild. `en` also switches the UI labels to English, and it no
   longer biases results toward Vietnam. Check "Hồ Gươm" after the rebuild.
+- **2026-09-24, draft.** The `en` default is deployed and place search works again
+  ([[photon-rejects-vi-locale]]), shown in ![[frontend-en-geocoder-check.png|300]]. The story's goal,
+  Vietnam-relevant results, is still unmet, so Story 3 stays `Blocked`.
 
