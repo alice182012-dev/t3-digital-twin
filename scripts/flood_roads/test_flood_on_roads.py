@@ -72,7 +72,8 @@ class FloodOnRoadsTests(unittest.TestCase):
             cur.execute(
                 "TRUNCATE road_segment, flood_depth_raster_tile, flood_road_values, flood_road_file"
             )
-            cur.execute("DROP TABLE IF EXISTS flood_road_values_shadow")
+            # Qualified: search_path falls through to public, where a real shadow table may live.
+            cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.flood_road_values_shadow")
 
     def add_tile(self, valid_time_utc, tile_x, tile_y, wet):
         with self.conn, self.conn.cursor() as cur:
