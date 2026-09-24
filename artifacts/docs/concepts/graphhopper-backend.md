@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]"]
-last_updated: 2026-09-23
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]"]
+last_updated: 2026-09-24
 ---
 
 # GraphHopper flood-road backend
@@ -33,8 +33,8 @@ The backend reads from three separate PostGIS tables, and they are not interchan
 - `flood_extent_polygon`, keyed by `(run_ts, valid_time)`. `flood_extent_runs.py` reads this table
   to back `GET /flood/runs` and `GET /flood/timesteps`, the map's timestep picker. See
   [[minio-flood-extent-pipeline]] for how this table gets populated.
-- `flood_depth_raster`, keyed by `(run_ts, valid_time_utc)`, one EPSG:4326 raster per timestep.
-  `flood_points.py` reads it to back `GET /flood/points`. `scripts/flood_extent/raster_load.py`
+- `flood_depth_raster_tile`, keyed by `(run_ts, valid_time_utc, tile_y, tile_x)`, one EPSG:4326
+  raster tile per row. `flood_points.py` reads it to back `GET /flood/points`. `scripts/flood_extent/raster_load.py`
   loads it from the same `depth.tif` files as `flood_extent_polygon`, so both tables share run and
   timestep keys.
 
@@ -66,7 +66,7 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
 | `/flood/runs` | GET | Distinct `run_ts` values from `flood_extent_polygon`. |
 | `/flood/timesteps` | GET | Timesteps for one run, converted back to Vietnam local time. |
 | `/flood/areas` | GET | The same flood polygons `POST /route` grades against, for the map overlay. |
-| `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster`. |
+| `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster_tile`. |
 | `/route` | POST | Flood-graded route; see the flow above. |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
 
@@ -104,6 +104,23 @@ both read as `dry`. Only a point outside the raster is detectably `no_data`.
 | 400 | `lat` or `lon` is missing, not a number, or out of range. |
 | 400 | `valid_time` is missing, not ISO 8601, or has no UTC offset. |
 | 404 | No run is loaded, or the chosen run has no raster for `valid_time`. |
+
+### How the lookup reads the tiles
+
+`flood_points.py` runs one query that selects the tiles of `(run, valid_time)` whose
+`ST_ConvexHull(rast)` intersects the point, through the GIST index on that expression, and calls
+`ST_Value` on each. A point on a shared tile edge intersects up to four tiles. Only the tile that
+owns the pixel returns a value, and the others return `NULL`, so the endpoint takes the first
+non-null value. If no tile returns a value, a second query checks whether any tile exists for
+`(run, valid_time)`. A timestep with tiles means the point is outside the raster (`no_data`). A
+timestep without tiles is a 404. The endpoint never infers a 404 from an empty result alone.
+
+On a local PostGIS 3.6.4 with the real `depth_20260924_170639.tif`, the tiled query takes 0.2 ms
+with the tile in memory and 0.9 ms with it evicted from `shared_buffers`. The whole-raster query it
+replaced took 69 ms and 94 ms on the same machine. `server.py` opens a new connection for every
+request, and the first raster function call in a new PostgreSQL backend loads the PostGIS raster
+library, which took 56 ms locally. A full request is therefore about 58 ms locally, down from about
+150 ms. The server's own latency has not been measured after this change.
 
 ## The pinned image, and why the `foot` profile was blocked
 
@@ -157,9 +174,14 @@ request, so only the motorbike limit applies. See [[flood-routing-vehicle-type-a
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
   with a real PostGIS and a stub GraphHopper. Still no soak time or a side-by-side comparison
   against the old Valhalla backend (P2 in TODOS.md).
-- `GET /flood/points` has no measured latency under concurrent popup taps yet. Story 4 of
-  [[point-depth-lookup-backend]] covers that check. `backend/test_server.py` checks its depth
-  against `gdallocationinfo` on a synthetic `depth.tif` only, not a real run.
+- `GET /flood/points` has no measured latency on the server since it moved to tiles, and none
+  under concurrent popup taps. Story 4 of [[point-depth-lookup-backend]] covers that check.
+  `backend/test_server.py` checks its depth against `gdallocationinfo` on a synthetic `depth.tif`.
+  The real `depth_20260924_170639.tif` matched `gdallocationinfo` at three points on a local
+  PostGIS, not on the server.
+- Most of a local `GET /flood/points` request (about 56 ms of 58 ms) is the PostGIS raster library
+  load in the new backend that `server.py` connects for each request. Reusing connections, for
+  example with `psycopg2.pool`, would remove that cost. No change is planned yet.
 - `raster_load.load_raster` and `publish.py` insert a timezone-aware UTC `datetime` into
   `TIMESTAMP` columns. PostgreSQL converts it with the session `TimeZone`, so the stored value is
   UTC only when `storage-postgres` runs in UTC. `list_timesteps` and `GET /flood/points` both read
