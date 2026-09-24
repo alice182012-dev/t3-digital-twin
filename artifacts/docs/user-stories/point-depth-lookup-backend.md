@@ -108,4 +108,4 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   ([[raster-first-pipeline-stories]] Story 2): 0.2 ms per lookup locally, but about 58 ms per request
   because each new connection loads the raster library. Measure on the server, with and without
   connection reuse.
-
+- **2026-09-24, draft.** The connection cost is tracked as [[flood-points-connection-per-request]].

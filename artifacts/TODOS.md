@@ -157,6 +157,22 @@ check that place search returns suggestions and that "Hồ Gươm" returns the H
 
 Status:: active
 
+### Reuse database connections in floodmap-backend
+
+**What:** `server.py` opens a new PostgreSQL connection for every request, and the first raster call
+in a new session loads the PostGIS raster library. That makes a `GET /flood/points` request take about
+58 ms locally although the tiled lookup takes 0.2 ms. Pool the connections in `db.py`, then measure on
+the server.
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P2
+**Depends on:** [[raster-first-pipeline-stories]] Story 2 deployed. Feeds the latency check in
+[[point-depth-lookup-backend]]'s Story 4.
+
+**Blocker tracking:** [[flood-points-connection-per-request]]
+
+Status:: active
+
 ### Establish a project DESIGN.md
 
 **What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens
