@@ -71,6 +71,11 @@ is writing real output into TimescaleDB.
 | P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story | None yet | - | Not started |
 | P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads`calculate_depth.py` output directly) | None yet | 1. What: the flood metric extractor, covered by 19 unit tests.<br />2. How: a pure function turns one segment's depth series into its metrics, and `extract_run.py` reads `flood_road_values` for a run and writes `flood_segment_metrics`.<br />3. Why: real flood-impact metrics (time to peak, recession onset, passability restoration, T+1h and T+2h depth, pre-closure time) instead of raw depth rasters alone.<br />4. Effect: it has not run against a real run, and it cannot run in Airflow until [[airflow-cannot-import-flood-utils]] is fixed. | Reviewed |
 | P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story | None yet | - | Not started |
+| P0 | Load the roads into PostGIS with a stable segment ID | M | [[raster-first-pipeline-stories]] | None | None yet | - | Not started |
+| P0 | Store depth rasters as tiles and read them through a spatial index | M | [[raster-first-pipeline-stories]] | None | None yet | - | Not started |
+| P0 | Compute flood on roads from the raster into a shadow table | L | [[raster-first-pipeline-stories]] | Stories 1 and 2 of the new epic | None yet | - | Not started |
+| P0 | Switch routing to the new task and retire the GeoJSON tasks | M | [[raster-first-pipeline-stories]] | Story 3 of the new epic | None yet | - | Not started |
+| P2 | Create the netcdf table in the schema task | S | [[raster-first-pipeline-stories]] | None | None yet | - | Not started |
 | P2 | Verify the first-load, empty-panel, and autofill screens against the mockup | S | [[mockup-screen-coverage]] | None, needs the frontend rebuilt on the remote host | None yet | - | Not started |
 
 ## Sprint 3: frontend depth features
@@ -154,3 +159,6 @@ Status history.
   check found that place search fails on the live UI ([[photon-rejects-vi-locale]]).
 - **2026-09-24, active.** Changed Details to a numbered list (1. what, 2. how, 3. why, 4. effect),
   joined with `<br />` in table cells and written as a real list in each epic file.
+- **2026-09-24, active.** Added five stories to Sprint 2 from [[raster-first-pipeline-stories]]: roads
+  in PostGIS, tiled rasters, flood on roads, retiring the GeoJSON tasks, and the netcdf schema fix.
+  Sprint 2 is now the largest sprint. Rebalance if capacity is short.
