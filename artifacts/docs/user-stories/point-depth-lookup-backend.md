@@ -104,3 +104,8 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   0.173721924424171, and 0.0 against 0. A point outside the raster returned `no_data`, an unknown
   `valid_time` returned 404, and a latitude of 95 returned 400. `storage-postgres` runs in
   `Etc/UTC`, so the timestamp handling holds. Story 4 (latency) is next.
+- **2026-09-24, draft.** Story 4's baseline changed. `GET /flood/points` now reads tiles
+  ([[raster-first-pipeline-stories]] Story 2): 0.2 ms per lookup locally, but about 58 ms per request
+  because each new connection loads the raster library. Measure on the server, with and without
+  connection reuse.
+

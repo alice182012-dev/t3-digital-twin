@@ -34,7 +34,12 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Given the real `depth_20260924_170639.tif`, when it is loaded as tiles, then `ST_Value` at three
   points matches `gdallocationinfo`, a lookup on the server is faster than the current 80 to 280 ms,
   and only the newest runs are kept (default 3).
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 2. Dependencies: None.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: None.
+  Details:
+  1. What: each timestep's depth raster is stored as 256 by 256 tiles in `flood_depth_raster_tile`, read through a spatial index, and runs older than the newest 3 are pruned.
+  2. How: `load_run` reprojects to EPSG:4326 and cuts tiles with `ST_Tile` in one delete-and-insert transaction. `GET /flood/points` selects the tile under the point, then runs `ST_Value`.
+  3. Why: the whole-raster lookup unpacked 209 MB per request and took about 69 ms.
+  4. Effect: on a local PostGIS with the real file, a lookup takes 0.2 ms warm. The full request is still about 58 ms, because each new connection loads the raster library. Not measured on the server. The backend must not deploy before `create_flood_depth_raster_tables.py` has run, and until the next raster load the endpoint returns 404.
 
 - **Story 3: Compute flood on roads from the raster into a shadow table.**
   As the routing backend, I want each road piece's depth per timestep computed from the raster in
@@ -67,4 +72,6 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   [[timescaledb-and-flood-metrics]]'s Story 4 need the segment ID and the new roads table.
 - **2026-09-24, draft.** Story 1 built and reviewed (`ff18140`, `fcc4a03`, `23fad9c`, merged). Status is
   `Reviewed`: it passed on a local PostGIS with the real roads file, and has not run on the server.
+- **2026-09-24, draft.** Story 2 built and reviewed (`b239491`, `1238616`, `bc158e5`, `876cbe5`, merged).
+  Status is `Reviewed`: the numbers come from a local PostGIS, and none is measured on the server.
 

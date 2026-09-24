@@ -68,6 +68,17 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   Phase 3). Phase 2 waits for both A and B.
 - **Smallest safe decomposition.** One owner per workstream, each in its own worktree.
 
+## Deploy order
+
+- Run `create_flood_depth_raster_tables.py` before the backend that reads `flood_depth_raster_tile`
+  starts. Without the table the endpoint errors, and `0b_ensure_schema` only creates it on the next
+  DAG run.
+- Until the next `9b` run loads tiles, `GET /flood/points` returns 404 for every timestep.
+- `flood_depth_raster` (whole rasters) has no reader or writer after this change. Drop it in Phase 3.
+- `server.py` opens a new connection per request, and the first raster call in a connection loads the
+  PostGIS raster library (57 ms locally against 1.4 ms for a plain connect). Reuse connections when
+  the latency check runs.
+
 ## Review findings that shape the plan (2026-09-24)
 
 - **`3b_upload_netcdf_postgres` fails when `netcdf_files` is missing.** The table is missing on the
@@ -86,4 +97,5 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   locally, and do not update PR #1 before then.
 - **2026-09-24.** Story 1 (`road_segment`) merged locally and `Reviewed`. It cuts ways into equal pieces of
   at most 50 m (35,652 pieces from 12,431 ways). Story 2 (tiles) and the DAG retirement are in progress.
-
+- **2026-09-24.** Story 2 (tiles) merged locally and `Reviewed`. Lookup 69 ms to 0.2 ms warm on a local
+  PostGIS. The DAG retirement is in progress.
