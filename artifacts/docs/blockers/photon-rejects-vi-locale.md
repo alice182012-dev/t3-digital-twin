@@ -2,7 +2,7 @@
 date_open: 2026-09-24
 date_closed: 
 type: blocker
-status: monitoring
+status: open
 severity: P1
 subsystem: floodmap-frontend
 approaches_tried: 1
@@ -85,3 +85,7 @@ bias as well, so check "Hồ Gươm" after the change and confirm the Hanoi lake
 - **2026-09-24, monitoring.** Changed the frontend default locale to `en` (Approach 1). Waiting for a
   rebuild and a live check. Reopen if place search still fails, and note that `en` brings back the
   original concern about same-name places outside Vietnam.
+- **2026-09-24, open (pending).** Deferred at the user's request. The `en` default is committed
+  (`88e821b`) but not pushed, deployed, or checked on the live UI. The `TODOS.md` item stays active.
+  Pick this up later by rebuilding `flood-routing-frontend` on the server and checking place search.
+
