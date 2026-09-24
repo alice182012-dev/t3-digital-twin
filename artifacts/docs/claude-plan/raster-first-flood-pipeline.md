@@ -22,6 +22,24 @@ directly, the way `dags/flood_forecast_state_test_dag.py` already does for tiles
 - `run_ts` comes from `flood_extent.stamp_key` of the earliest depth file, as in the test DAG.
   Checked: it equals what the merge task derived, in the same `YYYYMMDDTHHMMSS` format.
 
+## Decisions from the user, 2026-09-24 (Stage B)
+
+1. **Write in place.** The flood-on-roads task writes `flood_road_values`, so routing code and the table's
+   contract do not change. A shadow table is used only for the comparison.
+2. **Mean depth per road piece.** The vault records "mean" or "average" only for the route chart's
+   route-level average. The old pipeline did no averaging: it cut each road by the 1 m flood cells, so each
+   row carried one cell's depth. Mean over a 50 m piece can hide a short deep spot (5 m at 0.6 m depth over a
+   mostly dry piece averages about 0.06 m, under the motorbike's 0.2 m limit). The new rows therefore also
+   store the piece's maximum depth, and the comparison counts pieces whose passability changes under mean
+   against the old rows and against maximum.
+3. **Retire `dags/test_dag.py`.** It is a live DAG that imports the retired scripts.
+4. **Remove the `flood-results-full` bucket.** Remove it from `minio-init`, compose, the README, and the tests
+   now. Delete the bucket and its 13 objects (12 MB) on the server at the Stage B deploy, after the DAG stops
+   referencing it (the old task `7_upload_minio` would otherwise recreate it).
+
+Work for Stage B happens on the local branch `stage-b`, which holds the merged DAG retirement, so that
+`flood-on-points` stays safe to push.
+
 ## Design points agreed in discussion
 
 - **Flood on points is not a DAG task.** `GET /flood/points` reads the raster per request. A
@@ -75,6 +93,9 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   DAG run.
 - Until the next `9b` run loads tiles, `GET /flood/points` returns 404 for every timestep.
 - `flood_depth_raster` (whole rasters) has no reader or writer after this change. Drop it in Phase 3.
+- After the Stage B backend runs on tiles, drop the legacy whole-raster table on `storage-postgres`:
+  `DROP TABLE IF EXISTS flood_depth_raster;`. Delete the `flood-results-full` bucket and its 13 objects
+  (12 MB) at the same deploy, after the DAG stops referencing it.
 - `server.py` opens a new connection per request, and the first raster call in a connection loads the
   PostGIS raster library (57 ms locally against 1.4 ms for a plain connect). Reuse connections when
   the latency check runs.
@@ -104,4 +125,13 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   credential helper fails in an SSH session on the server, and the containers were recreated on the
   server with `--no-deps`. `flood_mapping_full` was already paused and stays paused. Tiles for run
   `20260924T153638` were loaded by hand. The next steps are Story 3 (flood on roads) and Story 4.
-
+- **2026-09-24.** Stage B decisions recorded. Branch `stage-b` created with the DAG retirement merged. Two
+  delegates started: flood on roads (Story 3) and Story 4 preparation (test DAG, bucket, legacy table).
+- **2026-09-24.** Story 4 preparation is done on `stage-b`, in three commits (`4c1329f`, `d60179f`, `5e50ceb`):
+  `dags/test_dag.py` (DAG `flood_forecast_pipeline_test`) deleted; the `flood-results-full` bucket removed from
+  `compose.yml`, `.env.example`, the README, and the MinIO concept page; `create_flood_depth_raster_tables.py`
+  creates only `flood_depth_raster_tile`. The server bucket, its objects, and the old table stay until the
+  Stage B deploy. Leftovers for the final cleanup: `scripts/merge_to_minio.py` is dead code and should go
+  with `scripts/mapping/*`; the docstring at `dags/flood_mapping_dag.py:205` still names
+  `flood_depth_raster`; `artifacts/raw/T3-Digital-Twin_Architecture.md` (read-only) still lists the bucket
+  at lines 94 and 271, for the user to update.

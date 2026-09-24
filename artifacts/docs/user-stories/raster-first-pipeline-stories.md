@@ -49,6 +49,8 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   shaped like `flood_road_values` holds one row per piece per timestep, and for one real run its
   values match the old `flood_road_values` rows, or each difference is explained (the old rows are
   subsampled).
+  Depth per piece is the mean over samples along the piece (dry samples count as 0), with the maximum stored
+  beside it in `depth_max`. The task writes `flood_road_values` in place.
   Priority: P0. Status: Not started. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
 
 - **Story 4: Switch routing to the new task and retire the GeoJSON tasks.**
@@ -78,4 +80,6 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
 - **2026-09-24, draft.** Story 2 deployed to the server (commit `6155f09`) and checked there: 4 timesteps of
   880 tiles, values equal to the earlier `gdallocationinfo` reference, tile lookup median 0.56 ms.
   Still `Reviewed`, because pruning needs a fourth run to show on the server.
+- **2026-09-24, draft.** Decided: write `flood_road_values` in place, mean depth per piece with the maximum stored
+  beside it, retire `dags/test_dag.py`, and remove the `flood-results-full` bucket. See [[raster-first-flood-pipeline]].
 
