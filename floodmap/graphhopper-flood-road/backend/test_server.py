@@ -55,8 +55,9 @@ NEW_RUN = "20260522T120000"
 SHARED_FILE, SHARED_VALID_TIME = "depth_20260522_160000.tif", "2026-05-22T16:00:00+07:00"
 OLD_ONLY_FILE, OLD_ONLY_VALID_TIME = "depth_20260522_190000.tif", "2026-05-22T19:00:00+07:00"
 
-# A 20x20 grid of 10 m pixels in EPSG:3405 near Hanoi, the source SRID of real depth.tif files.
-ORIGIN_X, ORIGIN_Y, PIXEL_M, SIZE = 583000.0, 2327000.0, 10.0, 20
+# A 600x600 grid of 10 m pixels in EPSG:3405 near Hanoi, the source SRID of real depth.tif files.
+# 600 pixels span three raster_load.TILE_SIZE tiles each way, so lookups cross tile edges.
+ORIGIN_X, ORIGIN_Y, PIXEL_M, SIZE = 583000.0, 2327000.0, 10.0, 600
 WET_PIXEL, DRY_PIXEL = (12, 12), (2, 2)
 
 
@@ -100,11 +101,19 @@ def gdallocationinfo_value(tif: Path, lon: float, lat: float) -> float:
     return float(out.stdout.strip())
 
 
+def tile_edge_lonlat(tif_4326: Path, tile_x: float, tile_y: float) -> tuple[float, float]:
+    """The EPSG:4326 point tile_x and tile_y tiles in from the raster's top-left corner; a whole
+    number lands on a tile edge, so this names points that several tiles' hulls share."""
+    ds = gdal.Open(str(tif_4326))
+    ulx, scale_x, _, uly, _, scale_y = ds.GetGeoTransform()
+    return ulx + tile_x * raster_load.TILE_SIZE * scale_x, uly + tile_y * raster_load.TILE_SIZE * scale_y
+
+
 def load_depth_runs(conn, workdir: Path) -> Path:
     """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
     Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_depth_raster, flood_extent_polygon;")
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster, flood_depth_raster_tile, flood_extent_polygon;")
         cur.execute(create_flood_depth_raster_tables.SQL)
         cur.execute(create_flood_extent_tables.SQL)
     conn.commit()
@@ -311,6 +320,21 @@ def main() -> int:
         assert status == 200, (status, payload)
         assert (payload["status"], payload["depth_m"]) == ("dry", 0.0), payload
 
+        # The loaded tiles are cut from this reprojected grid, so it is the reference for points
+        # on a tile edge, where the source tif's own pixel grid doesn't line up.
+        warped_tif = Path(workdir.name) / "new_run_4326.tif"
+        raster_load.reproject_to_4326(source_tif, warped_tif)
+        edge_points = {
+            "corner of four tiles": tile_edge_lonlat(warped_tif, 1, 1),
+            "edge of two tiles": tile_edge_lonlat(warped_tif, 2, 0.5),
+        }
+        for name, (edge_lon, edge_lat) in edge_points.items():
+            expected_depth = gdallocationinfo_value(warped_tif, edge_lon, edge_lat)
+            status, payload = request(points_url(base, lat=edge_lat, lon=edge_lon, valid_time=SHARED_VALID_TIME))
+            assert status == 200, (name, status, payload)
+            assert payload["status"] == "wet", (name, payload)
+            assert np.float32(payload["depth_m"]) == np.float32(expected_depth), (name, payload, expected_depth)
+
         status, payload = request(points_url(base, lat=10.0, lon=100.0, valid_time=SHARED_VALID_TIME))
         assert status == 200, (status, payload)
         assert (payload["status"], payload["depth_m"]) == ("no_data", None), payload
@@ -318,6 +342,10 @@ def main() -> int:
         status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=OLD_ONLY_VALID_TIME))
         assert status == 404, (status, payload)
         assert NEW_RUN in payload["error"], payload
+
+        status, payload = request(points_url(base, lat=10.0, lon=100.0, valid_time="2026-05-23T01:00:00+07:00"))
+        assert status == 404, (status, payload)
+        assert "2026-05-23T01:00:00+07:00" in payload["error"], payload
 
         status, payload = request(
             points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME, run="20260101T000000")
