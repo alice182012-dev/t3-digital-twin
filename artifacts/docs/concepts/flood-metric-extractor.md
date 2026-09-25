@@ -3,8 +3,8 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
-related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]"]
-last_updated: 2026-09-24
+related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # Flood metric extractor
@@ -20,7 +20,9 @@ runs it yet.
   is a pure function. It takes a `DepthSeries` (timestamps and depths in metres) and a map from
   vehicle type to hard-block depth, and it returns a `SegmentMetrics`.
 - `scripts/flood_metrics/extract_run.py` is the shell around `extract`. It reads one run from
-  `flood_road_values`, groups the rows into one series per segment, and writes the results.
+  `flood_road_values`, groups the rows into one series per segment, and writes the results. It
+  reads `depth`, which on rows from `scripts/flood_roads/flood_on_roads.py` is the deepest 1 m sample
+  along the road piece. Routing reads the same value, as D-006 in [[decision-log]] records.
 - `scripts/database/create_flood_metrics_tables.py` creates the output table,
   `flood_segment_metrics`, in `storage-postgres`. The script is idempotent.
 
@@ -35,8 +37,8 @@ without the TimescaleDB service. Story 4 copies from `flood_segment_metrics` int
 
 ## Segment key
 
-`flood_road_values` has no segment ID, and `road_name` repeats across one road's segments. In the
-`20260522T103000` sample, `way/601864287` has 12 segments. `build_rows` in
+Rows from the old GeoJSON chain have no segment ID, and `road_name` repeats across one road's
+segments. In the `20260522T103000` sample, `way/601864287` has 12 segments. `build_rows` in
 `scripts/database/geojson_to_pg.py` writes one row per feature per timestep and repeats the
 feature's geometry on each row. Equal geometry therefore identifies one segment, and the extractor
 uses `md5(ST_AsEWKB(geom_4326))` as `segment_key`. A later loader can join back to

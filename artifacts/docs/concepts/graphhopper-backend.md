@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]"]
-last_updated: 2026-09-24
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # GraphHopper flood-road backend
@@ -149,11 +149,30 @@ the real, persistent volume using whatever `graph.encoded_values` `config.yml` d
 still-open config gap: GraphHopper already serves it server-side, but
 `config-local.js.example`'s `profiles` object never lists it (see Open items below).
 
+## Flood areas grade each road piece on its deepest stretch
+
+`flood_areas.derive_areas` sorts the road pieces of one run and timestep into three bands, each a
+fraction of the vehicle's limit. Band `b4`, at the limit or deeper, is impassable.
+[[routing-depth-threshold-model]] lists the bands and their costs.
+
+The bands compare `depth` from `flood_road_values`. On rows that
+`scripts/flood_roads/flood_on_roads.py` writes, `depth` is the deepest 1 m sample along the piece. A
+road piece that is too deep on one short stretch can't be passed, so the maximum is the right test.
+The user chose the maximum for every reader in D-006 of [[decision-log]], and [[flood-on-roads]] has
+the comparison behind it. Rows from the old GeoJSON chain carry one pixel of a 20 m cell in `depth`,
+and the bands grade them the same way. Routing doesn't read `segment_id`.
+
+`backend/test_flood_areas.py` builds its table from `scripts/database/create_flood_road_tables.py`'s
+`SQL`, the DDL the server runs. For each vehicle, with the limit read from `flood_utils.py`, it checks
+that a piece at 1.1 times the limit is in `b4` and a piece at 0.9 times the limit is not. It also
+checks one run that mixes old-chain rows and `flood_on_roads.py` rows.
+
 ## Vehicle thresholds
 
-`floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth a
-segment becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot 40 cm.
-All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
+`floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth at which
+a road piece becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot
+40 cm. The backend compares that limit with the piece's `depth`.
+All four limits apply, because a GraphHopper `foot` profile exists to use the `foot` entry.
 The frontend does not use them yet: `FloodStore` sends `vehicle_type=motorbike` with every route
 request, so only the motorbike limit applies. See [[flood-routing-vehicle-type-always-motorbike]].
 

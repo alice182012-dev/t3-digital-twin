@@ -109,3 +109,6 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   because each new connection loads the raster library. Measure on the server, with and without
   connection reuse.
 - **2026-09-24, draft.** The connection cost is tracked as [[flood-points-connection-per-request]].
+- **2026-09-24, draft.** Stories 2 and 3 name `flood_depth_raster`, the table they shipped with.
+  Both paths now use `flood_depth_raster_tile` instead, and `create_flood_depth_raster_tables.py`
+  no longer creates the old table. The deploy runbook drops it.

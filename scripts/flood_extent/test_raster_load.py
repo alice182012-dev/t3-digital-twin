@@ -181,6 +181,37 @@ class LoadRunTests(unittest.TestCase):
             self.runs(), ["20260601T000000", "20260703T000000", "20260704T000000", "20260705T000000"]
         )
 
+    def test_keep_runs_argument_overrides_the_environment(self):
+        for run in ["20260701T000000", "20260702T000000", "20260703T000000", "20260704T000000"]:
+            raster_load.load_run(self.conn, self.depth_dir(run, 4), run, self.root / "work", keep_runs=10)
+
+        with mock.patch.dict(os.environ, {"FLOOD_RASTER_KEEP_RUNS": "1"}):
+            raster_load.load_run(
+                self.conn, self.depth_dir("20260705T000000", 4), "20260705T000000", self.root / "work", keep_runs=1000
+            )
+
+        self.assertEqual(
+            self.runs(),
+            ["20260701T000000", "20260702T000000", "20260703T000000", "20260704T000000", "20260705T000000"],
+        )
+
+    def test_two_loads_under_one_run_name_keep_both_sets_of_timesteps(self):
+        first, second = self.root / "event1", self.root / "event2"
+        first.mkdir()
+        second.mkdir()
+        write_depth_grid_tif(first / "depth_20260704_170000.tif", 4)
+        write_depth_grid_tif(second / "depth_20260704_190000.tif", 4)
+
+        raster_load.load_run(self.conn, first, "20260704T170000", self.root / "work", keep_runs=1000)
+        raster_load.load_run(self.conn, second, "20260704T170000", self.root / "work", keep_runs=1000)
+
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(
+                "SELECT DISTINCT valid_time_utc::text FROM flood_depth_raster_tile"
+                " WHERE run_ts = '20260704T170000' ORDER BY 1;"
+            )
+            self.assertEqual([row[0] for row in cur.fetchall()], ["2026-07-04 10:00:00", "2026-07-04 12:00:00"])
+
 
 if __name__ == "__main__":
     unittest.main()

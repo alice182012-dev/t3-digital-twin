@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing, flood-depth]
-related: ["[[graphhopper-backend]]", "[[SW Architecture]]"]
-last_updated: 2026-09-22
+related: ["[[graphhopper-backend]]", "[[SW Architecture]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # Routing depth-threshold model
@@ -57,6 +57,10 @@ into polygons, dropping anything under `min_area_m2` (default 400 m²). Two SQL 
 `"latest"`; `_PINNED_RUN_SEG_SQL` pins to an exact `(timestamp, forecast_time)` pair when a specific
 `run` is requested. `buffer_m` (default 22 m) and `simplify_m` (default 3 m) match the values a
 prior D2 parameter sweep validated.
+
+Each band's range tests `depth`, which on a row from `flood_on_roads.py` is the deepest 1 m sample
+along the road piece. D-006 in [[decision-log]] records that choice. Rows from the old GeoJSON chain
+carry one pixel of a 20 m cell in `depth`, and the bands grade them the same way.
 
 Each returned GeoJSON feature carries `band` and `multiply_by` in its properties, so
 `build_custom_model()` can turn the feature collection straight into GraphHopper's

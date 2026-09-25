@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]"]
-last_updated: 2026-09-24
+related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # MinIO flood-extent tile pipeline
@@ -16,10 +16,16 @@ routing; see [[graphhopper-backend]] for why those two stay on separate tables.
 ## Where the data lives
 
 MinIO runs one bucket per pipeline (`compose.yml`'s `minio-init` service creates them):
-`flood-results-full`, `initial-wl`, `manholes-data`, and `flood-extent`. Only `flood-extent` is set
+`initial-wl`, `manholes-data`, and `flood-extent`. Only `flood-extent` is set
 to public, anonymous download (`mc anonymous set download`), because it is the one bucket served
 straight to the browser. The MinIO API port itself stays bound to `127.0.0.1`, so that bucket is
 public only through nginx's proxy, never directly.
+
+A fourth bucket, `flood-results-full`, held the GeoJSON of the retired road-mapping chain.
+`compose.yml` stopped creating it on 2026-09-24. The bucket and its objects on the server go at
+the Stage B deploy of [[raster-first-flood-pipeline]]. `scripts/mapping/upload_minio.py`,
+`scripts/mapping/merge_geojson.py`, and `scripts/database/geojson_to_pg.py` still default to that
+bucket name until they are deleted after the flood-on-roads comparison.
 
 Inside `flood-extent`, tiles land at `runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf`. `run_ts` is a
 fixed-width `YYYYMMDDTHHMMSS` string, chosen so lexical sort order matches chronological order.
@@ -31,11 +37,15 @@ empty one rather than an error.
 ## The Airflow task
 
 `dags/flood_mapping_dag.py`'s `task_build_flood_tiles` (task 9 in the DAG, named
-`9_build_flood_tiles`) runs after `3_calculate_depth` and `5_merge_geojson`. It reads the run's
-depth directory from task 3's XCom, reads `run_ts` from task 5's XCom, and calls
-`scripts/flood_extent/publish.py`'s `publish_run` once for the whole run. This tile branch does not
-block the existing road-mapping chain (extract GeoJSON, merge, map roads, upload, write to
-Postgres), which keeps writing `flood_road_values` as before.
+`9_build_flood_tiles`) runs after `3_calculate_depth` and `0b_ensure_schema`. It reads the run's
+depth directory from task 3's XCom, takes `run_ts` from `flood_extent.run_ts_for_depth_dir` (the
+`stamp_key` of the earliest `depth_*.tif`), and calls `scripts/flood_extent/publish.py`'s
+`publish_run` once for the whole run.
+
+The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
+on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
+which routing reads. Since 2026-09-25 the `flood_on_roads` task writes that table instead, from the
+tiles that `9b_load_depth_raster` loads. See [[flood-on-roads]].
 
 `publish_run` builds and uploads one timestep at a time, `FLOOD_EXTENT_WORKERS` (default 2) of them
 in parallel. If any timestep fails, `publish_run` raises without deleting tiles or rows already
@@ -71,8 +81,10 @@ arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polyg
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
 
-The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and reads the same `run_ts` from
-task 5's XCom, so both tables share one (run, valid time) key. `raster_load.load_run` reprojects
+The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and takes the same `run_ts` from
+`flood_extent.run_ts_for_depth_dir`, so both tables share one (run, valid time) key. The
+`flood_on_roads` task runs after `9b_load_depth_raster` and samples these tiles under the same
+`run_ts`. `raster_load.load_run` reprojects
 each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`. Then it uploads the GeoTIFF once,
 and PostGIS cuts it with `ST_Tile` inside the same `INSERT`. For each timestep the loader deletes
 that timestep's tiles and inserts the new ones in one transaction, so a retried load ends with the
@@ -110,8 +122,10 @@ The tile table sits next to `flood_depth_raster` instead of replacing its column
 `UNIQUE (run_ts, valid_time_utc)` allows one row per timestep, and the old loader's
 `ON CONFLICT (run_ts, valid_time_utc)` depends on it. Changing that table under a DAG run in progress
 would fail the load. With a second table, a deploy only adds a table, and nothing reads or writes
-`flood_depth_raster` after it. The table holds only the rows loaded before the switch, and Phase 3 of
-[[raster-first-flood-pipeline]] can drop it.
+`flood_depth_raster` after it. Since 2026-09-24, `create_flood_depth_raster_tables.py` no longer
+creates `flood_depth_raster`. A database set up before then still holds the table and the rows
+loaded before the switch, until the deploy runbook in [[raster-first-flood-pipeline]] runs
+`DROP TABLE IF EXISTS flood_depth_raster;`.
 
 ## Retention
 
@@ -124,16 +138,22 @@ by `cleanup_old_files`, which deletes any top-level child older than
 age so a folder still being written is never mistaken for a stale one.
 
 `raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
-the newest `FLOOD_RASTER_KEEP_RUNS` runs by `run_ts` (default 3) and deletes every tile of older
-runs. It never deletes the run it just loaded, even when an older run is loaded again later. A
-value below 1 fails the load.
+the newest `keep_runs` runs by `run_ts` and deletes every tile of older runs. A caller that passes
+no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 3), which is what `flood_mapping_full` does.
+The manual two-event test DAG passes 1,000, so a test run never prunes production tiles. The load
+never deletes the run it just loaded, even when an older run is loaded again later. A value below
+1 fails the load.
 
 ## How the frontend picks a timestep
 
-`floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` sets `FRESH_DATA_WINDOW_MS` to 45 minutes.
-The map shows the flood layer only when the closest available timestep to now falls within that
-window; otherwise it falls back to the plain map. `useFloodBootstrap` re-fetches the timestep list
-well under that window so the map picks up a new run promptly.
+`GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
+`flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.
+On load, `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` selects the timestep closest to
+now (`reanchorTimestepIndex`). The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`,
+a demo default, so the page opens in flood mode whatever the timestamps say. `defaultMapMode`, which
+would open in flood mode only when the newest timestep is within `FRESH_DATA_WINDOW_MS` (45 minutes)
+of now, exists but is not used at load while that demo default stays. `useFloodBootstrap`
+re-fetches the timestep list well inside that window so the map picks up a new run promptly.
 
 ## Open items
 

@@ -35,6 +35,7 @@ from osgeo import gdal, osr
 
 import create_flood_depth_raster_tables
 import create_flood_extent_tables
+import create_flood_road_tables
 import raster_load
 
 gdal.UseExceptions()
@@ -113,7 +114,7 @@ def load_depth_runs(conn, workdir: Path) -> Path:
     """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
     Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_depth_raster, flood_depth_raster_tile, flood_extent_polygon;")
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon;")
         cur.execute(create_flood_depth_raster_tables.SQL)
         cur.execute(create_flood_extent_tables.SQL)
     conn.commit()
@@ -141,20 +142,12 @@ def points_url(base: str, **params) -> str:
 
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
-        cur.execute("DROP TABLE IF EXISTS flood_road_values;")
+        cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
+        cur.execute(create_flood_road_tables.SQL)
+        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN,))
         cur.execute(
-            """
-            CREATE TABLE flood_road_values (
-                timestamp timestamptz NOT NULL,
-                forecast_time timestamptz NOT NULL,
-                depth double precision NOT NULL,
-                geom_4326 geometry(Geometry, 4326) NOT NULL
-            );
-            """
-        )
-        cur.execute(
-            "INSERT INTO flood_road_values VALUES (%s, %s, 0.25, ST_GeomFromText(%s, 4326));",
+            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, geom_4326)"
+            " VALUES (1, %s, %s, 0.25, ST_GeomFromText(%s, 4326));",
             (RUN, VALID_TIME, FLOODED_SEGMENT),
         )
     conn.commit()

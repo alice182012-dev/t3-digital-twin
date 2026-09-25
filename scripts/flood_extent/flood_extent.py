@@ -313,6 +313,18 @@ def stamp_key(depth_file):
     return f"{match.group(1)}T{match.group(2)}"
 
 
+def run_ts_for_depth_dir(depth_dir):
+    """The run name for one run's depth folder: the stamp_key of its earliest depth_*.tif.
+
+    Naming the run after the first forecast timestep, not the Airflow trigger time, keeps the run
+    name tied to the forecast window it covers.
+    """
+    depth_files = sorted(p for p in Path(depth_dir).iterdir() if DEPTH_FILE.match(p.name))
+    if not depth_files:
+        raise FloodExtentError(f"No depth_*.tif files in {depth_dir}")
+    return stamp_key(depth_files[0])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("depth_tif", help="3Di depth raster")

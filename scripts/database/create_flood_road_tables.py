@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS flood_road_values (
 ALTER TABLE flood_road_values
     ADD COLUMN IF NOT EXISTS geom_4326 geometry(Geometry,4326);
 
+-- Written by scripts/flood_roads/flood_on_roads.py, NULL on rows from the GeoJSON chain.
+ALTER TABLE flood_road_values
+    ADD COLUMN IF NOT EXISTS segment_id TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_flood_file_timestamp
 ON flood_road_file(timestamp);
 

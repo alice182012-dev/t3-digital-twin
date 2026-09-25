@@ -20,7 +20,6 @@ x-airflow-common: &airflow-common
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     MINIO_ENDPOINT: http://minio:9000
-    FLOOD_MINIO_BUCKET: ${FLOOD_MINIO_BUCKET:-flood-results-full}
     INITIAL_WL_MINIO_BUCKET: ${INITIAL_WL_MINIO_BUCKET:-initial-wl}
     INITIAL_WL_MINIO_PREFIX: ${INITIAL_WL_MINIO_PREFIX:-dummy-files}
     MANHOLES_MINIO_BUCKET: ${MANHOLES_MINIO_BUCKET:-manholes-data}
@@ -92,7 +91,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
-      FLOOD_MINIO_BUCKET: ${FLOOD_MINIO_BUCKET:-flood-results-full}
       INITIAL_WL_MINIO_BUCKET: ${INITIAL_WL_MINIO_BUCKET:-initial-wl}
       MANHOLES_MINIO_BUCKET: ${MANHOLES_MINIO_BUCKET:-manholes-data}
       FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}
@@ -104,7 +102,6 @@ services:
           echo "Waiting for MinIO..."
           sleep 2
         done
-        mc mb --ignore-existing "local/$${FLOOD_MINIO_BUCKET}"
         mc mb --ignore-existing "local/$${INITIAL_WL_MINIO_BUCKET}"
         mc mb --ignore-existing "local/$${MANHOLES_MINIO_BUCKET}"
         mc mb --ignore-existing "local/$${FLOOD_EXTENT_BUCKET}"
@@ -112,7 +109,7 @@ services:
         # gets anonymous read. The MinIO API port itself stays bound to 127.0.0.1 (see the
         # `minio` service's `ports:`), so this bucket is public only through nginx's proxy.
         mc anonymous set download "local/$${FLOOD_EXTENT_BUCKET}"
-        echo "MinIO buckets ready: $${FLOOD_MINIO_BUCKET}, $${INITIAL_WL_MINIO_BUCKET}, $${MANHOLES_MINIO_BUCKET}, $${FLOOD_EXTENT_BUCKET}"
+        echo "MinIO buckets ready: $${INITIAL_WL_MINIO_BUCKET}, $${MANHOLES_MINIO_BUCKET}, $${FLOOD_EXTENT_BUCKET}"
 
   storage-postgres:
     # The official postgis/postgis:17-3.5 tag is amd64-only (no arm64 manifest as of

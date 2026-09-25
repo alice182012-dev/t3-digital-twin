@@ -140,10 +140,7 @@ curl http://localhost:8010/health
 curl http://localhost:8010/flood/timesteps
 ```
 
-The `/health` response includes `flood_geojson_source`.
-
-- Before Airflow uploads a result, this can point to the bundled sample GeoJSON.
-- After Airflow uploads a result, it should point to an `s3://...` MinIO object.
+The `/health` response reports `ok`, plus the reachability of GraphHopper (`graphhopper`) and PostGIS (`postgis`).
 
 ### 9. Trigger or inspect Airflow
 
@@ -186,23 +183,23 @@ For VPS deployment:
 On startup, the `minio-init` service creates all generated-data buckets if absent:
 
 ```text
-flood-results-full
 initial-wl
 manholes-data
+flood-extent
 ```
 
 Airflow routes generated files by pipeline:
 
 ```text
-s3://flood-results-full/<run_ts>/flood_road_<run_ts>.geojson
 s3://initial-wl/dummy-files/initial_wl_<run_ts>.csv
 s3://manholes-data/<run_ts>/waterlevel_<run_ts>.csv
 s3://manholes-data/<run_ts>/rain_<run_ts>.csv
+s3://flood-extent/runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf
 ```
 
-Bucket names and initial-WL prefix are configurable with `FLOOD_MINIO_BUCKET`, `INITIAL_WL_MINIO_BUCKET`, `INITIAL_WL_MINIO_PREFIX`, and `MANHOLES_MINIO_BUCKET` in `.env`.
+Bucket names and initial-WL prefix are configurable with `INITIAL_WL_MINIO_BUCKET`, `INITIAL_WL_MINIO_PREFIX`, `MANHOLES_MINIO_BUCKET`, and `FLOOD_EXTENT_BUCKET` in `.env`. Only `flood-extent` allows anonymous download, because nginx serves its tiles to the browser.
 
-The floodmap backend lists the flood bucket, loads newest timestamped `flood_road_*.geojson`, and uses it for map overlays and flood-aware routing. If no Airflow object exists yet, it falls back to bundled sample GeoJSON.
+The floodmap backend reads flood depth per road from the PostGIS table `flood_road_values`, not from MinIO.
 
 ## Smoke Checks
 
@@ -213,4 +210,4 @@ curl http://localhost:8010/health
 curl http://localhost:8010/flood/timesteps
 ```
 
-The `/health` response includes `flood_geojson_source`, which should be an `s3://...` path after Airflow has uploaded a result.
+The `/health` response reports whether GraphHopper and PostGIS are reachable.

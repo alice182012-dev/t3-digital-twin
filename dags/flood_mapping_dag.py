@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 import sys
 import os
 import boto3
-import pandas as pd
 import psycopg2
 
 sys.path.append(os.path.join("/opt/airflow", "plugins"))
@@ -28,19 +27,18 @@ try:
     import download_result
     import calculate_depth
     import netcdf_input
-    import mapping.extract_geojson_full
-    import mapping.merge_geojson
-    import mapping.mapping_geojson
-    import mapping.upload_minio
-    import database.geojson_to_pg
     import database.netcdf_to_pg
-    import database.create_geojson_tables
+    import database.create_netcdf_tables
+    import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
+    import database.create_road_segment_table
     import flood_extent
     import publish
     import raster_load
     from db_config import DB_CONFIG
+    from roads import load_road_segments
+    from flood_roads import flood_on_roads
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -50,9 +48,6 @@ INPUT_DEM = os.path.join(DATA_PATH, "inputs", "dem.tif")
 INPUT_GRID = os.path.join(DATA_PATH, "inputs", "gridadmin.h5")
 RESULT_DIR = os.path.join(DATA_PATH, "results")
 DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
-ROADS_GEOJSON_PATH = os.path.join(DATA_PATH, "inputs", "toa-do-duong-hanoi.geojson")
-GEOJSON_ROOT_DIR = os.path.join(DATA_PATH, "output_geojsons")
-FINAL_OUTPUT_ROOT_DIR = os.path.join(DATA_PATH, "output_final")
 # Vector tiles of the flood extent, one folder per run and timestep, served by the frontend at
 # /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
 FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
@@ -123,9 +118,11 @@ def task_download_result(**kwargs):
 
 def task_ensure_schema(**kwargs):
     print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
-    database.create_geojson_tables.main()
+    database.create_flood_road_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
+    database.create_road_segment_table.main()
+    database.create_netcdf_tables.create_tables()
 
 
 def task_upload_netcdf_postgres(**kwargs):
@@ -160,134 +157,12 @@ def task_calculate_depth(**kwargs):
     return output_uuid_dir
 
 
-def task_extract_geojson_full(**kwargs):
-    """
-    Nhận đường dẫn Depth từ Task 3 -> Tạo đường dẫn GeoJSON tương ứng -> Chạy convert
-    """
-    ti = kwargs["ti"]
-
-    input_depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
-
-    print(f"🗺️ 4. Extracting GeoJSON from: {input_depth_dir}")
-
-    current_uuid = os.path.basename(str(input_depth_dir))
-    output_geojson_dir = os.path.join(GEOJSON_ROOT_DIR, current_uuid)
-
-    mapping.extract_geojson_full.run_extract_geojson(
-        input_dir=str(input_depth_dir), output_dir=str(output_geojson_dir)
-    )
-
-    return output_geojson_dir
-
-
-def task_merge_geojson(**kwargs):
-    ti = kwargs["ti"]
-    input_geojson_dir = ti.xcom_pull(task_ids="4_extract_geojson_full")
-
-    # Name the merged output after the earliest depth_<timestamp>.tif in this
-    # run, not the Airflow trigger time, so the filename reflects the actual
-    # forecast window covered.
-    run_ts = mapping.merge_geojson.get_earliest_depth_timestamp(input_geojson_dir)
-    if not run_ts:
-        run_ts = kwargs.get("ts_nodash") or pd.Timestamp.now().strftime("%Y%m%dT%H%M%S")
-    ti.xcom_push(key="run_ts", value=run_ts)
-
-    # run_merge nên return merged_path (string) như cũ
-    merged_path = mapping.merge_geojson.run_merge(
-        geojson_dir=input_geojson_dir,
-        output_dir=FINAL_OUTPUT_ROOT_DIR,
-        run_ts=run_ts,
-        # ✅ quan trọng: đảm bảo run_merge return STRING PATH, không return dict
-    )
-
-    if not merged_path:
-        raise ValueError("❌ Merge failed.")
-
-    return merged_path
-
-
-def task_mapping_geojson(**kwargs):
-    """
-    Nhận merged flood GeoJSON từ task 5
-    -> Mapping với roads
-    -> Xuất road_flood_timeseries_generated.geojson
-    -> Return đường dẫn file mapping (để upload)
-    """
-
-    ti = kwargs["ti"]
-
-    # Lấy file merged từ XCom
-    merged_flood_file = ti.xcom_pull(task_ids="5_merge_geojson")
-
-    if not merged_flood_file or not os.path.exists(merged_flood_file):
-        raise ValueError(f"❌ Không tìm thấy merged flood file: {merged_flood_file}")
-
-    print(f"🗺️ 6. Mapping flood -> roads")
-    print(f"   Input flood: {merged_flood_file}")
-
-    # Output mapping file
-    mapping_output_dir = os.path.dirname(merged_flood_file)
-    mapping_output_file = os.path.join(
-        mapping_output_dir,
-        "road_flood_timeseries_generated.geojson"
-    )
-
-    print(f"   Output mapping: {mapping_output_file}")
-
-    # Gọi hàm mapping bạn đã viết
-    out_path = mapping.mapping_geojson.build_road_flood_timeseries_geojson(
-        road_path=ROADS_GEOJSON_PATH,   
-        flood_path=merged_flood_file,
-        out_path=mapping_output_file,
-    )
-
-    print(f"✅ Mapping done: {out_path}")
-
-    return out_path
-
-
-def task_upload_minio(**kwargs):
-    ti = kwargs["ti"]
-
-    mapping_file = ti.xcom_pull(task_ids="6_mapping_geojson")
-    geojson_dir = ti.xcom_pull(task_ids="4_extract_geojson_full")  # nếu muốn dọn sau upload
-
-    # lấy lại run_ts đã tạo ở task_merge_geojson
-    run_ts = ti.xcom_pull(task_ids="5_merge_geojson", key="run_ts")
-    if not run_ts:
-        # fallback (ít khi cần)
-        run_ts = kwargs.get("ts_nodash") or pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-
-    result = mapping.upload_minio.run_upload(
-        file_path=mapping_file,
-        geojson_dir_to_clean=geojson_dir,
-        tif_dir_to_clean=None,
-        delete_local_file_after_upload=True,
-        run_ts=run_ts,  # ✅ prefix chung
-    )
-
-    if not result:
-        raise ValueError("❌ Upload MinIO failed")
-
-    return result
-
-
-def task_upload_postgres(**kwargs):
-    ti = kwargs["ti"]
-
-    upload_result = ti.xcom_pull(task_ids="7_upload_minio")
-    if not upload_result or not upload_result.get("object_name"):
-        raise ValueError("❌ Không tìm thấy object_name từ task upload MinIO")
-
-    object_name = upload_result["object_name"]
-
-    print(f"🗄️ 8. Uploading GeoJSON to Postgres: {object_name}")
-
-    inserted = database.geojson_to_pg.upload_geojson_to_db(object_name)
-
-    print(f"✅ Postgres upload done: {inserted} rows")
-
-    return inserted
+def depth_run(ti):
+    """This run's depth folder from task 3, and the run name taken from its earliest depth file."""
+    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
+    if not depth_dir or not os.path.isdir(str(depth_dir)):
+        raise ValueError(f"❌ Depth directory is missing: {depth_dir}")
+    return depth_dir, flood_extent.run_ts_for_depth_dir(depth_dir)
 
 
 def task_build_flood_tiles(**kwargs):
@@ -295,17 +170,12 @@ def task_build_flood_tiles(**kwargs):
     MinIO, and write one PostGIS audit row per dissolved band polygon per timestep.
 
     Only uploaded tiles and DB rows are kept; publish_run deletes every local intermediate itself
-    as each timestep finishes. The run name is the one task 5 gave the database rows, so the UI
-    finds the tiles from the (run, valid_time) pair it already selects. Tiles go to MinIO, not a
-    local folder, because the worker and the frontend run on separate hosts in production.
+    as each timestep finishes. The run name comes from the earliest depth file, the same one task
+    9b uses, so the UI finds the tiles from the (run, valid_time) pair it already selects. Tiles go
+    to MinIO, not a local folder, because the worker and the frontend run on separate hosts in
+    production.
     """
-    ti = kwargs["ti"]
-    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
-    run_ts = ti.xcom_pull(task_ids="5_merge_geojson", key="run_ts")
-    if not depth_dir or not os.path.isdir(str(depth_dir)):
-        raise ValueError(f"❌ Depth directory is missing: {depth_dir}")
-    if not run_ts:
-        raise ValueError("❌ run_ts is missing from task 5_merge_geojson XCom")
+    depth_dir, run_ts = depth_run(kwargs["ti"])
 
     print(f"🌊 9. Publishing flood-extent tiles: {depth_dir} -> s3://{FLOOD_EXTENT_BUCKET}/runs/{run_ts}")
     s3 = boto3.client(
@@ -336,18 +206,12 @@ def task_build_flood_tiles(**kwargs):
 
 
 def task_load_depth_raster(**kwargs):
-    """Loads every depth_*.tif of this run into flood_depth_raster, reprojected to EPSG:4326, so
+    """Loads every depth_*.tif of this run into flood_depth_raster_tile, reprojected to EPSG:4326, so
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
     of reading the file from disk. Same run_ts as task 9, so both tables key off the (run,
     valid_time) pair the frontend already selects.
     """
-    ti = kwargs["ti"]
-    depth_dir = ti.xcom_pull(task_ids="3_calculate_depth")
-    run_ts = ti.xcom_pull(task_ids="5_merge_geojson", key="run_ts")
-    if not depth_dir or not os.path.isdir(str(depth_dir)):
-        raise ValueError(f"❌ Depth directory is missing: {depth_dir}")
-    if not run_ts:
-        raise ValueError("❌ run_ts is missing from task 5_merge_geojson XCom")
+    depth_dir, run_ts = depth_run(kwargs["ti"])
 
     print(f"🗺️ 9b. Loading depth rasters into PostGIS: {depth_dir} (run {run_ts})")
     conn = psycopg2.connect(**DB_CONFIG)
@@ -357,6 +221,48 @@ def task_load_depth_raster(**kwargs):
         conn.close()
     print(f"✅ Depth rasters loaded: {len(loaded)} timesteps")
     return {"run_ts": run_ts, "timesteps": len(loaded)}
+
+
+def task_load_road_segments(**kwargs):
+    """Makes road_segment match the roads file. A file that has not changed reports zero changes;
+    a bad file raises before anything is written."""
+    roads_path = os.getenv("ROADS_GEOJSON_PATH", load_road_segments.DEFAULT_ROADS_PATH)
+    print(f"🛣️ Loading road pieces into road_segment: {roads_path}")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        result = load_road_segments.load(conn, roads_path)
+    finally:
+        conn.close()
+    print(
+        f"✅ road_segment: {result.inserted} inserted, {result.updated} updated, "
+        f"{result.deleted} deleted, {result.total} rows total"
+    )
+    if result.updated or result.deleted:
+        # See artifacts/docs/concepts/road-segment-table.md, "Limits of the id".
+        print("⚠️ Existing segment_id values now describe different road; older per-piece results no longer line up")
+    return {
+        "inserted": result.inserted,
+        "updated": result.updated,
+        "deleted": result.deleted,
+        "total": result.total,
+    }
+
+
+def task_flood_on_roads(**kwargs):
+    """Writes this run's per-piece flood depth into flood_road_values, the table routing reads,
+    from the tiles task 9b loaded under the same run name."""
+    _, run_ts = depth_run(kwargs["ti"])
+
+    print(f"🌊 Computing flood on roads for run {run_ts}")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        result = flood_on_roads.compute(conn, run_ts)
+    finally:
+        conn.close()
+    for step in result.timesteps:
+        print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
+    print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
+    return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
 
 
 default_args = {
@@ -401,36 +307,26 @@ with DAG(
     t3b = PythonOperator(
         task_id="3b_upload_netcdf_postgres", python_callable=task_upload_netcdf_postgres
     )
-    t4 = PythonOperator(
-        task_id="4_extract_geojson_full", python_callable=task_extract_geojson_full
-    )
-    t5 = PythonOperator(
-        task_id="5_merge_geojson", python_callable=task_merge_geojson
-    )
-    t6 = PythonOperator(
-        task_id="6_mapping_geojson", python_callable=task_mapping_geojson
-    )
-    t7 = PythonOperator(
-        task_id="7_upload_minio", python_callable=task_upload_minio
-    )
-    t8 = PythonOperator(
-        task_id="8_upload_postgres", python_callable=task_upload_postgres
-    )
-
     t9 = PythonOperator(
         task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
     )
     t9b = PythonOperator(
         task_id="9b_load_depth_raster", python_callable=task_load_depth_raster
     )
+    t_roads = PythonOperator(
+        task_id="load_road_segments", python_callable=task_load_road_segments
+    )
+    t_flood_roads = PythonOperator(
+        task_id="flood_on_roads", python_callable=task_flood_on_roads
+    )
 
-    t0 >> t1 >> t2 >> t3 >> t4 >> t5 >> t6 >> t7 >> t8
-    t5 >> t9
-    t5 >> t9b
+    t0 >> t1 >> t2 >> t3
+    t3 >> t9
+    t3 >> t9b
     t2 >> t3b
     t1 >> t_ddl
-    t_ddl >> t3b
-    t_ddl >> t8
-    t_ddl >> t9
-    t_ddl >> t9b
+    t_ddl >> [t3b, t9, t9b]
+    t_ddl >> [t_roads, t_flood_roads]
+    t_roads >> t_flood_roads
+    t9b >> t_flood_roads
     t0 >> wait_for_next_check
