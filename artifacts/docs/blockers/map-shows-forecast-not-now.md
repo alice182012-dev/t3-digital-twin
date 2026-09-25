@@ -63,7 +63,7 @@ Pending. The user wants to brainstorm. Candidate options, none tried:
 | --- | --- | --- | --- | --- |
 | A. Keep the behavior | The nearest timestep, up to 30 minutes ahead | none | Matches the PRD | The "Updated" label stays misleading |
 | B. Relabel | Same map, honest label ("Forecast for 21:40, in 17 min") | S | Removes the confusion, frontend only | Still shows a forecast |
-| C. Never show the future | The latest step at or before now | M | Never shows a future tile | Just after a run starts, no such step exists, so the map is empty or falls back to the previous run. Merging runs brings back the cross-run inconsistency |
+| C. Never show the future | The latest step at or before now, across runs | M | Never shows a future tile | With a fast run cycle (observed ~8 min), the newest run alone almost never has a step at or before now, so this needs a cross-run query, not just the newest run. `list_timesteps` returns one run only today; this needs a new query. Brings back the cross-run consistency question, though the worked timeline shows the picked tile stays fresh (minutes old, not tens of minutes) |
 | D. A real t0 | A true state at now | L | Exactly what the user wants | A new calculation. Either a raster from the initial water levels, or a back-cast from the saved state with observed rain. Feasibility unknown |
 
 Shortening the output interval (30 to 5 minutes) is not an option: it gives six times the rasters, and a run
@@ -112,3 +112,18 @@ Any option that changes what the map shows also changes the "Updated" line story
   out: [[hotstart-state-saved-at-end-of-run]] and [[routing-not-time-aware]]. The code has no rule that stops
   runs when depth falls below 5 cm. Runs stop only when the rain check sees no rain. Still open: the rule for
   choosing the now tile, and whether to mix runs.
+- **2026-09-25, open.** Brainstorm, part 2. Corrected the run duration with real evidence: the user pointed
+  to `manual__2026-09-25T14:09:53`, whose tiles were already published by about 21:17, roughly 8 minutes
+  after the 21:09:53 trigger, not the ~28 minutes assumed in part 1 (that number came from a "run already
+  takes about 28 minutes" line elsewhere in this doc, of uncertain meaning, not a measured DAG wall-clock
+  time). Redid the timeline at 8 minutes per run. Result reverses part 1's read: with a fast cycle, the
+  newest run's own first tile is always in the future when it publishes (30-minute step minus ~8-minute
+  cycle time leaves a ~22-minute gap), and the newest run changes every 8 minutes. So "the newest run's tile
+  at or before now" is empty almost always, not just for 2 minutes; a usable now tile exists only by looking
+  across runs. Looking across all runs, the now tile is consistently fresh: 0 to about 7 minutes old in the
+  worked example, far better than part 1's 14-to-27-minute estimate. This also changes
+  [[hotstart-state-saved-at-end-of-run]]'s numbers (the 8-minute cycle makes that offset worse, not better).
+  Conclusion so far: any fix needs to search across runs for the latest tile at or before now, not read the
+  newest run only. `D` (wall-clock time per run) is one data point, not a measured average, and needs more
+  runs to pin down; the qualitative conclusion (cross-run search is required, not optional) does not depend
+  on the exact value.
