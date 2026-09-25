@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS flood_extent_step (
 
     PRIMARY KEY (run_ts, valid_time_utc)
 );
+
+-- Runs published before flood_extent_step existed get their wet steps listed. Only into an empty
+-- table: flood_extent_polygon is never pruned, so a backfill on every call would bring back step
+-- rows whose tiles prune_bucket_runs already deleted. Only the newest 3 runs, the bucket's
+-- keep_runs before the 15-minute cycle, since older runs have no tiles left.
+INSERT INTO flood_extent_step (run_ts, valid_time_utc, is_empty)
+SELECT DISTINCT run_ts, valid_time_utc, false
+FROM flood_extent_polygon
+WHERE NOT EXISTS (SELECT 1 FROM flood_extent_step)
+  AND run_ts IN (SELECT DISTINCT run_ts FROM flood_extent_polygon ORDER BY run_ts DESC LIMIT 3)
+ON CONFLICT DO NOTHING;
 """
 
 

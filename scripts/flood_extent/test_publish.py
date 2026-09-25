@@ -161,6 +161,58 @@ class PublishRunStepRowTests(PublishRunTestCase):
         )
 
 
+@unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
+class StepBackfillTests(unittest.TestCase):
+    """create_flood_extent_tables.SQL lists runs published before flood_extent_step existed."""
+
+    RUNS = ("20260925T160000", "20260925T163000", "20260925T170000", "20260925T173000")
+
+    def setUp(self):
+        self.conn = psycopg2.connect(os.environ["FLOOD_TEST_DSN"])
+        self.addCleanup(self.conn.close)
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'UTC';")
+            cur.execute("DROP TABLE IF EXISTS flood_extent_polygon, flood_extent_step;")
+            cur.execute(create_flood_extent_tables.SQL)
+            for run in self.RUNS:
+                for valid_time in (UTC_1, UTC_2):
+                    for dn_code in (1, 2):
+                        cur.execute(
+                            "INSERT INTO flood_extent_polygon (run_ts, valid_time_utc, dn_code, area_m2, geom)"
+                            " VALUES (%s, %s, %s, 1.0, ST_GeomFromText('POINT(105.8 21.0)', 4326));",
+                            (run, valid_time, dn_code),
+                        )
+
+    def ensure_schema(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(create_flood_extent_tables.SQL)
+
+    def steps(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT run_ts, valid_time_utc, is_empty FROM flood_extent_step ORDER BY 1, 2;")
+            return cur.fetchall()
+
+    def test_lists_each_wet_step_of_the_newest_three_runs(self):
+        self.ensure_schema()
+
+        self.assertEqual(
+            self.steps(),
+            [(run, time, False) for run in self.RUNS[1:] for time in (UTC_1, UTC_2)],
+        )
+
+    def test_a_later_call_does_not_bring_back_pruned_steps(self):
+        self.ensure_schema()
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("DELETE FROM flood_extent_step WHERE run_ts = %s;", (self.RUNS[1],))
+
+        self.ensure_schema()
+
+        self.assertEqual(
+            self.steps(),
+            [(run, time, False) for run in self.RUNS[2:] for time in (UTC_1, UTC_2)],
+        )
+
+
 class ValidTimeUtcTests(unittest.TestCase):
     def test_converts_vietnam_local_filename_to_utc(self):
         self.assertEqual(
