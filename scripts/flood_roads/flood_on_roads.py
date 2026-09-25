@@ -6,9 +6,8 @@ Usage: python flood_on_roads.py RUN_TS [--target TABLE]   (RUN_TS as the DAG nam
 
 Inputs are road_segment (scripts/roads/load_road_segments.py) and flood_depth_raster_tile
 (scripts/flood_extent/raster_load.py). Each piece is sampled at the midpoint of every metre along
-it. `depth` is the mean of the samples, with dry and nodata samples counted as 0, and `depth_max`
-is the deepest sample. The design, its timings, and the row rules are in
-artifacts/docs/concepts/flood-on-roads.md.
+it, and `depth` is the deepest sample (decision D-006 in artifacts/docs/decisions/decision-log.md).
+The design, its timings, and the row rules are in artifacts/docs/concepts/flood-on-roads.md.
 """
 
 from __future__ import annotations
@@ -82,8 +81,7 @@ _STAGE_SQL = """
 CREATE TEMP TABLE piece_depth (
     valid_time_utc TIMESTAMP NOT NULL,
     segment_id TEXT NOT NULL,
-    depth DOUBLE PRECISION NOT NULL,
-    depth_max DOUBLE PRECISION NOT NULL
+    depth DOUBLE PRECISION NOT NULL
 ) ON COMMIT DROP
 """
 
@@ -127,8 +125,8 @@ WITH tiles AS MATERIALIZED (
     CROSS JOIN LATERAL ST_LineInterpolatePoint(c.geom, (i + 0.5) / c.n) AS pt
     CROSS JOIN grid g
 )
-INSERT INTO piece_depth (valid_time_utc, segment_id, depth, depth_max)
-SELECT %(valid_time_utc)s, s.segment_id, avg(coalesce(w.depth, 0)), max(coalesce(w.depth, 0))
+INSERT INTO piece_depth (valid_time_utc, segment_id, depth)
+SELECT %(valid_time_utc)s, s.segment_id, max(coalesce(w.depth, 0))
 FROM samples s LEFT JOIN wet_pixels w USING (gx, gy)
 GROUP BY s.segment_id
 """
@@ -152,15 +150,15 @@ DELETE FROM {target} WHERE timestamp = %(timestamp)s AND forecast_time = ANY(%(f
 # the newest run with rows at that time, and flood_metrics reads each piece's full series.
 _INSERT_SQL = """
 WITH wet AS (
-    SELECT segment_id FROM piece_depth GROUP BY segment_id HAVING max(depth_max) > 0
+    SELECT segment_id FROM piece_depth GROUP BY segment_id HAVING max(depth) > 0
 ), steps (valid_time_utc) AS (
     SELECT unnest(%(valid_times)s::timestamp[])
 )
 INSERT INTO {target}
-    (file_id, timestamp, road_name, forecast_time, depth, depth_max, segment_id, geom, geom_4326)
+    (file_id, timestamp, road_name, forecast_time, depth, segment_id, geom, geom_4326)
 SELECT %(file_id)s, %(timestamp)s, coalesce(r.road_name, r.way_id),
        s.valid_time_utc + %(offset)s,
-       coalesce(d.depth, 0), coalesce(d.depth_max, 0), r.segment_id,
+       coalesce(d.depth, 0), r.segment_id,
        ST_AsGeoJSON(r.geom)::jsonb, r.geom
 FROM wet
 JOIN road_segment r USING (segment_id)
@@ -170,7 +168,7 @@ LEFT JOIN piece_depth d ON d.segment_id = wet.segment_id AND d.valid_time_utc = 
 
 _COUNT_SQL = """
 SELECT valid_time_utc,
-       count(*) FILTER (WHERE depth_max > 0)
+       count(*) FILTER (WHERE depth > 0)
 FROM piece_depth GROUP BY valid_time_utc
 """
 
@@ -202,7 +200,7 @@ def compute(conn, run_ts: str, target_table: str = DEFAULT_TARGET) -> ComputeRes
 
         cur.execute(_COUNT_SQL)
         wet_by_time = dict(cur.fetchall())
-        cur.execute("SELECT count(DISTINCT segment_id) FROM piece_depth WHERE depth_max > 0")
+        cur.execute("SELECT count(DISTINCT segment_id) FROM piece_depth WHERE depth > 0")
         piece_rows = cur.fetchone()[0]
 
         cur.execute(

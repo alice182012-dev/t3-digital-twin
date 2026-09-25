@@ -111,7 +111,7 @@ class FloodOnRoadsTests(unittest.TestCase):
     def rows(self, table="flood_road_values"):
         with self.conn.cursor() as cur:
             cur.execute(
-                f"""SELECT segment_id, timestamp, forecast_time, depth, depth_max, road_name,
+                f"""SELECT segment_id, timestamp, forecast_time, depth, road_name,
                            ST_AsText(geom_4326), geom->>'type'
                     FROM {table} ORDER BY segment_id, forecast_time"""
             )
@@ -120,8 +120,8 @@ class FloodOnRoadsTests(unittest.TestCase):
     def depths(self, table="flood_road_values"):
         """This task's rows only; rows seeded as the old pipeline's have no segment_id."""
         return {
-            (seg, ft): (round(depth, 5), round(depth_max, 5))
-            for seg, _, ft, depth, depth_max, *_ in self.rows(table)
+            (seg, ft): round(depth, 5)
+            for seg, _, ft, depth, *_ in self.rows(table)
             if seg is not None
         }
 
@@ -150,15 +150,22 @@ class FloodOnRoadsTests(unittest.TestCase):
         self.add_piece("way/5#0", row_line(8, 0, 10), 10.0, road_name=None)
         self.add_piece("way/6#0", row_line(4, 22, 28), 6.0)
 
-    def test_mean_counts_dry_samples_as_zero_and_max_keeps_the_deep_stretch(self):
+    def test_depth_is_the_deepest_sample_even_on_a_short_stretch(self):
         self.standard_run()
         flood_on_roads.compute(self.conn, RUN)
-        self.assertEqual(self.depths()[("way/1#0", T1_LOCAL)], (0.12, 0.6))
+        self.assertEqual(self.depths()[("way/1#0", T1_LOCAL)], 0.6)
 
     def test_piece_across_two_tiles_reads_both(self):
-        self.standard_run()
+        """way/7 is deepest in the left tile and way/8 in the right one, so each value proves one
+        tile was matched to the piece's samples."""
+        self.add_tile(T1_UTC, 0, 0, {(0, 9): 0.45, (2, 9): 0.15})
+        self.add_tile(T1_UTC, 1, 0, {(0, 0): 0.15, (2, 0): 0.45})
+        self.add_piece("way/7#0", row_line(0, 5, 15), 10.0)
+        self.add_piece("way/8#0", row_line(2, 5, 15), 10.0)
         flood_on_roads.compute(self.conn, RUN)
-        self.assertEqual(self.depths()[("way/2#0", T1_LOCAL)], (0.3, 0.4))
+        self.assertEqual(
+            self.depths(), {("way/7#0", T1_LOCAL): 0.45, ("way/8#0", T1_LOCAL): 0.45}
+        )
 
     def test_dry_pieces_get_no_rows(self):
         self.standard_run()
@@ -169,10 +176,10 @@ class FloodOnRoadsTests(unittest.TestCase):
         self.standard_run()
         flood_on_roads.compute(self.conn, RUN)
         depths = self.depths()
-        self.assertEqual(depths[("way/5#0", T1_LOCAL)], (0.5, 0.5))
-        self.assertEqual(depths[("way/5#0", T2_LOCAL)], (0.0, 0.0))
-        self.assertEqual(depths[("way/6#0", T1_LOCAL)], (0.3, 0.3))
-        self.assertEqual(depths[("way/6#0", T2_LOCAL)], (0.0, 0.0))
+        self.assertEqual(depths[("way/5#0", T1_LOCAL)], 0.5)
+        self.assertEqual(depths[("way/5#0", T2_LOCAL)], 0.0)
+        self.assertEqual(depths[("way/6#0", T1_LOCAL)], 0.3)
+        self.assertEqual(depths[("way/6#0", T2_LOCAL)], 0.0)
 
     def test_timestamps_are_local_run_and_forecast_times(self):
         self.standard_run()
@@ -189,10 +196,10 @@ class FloodOnRoadsTests(unittest.TestCase):
         self.standard_run()
         flood_on_roads.compute(self.conn, RUN)
         by_segment = {row[0]: row for row in self.rows()}
-        self.assertEqual(by_segment["way/1#0"][5], "Phố Test")
-        self.assertEqual(by_segment["way/5#0"][5], "way/5")
-        self.assertEqual(by_segment["way/1#0"][6], row_line(1, 0, 10).replace(", ", ","))
-        self.assertEqual(by_segment["way/1#0"][7], "LineString")
+        self.assertEqual(by_segment["way/1#0"][4], "Phố Test")
+        self.assertEqual(by_segment["way/5#0"][4], "way/5")
+        self.assertEqual(by_segment["way/1#0"][5], row_line(1, 0, 10).replace(", ", ","))
+        self.assertEqual(by_segment["way/1#0"][6], "LineString")
 
     def test_rerun_converges_and_replaces_only_this_runs_timesteps(self):
         self.standard_run()
