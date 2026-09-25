@@ -1,7 +1,7 @@
 from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import sys
 import os
 import boto3
@@ -60,10 +60,15 @@ DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 
 
+def run_slot(kwargs):
+    """The 15-minute slot this DAG run simulates. A manual run triggered without a logical date takes now."""
+    return create_simulation.clock_slot(kwargs.get("logical_date") or datetime.now(timezone.utc))
+
+
 def task_check_forecast_rain(**kwargs):
-    """Choose the full pipeline only when any forecast window reaches 0.01 mm/h."""
+    """Choose the full pipeline only when any forecast window from the run's slot reaches the rain threshold."""
     ti = kwargs["ti"]
-    intervals = create_simulation.get_rain_forecast()
+    intervals = create_simulation.get_rain_forecast(start=run_slot(kwargs))
     if not intervals:
         raise ValueError("❌ Tomorrow.io returned no rain forecast; refusing to treat this as a dry cycle")
 
@@ -89,6 +94,7 @@ def task_run_simulation(**kwargs):
     sim_id, _ = create_simulation.run_forecast_process(
         state_file_path=STATE_FILE,
         rain_intervals=rain_intervals,
+        slot_start=run_slot(kwargs),
     )
     if not sim_id:
         # By the time this task runs, the rain gate (0_check_forecast_rain)

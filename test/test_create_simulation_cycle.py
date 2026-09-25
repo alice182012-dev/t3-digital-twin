@@ -274,5 +274,79 @@ class SavedStateTests(unittest.TestCase):
         self.assertFalse(os.path.exists(self.state_file))
 
 
+class FakeTi:
+    def __init__(self):
+        self.xcom = {}
+        self.task_id = None
+
+    def xcom_push(self, key, value):
+        self.xcom[(self.task_id, key)] = value
+
+    def xcom_pull(self, task_ids, key=None):
+        return self.xcom.get((task_ids, key))
+
+
+def load_test_module(name):
+    spec = importlib.util.spec_from_file_location(name, ROOT / f"test/{name}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class FloodMappingDagSlotTests(unittest.TestCase):
+    def test_forecast_and_simulation_use_the_logical_date_slot(self):
+        dag_module = load_test_module("test_flood_mapping_dag_graph").load_dag_module()
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        api = FakeApi()
+        dag_module.create_simulation = load_create_simulation(api)
+        dag_module.STATE_FILE = os.path.join(tmp.name, "flood_system_state.json")
+        ti = FakeTi()
+        logical_date = utc(2026, 9, 26, 10, 29, 10)
+
+        with patch.dict(os.environ, {"FLOOD_TEST_RAIN_MM_HR": "6"}), patch("builtins.print"):
+            ti.task_id = "0_check_forecast_rain"
+            self.assertEqual(dag_module.task_check_forecast_rain(ti=ti, logical_date=logical_date), "1_trigger_simulation")
+            ti.task_id = "1_trigger_simulation"
+            dag_module.task_run_simulation(ti=ti, logical_date=logical_date)
+
+        self.assertEqual(ti.xcom[("0_check_forecast_rain", "rain_intervals")][0]["startTime"], "2026-09-26T10:15:00Z")
+        self.assertEqual(api.of("from_template")[0].start_datetime, "2026-09-26T10:15:00Z")
+        self.assertEqual(api.of("rain")[0].values[0][0], 0)
+
+
+class StateTestDagChainTests(unittest.TestCase):
+    """flood_forecast_consecutive_state_test: event 2 hotstarts from event 1's end state."""
+
+    def test_event2_starts_at_event1_end_state_and_attaches_it(self):
+        dag_module = load_test_module("test_flood_state_test_dag_graph").load_dag_module()
+
+        class FixedDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 9, 26, 10, 22, 30, tzinfo=timezone.utc)
+
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        api = FakeApi()
+        dag_module.create_simulation = load_create_simulation(api)
+        dag_module.datetime = FixedDatetime
+        dag_module.TEST_STATE_FILE = os.path.join(tmp.name, "flood_state_test.json")
+        ti = FakeTi()
+
+        with patch("builtins.print"):
+            ti.task_id = "1_trigger_event1"
+            dag_module.task_trigger_event1(ti=ti)
+            ti.task_id = "4_trigger_event2"
+            dag_module.task_trigger_event2(ti=ti)
+
+        self.assertEqual(
+            [t.start_datetime for t in api.of("from_template")], ["2026-09-26T10:15:00Z", "2026-09-26T12:15:00Z"]
+        )
+        self.assertEqual([t.clone_initials for t in api.of("from_template")], [True, False])
+        self.assertEqual([t.time for t in api.of("timed_state")], [7200, 7200])
+        self.assertEqual(api.of("initial_create"), [{"saved_state": 501}])
+
+
 if __name__ == "__main__":
     unittest.main()

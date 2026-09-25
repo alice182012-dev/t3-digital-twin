@@ -1,8 +1,10 @@
 """Manual test: two consecutive synthetic rain events, run through the flood_mapping_full steps.
 
-Event 1 is 20 mm/h for 2 h from a cold start, and it saves a 3Di state at its end. Event 2 is
-5 mm/h for 2 h, hotstarts from that state, and starts when event 1 ends. Fixed synthetic rain
-replaces flood_mapping_full's rain gate, so the DAG runs on a dry day. Trigger it by hand.
+Event 1 is 20 mm/h for 2 h from a cold start at the current 15-minute slot, and it saves a 3Di
+state at its end (SIMULATION_DURATION seconds), not at the one and two cycles production saves.
+Event 2 is 5 mm/h for 2 h and starts at the slot where event 1 ends, so that state is valid at
+exactly event 2's slot and event 2 hotstarts from it. Fixed synthetic rain replaces
+flood_mapping_full's rain gate, so the DAG runs on a dry day. Trigger it by hand.
 
 After each event's depth calculation, the DAG runs the same steps as flood_mapping_full: flood
 tiles (task 9), the depth raster load (task 9b), and flood on roads. Only the first
@@ -114,7 +116,7 @@ def task_trigger_event1(**kwargs):
     if os.path.exists(TEST_STATE_FILE):
         os.remove(TEST_STATE_FILE)
 
-    event1_start = datetime.now(timezone.utc)
+    event1_start = create_simulation.clock_slot(datetime.now(timezone.utc))
     rain_intervals = create_simulation.build_fixed_rain_intervals(
         EVENT1_RAIN_MM_HR, duration_hours=EVENT1_DURATION_HOURS, start_time=event1_start
     )
@@ -122,6 +124,8 @@ def task_trigger_event1(**kwargs):
         state_file_path=TEST_STATE_FILE,
         rain_intervals=rain_intervals,
         use_saved_state=True,
+        slot_start=event1_start,
+        state_save_seconds=(create_simulation.SIMULATION_DURATION,),
     )
     if not sim_id:
         # This DAG uses fixed synthetic rain, not a rain gate — a falsy
@@ -165,8 +169,9 @@ def task_trigger_event2(**kwargs):
     event1_start = datetime.fromisoformat(
         ti.xcom_pull(task_ids="1_trigger_event1", key="event1_start")
     )
-    # Cascade: Event 2's rain window starts exactly when Event 1's ends.
-    event2_start = event1_start + timedelta(hours=EVENT1_DURATION_HOURS)
+    # Event 2 starts where event 1's simulation ends, the valid time of event 1's saved state, so
+    # the exact-match rule in create_simulation.choose_saved_state picks that state.
+    event2_start = event1_start + timedelta(seconds=create_simulation.SIMULATION_DURATION)
     rain_intervals = create_simulation.build_fixed_rain_intervals(
         EVENT2_RAIN_MM_HR, duration_hours=EVENT2_DURATION_HOURS, start_time=event2_start
     )
@@ -174,6 +179,8 @@ def task_trigger_event2(**kwargs):
         state_file_path=TEST_STATE_FILE,
         rain_intervals=rain_intervals,
         use_saved_state=True,
+        slot_start=event2_start,
+        state_save_seconds=(create_simulation.SIMULATION_DURATION,),
     )
     if not sim_id:
         raise AirflowException("❌ Event 2 simulation failed to trigger (see create_simulation logs for cause)")
