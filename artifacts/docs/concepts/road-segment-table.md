@@ -3,7 +3,7 @@ date: 2026-09-24
 type: concept
 status: active
 tags: [postgis, roads, routing, raster-first, sprint-2]
-related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[flood-metric-extractor]]", "[[graphhopper-backend]]", "[[route-forecast-query]]", "[[timescaledb-and-flood-metrics]]"]
+related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[flood-metric-extractor]]", "[[graphhopper-backend]]", "[[route-forecast-query]]", "[[timescaledb-and-flood-metrics]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -116,13 +116,15 @@ described.
 A per-piece result table stores `segment_id` and joins back for the name, class, and geometry:
 
 ```sql
-SELECT rs.segment_id, rs.road_name, rs.highway, rs.length_m, r.depth, rs.geom
-FROM flood_on_road r
+SELECT rs.segment_id, rs.road_name, rs.highway, rs.length_m, v.depth, rs.geom
+FROM flood_road_values v
 JOIN road_segment rs USING (segment_id)
-WHERE r.run_ts = %(run_ts)s;
+WHERE v.timestamp = %(run_timestamp)s;
 ```
 
-`flood_on_road` stands for the Story 3 shadow table, which doesn't exist yet. To find the pieces
+Story 3 ([[flood-on-roads]]) writes `segment_id` into `flood_road_values`, and `depth` is the deepest
+1 m sample along the piece (D-006 in [[decision-log]]). Rows from the old GeoJSON chain have
+`segment_id` NULL, so the join drops them. To find the pieces
 near a point, use the GIST index with `ST_DWithin(rs.geom::geography, point::geography, radius_m)`
 or a bounding-box filter on `geom`.
 

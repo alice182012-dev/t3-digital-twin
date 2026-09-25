@@ -3,7 +3,7 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [architecture, diagram]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -91,6 +91,7 @@ The GeoJSON chain that used to write `flood_road_values` (`scripts/mapping/extra
 through `scripts/database/geojson_to_pg.py`) left `dags/flood_mapping_dag.py` on 2026-09-24. On
 2026-09-25 the DAG task `flood_on_roads` took over as the writer. It reads the run's tiles from
 `flood_depth_raster_tile` and the road pieces from `road_segment`, and runs after
-`9b_load_depth_raster` and `load_road_segments`. `floodmap-backend` reads `flood_road_values` for
+`9b_load_depth_raster` and `load_road_segments`. Each row's `depth` is the deepest 1 m sample along
+a road piece, as D-006 in [[decision-log]] records. `floodmap-backend` reads `flood_road_values` for
 routing, as before. The road loader and flood-on-roads nodes are marked Built because their code is
 in the DAG, but neither task has run on the server yet. The plan is [[raster-first-flood-pipeline]].

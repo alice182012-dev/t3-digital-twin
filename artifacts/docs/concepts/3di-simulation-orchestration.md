@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [3di, airflow, simulation]
-related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]"]
+related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -35,8 +35,8 @@ The diagram leaves out the edges from `0b_ensure_schema` to `3b_upload_netcdf_po
 `0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
 `9_build_flood_tiles`, `9b_load_depth_raster`, `load_road_segments`, and `flood_on_roads`, since
 each needs its PostGIS tables to exist first. It creates the netcdf tables that
-`3b_upload_netcdf_postgres` writes, `road_segment`, and `flood_road_values` with its `depth_max` and
-`segment_id` columns.
+`3b_upload_netcdf_postgres` writes, `road_segment`, and `flood_road_values` with its `segment_id`
+column.
 
 `load_road_segments` makes `road_segment` match the roads file each cycle. An unchanged file reports
 0 inserted, 0 updated, and 0 deleted. A bad file fails the task before anything is written. See

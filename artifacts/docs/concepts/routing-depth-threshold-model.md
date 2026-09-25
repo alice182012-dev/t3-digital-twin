@@ -58,10 +58,9 @@ into polygons, dropping anything under `min_area_m2` (default 400 m²). Two SQL 
 `run` is requested. `buffer_m` (default 22 m) and `simplify_m` (default 3 m) match the values a
 prior D2 parameter sweep validated.
 
-The depth that each band's range tests is `COALESCE(depth_max, depth)`. `depth_max` is the deepest
-sample on a road piece, and `depth` is the mean. Rows from the old GeoJSON chain have `depth_max`
-NULL, so they grade on the mean. D-005 in [[decision-log]] records the choice, and
-[[graphhopper-backend]] has the deploy order that adds the column.
+Each band's range tests `depth`, which on a row from `flood_on_roads.py` is the deepest 1 m sample
+along the road piece. D-006 in [[decision-log]] records that choice. Rows from the old GeoJSON chain
+carry one pixel of a 20 m cell in `depth`, and the bands grade them the same way.
 
 Each returned GeoJSON feature carries `band` and `multiply_by` in its properties, so
 `build_custom_model()` can turn the feature collection straight into GraphHopper's

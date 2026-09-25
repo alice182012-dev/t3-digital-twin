@@ -36,9 +36,9 @@ Inputs are `road_segment` (pieces of at most 50 m, see [[road-segment-table]]) a
 ## Sampling design
 
 Each piece is sampled at the midpoint of every metre along it, with
-`ST_LineInterpolatePoint(geom, (i + 0.5) / n)` and `n = ceil(length_m / 1.0)`. `depth` is the mean
-of the samples, with dry and nodata samples counted as 0. `depth_max` is the deepest sample. Midpoint
-samples each stand for the same length of road, so the mean is a length-weighted mean.
+`ST_LineInterpolatePoint(geom, (i + 0.5) / n)` and `n = ceil(length_m / 1.0)`. `depth` is the
+deepest sample, as D-006 in [[decision-log]] records. A road piece is as passable as its deepest
+stretch, so a short deep spot closes the whole piece.
 
 A sample finds its pixel by arithmetic, not by a raster call. The query reads each tile once with
 `ST_PixelAsCentroids(rast, 1, true)`, which returns only the wet pixels, and gives each one a global
@@ -88,9 +88,10 @@ On the real runs every timestep has 2,111 rows for `20260924T164803` and 1,716 f
 
 ## Columns written
 
-`compute` writes the same columns `geojson_to_pg.py` wrote, with the same meanings, plus two new
-nullable columns. `scripts/database/create_geojson_tables.py` adds the new columns with
-`ADD COLUMN IF NOT EXISTS`, so the old chain keeps working.
+`compute` writes the same columns `geojson_to_pg.py` wrote, plus one new nullable column,
+`segment_id`. `scripts/database/create_geojson_tables.py` adds it with `ADD COLUMN IF NOT EXISTS`, so
+the old chain keeps working. `depth` keeps its name and unit, but its value on a new row is the
+deepest sample along a piece, while an old row's `depth` is one pixel of a 20 m cell.
 
 | Column | Value | Note |
 |---|---|---|
@@ -98,9 +99,8 @@ nullable columns. `scripts/database/create_geojson_tables.py` adds the new colum
 | `timestamp` | `run_ts` parsed as naive local time | `20260924T164803` becomes `2026-09-24 16:48:03`, as in `geojson_to_pg.parse_timestamp` |
 | `road_name` | `road_segment.road_name`, or `way_id` when the way has no name | The old chain used `@id` as its fallback too |
 | `forecast_time` | `valid_time_utc + 7 hours`, naive | Vietnam local time, the time in the `depth_*.tif` file name |
-| `depth` | Mean over the samples, in metres | Dry and nodata samples count as 0 |
+| `depth` | Deepest sample along the piece, in metres | 0 at a timestep where every sample is dry or nodata |
 | `geom`, `geom_4326` | The piece geometry, as GeoJSON and as EPSG:4326 | |
-| `depth_max` | Deepest sample, in metres | New. NULL on rows from the old chain |
 | `segment_id` | `road_segment.segment_id`, for example `way/11835354#0` | New. NULL on rows from the old chain |
 
 ## Retries
@@ -151,23 +151,31 @@ slivers reach past their piece into a neighbouring piece.
 ### Depth agreement
 
 The following ranges pair each old wet sliver with its piece and span the four timesteps of a run.
-The tool prints the full table per timestep.
+The tool prints the full table per timestep. The mean columns are from the 2026-09-24 run of the
+tool, when the new rows still stored the mean. The rest were checked again on 2026-09-25 with the
+maximum in `depth`.
 
-| Run | Old depth, average | New mean, average | New max, average | Correlation with mean | Correlation with max |
+| Run | Old depth, average | New mean, average (2026-09-24) | New `depth`, average | Correlation with mean (2026-09-24) | Correlation with `depth` |
 |---|---|---|---|---|---|
 | `20260924T164803` | 0.088 m to 0.111 m | 0.041 m to 0.054 m | 0.123 m to 0.151 m | 0.41 to 0.43 | 0.62 to 0.68 |
 | `20260924T170000` | 0.088 m to 0.101 m | 0.040 m to 0.045 m | 0.125 m to 0.138 m | 0.40 to 0.43 | 0.60 to 0.62 |
 
-The old depth sits between the new mean and the new maximum on average, and it correlates only
-weakly with either, as expected from a pixel that is often off the road.
+The old depth sits between the mean and the maximum on average. It correlates only weakly with
+either, as expected from a pixel that is often off the road.
 
-### Impassable pieces
+### Impassable pieces: the evidence for D-006
+
+This table is a historical finding from 2026-09-24 and 2026-09-25, when `flood_on_roads.py` wrote
+both the mean and the maximum. It is the evidence for D-006 in [[decision-log]], where the user chose
+the maximum. The mean is no longer stored, so the tool now prints only the maximum rows. On
+2026-09-25 the reworked tool gave the same maximum counts as the rows here.
 
 The dangerous cell is a piece the old rows closed and the new rows would route through. The
 following table sums the pieces over the four timesteps. "Road below the limit" counts the
 dangerous pieces where the raster along the old slivers is also under the limit, so the old depth
-came from a pixel off the road. The last column is the rest: pieces where the road itself reaches
-the limit and the new value does not.
+came from a pixel off the road. The tool calls this column "Old depth off the road". The next column
+is the rest, which the tool calls "Real miss": pieces where the road itself reaches the limit and the
+new value does not.
 
 | Run | Vehicle | New value | Old closed, new open | Road below the limit | Road at or over the limit | Old open, new closed |
 |---|---|---|---|---|---|---|
@@ -191,39 +199,34 @@ the limit and the new value does not.
 Most of the dangerous cell comes from the old sampling, not from the new rows. With the maximum,
 only 9 piece-timesteps remain, and in each of them the adjacent piece of the same way has a maximum
 over the limit, because the old sliver crossed into it. With the mean, 39 to 168 piece-timesteps
-per vehicle and run are real misses: the road reaches the limit on a short stretch, and the mean
-over the piece stays under it. That is the risk the user raised when choosing the mean. The
-maximum also closes more pieces the old rows left open (282 to 1,084), because it sees deep pixels
-on the road that the 20 m grid skipped.
+per vehicle and run are real misses. On those pieces the road reaches the limit on a short stretch,
+and the mean over the piece stays under it. The maximum also closes more pieces the old rows left
+open (282 to 1,084), because it sees deep pixels on the road that the 20 m grid skipped.
 
 To rerun the comparison, load the roads and both runs' tiles into a local PostGIS, run
 `flood_on_roads.py RUN_TS --target flood_road_values_shadow`, then run
 `python scripts/flood_roads/compare_with_old.py RUN_TS OLD_CSV --dsn DSN`. The old CSV files and
 depth rasters are in `marie-curie/raster-first/compare/<run>/`, which git ignores.
 
-### Routing filters on the maximum depth
+### Routing reads the maximum in `depth`
 
-Routing grades a road piece on `depth_max`, not on the mean. `flood_areas.py` compares
-`COALESCE(depth_max, depth)` with each vehicle's limit, so rows from the old chain, which have
-`depth_max` NULL, still grade on their `depth`. `depth` stays the mean for the route chart. The user
-chose this in D-005 of [[decision-log]], on the numbers in the impassable-pieces table. Routing now closes
-more pieces than the old rows did. [[graphhopper-backend]] describes the bands.
-
-Run `scripts/database/create_geojson_tables.py` on `storage-postgres` before you rebuild the
-backend image. The script adds `depth_max`. Without that column, the backend's flood query fails.
+`flood_areas.py` compares `depth` with each vehicle's limit, for old and new rows alike. Because
+`depth` is the maximum on a new row, routing closes more pieces than the old rows did.
+[[graphhopper-backend]] describes the bands. Routing reads no new column, so the backend and
+`create_geojson_tables.py` can deploy in either order.
 
 ## Tests
 
 `scripts/flood_roads/test_flood_on_roads.py` runs against a real PostGIS with `postgis_raster` when
 `FLOOD_ROADS_TEST_DSN` is set, in its own schema. It builds 10 by 10 tiles of 0.00001 degree pixels
-and pieces along pixel rows with known depths. It covers the mean and maximum of a piece with a
-wet stretch, dry pieces, a piece across two tiles, a piece wet at one timestep and dry at the next,
-the local `timestamp` and `forecast_time`, road name fallback, a rerun beside old-chain rows, the
-shadow target, and a run without tiles.
+and pieces along pixel rows with known depths. It covers the depth of a piece with a short deep
+stretch, dry pieces, two pieces across two tiles that are each deepest in a different tile, a piece
+wet at one timestep and dry at the next, the local `timestamp` and `forecast_time`, road name
+fallback, a rerun beside old-chain rows, the shadow target, and a run without tiles.
 
-Five deliberate breaks each fail at least one test: averaging only wet samples, dropping the zero
-rows at dry timesteps, leaving `forecast_time` in UTC, deleting by run timestamp alone, and sampling
-only the first metre of each piece.
+On 2026-09-25 four deliberate breaks each failed at least one test: averaging the samples instead of
+taking the maximum, giving rows to dry pieces, leaving `depth` NULL at dry timesteps, and dropping
+the tile offset from the pixel grid.
 
 ## Open items
 
@@ -234,5 +237,5 @@ only the first metre of each piece.
   server's setting is not checked.
 - A run that is dry at every timestep writes no rows, as the old chain did. Routing then keeps an
   older run as the winner for those forecast times.
-- The flood metric extractor and the TimescaleDB metrics still read `depth`. Which depth they
-  should use is an open decision in [[decision-log]].
+- The flood metric extractor and the TimescaleDB metrics read `depth`, which is the maximum. D-006
+  in [[decision-log]] settled this.
