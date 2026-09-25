@@ -1,4 +1,4 @@
-import { formatTimestepTime } from '@/floodmap/timestepLabel'
+import { formatTimestepTime, timestepCaption } from '@/floodmap/timestepLabel'
 
 describe('formatTimestepTime', () => {
     it('formats an instant as DD/MM/YYYY HH:MM in local time', () => {
@@ -13,5 +13,22 @@ describe('formatTimestepTime', () => {
 
     it('returns null for an unparseable valid_time', () => {
         expect(formatTimestepTime('not-a-date')).toBeNull()
+    })
+})
+
+describe('timestepCaption', () => {
+    const step = new Date(2026, 8, 25, 14, 15)
+
+    it('labels a step at or before now with "As of"', () => {
+        expect(timestepCaption(step.toISOString(), step.getTime())).toEqual('As of 25/09/2026 14:15')
+        expect(timestepCaption(step.toISOString(), step.getTime() + 10 * 60 * 1000)).toEqual('As of 25/09/2026 14:15')
+    })
+
+    it('labels a future step as a forecast', () => {
+        expect(timestepCaption(step.toISOString(), step.getTime() - 60 * 1000)).toEqual('Forecast for 25/09/2026 14:15')
+    })
+
+    it('returns null for an unparseable valid_time', () => {
+        expect(timestepCaption('not-a-date', step.getTime())).toBeNull()
     })
 })
