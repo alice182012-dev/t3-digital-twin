@@ -6,9 +6,11 @@ OLD_CSV holds the old flood_road_values rows of the run, with columns road_name,
 depth, and wkt (the sliver's EPSG:4326 geometry). Each old row is a sliver of a road cut by one
 flood cell and carries that cell's depth. Each sliver is assigned to the road_segment piece nearest
 its midpoint, and a piece counts as impassable under the old pipeline when any of its slivers
-reaches the vehicle's limit, which is how flood_areas.py treats the old rows. The run's tiles must
-be in flood_depth_raster_tile, because the report also reads the raster along each old sliver. The
-report prints Markdown tables to stdout.
+reaches the vehicle's limit, which is how flood_areas.py treats the old rows. The new row's depth is
+the deepest sample along the piece (D-006). The run's tiles must be in flood_depth_raster_tile,
+because the report also reads the raster along each old sliver, which splits every piece the old rows
+close and the new rows leave open into a real miss or an old depth read off the road. The report
+prints Markdown tables to stdout.
 """
 
 from __future__ import annotations
@@ -74,7 +76,7 @@ UPDATE old_sliver SET on_sliver_max = 0 WHERE on_sliver_max IS NULL;
 
 _NEW_SQL = """
 CREATE TEMP TABLE new_piece ON COMMIT DROP AS
-SELECT segment_id, forecast_time, depth, depth_max FROM {table} WHERE timestamp = %(timestamp)s
+SELECT segment_id, forecast_time, depth FROM {table} WHERE timestamp = %(timestamp)s
 """
 
 _COVERAGE_SQL = """
@@ -88,10 +90,10 @@ SELECT t.forecast_time,
        (SELECT count(*) FROM wet_old o JOIN new_piece n USING (forecast_time, segment_id)
         WHERE o.forecast_time = t.forecast_time),
        (SELECT count(*) FROM wet_old o JOIN new_piece n USING (forecast_time, segment_id)
-        WHERE o.forecast_time = t.forecast_time AND n.depth_max > 0),
+        WHERE o.forecast_time = t.forecast_time AND n.depth > 0),
        (SELECT count(*) FROM new_piece n WHERE n.forecast_time = t.forecast_time),
-       (SELECT count(*) FROM new_piece n WHERE n.forecast_time = t.forecast_time AND n.depth_max > 0),
-       (SELECT count(*) FROM new_piece n WHERE n.forecast_time = t.forecast_time AND n.depth_max > 0
+       (SELECT count(*) FROM new_piece n WHERE n.forecast_time = t.forecast_time AND n.depth > 0),
+       (SELECT count(*) FROM new_piece n WHERE n.forecast_time = t.forecast_time AND n.depth > 0
           AND NOT EXISTS (SELECT 1 FROM old_pieces p
                           WHERE p.forecast_time = n.forecast_time AND p.segment_id = n.segment_id))
 FROM (SELECT DISTINCT forecast_time FROM old_sliver UNION SELECT DISTINCT forecast_time FROM new_piece) t
@@ -101,10 +103,9 @@ ORDER BY 1
 _DEPTH_SQL = """
 SELECT o.forecast_time,
        count(*),
-       avg(o.depth), avg(n.depth), avg(n.depth_max),
-       avg(abs(o.depth - n.depth)), avg(abs(o.depth - n.depth_max)),
-       count(*) FILTER (WHERE o.depth > n.depth_max + 0.005),
-       corr(o.depth, n.depth), corr(o.depth, n.depth_max)
+       avg(o.depth), avg(n.depth), avg(abs(o.depth - n.depth)),
+       count(*) FILTER (WHERE o.depth > n.depth + 0.005),
+       corr(o.depth, n.depth)
 FROM old_sliver o JOIN new_piece n USING (forecast_time, segment_id)
 WHERE o.depth > 0
 GROUP BY 1 ORDER BY 1
@@ -116,7 +117,7 @@ WITH old_piece AS (
     FROM old_sliver WHERE segment_id IS NOT NULL GROUP BY 1, 2
 )
 SELECT forecast_time, segment_id, coalesce(o.old_max, 0), coalesce(o.on_sliver_max, 0),
-       coalesce(n.depth, 0), coalesce(n.depth_max, 0)
+       coalesce(n.depth, 0)
 FROM old_piece o FULL JOIN new_piece n USING (forecast_time, segment_id)
 """
 
@@ -124,17 +125,18 @@ FROM old_piece o FULL JOIN new_piece n USING (forecast_time, segment_id)
 @dataclass
 class Confusion:
     both: int = 0
-    danger: int = 0
-    danger_off_sliver: int = 0
+    old_off_road: int = 0
+    real_miss: int = 0
     new_only: int = 0
     neither: int = 0
 
     def add(self, old_impassable: bool, new_impassable: bool, on_sliver_impassable: bool) -> None:
         if old_impassable and new_impassable:
             self.both += 1
+        elif old_impassable and on_sliver_impassable:
+            self.real_miss += 1
         elif old_impassable:
-            self.danger += 1
-            self.danger_off_sliver += not on_sliver_impassable
+            self.old_off_road += 1
         elif new_impassable:
             self.new_only += 1
         else:
@@ -171,13 +173,12 @@ def compare(conn, run_ts: str, old_csv: Path, table: str) -> dict:
 
     limits = vehicle_limits()
     confusion: dict[tuple, Confusion] = {}
-    for forecast_time, _segment_id, old_max, on_sliver_max, mean, deepest in pieces:
+    for forecast_time, _segment_id, old_max, on_sliver_max, new_depth in pieces:
         for vehicle, limit in limits.items():
-            for measure, new_value in (("mean", mean), ("max", deepest)):
-                for key in ((forecast_time, vehicle, measure), ("all", vehicle, measure)):
-                    confusion.setdefault(key, Confusion()).add(
-                        old_max >= limit, new_value >= limit, on_sliver_max >= limit
-                    )
+            for key in ((forecast_time, vehicle), ("all", vehicle)):
+                confusion.setdefault(key, Confusion()).add(
+                    old_max >= limit, new_depth >= limit, on_sliver_max >= limit
+                )
     return {
         "coverage": coverage,
         "depth": depth,
@@ -210,37 +211,38 @@ def report(run_ts: str, result: dict) -> str:
         "",
         "### Depth agreement (old wet sliver against its piece)",
         "",
-        "| Forecast time | Pairs | Old mean | New mean | New max mean | Abs diff to mean | "
-        "Abs diff to max | Old above max | Corr mean | Corr max |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| Forecast time | Pairs | Old depth, average | New depth, average | Absolute difference, average | "
+        "Old above new | Correlation |",
+        "|---|---|---|---|---|---|---|",
     ]
     for row in result["depth"]:
         lines.append(
             f"| {row[0]:%Y-%m-%d %H:%M:%S} | {row[1]} | "
-            + " | ".join(_fmt(v) for v in row[2:7])
-            + f" | {row[7]} | {_fmt(row[8])} | {_fmt(row[9])} |"
+            + " | ".join(_fmt(v) for v in row[2:5])
+            + f" | {row[5]} | {_fmt(row[6])} |"
         )
     lines += [
         "",
         "### Impassable per piece: old against new",
         "",
-        "Columns count pieces. **Old imp, new pass** is the dangerous cell: the old rows closed the piece "
-        "and the new rows would route through it. **Of which raster below limit on old slivers** counts "
-        "the dangerous pieces where the raster, read along the old slivers themselves, stays under the "
-        "limit: the old depth came from a pixel off the road.",
+        "Columns count pieces. Two columns split the pieces that the old rows close and the new rows leave open. "
+        "**Real miss** is a piece where the raster, read along the old slivers themselves, reaches the "
+        "limit, so the road is too deep and the new depth should have closed it. **Old depth off the "
+        "road** is a piece where that raster stays under the limit, so the old depth came from a pixel "
+        "off the road.",
         "",
-        "| Forecast time | Vehicle (limit m) | New measure | Both imp | **Old imp, new pass** | "
-        "Of which raster below limit on old slivers | Old pass, new imp | Both pass |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Forecast time | Vehicle (limit m) | Both impassable | **Real miss** | Old depth off the road | "
+        "Old passable, new impassable | Both passable |",
+        "|---|---|---|---|---|---|---|",
     ]
     limits = result["limits"]
-    keys = sorted(result["confusion"], key=lambda k: (k[0] == "all", str(k[0]), list(limits).index(k[1]), k[2] != "mean"))
+    keys = sorted(result["confusion"], key=lambda k: (k[0] == "all", str(k[0]), list(limits).index(k[1])))
     for key in keys:
         c = result["confusion"][key]
         when = "all timesteps" if key[0] == "all" else f"{key[0]:%Y-%m-%d %H:%M:%S}"
         lines.append(
-            f"| {when} | {key[1]} ({limits[key[1]]:.2f}) | {key[2]} | {c.both} | **{c.danger}** | "
-            f"{c.danger_off_sliver} | {c.new_only} | {c.neither} |"
+            f"| {when} | {key[1]} ({limits[key[1]]:.2f}) | {c.both} | **{c.real_miss}** | "
+            f"{c.old_off_road} | {c.new_only} | {c.neither} |"
         )
     return "\n".join(lines) + "\n"
 
