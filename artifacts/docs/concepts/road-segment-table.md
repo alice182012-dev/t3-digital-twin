@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [postgis, roads, routing, raster-first, sprint-2]
 related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[flood-metric-extractor]]", "[[graphhopper-backend]]", "[[route-forecast-query]]", "[[timescaledb-and-flood-metrics]]"]
-last_updated: 2026-09-24
+last_updated: 2026-09-25
 ---
 
 # Road segment table
@@ -44,7 +44,8 @@ also serves lookups by way.
 ## How the loader cuts a way into pieces
 
 `scripts/roads/load_road_segments.py` exposes `load(conn, roads_path)` and a `main()` for Airflow.
-It is not called from `dags/flood_mapping_dag.py` yet. The loader does the following for each way:
+The DAG task `load_road_segments` in `dags/flood_mapping_dag.py` calls `load` each cycle, before
+`flood_on_roads`, and prints a warning when a load updates or deletes rows. The loader does the following for each way:
 
 1. Transforms the way to EPSG:3405 (VN-2000 / UTM zone 48N), the metric CRS that
    `floodmap/graphhopper-flood-road/backend/flood_areas.py` also uses.
@@ -142,6 +143,5 @@ variable is unset.
 
 ## Open items
 
-- Wire the loader into the DAG ([[raster-first-flood-pipeline]], Phase 2 or 3).
 - Run `create_road_segment_table.py` and the loader against the server database. The local check
   doesn't show how long the load takes there.

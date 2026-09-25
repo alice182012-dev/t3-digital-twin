@@ -3,39 +3,54 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [3di, airflow, simulation]
-related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]"]
-last_updated: 2026-09-24
+related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]"]
+last_updated: 2026-09-25
 ---
 
 # 3Di simulation orchestration
 
 `dags/flood_mapping_dag.py` runs one continuous cycle: check the rain forecast, decide whether to
 run a 3Di simulation, run it, download the result, turn it into depth rasters, and hand those to
-the flood-extent tile task and the depth raster load. This page covers the first three steps,
+the flood-extent tile task, the depth raster load, and the flood-on-roads task. This page covers the first three steps,
 through the depth raster. See [[minio-flood-extent-pipeline]] for what happens to the rasters after.
 
 ## The DAG's task order
 
 ```
-0_check_forecast_rain --(rain)--> 1_trigger_simulation --> 2_download_results --> 3_calculate_depth
-        |                                                          |                     |
-        +--(dry)--> wait_before_next_rain_check                    v                     +--> 9_build_flood_tiles
-                                                             3b_upload_netcdf_postgres   |
-                                                                                         +--> 9b_load_depth_raster
+0_check_forecast_rain --(dry)--> wait_before_next_rain_check
+        |
+      (rain)
+        v
+1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 9_build_flood_tiles
+        |                        |                      |
+        |                        v                      +--> 9b_load_depth_raster --+
+        |               3b_upload_netcdf_postgres                                   |
+        v                                                                           v
+0b_ensure_schema --> load_road_segments --------------------------------------> flood_on_roads
 ```
 
-`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
-`9_build_flood_tiles`, and `9b_load_depth_raster`, since each needs its PostGIS tables to exist
-first. It also creates the netcdf tables that `3b_upload_netcdf_postgres` writes, and it still
-creates `flood_road_values`.
+The diagram leaves out the edges from `0b_ensure_schema` to `3b_upload_netcdf_postgres`,
+`9_build_flood_tiles`, `9b_load_depth_raster`, and `flood_on_roads`.
 
-Tasks `9_build_flood_tiles` and `9b_load_depth_raster` name the run with
+`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
+`9_build_flood_tiles`, `9b_load_depth_raster`, `load_road_segments`, and `flood_on_roads`, since
+each needs its PostGIS tables to exist first. It creates the netcdf tables that
+`3b_upload_netcdf_postgres` writes, `road_segment`, and `flood_road_values` with its `depth_max` and
+`segment_id` columns.
+
+`load_road_segments` makes `road_segment` match the roads file each cycle. An unchanged file reports
+0 inserted, 0 updated, and 0 deleted. A bad file fails the task before anything is written. See
+[[road-segment-table]].
+
+`flood_on_roads` waits for `9b_load_depth_raster`, `load_road_segments`, and `0b_ensure_schema`. It
+samples the run's tiles along each road piece and writes `flood_road_values`, the table the routing
+backend reads. See [[flood-on-roads]].
+
+Tasks `9_build_flood_tiles`, `9b_load_depth_raster`, and `flood_on_roads` name the run with
 `flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
 the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG, per the plan
-[[raster-first-flood-pipeline]]. Its last task was the only DAG task that wrote
-`flood_road_values`, the table the routing backend reads. The DAG has no producer for
-`flood_road_values` until Story 3 of [[raster-first-pipeline-stories]] lands, so do not deploy it
-before then.
+[[raster-first-flood-pipeline]]. `flood_on_roads` replaced it as the writer of `flood_road_values`
+on 2026-09-25.
 
 The DAG uses `VNContinuousTimetable` (`plugins/vn_timetable.py`) with `max_active_runs=1`, so the
 next cycle starts immediately after the previous one finishes rather than on a fixed clock

@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]"]
-last_updated: 2026-09-24
+related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]"]
+last_updated: 2026-09-25
 ---
 
 # MinIO flood-extent tile pipeline
@@ -44,8 +44,8 @@ depth directory from task 3's XCom, takes `run_ts` from `flood_extent.run_ts_for
 
 The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
 on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
-which routing reads. No DAG task writes `flood_road_values` until Story 3 of
-[[raster-first-pipeline-stories]] lands, so the DAG must not be deployed before then.
+which routing reads. Since 2026-09-25 the `flood_on_roads` task writes that table instead, from the
+tiles that `9b_load_depth_raster` loads. See [[flood-on-roads]].
 
 `publish_run` builds and uploads one timestep at a time, `FLOOD_EXTENT_WORKERS` (default 2) of them
 in parallel. If any timestep fails, `publish_run` raises without deleting tiles or rows already
@@ -81,8 +81,10 @@ arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polyg
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
 
-The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and reads the same `run_ts` from
-task 5's XCom, so both tables share one (run, valid time) key. `raster_load.load_run` reprojects
+The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and takes the same `run_ts` from
+`flood_extent.run_ts_for_depth_dir`, so both tables share one (run, valid time) key. The
+`flood_on_roads` task runs after `9b_load_depth_raster` and samples these tiles under the same
+`run_ts`. `raster_load.load_run` reprojects
 each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`. Then it uploads the GeoTIFF once,
 and PostGIS cuts it with `ST_Tile` inside the same `INSERT`. For each timestep the loader deletes
 that timestep's tiles and inserts the new ones in one transaction, so a retried load ends with the
