@@ -49,9 +49,14 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   shaped like `flood_road_values` holds one row per piece per timestep, and for one real run its
   values match the old `flood_road_values` rows, or each difference is explained (the old rows are
   subsampled).
-  Depth per piece is the mean over samples along the piece (dry samples count as 0), with the maximum stored
-  beside it in `depth_max`. The task writes `flood_road_values` in place.
-  Priority: P0. Status: Not started. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
+  Depth per piece is the deepest 1 m sample along the piece, stored in `depth` (decision D-006, which
+  supersedes the mean and `depth_max`). The task writes `flood_road_values` in place.
+  Priority: P0. Status: Reviewed. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
+  Details:
+  1. What: a task that computes each road piece's flood depth from the raster tiles and writes `flood_road_values` in place. `depth` is the deepest 1 m sample (D-006).
+  2. How: `flood_on_roads.compute` samples every metre along each piece that touches a wet tile, reads the wet pixels once per tile, and writes one row per piece per timestep in one transaction. It takes 1.7 to 2.1 s per timestep locally.
+  3. Why: the old chain sampled one pixel per 20 m cell on the server (`SAMPLE_RATE=20`), so about half of its wet slivers are dry along the road.
+  4. Effect: routing, the extractor and the TimescaleDB metrics read the same `depth`. The mean would have missed 39 to 168 pieces per vehicle and run where the road reaches the limit, and the maximum misses 0 to 5 (9 in total across all vehicles and runs, all beside a piece boundary). Routing is more cautious than the old pipeline. Checked on a local PostGIS with two real runs, not on the server.
 
 - **Story 4: Switch routing to the new task and retire the GeoJSON tasks.**
   As a maintainer, I want tasks 4 to 8 gone and routing reading the new table, so the DAG has one
@@ -59,7 +64,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Given the shadow comparison passes, when the DAG is rewritten, then tasks 4 to 8 no longer exist,
   `run_ts` comes from `flood_extent.stamp_key`, a full cycle succeeds on the server, and a graded
   `POST /route` returns a route built from the new table.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 2. Dependencies: Story 3.
+  Priority: P0. Status: In progress. Estimate: M. Sprint: 2. Dependencies: Story 3.
 
 - **Story 5: Create the netcdf table in the schema task.**
   As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is not marked
@@ -82,4 +87,13 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Still `Reviewed`, because pruning needs a fourth run to show on the server.
 - **2026-09-24, draft.** Decided: write `flood_road_values` in place, mean depth per piece with the maximum stored
   beside it, retire `dags/test_dag.py`, and remove the `flood-results-full` bucket. See [[raster-first-flood-pipeline]].
+- **2026-09-24, draft.** Story 3 built and reviewed on `stage-b` (`55910af`, `b2387df`, `1ccddc9`, `89ac6a0`,
+  `b2f04d4`). The old rows are not ground truth: every old depth equals the top-left pixel of a 20 m cell,
+  because the server runs `SAMPLE_RATE=20`. Status is `Reviewed`: nothing ran on the server.
+- **2026-09-25, draft.** Story 4 is `In progress` on `stage-b`. Built: the DAG retirement, the road loader and
+  `flood_on_roads` tasks (11 tasks, 15 edges, loaded in a real `DagBag` on the server), the removal of
+  `dags/test_dag.py` and the `flood-results-full` configuration, and routing on `depth_max` (D-005). Not done:
+  the server deploy, a full cycle, a graded `POST /route` on the new rows, and deleting the old scripts.
+- **2026-09-25, draft.** The user chose the maximum depth for every use (D-006). `depth` now holds the maximum and there is no
+  `depth_max` column. A delegate is making the code and note changes on `stage-b`.
 
