@@ -189,6 +189,8 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
                 write_step_rows(db_conn, run_ts, valid_time_utc(depth_file), result)
                 print(f"{key}: {result.tile_count} tiles", flush=True)
             except Exception as error:
+                if db_conn is not None:
+                    db_conn.rollback()
                 failures.append(f"{flood_extent.stamp_key(depth_file)}: {error}")
     if failures:
         raise flood_extent.FloodExtentError(

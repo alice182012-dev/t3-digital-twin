@@ -135,6 +135,22 @@ class PublishRunStepRowTests(PublishRunTestCase):
 
         self.assertEqual(self.fetch("SELECT valid_time_utc FROM flood_extent_step;"), [(UTC_1,)])
 
+    def test_a_failed_step_write_does_not_stop_the_next_steps_write(self):
+        build = fake_build()
+
+        def build_with_bad_polygon(depth_file, tiles_dir, **options):
+            result = build(depth_file, tiles_dir, **options)
+            if flood_extent.stamp_key(depth_file) == STEP_1:
+                return flood_extent.FloodExtentResult(
+                    tile_count=1, area_by_band={1: 50.0}, polygons_4326={1: b"not wkb"}
+                )
+            return result
+
+        with self.assertRaises(flood_extent.FloodExtentError):
+            self.publish(build=build_with_bad_polygon, db_conn=self.conn)
+
+        self.assertEqual(self.fetch("SELECT valid_time_utc FROM flood_extent_step;"), [(UTC_2,)])
+
     def test_keeps_the_step_rows_of_only_the_newest_keep_runs(self):
         for run in ("20260925T170000", "20260925T171500", "20260925T173000"):
             self.publish(run=run, db_conn=self.conn, keep_runs=2)
