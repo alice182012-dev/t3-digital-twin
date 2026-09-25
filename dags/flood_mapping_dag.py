@@ -1,15 +1,11 @@
 from airflow import DAG
 from airflow.exceptions import AirflowException
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
-from airflow.providers.standard.sensors.time_delta import TimeDeltaSensor
 from datetime import datetime, timedelta
 import sys
 import os
 import boto3
 import psycopg2
-
-sys.path.append(os.path.join("/opt/airflow", "plugins"))
-from vn_timetable import VNContinuousTimetable
 
 
 BASE_PATH = "/opt/airflow"
@@ -62,7 +58,6 @@ FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
-RAIN_CHECK_INTERVAL_SECONDS = int(os.getenv("FLOOD_RAIN_CHECK_INTERVAL_SECONDS", "900"))
 
 
 def task_check_forecast_rain(**kwargs):
@@ -84,7 +79,7 @@ def task_check_forecast_rain(**kwargs):
     if decision["should_run"]:
         return "1_trigger_simulation"
     print("✅ Dry cycle: skipping simulation, processing, and upload as a successful DAG run")
-    return "wait_before_next_rain_check"
+    return None
 
 
 def task_run_simulation(**kwargs):
@@ -99,7 +94,7 @@ def task_run_simulation(**kwargs):
         # By the time this task runs, the rain gate (0_check_forecast_rain)
         # has already routed here specifically because it decided to run —
         # a legitimate dry-cycle skip never reaches this task at all (it
-        # routes to wait_before_next_rain_check instead). So a falsy sim_id
+        # skips every downstream task instead). So a falsy sim_id
         # here always means a real 3Di failure, never a correct skip; raising
         # AirflowSkipException made that failure look identical to a
         # dry-cycle skip (both green) in the Airflow UI.
@@ -282,20 +277,17 @@ with DAG(
     "flood_mapping_full",
     default_args=default_args,
     description="Pipeline 3Di -> MinIO (Direct Path Passing)",
-    schedule=VNContinuousTimetable(),
+    schedule="*/15 * * * *",
     start_date=datetime(2026, 2, 5),
     catchup=False,
-    max_active_runs=1,
+    # A run can take up to about 15 minutes, so the next slot's run may start while this one
+    # finishes. Its first minutes only wait on 3Di, and every run writes to its own folders.
+    max_active_runs=2,
     tags=["3di", "flood"],
 ) as dag:
     t0 = BranchPythonOperator(
         task_id="0_check_forecast_rain",
         python_callable=task_check_forecast_rain,
-    )
-    wait_for_next_check = TimeDeltaSensor(
-        task_id="wait_before_next_rain_check",
-        delta=timedelta(seconds=RAIN_CHECK_INTERVAL_SECONDS),
-        mode="reschedule",
     )
     t1 = PythonOperator(
         task_id="1_trigger_simulation", python_callable=task_run_simulation
@@ -334,4 +326,3 @@ with DAG(
     t_ddl >> [t_roads, t_flood_roads]
     t_roads >> t_flood_roads
     t9b >> t_flood_roads
-    t0 >> wait_for_next_check

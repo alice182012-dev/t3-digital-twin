@@ -19,7 +19,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_TASKS = {
     "0_check_forecast_rain",
-    "wait_before_next_rain_check",
     "1_trigger_simulation",
     "0b_ensure_schema",
     "2_download_results",
@@ -42,7 +41,6 @@ EXPECTED_EDGES = {
     ("0b_ensure_schema", "3b_upload_netcdf_postgres"),
     ("0b_ensure_schema", "9_build_flood_tiles"),
     ("0b_ensure_schema", "9b_load_depth_raster"),
-    ("0_check_forecast_rain", "wait_before_next_rain_check"),
     ("9b_load_depth_raster", "flood_on_roads"),
     ("load_road_segments", "flood_on_roads"),
     ("0b_ensure_schema", "load_road_segments"),
@@ -55,6 +53,7 @@ class FakeDag:
 
     def __init__(self, dag_id, **kwargs):
         self.dag_id = dag_id
+        self.kwargs = kwargs
         self.tasks = {}
         self.edges = set()
 
@@ -104,11 +103,6 @@ def load_dag_module():
             BranchPythonOperator=FakeOperator,
             PythonOperator=FakeOperator,
         ),
-        "airflow.providers.standard.sensors": module("airflow.providers.standard.sensors"),
-        "airflow.providers.standard.sensors.time_delta": module(
-            "airflow.providers.standard.sensors.time_delta", TimeDeltaSensor=FakeOperator
-        ),
-        "vn_timetable": module("vn_timetable", VNContinuousTimetable=MagicMock()),
         "boto3": module("boto3", client=MagicMock()),
         "psycopg2": module("psycopg2", connect=MagicMock()),
     }
@@ -143,6 +137,22 @@ class FloodMappingDagGraphTests(unittest.TestCase):
 
     def test_edges_are_exactly_the_raster_first_set(self):
         self.assertEqual(self.dag.edges, EXPECTED_EDGES)
+
+    def test_runs_on_the_quarter_hour_without_catchup(self):
+        self.assertEqual(
+            {key: self.dag.kwargs[key] for key in ("schedule", "catchup", "max_active_runs")},
+            {"schedule": "*/15 * * * *", "catchup": False, "max_active_runs": 2},
+        )
+
+    def test_a_dry_forecast_skips_every_downstream_task(self):
+        self.dag_module.create_simulation = MagicMock()
+        self.dag_module.create_simulation.get_rain_forecast.return_value = [{"values": {}}]
+        self.dag_module.create_simulation.evaluate_rain_gate.return_value = {
+            "should_run": False, "max_intensity_mm_hr": 0.4, "threshold_mm_hr": 5.0, "interval_count": 8
+        }
+
+        with patch("builtins.print"):
+            self.assertIsNone(self.dag_module.task_check_forecast_rain(ti=MagicMock()))
 
     def test_ensure_schema_creates_the_tables_its_downstream_tasks_write(self):
         database = MagicMock()

@@ -91,18 +91,6 @@ class FloodRainGateTests(unittest.TestCase):
         self.assertAlmostEqual(values[0][1], 0.000001)
         self.assertAlmostEqual(values[1][1], 0.000002)
 
-    def test_main_dag_is_continuous_and_has_successful_dry_branch(self):
-        dag_source = (ROOT / "dags/flood_mapping_dag.py").read_text(encoding="utf-8")
-        compose = (ROOT.parent / "compose.yml").read_text(encoding="utf-8")
-
-        self.assertIn('schedule="@continuous"', dag_source)
-        self.assertIn('return "wait_before_next_rain_check"', dag_source)
-        self.assertIn('mode="reschedule"', dag_source)
-        self.assertNotIn('schedule="*/30 * * * *"', dag_source)
-        self.assertNotIn('airflow dags trigger --run-id', compose)
-        self.assertIn('FLOOD_RAIN_THRESHOLD_MM_HR: ${FLOOD_RAIN_THRESHOLD_MM_HR:-5}', compose)
-        self.assertIn('FLOOD_RAIN_TIMESTEP_MINUTES: ${FLOOD_RAIN_TIMESTEP_MINUTES:-15}', compose)
-
 
 if __name__ == "__main__":
     unittest.main()
