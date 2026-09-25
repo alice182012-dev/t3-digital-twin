@@ -58,13 +58,13 @@ def reset(conn) -> None:
     conn.commit()
 
 
-def insert(conn, run: str, forecast_time: str, depth: float, wkt: str, depth_max: float | None = None) -> None:
-    """depth_max=None is a row from the old GeoJSON chain; a number is a flood_on_roads.py row."""
+def insert(conn, run: str, forecast_time: str, depth: float, wkt: str, segment_id: str | None = None) -> None:
+    """segment_id=None is a row from the old GeoJSON chain; a value is a flood_on_roads.py row."""
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, depth_max, geom_4326)"
+            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, segment_id, geom_4326)"
             " VALUES (1, %s, %s, %s, %s, ST_GeomFromText(%s, 4326));",
-            (run, forecast_time, depth, depth_max, wkt),
+            (run, forecast_time, depth, segment_id, wkt),
         )
     conn.commit()
 
@@ -129,7 +129,7 @@ def main() -> int:
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b2"]
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_NEW)) == ["b4"]
 
-    check_depth_max_decides_impassable(conn)
+    check_depth_decides_impassable(conn)
 
     conn.close()
 
@@ -154,53 +154,29 @@ def main() -> int:
     return 0
 
 
-def check_depth_max_decides_impassable(conn) -> None:
-    """D-005: b4 (impassable) tests depth_max, falling back to depth where depth_max is NULL.
-    Depths are fractions of each vehicle's limit in flood_utils, so a changed limit moves the
-    fixtures with it. 0.9 of the limit is b3 by itself; 1.1 is b4."""
+def check_depth_decides_impassable(conn) -> None:
+    """b4 (impassable) starts at each vehicle's limit in flood_utils, and depth is the deepest
+    sample along a piece (D-006). The fixtures are fractions of the limit, so a changed limit
+    moves them with it."""
     for vehicle in vehicle_types():
         limit_m = vehicle_threshold_cm(vehicle) / 100.0
-        under, over = 0.9 * limit_m, 1.1 * limit_m
 
         reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A, depth_max=over)
-        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "max over, mean under")
+        insert(conn, RUN_OLD, VALID_TIME, 1.1 * limit_m, SEGMENT_A, segment_id="way/1#0")
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "1.1 x limit")
         assert band_ids(derive_areas(conn, VALID_TIME, vehicle, "latest")) == ["b4"], (vehicle, "latest")
 
         reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, over, SEGMENT_A)
-        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "NULL max, mean over")
+        insert(conn, RUN_OLD, VALID_TIME, 0.9 * limit_m, SEGMENT_A, segment_id="way/1#0")
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "0.9 x limit")
 
-        reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
-        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "NULL max, mean under")
-
-        # depth_max under the limit keeps the piece out of b4 even when the fallback would not apply.
-        reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, 0.6 * limit_m, SEGMENT_A, depth_max=under)
-        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "max under")
-
+    # A run holding old-pipeline rows (segment_id NULL) and flood_on_roads rows for one
+    # forecast_time grades both on depth.
     limit_m = vehicle_threshold_cm("motorbike") / 100.0
-    under, over = 0.9 * limit_m, 1.1 * limit_m
-
-    # Old and new rows in one run for the same forecast_time: each is graded by its own rule.
     reset(conn)
-    insert(conn, RUN_OLD, VALID_TIME, over, SEGMENT_A)
-    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_FAR, depth_max=over)
-    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4", "b4"]
-
-    reset(conn)
-    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
-    insert(conn, RUN_OLD, VALID_TIME, 0.6 * limit_m, SEGMENT_FAR, depth_max=under)
-    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b3", "b3"]
-
-    # An old run and a new run for the same forecast_time: latest reads the new run's depth_max,
-    # a pin on the old run reads its mean.
-    reset(conn)
-    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
-    insert(conn, RUN_NEW, VALID_TIME, under, SEGMENT_A, depth_max=over)
-    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", "latest")) == ["b4"]
-    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b3"]
+    insert(conn, RUN_OLD, VALID_TIME, 1.1 * limit_m, SEGMENT_A)
+    insert(conn, RUN_OLD, VALID_TIME, 0.9 * limit_m, SEGMENT_FAR, segment_id="way/1#0")
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4", "b3"]
 
 
 if __name__ == "__main__":
