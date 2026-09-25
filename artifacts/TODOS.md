@@ -139,7 +139,7 @@ intended glyph, and map the profile to it.
 
 **Blocker tracking:** [[motorbike-profile-icon-wrong]]
 
-Status:: active
+Status:: resolved
 
 ### Mount flood_utils.py where Airflow can import it
 

@@ -1,8 +1,8 @@
 ---
 date_open: 2026-09-26
-date_closed: 
+date_closed: 2026-09-26
 type: blocker
-status: monitoring
+status: resolved
 severity: P3
 subsystem: floodmap-frontend
 approaches_tried: 1
@@ -44,12 +44,15 @@ the profile picker harder to trust for the people the app is built for.
 
 ## Approaches tried
 
-None yet.
+### Approach 1
+
+Added `motorbike: MotorcycleIcon` to the `icons` table in `profileIcons.ts`, plus a test that fails when a profile in
+`config-local.js.example` resolves to the question-mark icon. Deployed at `a107c78`. The user confirmed the icon on the live page.
 
 ## Decision and explanation
 
-Pending. The likely fix is one line in `profileIcons.ts`: map `motorbike` to `MotorcycleIcon` (or `ScooterIcon`, if
-the mockup uses that). Check the mockup for the intended glyph first.
+Mapped `motorbike` to `MotorcycleIcon` in `profileIcons.ts` (`7290847`). The mockup (screen 2b) uses a two-wheel motorbike glyph
+with equal wheels, which matches `motorcycle.svg`, not the scooter.
 
 ## Related topics
 
@@ -64,3 +67,4 @@ the mockup uses that). Check the mockup for the intended glyph first.
 - **2026-09-26, monitoring.** Fixed in `7290847` on branch `fifteen-minute-cycle`: `motorbike` now maps to
   `motorcycle.svg`, the glyph the mockup uses (screen 2b), and a test fails when a configured profile has no icon.
   Deployed to the frontend container at `a107c78`. Waiting for the user to confirm on the live page.
+- **2026-09-26, resolved.** The user confirmed the motorcycle icon on the live page after the frontend was recreated at `a107c78`.
