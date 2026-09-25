@@ -111,7 +111,9 @@ def task_download_result(**kwargs):
     ti = kwargs["ti"]
     sim_id = ti.xcom_pull(task_ids="1_trigger_simulation", key="sim_id")
     print(f"⬇️ 2. Download results for Sim {sim_id}...")
-    saved_path = download_result.run_download(sim_id, output_dir=RESULT_DIR)
+    # 3Di names every result file results_3di.nc, so each simulation gets its own folder: a run
+    # that overlaps the previous one must not overwrite the file that run is still reading.
+    saved_path = download_result.run_download(sim_id, output_dir=os.path.join(RESULT_DIR, str(sim_id)))
     if not saved_path:
         raise ValueError("❌ Download failed")
     ti.xcom_push(key="nc_path", value=saved_path)
@@ -198,7 +200,7 @@ def task_build_flood_tiles(**kwargs):
             db_conn=db_conn,
             tile_steps=FLOOD_EXTENT_TILE_STEPS,
             keep_runs=FLOOD_EXTENT_KEEP_RUNS,
-            cleanup_dirs=[DEPTH_ROOT_DIR, FLOOD_EXTENT_WORK_DIR],
+            cleanup_dirs=[RESULT_DIR, DEPTH_ROOT_DIR, FLOOD_EXTENT_WORK_DIR],
             cleanup_max_age_hours=FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS,
         )
     finally:

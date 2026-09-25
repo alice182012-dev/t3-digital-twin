@@ -201,6 +201,7 @@ class DepthRunTests(unittest.TestCase):
 
         self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "flooded_timesteps": 1})
         self.assertEqual(publish.publish_run.call_args.args[:2], (self.tmp.name, "20260924T170639"))
+        self.assertIn("/opt/airflow/data/mapping/results", publish.publish_run.call_args.kwargs["cleanup_dirs"])
 
     def test_flood_on_roads_computes_the_run_named_by_the_earliest_depth_file(self):
         flood_on_roads = MagicMock()
@@ -227,6 +228,28 @@ class DepthRunTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.dag_module.task_load_depth_raster(ti=self.ti)
+
+
+class DownloadResultTests(unittest.TestCase):
+    def test_each_simulation_downloads_into_its_own_folder(self):
+        dag_module = load_dag_module()
+        dag_module.download_result = MagicMock()
+        dag_module.download_result.run_download.side_effect = lambda sim_id, output_dir: f"{output_dir}/results_3di.nc"
+        paths = []
+        for sim_id in (101, 102):
+            ti = MagicMock()
+            ti.xcom_pull.return_value = sim_id
+            with patch("builtins.print"):
+                dag_module.task_download_result(ti=ti)
+            paths.append(ti.xcom_push.call_args.kwargs["value"])
+
+        self.assertEqual(
+            paths,
+            [
+                "/opt/airflow/data/mapping/results/101/results_3di.nc",
+                "/opt/airflow/data/mapping/results/102/results_3di.nc",
+            ],
+        )
 
 
 class LoadRoadSegmentsTests(unittest.TestCase):
