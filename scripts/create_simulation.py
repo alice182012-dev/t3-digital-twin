@@ -35,6 +35,10 @@ RAIN_LOOKAHEAD_HOURS = float(os.getenv("FLOOD_RAIN_LOOKAHEAD_HOURS", "2"))
 RAIN_TIMESTEP_MINUTES = int(os.getenv("FLOOD_RAIN_TIMESTEP_MINUTES", "15"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 CYCLE_MINUTES = 15
+# The state saved at one cycle is where the next run starts; the one at two cycles is the backup
+# for when the next run fails.
+HOTSTART_SAVE_SECONDS = int(os.getenv("HOTSTART_SAVE_SECONDS", str(CYCLE_MINUTES * 60)))
+SAVED_STATES_KEPT = 8
 
 # Bounded-polling config.
 POLL_INTERVAL_SECONDS = int(os.getenv("THREEDI_POLL_INTERVAL_SECONDS", "10"))
@@ -42,27 +46,48 @@ POLL_MAX_INTERVAL_SECONDS = int(os.getenv("THREEDI_POLL_MAX_INTERVAL_SECONDS", "
 POLL_TIMEOUT_SECONDS = int(os.getenv("THREEDI_POLL_TIMEOUT_SECONDS", str(SIMULATION_DURATION + 1800)))
 
 
-def load_last_state(state_file_path):
-    """Đọc ID saved state cũ (Nhận đường dẫn từ tham số)"""
-    if os.path.exists(state_file_path):
-        try:
-            with open(state_file_path, "r") as f:
-                return json.load(f).get("last_saved_state_id")
-        except Exception:
-            return None
-    return None
+def load_saved_states(state_file_path):
+    """Read the saved states [{"id", "valid_at"}] from the state file. A missing, broken, or old-format file has none."""
+    try:
+        with open(state_file_path, "r") as f:
+            states = json.load(f).get("states", [])
+        return [{"id": s["id"], "valid_at": s["valid_at"]} for s in states]
+    except Exception:
+        return []
 
 
-def save_new_state(state_file_path, state_id):
-    """Lưu ID saved state mới"""
+def save_saved_states(state_file_path, new_states):
+    """Merge new states into the state file, keeping the newest SAVED_STATES_KEPT by valid_at.
+
+    Merging, not replacing, because two runs can overlap and finish out of order: the older run
+    must not erase the newer run's states.
+    """
+    by_valid_at = {s["valid_at"]: s for s in load_saved_states(state_file_path)}
+    by_valid_at.update({s["valid_at"]: s for s in new_states})
+    states = sorted(by_valid_at.values(), key=lambda s: parse_iso(s["valid_at"]))[-SAVED_STATES_KEPT:]
     try:
         os.makedirs(os.path.dirname(state_file_path), exist_ok=True)
         with open(state_file_path, "w") as f:
-            json.dump(
-                {"last_saved_state_id": state_id, "updated_at": str(datetime.now())}, f
-            )
+            json.dump({"states": states, "updated_at": iso_utc(datetime.now(timezone.utc))}, f)
     except Exception as e:
         print(f"⚠️ Không thể lưu state file: {e}")
+
+
+def choose_saved_state(states, slot):
+    """Pick the state a run starting at `slot` hotstarts from, or None for a cold start.
+
+    An exact valid_at == slot first, else the newest state at most 2 cycles before the slot.
+    """
+    max_age = timedelta(minutes=2 * CYCLE_MINUTES)
+    usable = [s for s in states if timedelta(0) <= slot - parse_iso(s["valid_at"]) <= max_age]
+    if not usable:
+        print(f"🆕 [Coldstart] No saved state within {max_age} before {iso_utc(slot)}")
+        return None
+    chosen = max(usable, key=lambda s: parse_iso(s["valid_at"]))
+    offset_minutes = (slot - parse_iso(chosen["valid_at"])).total_seconds() / 60
+    case = "exact" if offset_minutes == 0 else "fallback"
+    print(f"🔗 [Hotstart, {case}] Saved state {chosen['id']} valid at {chosen['valid_at']}, offset {offset_minutes:g} min")
+    return chosen
 
 
 def clock_slot(moment):
@@ -224,10 +249,14 @@ def monitor_simulation(api, sim_id):
     return False
 
 
-def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=True, slot_start=None):
-    """Run one 3Di forecast that starts at its clock slot.
+def run_forecast_process(
+    state_file_path, rain_intervals=None, use_saved_state=True, slot_start=None, state_save_seconds=None
+):
+    """Run one 3Di forecast that starts at its clock slot and hotstarts from the state saved for that slot.
 
     The slot is `slot_start` if given, else the slot of the first rain interval, else the current slot.
+    With use_saved_state, it registers one timed saved state per `state_save_seconds` (default one and
+    two cycles) and records them in the state file once the run finishes. Returns (sim_id, saved states).
     """
     print(f"🚀 Bắt đầu quy trình Simulation (State: {state_file_path})")
 
@@ -241,19 +270,15 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
         print("❌ Không lấy được dữ liệu mưa. Dừng.")
         return None, None
     print(f"🕒 Slot: {iso_utc(slot)}")
+    if state_save_seconds is None:
+        state_save_seconds = (HOTSTART_SAVE_SECONDS, 2 * HOTSTART_SAVE_SECONDS)
 
     print("🔄 2. Xử lý dữ liệu mưa...")
     rain_values = build_rain_values(intervals, start=slot)
 
     api = get_client()
 
-    last_state_id = load_last_state(state_file_path) if use_saved_state else None
-    is_hotstart = False
-    if last_state_id:
-        print(f"🔗 [Hotstart] Sẽ dùng Saved State ID: {last_state_id}")
-        is_hotstart = True
-    else:
-        print("🆕 [Coldstart] Chạy mới từ Template")
+    hotstart_state = choose_saved_state(load_saved_states(state_file_path), slot) if use_saved_state else None
 
     print("🚀 3. Tạo Simulation...")
     from_template_kwargs = dict(
@@ -265,7 +290,7 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
         tags=["airflow-forecast"],
         clone_settings=True,
         clone_events=False,
-        clone_initials=not is_hotstart,
+        clone_initials=hotstart_state is None,
     )
     try:
         simulation = api.simulations_from_template(FromTemplate(**from_template_kwargs))
@@ -276,6 +301,21 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
 
     sim_id = simulation.id
     print(f"✅ Simulation ID: {sim_id}")
+
+    if hotstart_state is not None:
+        print(f"🔗 3b. Gắn saved state {hotstart_state['id']} làm trạng thái ban đầu...")
+        try:
+            existing = api.simulations_initial_saved_state_list(simulation_pk=sim_id)
+            for initial in existing.results:
+                api.simulations_initial_saved_state_delete(id=initial.id, simulation_pk=sim_id)
+            api.simulations_initial_saved_state_create(
+                simulation_pk=sim_id, data={"saved_state": hotstart_state["id"]}
+            )
+        except Exception as e:
+            # A run that meant to hotstart but starts dry would publish a wrong flood map as if valid.
+            _log_if_auth_expired(e, "Gắn saved state")
+            print(f"❌ Lỗi gắn saved state {hotstart_state['id']}: {e}")
+            return None, None
 
     print("🌧️ 4. Nạp mưa...")
     try:
@@ -288,25 +328,27 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
         print(f"❌ Lỗi nạp mưa: {e}")
         return None, None
 
-    future_saved_state_id = None
+    new_states = []
     if use_saved_state:
-        print(f"💾 5. Đăng ký lưu state tại giây thứ {SIMULATION_DURATION}...")
         expiry_date = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-        try:
-            saved_state = api.simulations_create_saved_states_timed_create(
-                sim_id,
-                TimedSavedState(
-                    name=f"RollingState_{datetime.now().strftime('%H%M')}",
-                    time=SIMULATION_DURATION,
-                    expiry=expiry_date,
-                    tags=["rolling-forecast"],
-                ),
-            )
-            future_saved_state_id = saved_state.id
-            print(f"✅ Đã đăng ký thành công (ID tương lai: {future_saved_state_id})")
-        except Exception as e:
-            _log_if_auth_expired(e, "Đăng ký lưu state")
-            print(f"❌ Lỗi đăng ký lưu state: {e}")
+        for seconds in state_save_seconds:
+            print(f"💾 5. Đăng ký lưu state tại giây thứ {seconds}...")
+            try:
+                saved_state = api.simulations_create_saved_states_timed_create(
+                    sim_id,
+                    TimedSavedState(
+                        name=f"RollingState_{slot:%Y%m%dT%H%M}_{seconds}s",
+                        time=seconds,
+                        expiry=expiry_date,
+                        tags=["rolling-forecast"],
+                    ),
+                )
+                valid_at = iso_utc(slot + timedelta(seconds=seconds))
+                new_states.append({"id": saved_state.id, "valid_at": valid_at})
+                print(f"✅ Đã đăng ký thành công (ID tương lai: {saved_state.id}, valid at {valid_at})")
+            except Exception as e:
+                _log_if_auth_expired(e, "Đăng ký lưu state")
+                print(f"❌ Lỗi đăng ký lưu state: {e}")
     else:
         print("⏭️ 5. Bỏ qua đăng ký lưu state (use_saved_state=False)")
 
@@ -318,17 +360,12 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
         print(f"❌ LỖI NGHIÊM TRỌNG: Không thể Start Simulation! {e}")
         return None, None
 
-    is_success = monitor_simulation(api, sim_id)
+    if not monitor_simulation(api, sim_id):
+        return None, None
 
-    if is_success and future_saved_state_id:
-        if use_saved_state:
-            save_new_state(state_file_path, future_saved_state_id)
-        return sim_id, future_saved_state_id
-
-    if is_success:
-        return sim_id, None
-
-    return None, None
+    if new_states:
+        save_saved_states(state_file_path, new_states)
+    return sim_id, new_states
 
 
 if __name__ == "__main__":

@@ -5,12 +5,14 @@ python3 test/test_create_simulation_cycle.py
 """
 
 import importlib.util
+import json
 import os
 import sys
 import types
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
 
 
@@ -156,6 +158,120 @@ class RunStartTests(unittest.TestCase):
 
         self.assertEqual(intervals[0]["startTime"], "2026-09-26T10:15:00Z")
         self.assertEqual(len(intervals), 9)
+
+
+class SavedStateTests(unittest.TestCase):
+    SLOT = utc(2026, 9, 26, 10, 15)
+    RAIN = rain_at("2026-09-26T10:15:00Z", "2026-09-26T10:30:00Z")
+
+    def setUp(self):
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.state_file = os.path.join(self.tmp.name, "state", "flood_system_state.json")
+
+    def write_state_file(self, content):
+        os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
+        with open(self.state_file, "w") as f:
+            json.dump(content, f)
+
+    def read_state_file(self):
+        with open(self.state_file) as f:
+            return json.load(f)["states"]
+
+    def run_slot(self, api, **kwargs):
+        module = load_create_simulation(api)
+        with patch("builtins.print"):
+            return module.run_forecast_process(self.state_file, rain_intervals=self.RAIN, slot_start=self.SLOT, **kwargs)
+
+    def test_saves_states_at_one_and_two_cycles_and_records_their_valid_times(self):
+        api = FakeApi()
+
+        sim_id, states = self.run_slot(api)
+
+        self.assertEqual(sim_id, 42)
+        self.assertEqual([timed.time for timed in api.of("timed_state")], [900, 1800])
+        expected = [
+            {"id": 501, "valid_at": "2026-09-26T10:30:00Z"},
+            {"id": 502, "valid_at": "2026-09-26T10:45:00Z"},
+        ]
+        self.assertEqual(states, expected)
+        self.assertEqual(self.read_state_file(), expected)
+
+    def test_hotstart_attaches_the_state_valid_at_the_slot(self):
+        self.write_state_file({"states": [
+            {"id": 7, "valid_at": "2026-09-26T10:15:00Z"},
+            {"id": 8, "valid_at": "2026-09-26T10:30:00Z"},
+            {"id": 6, "valid_at": "2026-09-26T10:00:00Z"},
+        ]})
+        api = FakeApi(initial_saved_states=[3])
+
+        self.run_slot(api)
+
+        self.assertFalse(api.of("from_template")[0].clone_initials)
+        self.assertEqual(api.of("initial_delete"), [3])
+        self.assertEqual(api.of("initial_create"), [{"saved_state": 7}])
+        self.assertEqual(
+            [name for name, _ in api.calls if name in ("initial_create", "action")], ["initial_create", "action"]
+        )
+
+    def test_without_an_exact_state_it_takes_the_newest_up_to_two_cycles_old(self):
+        self.write_state_file({"states": [
+            {"id": 5, "valid_at": "2026-09-26T09:45:00Z"},
+            {"id": 4, "valid_at": "2026-09-26T09:30:00Z"},
+        ]})
+        api = FakeApi()
+
+        self.run_slot(api)
+
+        self.assertEqual(api.of("initial_create"), [{"saved_state": 5}])
+
+    def test_a_state_older_than_two_cycles_is_a_cold_start(self):
+        self.write_state_file({"states": [{"id": 5, "valid_at": "2026-09-26T09:44:59Z"}]})
+        api = FakeApi()
+
+        self.run_slot(api)
+
+        self.assertTrue(api.of("from_template")[0].clone_initials)
+        self.assertEqual(api.of("initial_list") + api.of("initial_create"), [])
+
+    def test_the_old_state_file_format_is_a_cold_start(self):
+        self.write_state_file({"last_saved_state_id": 99, "updated_at": "2026-09-25 10:00:00"})
+        api = FakeApi()
+
+        sim_id, _ = self.run_slot(api)
+
+        self.assertEqual(sim_id, 42)
+        self.assertTrue(api.of("from_template")[0].clone_initials)
+        self.assertEqual(api.of("initial_create"), [])
+        self.assertEqual([s["id"] for s in self.read_state_file()], [501, 502])
+
+    def test_a_failed_attach_fails_the_run_instead_of_cold_starting(self):
+        self.write_state_file({"states": [{"id": 7, "valid_at": "2026-09-26T10:15:00Z"}]})
+        api = FakeApi(fail_attach=True)
+
+        self.assertEqual(self.run_slot(api), (None, None))
+        self.assertEqual(api.of("action"), [])
+
+    def test_new_states_merge_with_earlier_ones_from_an_overlapping_run(self):
+        self.write_state_file({"states": [
+            {"id": 8, "valid_at": "2026-09-26T11:00:00Z"},
+            {"id": 7, "valid_at": "2026-09-26T10:45:00Z"},
+        ]})
+
+        self.run_slot(FakeApi())
+
+        self.assertEqual(self.read_state_file(), [
+            {"id": 501, "valid_at": "2026-09-26T10:30:00Z"},
+            {"id": 502, "valid_at": "2026-09-26T10:45:00Z"},
+            {"id": 8, "valid_at": "2026-09-26T11:00:00Z"},
+        ])
+
+    def test_cold_run_without_saved_state_registers_nothing(self):
+        api = FakeApi()
+
+        self.assertEqual(self.run_slot(api, use_saved_state=False), (42, []))
+        self.assertEqual(api.of("timed_state"), [])
+        self.assertFalse(os.path.exists(self.state_file))
 
 
 if __name__ == "__main__":
