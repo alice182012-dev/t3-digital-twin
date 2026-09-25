@@ -11,3 +11,15 @@ export function formatTimestepTime(validTime: string): string | null {
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
+
+/**
+ * The legend's caption for the step the map shows. The time is when the drawn water depth is
+ * valid, not when the data was updated, so the caption says "As of" instead of the mockup's
+ * "Updated". The step is normally at or before now; findNowTimestepIndex's fallback can select a
+ * future step, and that one is labeled as a forecast.
+ */
+export function timestepCaption(validTime: string, now: number): string | null {
+    const time = formatTimestepTime(validTime)
+    if (!time) return null
+    return Date.parse(validTime) > now ? `Forecast for ${time}` : `As of ${time}`
+}
