@@ -10,7 +10,7 @@ source: [[Copy of USER STORY TEMPLATES]]
 # User story types
 
 Four shapes of user story, ordered from a single task to a program-level goal. Start
-from `.templates/user-story.md` to write one; this page says which shape to pick and
+from `templates/user-story.md` to write one; this page says which shape to pick and
 what each one contains.
 
 ## Simple
@@ -46,7 +46,7 @@ Epic: <name>
 ```
 
 Use this when a feature needs a roadmap across sprints or releases, and each row is
-still a story you could start from `.templates/user-story.md` on its own.
+still a story you could start from `templates/user-story.md` on its own.
 
 ## Thematic
 

@@ -21,12 +21,13 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Given `toa-do-duong-hanoi.geojson` (12,431 ways, each with a unique OSM id in `@id`), when the
   loader runs twice, then `road_segment` holds the same `segment_id` values both times, every way
   is present, and the pieces of each way add up to that way's length within 0.5 m.
-  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: None.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: None.
+  Evidence: ![[road-segment-server-check.png|420]]
   Details:
   1. What: a `road_segment` table with one row per road piece, keyed by `segment_id` such as `way/11835354#0`.
-  2. How: `load_road_segments.py` cuts each of the 12,431 ways into equal pieces of at most 50 m in EPSG:3405 and upserts them in one transaction, so a second load changes nothing.
+  2. How: `load_road_segments.py` cuts each of the 12,431 ways into equal pieces of at most 50 m in EPSG:3405 and upserts them in one transaction.
   3. Why: routing data, TimescaleDB, and the route-forecast query need one stable road ID, and the old mapping step dropped the OSM id.
-  4. Effect: unblocks Stories 3 and 4 and the TimescaleDB key change. Checked only on a local PostGIS with the real roads file: 35,652 pieces, worst length error under 1e-5 m. Not run on the server. IDs shift if the roads file or the piece length changes.
+  4. Effect: it feeds the DAG tasks and the TimescaleDB key change. On the server (2026-09-25): 35,652 pieces, every way present, worst length error 0.000000000 m, and a second load changed nothing. IDs shift if the roads file or the piece length changes.
 
 - **Story 2: Store depth rasters as tiles and read them through a spatial index.**
   As the point-depth endpoint, I want each timestep stored as tiles, so a lookup touches one tile
@@ -51,12 +52,13 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   subsampled).
   Depth per piece is the deepest 1 m sample along the piece, stored in `depth` (decision D-006, which
   supersedes the mean and `depth_max`). The task writes `flood_road_values` in place.
-  Priority: P0. Status: Reviewed. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
+  Priority: P0. Status: Done. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
+  Evidence: ![[flood-on-roads-server-check.png|420]]
   Details:
-  1. What: a task that computes each road piece's flood depth from the raster tiles and writes `flood_road_values` in place. `depth` is the deepest 1 m sample (D-006).
-  2. How: `flood_on_roads.compute` samples every metre along each piece that touches a wet tile, reads the wet pixels once per tile, and writes one row per piece per timestep in one transaction. It takes 1.7 to 2.1 s per timestep locally.
+  1. What: a task that computes each road piece's flood depth from the raster tiles into `flood_road_values`. `depth` is the deepest 1 m sample (D-006).
+  2. How: `flood_on_roads.compute` samples every metre along each piece that touches a wet tile, reads the wet pixels once per tile, and writes one row per piece per timestep in one transaction.
   3. Why: the old chain sampled one pixel per 20 m cell on the server (`SAMPLE_RATE=20`), so about half of its wet slivers are dry along the road.
-  4. Effect: routing, the extractor and the TimescaleDB metrics read the same `depth`. The mean would have missed 39 to 168 pieces per vehicle and run where the road reaches the limit, and the maximum misses 0 to 5 (9 in total across all vehicles and runs, all beside a piece boundary). Routing is more cautious than the old pipeline. Checked on a local PostGIS with two real runs, not on the server.
+  4. Effect: on the server (2026-09-25), run `20260924T164803` wrote 8,444 rows into a shadow table in 18.8 s, identical to the local result in rows, wet pieces, and depth sums, while the real table stayed untouched. Routing, the extractor, and the metrics read the same `depth`. Writing in place and a full cycle remain in Story 4.
 
 - **Story 4: Switch routing to the new task and retire the GeoJSON tasks.**
   As a maintainer, I want tasks 4 to 8 gone and routing reading the new table, so the DAG has one
@@ -65,13 +67,24 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   `run_ts` comes from `flood_extent.stamp_key`, a full cycle succeeds on the server, and a graded
   `POST /route` returns a route built from the new table.
   Priority: P0. Status: In progress. Estimate: M. Sprint: 2. Dependencies: Story 3.
+  Evidence: ![[graded-routing-server-check.png|420]]
+  Details:
+  1. What: the DAG no longer builds GeoJSON. It loads roads and computes flood on roads into `flood_road_values`, the table routing reads.
+  2. How: `stage-b` removes tasks 4 to 8, `dags/test_dag.py`, and the `flood-results-full` configuration, and adds the `load_road_segments` and `flood_on_roads` tasks. On the server the bucket (15 objects, 14.7 MB) and the old `flood_depth_raster` table (122 MB) were deleted, and `flood_on_roads` was written in place for run `20260924T164803`.
+  3. Why: one path from the depth rasters to routing, with the raster as the source of truth.
+  4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. Still open: a full DAG cycle, the frontend on a live event (the state-test DAG will provide one, see D-007), deleting the old scripts, and removing the test shadow table.
 
 - **Story 5: Create the netcdf table in the schema task.**
   As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is not marked
   `failed` when every other task succeeded.
   Given a database without `netcdf_files`, when `0b_ensure_schema` runs, then the table exists and
   task 3b succeeds.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 2. Dependencies: None.
+  Priority: P2. Status: Reviewed. Estimate: S. Sprint: 2. Dependencies: None.
+  Details:
+  1. What: the netcdf tables are created by the schema task.
+  2. How: `task_ensure_schema` calls `create_netcdf_tables.create_tables()`, which is idempotent.
+  3. Why: `3b_upload_netcdf_postgres` failed with `relation "netcdf_files" does not exist`, which marked every run `failed`.
+  4. Effect: on the server the three netcdf tables now exist, created by hand on 2026-09-25 with the same function (run twice). The story stays `Reviewed` until a real cycle shows task 3b succeeding.
 
 ## Status history
 
@@ -96,4 +109,10 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   the server deploy, a full cycle, a graded `POST /route` on the new rows, and deleting the old scripts.
 - **2026-09-25, draft.** The user chose the maximum depth for every use (D-006). `depth` now holds the maximum and there is no
   `depth_max` column. A delegate is making the code and note changes on `stage-b`.
+- **2026-09-25, draft.** Stage B checked on the server (`stage-b` at `2be63a4`). Story 1 and Story 3 are `Done`, each with
+  a server screenshot. Story 5 is `Reviewed`: the netcdf tables now exist, and task 3b needs a real cycle. Story 4 stays
+  `In progress`: writing in place, the bucket and old table removal, a full cycle, and a graded route remain.
+- **2026-09-25, draft.** Story 4 progress on the server: deleted the `flood-results-full` bucket and `flood_depth_raster`, wrote
+  `flood_on_roads` in place for run `20260924T164803` (8,444 rows replacing 7,620), and confirmed graded routing on the new rows.
+  Still `In progress`: a full cycle, the frontend on a live event, and deleting the old scripts.
 
