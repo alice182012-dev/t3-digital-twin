@@ -162,7 +162,7 @@ The user chose the maximum for every reader in D-006 of [[decision-log]], and [[
 the comparison behind it. Rows from the old GeoJSON chain carry one pixel of a 20 m cell in `depth`,
 and the bands grade them the same way. Routing doesn't read `segment_id`.
 
-`backend/test_flood_areas.py` builds its table from `scripts/database/create_geojson_tables.py`'s
+`backend/test_flood_areas.py` builds its table from `scripts/database/create_flood_road_tables.py`'s
 `SQL`, the DDL the server runs. For each vehicle, with the limit read from `flood_utils.py`, it checks
 that a piece at 1.1 times the limit is in `b4` and a piece at 0.9 times the limit is not. It also
 checks one run that mixes old-chain rows and `flood_on_roads.py` rows.

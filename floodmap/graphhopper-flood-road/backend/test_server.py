@@ -35,7 +35,7 @@ from osgeo import gdal, osr
 
 import create_flood_depth_raster_tables
 import create_flood_extent_tables
-import create_geojson_tables
+import create_flood_road_tables
 import raster_load
 
 gdal.UseExceptions()
@@ -143,7 +143,7 @@ def points_url(base: str, **params) -> str:
 def reset(conn) -> None:
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
-        cur.execute(create_geojson_tables.SQL)
+        cur.execute(create_flood_road_tables.SQL)
         cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN,))
         cur.execute(
             "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, geom_4326)"

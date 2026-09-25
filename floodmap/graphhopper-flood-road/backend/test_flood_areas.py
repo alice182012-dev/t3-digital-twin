@@ -15,7 +15,7 @@ Run it against a throwaway PostGIS (needs the postgis extension, not plain Postg
 
 flood_areas imports flood_utils, which the Dockerfile supplies by copying ../scripts
 alongside ../backend; PYTHONPATH stands in for that outside the image. The table comes from
-scripts/database/create_geojson_tables.py, the same DDL the server runs, so a column the query
+scripts/database/create_flood_road_tables.py, the same DDL the server runs, so a column the query
 needs but the deploy step lacks fails here first.
 """
 
@@ -26,7 +26,7 @@ import sys
 
 import psycopg2
 
-import create_geojson_tables
+import create_flood_road_tables
 from flood_areas import build_custom_model, derive_areas
 from flood_utils import vehicle_threshold_cm, vehicle_types
 
@@ -53,7 +53,7 @@ SEGMENT_FAR = "LINESTRING(105.7710 21.0314, 105.7715 21.0316)"
 def reset(conn) -> None:
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
-        cur.execute(create_geojson_tables.SQL)
+        cur.execute(create_flood_road_tables.SQL)
         cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN_OLD,))
     conn.commit()
 

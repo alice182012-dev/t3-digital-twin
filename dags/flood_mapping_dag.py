@@ -29,7 +29,7 @@ try:
     import netcdf_input
     import database.netcdf_to_pg
     import database.create_netcdf_tables
-    import database.create_geojson_tables
+    import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
     import database.create_road_segment_table
@@ -118,7 +118,7 @@ def task_download_result(**kwargs):
 
 def task_ensure_schema(**kwargs):
     print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
-    database.create_geojson_tables.main()
+    database.create_flood_road_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()

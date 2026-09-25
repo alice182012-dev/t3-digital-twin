@@ -19,7 +19,7 @@ from flood_on_roads import FloodOnRoadsError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
 import create_flood_depth_raster_tables  # noqa: E402
-import create_geojson_tables  # noqa: E402
+import create_flood_road_tables  # noqa: E402
 import create_road_segment_table  # noqa: E402
 
 DSN = os.getenv("FLOOD_ROADS_TEST_DSN")
@@ -57,7 +57,7 @@ class FloodOnRoadsTests(unittest.TestCase):
         with cls.conn, cls.conn.cursor() as cur:
             cur.execute(f"CREATE SCHEMA {SCHEMA}")
             cur.execute(f"SET search_path TO {SCHEMA}, public")
-            cur.execute(create_geojson_tables.SQL)
+            cur.execute(create_flood_road_tables.SQL)
             cur.execute(create_road_segment_table.SQL)
             cur.execute(create_flood_depth_raster_tables.SQL)
 

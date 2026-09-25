@@ -28,7 +28,7 @@ import mapping.merge_geojson as merge_geojson
 import mapping.mapping_geojson as mapping_geojson
 import mapping.upload_minio as upload_minio
 import database.geojson_to_pg as geojson_to_pg
-import database.create_geojson_tables as create_geojson_tables
+import database.create_flood_road_tables as create_flood_road_tables
 
 REPO_ROOT = os.path.dirname(SCRIPTS_PATH)
 GH_ROOT = os.path.join(os.path.dirname(REPO_ROOT), "grasshopper-routing")
@@ -120,7 +120,7 @@ def ingest_run(run_dir, workdir):
 
 def main():
     print("Ensuring schema...")
-    create_geojson_tables.main()
+    create_flood_road_tables.main()
 
     run_dirs = discover_run_dirs()
     print(f"discovered {len(run_dirs)} run directories")

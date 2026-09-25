@@ -89,7 +89,7 @@ On the real runs every timestep has 2,111 rows for `20260924T164803` and 1,716 f
 ## Columns written
 
 `compute` writes the same columns `geojson_to_pg.py` wrote, plus one new nullable column,
-`segment_id`. `scripts/database/create_geojson_tables.py` adds it with `ADD COLUMN IF NOT EXISTS`, so
+`segment_id`. `scripts/database/create_flood_road_tables.py` adds it with `ADD COLUMN IF NOT EXISTS`, so
 the old chain keeps working. `depth` keeps its name and unit, but its value on a new row is the
 deepest sample along a piece, while an old row's `depth` is one pixel of a 20 m cell.
 
@@ -213,7 +213,7 @@ depth rasters are in `marie-curie/raster-first/compare/<run>/`, which git ignore
 `flood_areas.py` compares `depth` with each vehicle's limit, for old and new rows alike. Because
 `depth` is the maximum on a new row, routing closes more pieces than the old rows did.
 [[graphhopper-backend]] describes the bands. Routing reads no new column, so the backend and
-`create_geojson_tables.py` can deploy in either order.
+`create_flood_road_tables.py` can deploy in either order.
 
 ## Tests
 
