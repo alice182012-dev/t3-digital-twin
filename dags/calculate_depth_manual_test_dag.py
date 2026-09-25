@@ -42,7 +42,9 @@ def task_trigger_simulation(**kwargs):
     print("🚀 1. Trigger single 3Di simulation (20mm/h, 2h, fixed synthetic rain)...")
 
     rain_intervals = create_simulation.build_fixed_rain_intervals(
-        RAIN_MM_HR, duration_hours=RAIN_DURATION_HOURS, start_time=datetime.now(timezone.utc)
+        RAIN_MM_HR,
+        duration_hours=RAIN_DURATION_HOURS,
+        start_time=create_simulation.clock_slot(datetime.now(timezone.utc)),
     )
     sim_id, _ = create_simulation.run_forecast_process(
         state_file_path=TEST_STATE_FILE,

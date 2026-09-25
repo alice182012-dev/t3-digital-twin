@@ -69,7 +69,7 @@ def run():
 
     # --- Event 1: cold start, 20mm/h, 2h -> registers a saved state ---
     print("\n=== [1/4] Trigger Event 1 (20mm/h, cold start -> saved state) ===")
-    event1_start = datetime.now(timezone.utc)
+    event1_start = create_simulation.clock_slot(datetime.now(timezone.utc))
     rain_intervals_1 = create_simulation.build_fixed_rain_intervals(
         EVENT1_RAIN_MM_HR, duration_hours=EVENT1_DURATION_HOURS, start_time=event1_start
     )
@@ -77,6 +77,8 @@ def run():
         state_file_path=TEST_STATE_FILE,
         rain_intervals=rain_intervals_1,
         use_saved_state=True,
+        slot_start=event1_start,
+        state_save_seconds=(create_simulation.SIMULATION_DURATION,),
     )
     if not sim_id_1:
         print("❌ Event 1 simulation was not triggered. Aborting.")
@@ -97,7 +99,7 @@ def run():
 
     # --- Event 2: hotstart from Event 1's saved state, 5mm/h, 2h ---
     print("\n=== [3/4] Trigger Event 2 (5mm/h, hotstart from Event 1) ===")
-    event2_start = event1_start + timedelta(hours=EVENT1_DURATION_HOURS)
+    event2_start = event1_start + timedelta(seconds=create_simulation.SIMULATION_DURATION)
     rain_intervals_2 = create_simulation.build_fixed_rain_intervals(
         EVENT2_RAIN_MM_HR, duration_hours=EVENT2_DURATION_HOURS, start_time=event2_start
     )
@@ -105,6 +107,8 @@ def run():
         state_file_path=TEST_STATE_FILE,
         rain_intervals=rain_intervals_2,
         use_saved_state=True,
+        slot_start=event2_start,
+        state_save_seconds=(create_simulation.SIMULATION_DURATION,),
     )
     if not sim_id_2:
         print("❌ Event 2 simulation was not triggered. Aborting.")
