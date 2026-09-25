@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]"]
+related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -138,16 +138,21 @@ by `cleanup_old_files`, which deletes any top-level child older than
 age so a folder still being written is never mistaken for a stale one.
 
 `raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
-the newest `FLOOD_RASTER_KEEP_RUNS` runs by `run_ts` (default 3) and deletes every tile of older
-runs. It never deletes the run it just loaded, even when an older run is loaded again later. A
-value below 1 fails the load.
+the newest `keep_runs` runs by `run_ts` and deletes every tile of older runs. A caller that passes
+no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 3), which is what `flood_mapping_full` does.
+The manual two-event test DAG passes 1,000, so a test run never prunes production tiles. The load
+never deletes the run it just loaded, even when an older run is loaded again later. A value below
+1 fails the load.
 
 ## How the frontend picks a timestep
 
-`floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` sets `FRESH_DATA_WINDOW_MS` to 45 minutes.
-The map shows the flood layer only when the closest available timestep to now falls within that
-window; otherwise it falls back to the plain map. `useFloodBootstrap` re-fetches the timestep list
-well under that window so the map picks up a new run promptly.
+`GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
+`flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.
+On load, `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` selects the timestep closest to
+now. It opens in flood mode only when the newest timestep in the list is within
+`FRESH_DATA_WINDOW_MS` (45 minutes) of now, in either direction (`defaultMapMode`). Otherwise it
+opens in map mode, and the user can switch to flood mode by hand. `useFloodBootstrap` re-fetches the
+timestep list well inside that window so the map picks up a new run promptly.
 
 ## Open items
 
