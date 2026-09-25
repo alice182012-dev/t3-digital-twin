@@ -5,17 +5,19 @@ Event 1 is 20 mm/h for 2 h from a cold start, and it saves a 3Di state at its en
 replaces flood_mapping_full's rain gate, so the DAG runs on a dry day. Trigger it by hand.
 
 After each event's depth calculation, the DAG runs the same steps as flood_mapping_full: flood
-tiles (task 9), the depth raster load (task 9b), and flood on roads. Both events publish under
+tiles (task 9), the depth raster load (task 9b), and flood on roads. Only the first
+FLOOD_EXTENT_TILE_STEPS (default 2) timesteps of each event get tiles, as in production; the
+raster load and flood on roads cover every timestep. Both events publish under
 ONE run name, event 1's earliest depth file stamp (decision D-007 in
-artifacts/docs/decisions/decision-log.md), so the map's timeline shows the whole four hours and
-event 1 stays visible after event 2 publishes. The netcdf upload (task 3b of flood_mapping_full)
+artifacts/docs/decisions/decision-log.md), so event 1's tiled timesteps stay visible after event
+2 publishes. The netcdf upload (task 3b of flood_mapping_full)
 is left out on purpose: this DAG must not write synthetic simulations into the real netcdf tables.
 
 What a run writes, where RUN_TS is event 1's earliest depth stamp (for example 20260925T101500,
 logged by every publishing task and returned in its XCom):
 
 - MinIO: the flood-extent tiles under runs/RUN_TS/ in the flood-extent bucket.
-- flood_extent_polygon and flood_depth_raster_tile: rows with run_ts = RUN_TS.
+- flood_extent_polygon, flood_extent_step, and flood_depth_raster_tile: rows with run_ts = RUN_TS.
 - flood_road_values: rows with timestamp = RUN_TS, written in place on purpose so routing shows
   the test event, plus one flood_road_file row named flood_on_roads_RUN_TS.
 - road_segment: made to match the roads file, the same idempotent load production runs.
@@ -26,6 +28,7 @@ as the latest run until a newer production run replaces it. To remove a test run
     DELETE FROM flood_road_values WHERE timestamp = to_timestamp('RUN_TS', 'YYYYMMDD"T"HH24MISS')::timestamp;
     DELETE FROM flood_road_file WHERE source_file = 'flood_on_roads_RUN_TS';
     DELETE FROM flood_extent_polygon WHERE run_ts = 'RUN_TS';
+    DELETE FROM flood_extent_step WHERE run_ts = 'RUN_TS';
     DELETE FROM flood_depth_raster_tile WHERE run_ts = 'RUN_TS';
 
 and delete the prefix runs/RUN_TS/ in the flood-extent bucket.
@@ -92,6 +95,7 @@ EVENT1_DEPTH_TASK = "3_calculate_depth_event1"
 EVENT2_DEPTH_TASK = "6_calculate_depth_event2"
 
 FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
+FLOOD_EXTENT_TILE_STEPS = int(os.getenv("FLOOD_EXTENT_TILE_STEPS", "2"))
 FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
 FLOOD_EXTENT_WORK_DIR = os.path.join(TEST_ROOT, "flood_extent_work")
 DEPTH_RASTER_WORK_DIR = os.path.join(TEST_ROOT, "depth_raster_work")
@@ -233,9 +237,9 @@ def depth_run(ti, depth_task_id):
 
 
 def task_build_flood_tiles(depth_task_id, **kwargs):
-    """Cut the map's flood-extent tiles from every depth raster of one event, publish them to
-    MinIO under the shared run name, and write one PostGIS audit row per dissolved band polygon
-    per timestep."""
+    """Cut the map's flood-extent tiles from the first FLOOD_EXTENT_TILE_STEPS depth rasters of
+    one event, publish them to MinIO under the shared run name, and write one PostGIS audit row
+    per dissolved band polygon and one flood_extent_step row per timestep."""
     depth_dir, run_ts = depth_run(kwargs["ti"], depth_task_id)
 
     print(f"🌊 9. Publishing flood-extent tiles: {depth_dir} -> s3://{FLOOD_EXTENT_BUCKET}/runs/{run_ts}")
@@ -255,6 +259,7 @@ def task_build_flood_tiles(depth_task_id, **kwargs):
             FLOOD_EXTENT_BUCKET,
             workers=FLOOD_EXTENT_WORKERS,
             db_conn=db_conn,
+            tile_steps=FLOOD_EXTENT_TILE_STEPS,
             keep_runs=TEST_KEEP_RUNS,
             cleanup_dirs=[os.path.join(TEST_ROOT, "output_depths"), FLOOD_EXTENT_WORK_DIR],
         )

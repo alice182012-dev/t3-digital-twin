@@ -52,6 +52,7 @@ DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
 # /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
 FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
 FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "8"))
+FLOOD_EXTENT_TILE_STEPS = int(os.getenv("FLOOD_EXTENT_TILE_STEPS", "2"))
 # scripts/flood_extent/publish.py's own scratch space, per timestep, deleted as each timestep's
 # tiles finish uploading — never the final destination, just where the raster pipeline works.
 FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")
@@ -166,8 +167,9 @@ def depth_run(ti):
 
 
 def task_build_flood_tiles(**kwargs):
-    """Cut the map's flood-extent tiles from every depth raster of this run, publish them to
-    MinIO, and write one PostGIS audit row per dissolved band polygon per timestep.
+    """Cut the map's flood-extent tiles from the first FLOOD_EXTENT_TILE_STEPS depth rasters of
+    this run, publish them to MinIO, and write one PostGIS audit row per dissolved band polygon
+    and one flood_extent_step row per timestep.
 
     Only uploaded tiles and DB rows are kept; publish_run deletes every local intermediate itself
     as each timestep finishes. The run name comes from the earliest depth file, the same one task
@@ -194,6 +196,7 @@ def task_build_flood_tiles(**kwargs):
             FLOOD_EXTENT_BUCKET,
             workers=FLOOD_EXTENT_WORKERS,
             db_conn=db_conn,
+            tile_steps=FLOOD_EXTENT_TILE_STEPS,
             keep_runs=FLOOD_EXTENT_KEEP_RUNS,
             cleanup_dirs=[DEPTH_ROOT_DIR, FLOOD_EXTENT_WORK_DIR],
             cleanup_max_age_hours=FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS,
