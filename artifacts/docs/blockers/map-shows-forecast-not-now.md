@@ -104,3 +104,11 @@ Any option that changes what the map shows also changes the "Updated" line story
 
 - **2026-09-25, open.** Logged at the user's request after the two-event test showed "Updated 21:40" at 21:22.
   Facts checked in `calculate_depth.py`, `FloodStore.ts`, and the PRD. Waiting for the brainstorm.
+- **2026-09-25, open.** Brainstorm, part 1. The user's model: runs start at the forecast window start and
+  overlap during rain, so an earlier run nearly always has a tile at or before now, and no separate t0 is
+  needed (option D is not required). A worked timeline, assuming 28 minutes per run: `list_timesteps` offers
+  only the newest run, so the map moves to a future tile (at X+48 it picks X+60 over X+30). In the 2 minutes
+  after each run publishes, the newest run has no tile at or before now, while the previous run does. Split
+  out: [[hotstart-state-saved-at-end-of-run]] and [[routing-not-time-aware]]. The code has no rule that stops
+  runs when depth falls below 5 cm. Runs stop only when the rain check sees no rain. Still open: the rule for
+  choosing the now tile, and whether to mix runs.
