@@ -32,10 +32,13 @@ try:
     import database.create_geojson_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
+    import database.create_road_segment_table
     import flood_extent
     import publish
     import raster_load
     from db_config import DB_CONFIG
+    from roads import load_road_segments
+    from flood_roads import flood_on_roads
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -118,6 +121,7 @@ def task_ensure_schema(**kwargs):
     database.create_geojson_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
+    database.create_road_segment_table.main()
     database.create_netcdf_tables.create_tables()
 
 
@@ -202,7 +206,7 @@ def task_build_flood_tiles(**kwargs):
 
 
 def task_load_depth_raster(**kwargs):
-    """Loads every depth_*.tif of this run into flood_depth_raster, reprojected to EPSG:4326, so
+    """Loads every depth_*.tif of this run into flood_depth_raster_tile, reprojected to EPSG:4326, so
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
     of reading the file from disk. Same run_ts as task 9, so both tables key off the (run,
     valid_time) pair the frontend already selects.
@@ -217,6 +221,48 @@ def task_load_depth_raster(**kwargs):
         conn.close()
     print(f"✅ Depth rasters loaded: {len(loaded)} timesteps")
     return {"run_ts": run_ts, "timesteps": len(loaded)}
+
+
+def task_load_road_segments(**kwargs):
+    """Makes road_segment match the roads file. A file that has not changed reports zero changes;
+    a bad file raises before anything is written."""
+    roads_path = os.getenv("ROADS_GEOJSON_PATH", load_road_segments.DEFAULT_ROADS_PATH)
+    print(f"🛣️ Loading road pieces into road_segment: {roads_path}")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        result = load_road_segments.load(conn, roads_path)
+    finally:
+        conn.close()
+    print(
+        f"✅ road_segment: {result.inserted} inserted, {result.updated} updated, "
+        f"{result.deleted} deleted, {result.total} rows total"
+    )
+    if result.updated or result.deleted:
+        # See artifacts/docs/concepts/road-segment-table.md, "Limits of the id".
+        print("⚠️ Existing segment_id values now describe different road; older per-piece results no longer line up")
+    return {
+        "inserted": result.inserted,
+        "updated": result.updated,
+        "deleted": result.deleted,
+        "total": result.total,
+    }
+
+
+def task_flood_on_roads(**kwargs):
+    """Writes this run's per-piece flood depth into flood_road_values, the table routing reads,
+    from the tiles task 9b loaded under the same run name."""
+    _, run_ts = depth_run(kwargs["ti"])
+
+    print(f"🌊 Computing flood on roads for run {run_ts}")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        result = flood_on_roads.compute(conn, run_ts)
+    finally:
+        conn.close()
+    for step in result.timesteps:
+        print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
+    print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
+    return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
 
 
 default_args = {
@@ -267,6 +313,12 @@ with DAG(
     t9b = PythonOperator(
         task_id="9b_load_depth_raster", python_callable=task_load_depth_raster
     )
+    t_roads = PythonOperator(
+        task_id="load_road_segments", python_callable=task_load_road_segments
+    )
+    t_flood_roads = PythonOperator(
+        task_id="flood_on_roads", python_callable=task_flood_on_roads
+    )
 
     t0 >> t1 >> t2 >> t3
     t3 >> t9
@@ -274,4 +326,7 @@ with DAG(
     t2 >> t3b
     t1 >> t_ddl
     t_ddl >> [t3b, t9, t9b]
+    t_ddl >> [t_roads, t_flood_roads]
+    t_roads >> t_flood_roads
+    t9b >> t_flood_roads
     t0 >> wait_for_next_check

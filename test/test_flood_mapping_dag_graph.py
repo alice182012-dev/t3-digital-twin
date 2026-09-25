@@ -9,6 +9,7 @@ import os
 import sys
 import types
 import unittest
+from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -26,6 +27,8 @@ EXPECTED_TASKS = {
     "3b_upload_netcdf_postgres",
     "9_build_flood_tiles",
     "9b_load_depth_raster",
+    "load_road_segments",
+    "flood_on_roads",
 }
 
 EXPECTED_EDGES = {
@@ -40,6 +43,10 @@ EXPECTED_EDGES = {
     ("0b_ensure_schema", "9_build_flood_tiles"),
     ("0b_ensure_schema", "9b_load_depth_raster"),
     ("0_check_forecast_rain", "wait_before_next_rain_check"),
+    ("9b_load_depth_raster", "flood_on_roads"),
+    ("load_road_segments", "flood_on_roads"),
+    ("0b_ensure_schema", "load_road_segments"),
+    ("0b_ensure_schema", "flood_on_roads"),
 }
 
 
@@ -148,6 +155,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_geojson_tables.main.assert_called_once_with()
         database.create_flood_extent_tables.main.assert_called_once_with()
         database.create_flood_depth_raster_tables.main.assert_called_once_with()
+        database.create_road_segment_table.main.assert_called_once_with()
 
 
 class DepthRunTests(unittest.TestCase):
@@ -194,11 +202,56 @@ class DepthRunTests(unittest.TestCase):
         self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "flooded_timesteps": 1})
         self.assertEqual(publish.publish_run.call_args.args[:2], (self.tmp.name, "20260924T170639"))
 
+    def test_flood_on_roads_computes_the_run_named_by_the_earliest_depth_file(self):
+        flood_on_roads = MagicMock()
+        flood_on_roads.compute.return_value = MagicMock(
+            timesteps=(
+                MagicMock(forecast_time=datetime(2026, 9, 24, 17, 6, 39), rows=3, wet_pieces=2),
+                MagicMock(forecast_time=datetime(2026, 9, 24, 18, 6, 39), rows=3, wet_pieces=0),
+            ),
+            rows=6,
+            target_table="flood_road_values",
+            seconds=1.0,
+        )
+        self.dag_module.flood_on_roads = flood_on_roads
+        self.dag_module.DB_CONFIG = {}
+
+        with patch("builtins.print"):
+            result = self.dag_module.task_flood_on_roads(ti=self.ti)
+
+        self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "rows": 6})
+        self.assertEqual(flood_on_roads.compute.call_args.args[1:], ("20260924T170639",))
+
     def test_a_missing_depth_folder_fails_the_task(self):
         self.ti.xcom_pull.side_effect = lambda task_ids, key=None: None
 
         with self.assertRaises(ValueError):
             self.dag_module.task_load_depth_raster(ti=self.ti)
+
+
+class LoadRoadSegmentsTests(unittest.TestCase):
+    def setUp(self):
+        self.dag_module = load_dag_module()
+        self.dag_module.DB_CONFIG = {}
+        self.loader = MagicMock(DEFAULT_ROADS_PATH="/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson")
+        self.loader.load.return_value = MagicMock(inserted=0, updated=0, deleted=0, total=35652)
+        self.dag_module.load_road_segments = self.loader
+
+    def test_loads_the_production_roads_file_and_reports_the_counts(self):
+        with patch.dict(os.environ), patch("builtins.print"):
+            os.environ.pop("ROADS_GEOJSON_PATH", None)
+            result = self.dag_module.task_load_road_segments()
+
+        self.assertEqual(result, {"inserted": 0, "updated": 0, "deleted": 0, "total": 35652})
+        self.assertEqual(
+            self.loader.load.call_args.args[1], "/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson"
+        )
+
+    def test_a_bad_roads_file_fails_the_task(self):
+        self.loader.load.side_effect = ValueError("feature 0 has no properties['@id']")
+
+        with patch("builtins.print"), self.assertRaises(ValueError):
+            self.dag_module.task_load_road_segments()
 
 
 if __name__ == "__main__":
