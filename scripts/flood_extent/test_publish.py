@@ -98,9 +98,11 @@ class PublishRunStepRowTests(PublishRunTestCase):
         self.addCleanup(self.conn.close)
         with self.conn, self.conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'UTC';")
+            # Dropped, not truncated: test_flood_extent_runs.py leaves a geom-less flood_extent_polygon
+            # in the same database, which CREATE TABLE IF NOT EXISTS would keep.
+            cur.execute("DROP TABLE IF EXISTS flood_extent_polygon, flood_extent_step;")
             cur.execute(create_flood_extent_tables.SQL)
             cur.execute(create_flood_extent_tables.SQL)
-            cur.execute("TRUNCATE flood_extent_polygon, flood_extent_step;")
 
     def fetch(self, sql):
         with self.conn, self.conn.cursor() as cur:
