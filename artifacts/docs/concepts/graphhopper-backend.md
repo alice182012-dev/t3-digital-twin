@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]"]
-last_updated: 2026-09-24
+related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # GraphHopper flood-road backend
@@ -149,11 +149,40 @@ the real, persistent volume using whatever `graph.encoded_values` `config.yml` d
 still-open config gap: GraphHopper already serves it server-side, but
 `config-local.js.example`'s `profiles` object never lists it (see Open items below).
 
+## Flood areas grade each road piece on its deepest stretch
+
+`flood_areas.derive_areas` sorts the road pieces of one run and timestep into three bands, each a
+fraction of the vehicle's limit. Band `b4`, at the limit or deeper, is impassable.
+[[routing-depth-threshold-model]] lists the bands and their costs.
+
+The depth that the bands compare is `COALESCE(depth_max, depth)` from `flood_road_values`.
+`depth_max` is the deepest sample on the piece, written by `scripts/flood_roads/flood_on_roads.py`.
+A road piece that is too deep on one short stretch can't be passed, so the maximum is the right test.
+Rows from the old GeoJSON chain have `depth_max` NULL, and the query falls back to `depth` for them.
+`depth` stays the mean over the piece, because the route chart shows an average. The user made this
+choice in D-005 of [[decision-log]]. [[flood-on-roads]] has the comparison behind it.
+
+All three bands use the same expression, so each piece lands in exactly one band. If `b4` read
+`depth_max` and `b3` read `depth`, a piece with a mean under the limit and a maximum over it would
+fall in both bands, and the map overlay would draw two polygons for it.
+
+Before you rebuild the backend image, run `scripts/database/create_geojson_tables.py` against
+`storage-postgres`. The script adds the `depth_max` and `segment_id` columns with
+`ADD COLUMN IF NOT EXISTS`. The query reads `depth_max` by name, so on a database without the
+column, `GET /flood/areas` and every `POST /route` with a `valid_time` fail with an
+`UndefinedColumn` error. The backend doesn't check the schema at startup.
+
+`backend/test_flood_areas.py` builds its table from the same script's `SQL`, and checks each
+vehicle's limit as read from `flood_utils.py`. It covers a mean under the limit with a maximum over
+it, the fallback for a NULL `depth_max` in both directions, old and new rows in one run, and an old
+run beside a newer run for the same `forecast_time`.
+
 ## Vehicle thresholds
 
-`floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth a
-segment becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot 40 cm.
-All four now apply: a GraphHopper `foot` profile exists to use the `foot` entry.
+`floodmap/graphhopper-flood-road/scripts/flood_utils.py`'s `VEHICLE_PROFILES` sets the depth at which
+a road piece becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot
+40 cm. The backend compares that limit with the piece's `depth_max`, or with `depth` on an old row.
+All four limits apply, because a GraphHopper `foot` profile exists to use the `foot` entry.
 The frontend does not use them yet: `FloodStore` sends `vehicle_type=motorbike` with every route
 request, so only the motorbike limit applies. See [[flood-routing-vehicle-type-always-motorbike]].
 

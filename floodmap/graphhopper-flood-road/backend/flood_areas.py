@@ -22,15 +22,21 @@ DEFAULT_BUFFER_M = 22.0
 DEFAULT_SIMPLIFY_M = 3.0
 DEFAULT_MIN_AREA_M2 = 400.0
 
+# A road piece is as passable as its deepest stretch, so bands grade on depth_max (D-005 in
+# artifacts/docs/decisions/decision-log.md). Rows from the old GeoJSON chain have depth_max NULL
+# and fall back to depth, which is the mean. Every band uses the same expression so a piece lands
+# in exactly one band.
+_ROUTING_DEPTH = "COALESCE(v.depth_max, v.depth)"
+
 _WINNER_SEG_SQL = """
 WITH winner AS (
     SELECT DISTINCT ON (forecast_time) forecast_time, timestamp
     FROM flood_road_values WHERE forecast_time = %(valid_time)s
     ORDER BY forecast_time, timestamp DESC
 ), seg AS (
-    SELECT ST_Transform(v.geom_4326, 3405) AS g, v.depth
+    SELECT ST_Transform(v.geom_4326, 3405) AS g
     FROM flood_road_values v JOIN winner w USING (forecast_time, timestamp)
-    WHERE v.depth >= %(band_min)s {band_max_clause}
+    WHERE {band_clause}
 ), parts AS (
     SELECT (ST_Dump(ST_Union(ST_Buffer(g, %(buffer_m)s)))).geom AS g FROM seg
 )
@@ -40,10 +46,10 @@ FROM parts WHERE ST_Area(g) >= %(min_area_m2)s;
 
 _PINNED_RUN_SEG_SQL = """
 WITH seg AS (
-    SELECT ST_Transform(v.geom_4326, 3405) AS g, v.depth
+    SELECT ST_Transform(v.geom_4326, 3405) AS g
     FROM flood_road_values v
     WHERE v.forecast_time = %(valid_time)s AND v.timestamp = %(run)s
-      AND v.depth >= %(band_min)s {band_max_clause}
+      AND {band_clause}
 ), parts AS (
     SELECT (ST_Dump(ST_Union(ST_Buffer(g, %(buffer_m)s)))).geom AS g FROM seg
 )
@@ -71,8 +77,10 @@ def derive_areas(
 
     with conn.cursor() as cur:
         for band in depth_bands_m(vehicle_type):
-            band_max_clause = "AND v.depth < %(band_max)s" if band["band_max"] is not None else ""
-            sql = template.format(band_max_clause=band_max_clause)
+            band_clause = f"{_ROUTING_DEPTH} >= %(band_min)s"
+            if band["band_max"] is not None:
+                band_clause += f" AND {_ROUTING_DEPTH} < %(band_max)s"
+            sql = template.format(band_clause=band_clause)
             params = {
                 "valid_time": valid_time,
                 "run": run,
