@@ -149,10 +149,11 @@ never deletes the run it just loaded, even when an older run is loaded again lat
 `GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
 `flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.
 On load, `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` selects the timestep closest to
-now. It opens in flood mode only when the newest timestep in the list is within
-`FRESH_DATA_WINDOW_MS` (45 minutes) of now, in either direction (`defaultMapMode`). Otherwise it
-opens in map mode, and the user can switch to flood mode by hand. `useFloodBootstrap` re-fetches the
-timestep list well inside that window so the map picks up a new run promptly.
+now (`reanchorTimestepIndex`). The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`,
+a demo default, so the page opens in flood mode whatever the timestamps say. `defaultMapMode`, which
+would open in flood mode only when the newest timestep is within `FRESH_DATA_WINDOW_MS` (45 minutes)
+of now, exists but is not used at load while that demo default stays. `useFloodBootstrap`
+re-fetches the timestep list well inside that window so the map picks up a new run promptly.
 
 ## Open items
 
