@@ -21,7 +21,8 @@ planning").
   judge conditions at a specific location, not just along a route.
   Given the app is open with a route already showing on screen (any two points, any mode), when the
   user taps a point on the map that isn't a query point, then a card opens at that point showing its
-  name, its address, and a "Water depth now: `N` cm" line, matching mockup screen 2b.
+  name, its address, its coordinates (for example "20.992987, 105.773723"), and a "Water depth now:
+  `N` cm" line, matching mockup screen 2b.
   Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3
   (`GET /flood/points`), Story 4 (latency validation). Also needs a reverse-geocoding source for the
   place name and address. Check `AddressInputAutocomplete.tsx`'s geocoder first (see
@@ -47,3 +48,5 @@ planning").
 
 - **2026-09-23, draft.** Drafted from [[flood-routing-mockup-frontend-gap]]'s Goals 1, 4, and 5,
   after the popup's data source was corrected from `flood_road_values` to `GET /flood/points`.
+- **2026-09-24, draft.** Story 1's acceptance now includes the coordinates line that mockup
+  screen 2b shows. The popup's route button is a separate story in [[mockup-screen-coverage]].

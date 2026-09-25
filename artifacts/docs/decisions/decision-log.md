@@ -5,7 +5,6 @@ status: active
 tags: [decisions, raster-first, routing, airflow]
 related: ["[[raster-first-flood-pipeline]]", "[[raster-first-pipeline-stories]]", "[[flood-on-roads]]", "[[graphhopper-backend]]", "[[sprint-plan]]"]
 ---
-
 # Decision log
 
 This page records each decision the team makes, with the reason, the alternatives, and what the decision
@@ -87,12 +86,12 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   The comparison of the new task with the raster along the roads (four vehicle limits, two real runs, four
   timesteps each) found pieces where the road reaches the limit but the new value stays under it:
 
-  | Vehicle (limit) | Mean, run 164803 | Maximum | Mean, run 170000 | Maximum |
-  | --- | --- | --- | --- | --- |
-  | Motorbike (0.20 m) | 168 | 0 | 110 | 4 |
-  | Car (0.30 m) | 101 | 5 | 67 | 0 |
-  | Truck (0.35 m) | 78 | 0 | 60 | 0 |
-  | Foot (0.40 m) | 63 | 0 | 39 | 0 |
+  | Vehicle (limit)    | Mean, run 164803 | Maximum | Mean, run 170000 | Maximum |
+  | ------------------ | ---------------- | ------- | ---------------- | ------- |
+  | Motorbike (0.20 m) | 168              | 0       | 110              | 4       |
+  | Car (0.30 m)       | 101              | 5       | 67               | 0       |
+  | Truck (0.35 m)     | 78               | 0       | 60               | 0       |
+  | Foot (0.40 m)      | 63               | 0       | 39               | 0       |
 
   The maximum's few misses all sit beside a piece boundary.
 - **Alternatives:** Route on the mean (misses 39 to 168 pieces per vehicle and run). Put the maximum in `depth`

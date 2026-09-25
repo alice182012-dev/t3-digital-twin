@@ -28,18 +28,12 @@ scripts, data) happens in `marie-curie/`, never in `raw/ideas/` itself. If an ex
 ## Blockers
 
 One page per blocker: description, why it matters, every approach tried, the eventual decision.
-Start a new one from `.templates/blocker.md`. Its `status` and `date_closed` get edited in place as
+Start a new one from `templates/blocker.md`. Its `status` and `date_closed` get edited in place as
 the blocker's state changes, unlike a log entry, which is never rewritten. `TODOS.md` tracks the
 work item (effort, priority) and links to the blocker page for the deep record, not the other way
 around.
 
-```dataview
-TABLE severity AS "Severity", status AS "Status", subsystem AS "Subsystem",
-  approaches_tried AS "Tried", approaches_remaining AS "Remaining",
-  (date(date_closed) - date(date_open)).days AS "Days open/to close"
-FROM "docs/blockers"
-SORT status ASC, last_updated DESC
-```
+For the status, priority, approach counts, and dates of every blocker, see [[Blockers board]].
 
 ## Backlog
 
@@ -81,7 +75,7 @@ SORT last_updated DESC
 ## PRDs
 
 One page per feature or change big enough to need a stated problem, goals, and a definition of
-done before work starts. Start a new one from `.templates/prd.md`. A PRD comes before its
+done before work starts. Start a new one from `templates/prd.md`. A PRD comes before its
 `docs/claude-plan/` entry: the PRD says what and why, the plan says how. Its **Dependencies and
 assumptions** section exists because of blockers such as
 [[graphhopper-vehicle-profile-rejection]] and [[storage-backend-build-context-missing]], both
@@ -97,11 +91,11 @@ SORT status ASC, date_drafted DESC
 ## User stories
 
 One page per user story, or per epic grouping several stories, delegated into a sprint once its
-dependencies are known. Start a new one from `.templates/user-story.md`; see
+dependencies are known. Start a new one from `templates/user-story.md`; see
 [[user-story-types]] for which shape (Simple, Epic, Thematic, SAFe) fits. A user story comes after
 its PRD's goals are settled: the PRD says what and why, the user story breaks it into sprint-sized
 work. An Epic-shaped story's rows carry Priority, Estimate, and Sprint in addition to the shape's
-own fields (an extension past what `.templates/user-story.md` and [[user-story-types]] show alone;
+own fields (an extension past what `templates/user-story.md` and [[user-story-types]] show alone;
 see `.claude/CLAUDE.md`, "User stories and sprint planning", for why). A story with no sprint number
 is unscheduled, not forgotten: its Status history says what it's blocked on.
 
@@ -111,10 +105,12 @@ FROM "docs/user-stories"
 SORT status ASC, date_drafted DESC
 ```
 
+For one row per story, with sprint, priority, and status, see [[User stories board]].
+
 ## Lessons learned
 
 Short, checkable rules distilled from resolved blockers, one page per lesson. Start a new one from
-`.templates/lesson-learned.md` when closing a blocker whose cause would generalize to other
+`templates/lesson-learned.md` when closing a blocker whose cause would generalize to other
 subsystems. A lesson links back to its source blocker for the full incident; it doesn't retell the
 approach-by-approach history itself.
 
@@ -173,5 +169,5 @@ FROM "designs"
   `Status:: active`, so Dataview can query it without restructuring the file.
 - Screenshots referenced from a log go under `logs/image/<date>/`; create the folder when the
   first screenshot for that date is added, don't pre-create empty ones.
-- New logs and plans should start from the templates in `.templates/` (Templater) so the
+- New logs and plans should start from the templates in `templates/` (Templater) so the
   frontmatter and section structure stay consistent.
