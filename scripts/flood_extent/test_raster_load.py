@@ -85,6 +85,34 @@ def write_depth_grid_tif(path: Path, size: int) -> None:
     ds = None
 
 
+class OverlappingRunsTests(unittest.TestCase):
+    def test_a_run_loading_the_same_valid_time_keeps_the_other_runs_work_file(self):
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        for run in ("run_k", "run_k1"):
+            (root / run).mkdir()
+            (root / run / "depth_20260925_173000.tif").write_bytes(b"")
+        work_dir = root / "work"
+        read_back = {}
+
+        def reproject(src, dst):
+            Path(dst).write_bytes(b"warped")
+
+        def load_raster(conn, run_ts, valid_time, raster_path):
+            if run_ts == "20260925T171500":
+                raster_load.load_run(None, root / "run_k1", "20260925T173000", work_dir, keep_runs=8)
+            read_back[run_ts] = Path(raster_path).exists()
+
+        with mock.patch.object(raster_load, "reproject_to_4326", reproject), \
+                mock.patch.object(raster_load, "load_raster", load_raster), \
+                mock.patch.object(raster_load, "prune_raster_runs"):
+            raster_load.load_run(None, root / "run_k", "20260925T171500", work_dir, keep_runs=8)
+
+        self.assertEqual(read_back, {"20260925T173000": True, "20260925T171500": True})
+        self.assertEqual(list(work_dir.iterdir()), [])
+
+
 @unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
 class LoadRunTests(unittest.TestCase):
     """Runs against a real PostGIS with postgis_raster, the same database test_server.py uses."""

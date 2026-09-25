@@ -114,7 +114,8 @@ def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = Non
     loaded = []
     for depth_file in depth_files:
         valid_time = publish.valid_time_utc(depth_file.name)
-        reprojected = work_dir / f"{depth_file.stem}_4326.tif"
+        # Overlapping runs share valid times on the 15-minute grid, so the name carries run_ts.
+        reprojected = work_dir / f"{run_ts}_{depth_file.stem}_4326.tif"
         try:
             reproject_to_4326(depth_file, reprojected)
             load_raster(conn, run_ts, valid_time, reprojected)
