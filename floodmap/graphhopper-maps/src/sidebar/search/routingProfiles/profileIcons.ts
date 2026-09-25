@@ -31,6 +31,7 @@ export const icons: Record<string, any> = {
     racingbike: RacingbikeIcon,
     ecargobike: EcargobikeIcon,
     motorcycle: MotorcycleIcon,
+    motorbike: MotorcycleIcon,
     wheelchair: WheelchairIcon,
     question_mark: QuestionMarkIcon,
     car_avoid_motorway: MotorwayDisabledIcon,

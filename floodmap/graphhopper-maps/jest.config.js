@@ -5,4 +5,7 @@ module.exports = {
         '@/(.*)$': '<rootDir>/src/$1',
         config: '<rootDir>/config.js',
     },
+    transform: {
+        '\\.svg$': '<rootDir>/test/svgFileName.js',
+    },
 }
