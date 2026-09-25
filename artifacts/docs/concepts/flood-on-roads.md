@@ -3,8 +3,8 @@ date: 2026-09-24
 type: concept
 status: active
 tags: [postgis, raster, roads, routing, raster-first, sprint-2]
-related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[flood-metric-extractor]]"]
-last_updated: 2026-09-24
+related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[flood-metric-extractor]]", "[[decision-log]]"]
+last_updated: 2026-09-25
 ---
 
 # Flood on roads
@@ -194,14 +194,21 @@ over the piece stays under it. That is the risk the user raised when choosing th
 maximum also closes more pieces the old rows left open (282 to 1,084), because it sees deep pixels
 on the road that the 20 m grid skipped.
 
-`flood_areas.py` reads `depth`, so routing uses the mean today. Switching its band filter to
-`depth_max` would remove the real misses. That is a routing change and a user decision, not part of
-this story.
-
 To rerun the comparison, load the roads and both runs' tiles into a local PostGIS, run
 `flood_on_roads.py RUN_TS --target flood_road_values_shadow`, then run
 `python scripts/flood_roads/compare_with_old.py RUN_TS OLD_CSV --dsn DSN`. The old CSV files and
 depth rasters are in `marie-curie/raster-first/compare/<run>/`, which git ignores.
+
+### Routing filters on the maximum depth
+
+Routing grades a road piece on `depth_max`, not on the mean. `flood_areas.py` compares
+`COALESCE(depth_max, depth)` with each vehicle's limit, so rows from the old chain, which have
+`depth_max` NULL, still grade on their `depth`. `depth` stays the mean for the route chart. The user
+chose this in D-005 of [[decision-log]], on the numbers in the impassable-pieces table. Routing now closes
+more pieces than the old rows did. [[graphhopper-backend]] describes the bands.
+
+Run `scripts/database/create_geojson_tables.py` on `storage-postgres` before you rebuild the
+backend image. The script adds `depth_max`. Without that column, the backend's flood query fails.
 
 ## Tests
 
@@ -225,5 +232,5 @@ only the first metre of each piece.
   server's setting is not checked.
 - A run that is dry at every timestep writes no rows, as the old chain did. Routing then keeps an
   older run as the winner for those forecast times.
-- Routing reads the mean. See the impassable-pieces section for the numbers behind switching to
-  `depth_max`.
+- The flood metric extractor and the TimescaleDB metrics still read `depth`. Which depth they
+  should use is an open decision in [[decision-log]].
