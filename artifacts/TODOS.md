@@ -174,6 +174,20 @@ the server.
 
 Status:: active
 
+### Decide what the map shows by default: now or the forecast
+
+**What:** The map, the "Updated" line, and routing show the timestep closest to now. Every timestep is a forecast, and no t0 raster
+exists (3Di's step 0 is a placeholder), so at 21:22 the page showed 21:40. The user wants the map to show the situation at now, with the
+forecast in routing and the histogram. Brainstorm the options (relabel, latest past step, a real t0) before any code.
+
+**Effort:** unknown until the options are chosen (relabel S, real t0 L)
+**Priority:** P2
+**Depends on:** [[route-forecast-query]] and [[depth-forecast-chart]] for the forecast side.
+
+**Blocker tracking:** [[map-shows-forecast-not-now]]
+
+Status:: active
+
 ### Establish a project DESIGN.md
 
 **What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens

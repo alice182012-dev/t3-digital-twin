@@ -89,4 +89,7 @@ planning").
 - **2026-09-24, draft.** The `en` default is deployed and place search works again
   ([[photon-rejects-vi-locale]]), shown in ![[frontend-en-geocoder-check.png|300]]. The story's goal,
   Vietnam-relevant results, is still unmet, so Story 3 stays `Blocked`.
+- **2026-09-25, draft.** Story 2's "Updated" line shows the selected timestep's time, which is a forecast, so it can read as a future
+  time (for example "Updated 21:40" at 21:22). Tracked as [[map-shows-forecast-not-now]]. The story stays `Done` against its
+  written criteria, and its label may change once the team decides what the map shows.
 

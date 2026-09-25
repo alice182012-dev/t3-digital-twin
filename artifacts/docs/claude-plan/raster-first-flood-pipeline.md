@@ -184,4 +184,9 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   `170000`) had never been tiled, so their point depths are gone. Wrote `flood_on_roads` in place for run `20260924T164803`: 8,444 rows
   replaced 7,620, and the table total is 25,860 as computed. Routing on the new rows detours around flooded pieces. A full cycle is
   next, using `flood_forecast_consecutive_state_test` because it is not raining (see D-007 in [[decision-log]]).
+- **2026-09-25, state-test DAG.** `flood_forecast_consecutive_state_test` now follows the production steps for both events (`6ddfb31`, `bc9032d`,
+  `5ef7f2a`, merged into `stage-b` at `052fb42`, pushed as `a95d07f`): schema, road loader, tiles, raster load, and flood on roads for each
+  event, all under event 1's run name (D-007), with no netcdf upload. `raster_load.load_run` gained `keep_runs`, so a test run cannot prune real
+  runs. Loaded in a real `DagBag` on the server: 14 tasks, 22 edges, no import errors, no schedule. Not yet triggered: a run costs two 3Di
+  simulations. The page opens in flood mode by the demo default, so the test event shows without a manual switch.
 

@@ -57,7 +57,8 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Alternatives:** Rewrite it on the new tasks. Rejected by the user.
 - **Affects:** The DAG disappears from Airflow after the Stage B deploy. No test, compose entry, or doc
   referenced it.
-- **Revisit if:** a manual end-to-end test DAG is needed again. `flood_forecast_state_test_dag.py` remains.
+- **Revisit if:** a manual end-to-end test DAG is needed again. `flood_forecast_state_test_dag.py` remains, and since 2026-09-25 it follows the
+  production steps and is the end-to-end manual test.
 
 ## D-004: Remove the `flood-results-full` bucket
 
@@ -153,9 +154,16 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Alternatives:** One run name per event. Rejected: the frontend would show only event 2.
 - **Affects:** [[flood-on-roads]], `raster_load.load_run` (needs a `keep_runs` argument so a test run cannot prune real
   runs), and the state-test DAG. The test DAG writes `flood_road_values` in place on purpose, so routing shows the test event.
+- **Guard:** the DAG refuses to publish event 2 if event 2's earliest depth timestamp is at or before event 1's last one, because a
+  timestep written by both events would keep leftovers of event 1 (tiles are overwritten file by file and polygons band by band). At
+  the defaults it cannot happen: `calculate_depth` skips step 0, and `SIMULATION_DURATION` (7,200 s) equals event 1's rain window.
 - **Revisit if:** the frontend gains a run picker that can show two runs at once.
 
 ## Open decisions
 
-None. The question of which depth the flood metric extractor and TimescaleDB metrics use is settled by D-006:
-they read `depth`, which is the maximum.
+1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and
+   the histogram do not yet handle the forecast side. The options and questions are in the blocker [[map-shows-forecast-not-now]].
+   Decide this before the route-forecast query and the chart are built, because it changes both.
+
+The question of which depth the flood metric extractor and TimescaleDB metrics use is settled by D-006: they read `depth`, which
+is the maximum.
