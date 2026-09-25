@@ -13,7 +13,8 @@ never drift apart.
 map's timestep picker, not routing, and read flood_extent_runs.py's
 flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
 /flood/points reads the exact depth at one point from flood_depth_raster_tile;
-see flood_points.py.
+see flood_points.py. POST /flood/forecast reads depth over time along a route from the same
+table; see flood_forecast.py.
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ import os
 import sys
 import time
 import urllib.error
+from datetime import datetime, timezone
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -34,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from db import get_connection  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
+from flood_forecast import lookup_forecast, parse_forecast_body  # noqa: E402
 from flood_points import FloodPointNotFound, lookup_point_depth, parse_point_query  # noqa: E402
 from place_search import (  # noqa: E402
     PlaceSearchTimeout,
@@ -185,11 +188,19 @@ class Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": str(exc)})
 
     def do_POST(self) -> None:
-        length = int(self.headers.get("Content-Length", "0"))
-        body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
         try:
-            if urlparse(self.path).path == "/route":
+            length = int(self.headers.get("Content-Length", "0"))
+            body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
+            path = urlparse(self.path).path
+            if path == "/route":
                 self._handle_route(body)
+            elif path == "/flood/forecast":
+                query = parse_forecast_body(body, datetime.now(timezone.utc))
+                conn = get_connection()
+                try:
+                    self._send(200, lookup_forecast(conn, query))
+                finally:
+                    conn.close()
             else:
                 self._send(404, {"error": "not found"})
         except Exception as exc:

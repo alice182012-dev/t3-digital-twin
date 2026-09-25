@@ -1,0 +1,85 @@
+/* Card, title, and text colors follow FloodLegend.module.css. */
+.container {
+    margin: 0.5rem 0.75rem 0 0.75rem;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.plot {
+    position: relative;
+    height: 72px;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.bar,
+.nowBar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+}
+
+.bar {
+    background: #9ecae1;
+}
+
+.nowBar {
+    background: #16a34a;
+}
+
+.nowLine {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed #374151;
+}
+
+.nowLineLabel {
+    position: absolute;
+    right: 0;
+    bottom: 2px;
+    padding: 0 3px;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+}
+
+.labels {
+    display: flex;
+    gap: 4px;
+}
+
+.label,
+.nowLabel {
+    flex: 1;
+    text-align: center;
+    color: #6b7280;
+    font-size: 10px;
+}
+
+.nowLabel {
+    color: #111827;
+    font-weight: 700;
+}
