@@ -32,6 +32,7 @@ import DangerousIcon from '@/sidebar/routeHints/warn_report.svg'
 import { Bbox } from '@/api/graphhopper'
 import { SettingsContext } from '@/contexts/SettingsContext'
 import { Settings } from '@/stores/SettingsStore'
+import DepthForecastChart from '@/floodmap/DepthForecastChart'
 
 let persistedElevationMounted = false
 
@@ -66,6 +67,7 @@ export default function RoutingResults(props: RoutingResultsProps) {
                         onSelect={index => Dispatcher.dispatch(new SetSelectedPath(view.tabs[index].path))}
                     />
                     {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
+                    {props.floodActive && <DepthForecastChart coordinates={active.path.points.coordinates} />}
                     <ul>
                         <RoutingResult
                             path={active.path}
