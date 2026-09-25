@@ -51,7 +51,7 @@ DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
 # Vector tiles of the flood extent, one folder per run and timestep, served by the frontend at
 # /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
 FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
-FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "3"))
+FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "8"))
 # scripts/flood_extent/publish.py's own scratch space, per timestep, deleted as each timestep's
 # tiles finish uploading — never the final destination, just where the raster pipeline works.
 FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")

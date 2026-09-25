@@ -31,7 +31,7 @@ TARGET_SRID = 4326
 # 128 and 256 tied on lookup time for the real depth.tif (about 0.1 ms warm, 0.8 ms with the
 # tile evicted from shared_buffers); 512 was twice as slow warm. 256 writes 4x fewer rows than 128.
 TILE_SIZE = 256
-DEFAULT_KEEP_RUNS = 3
+DEFAULT_KEEP_RUNS = 8
 
 _DELETE_TIMESTEP_SQL = """
 DELETE FROM flood_depth_raster_tile
@@ -95,7 +95,7 @@ def prune_raster_runs(conn, keep_runs: int, always_keep: str) -> list[str]:
 
 def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = None) -> list:
     """Reprojects and loads every depth_*.tif in depth_dir, then prunes runs older than the newest
-    `keep_runs`, or FLOOD_RASTER_KEEP_RUNS (default 3) when it is None. Returns the list of
+    `keep_runs`, or FLOOD_RASTER_KEEP_RUNS (default 8) when it is None. Returns the list of
     valid_time_utc values loaded. Fails loudly (raises) on the first bad file, matching
     publish.publish_run's posture: a partial load is safer to investigate than to hide behind a
     best-effort continue."""
