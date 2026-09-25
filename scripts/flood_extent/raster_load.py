@@ -93,14 +93,16 @@ def prune_raster_runs(conn, keep_runs: int, always_keep: str) -> list[str]:
     return old_runs
 
 
-def load_run(conn, depth_dir, run_ts: str, work_dir) -> list:
+def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = None) -> list:
     """Reprojects and loads every depth_*.tif in depth_dir, then prunes runs older than the newest
-    FLOOD_RASTER_KEEP_RUNS (default 3). Returns the list of valid_time_utc values loaded. Fails
-    loudly (raises) on the first bad file, matching publish.publish_run's posture: a partial load
-    is safer to investigate than to hide behind a best-effort continue."""
-    keep_runs = int(os.environ.get("FLOOD_RASTER_KEEP_RUNS", DEFAULT_KEEP_RUNS))
+    `keep_runs`, or FLOOD_RASTER_KEEP_RUNS (default 3) when it is None. Returns the list of
+    valid_time_utc values loaded. Fails loudly (raises) on the first bad file, matching
+    publish.publish_run's posture: a partial load is safer to investigate than to hide behind a
+    best-effort continue."""
+    if keep_runs is None:
+        keep_runs = int(os.environ.get("FLOOD_RASTER_KEEP_RUNS", DEFAULT_KEEP_RUNS))
     if keep_runs < 1:
-        raise ValueError(f"FLOOD_RASTER_KEEP_RUNS must be at least 1: {keep_runs}")
+        raise ValueError(f"keep_runs must be at least 1: {keep_runs}")
     depth_dir = Path(depth_dir)
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
