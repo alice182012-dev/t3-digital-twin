@@ -34,6 +34,7 @@ SIMULATION_DURATION = int(os.getenv("SIMULATION_DURATION", "7200"))
 RAIN_LOOKAHEAD_HOURS = float(os.getenv("FLOOD_RAIN_LOOKAHEAD_HOURS", "2"))
 RAIN_TIMESTEP_MINUTES = int(os.getenv("FLOOD_RAIN_TIMESTEP_MINUTES", "15"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
+CYCLE_MINUTES = 15
 
 # Bounded-polling config.
 POLL_INTERVAL_SECONDS = int(os.getenv("THREEDI_POLL_INTERVAL_SECONDS", "10"))
@@ -64,6 +65,21 @@ def save_new_state(state_file_path, state_id):
         print(f"⚠️ Không thể lưu state file: {e}")
 
 
+def clock_slot(moment):
+    """Floor a datetime to the start of its CYCLE_MINUTES slot, in UTC. A naive datetime is read as UTC."""
+    utc = moment.astimezone(timezone.utc) if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+    minute = utc.minute - utc.minute % CYCLE_MINUTES
+    return datetime(utc.year, utc.month, utc.day, utc.hour, minute, tzinfo=timezone.utc)
+
+
+def iso_utc(moment):
+    return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_iso(value):
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
 def build_fixed_rain_intervals(rain_mm_hr, duration_hours=RAIN_LOOKAHEAD_HOURS, timestep_minutes=RAIN_TIMESTEP_MINUTES, start_time=None):
     """Build a deterministic rain series at a fixed intensity, for manual/local testing."""
     now = start_time or datetime.now(timezone.utc)
@@ -79,17 +95,17 @@ def build_fixed_rain_intervals(rain_mm_hr, duration_hours=RAIN_LOOKAHEAD_HOURS, 
     ]
 
 
-def get_rain_forecast():
-    """Fetch the configured Tomorrow.io rain lookahead at 15-minute cadence."""
+def get_rain_forecast(start=None):
+    """Fetch the configured Tomorrow.io rain lookahead at 15-minute cadence, from `start` (default: the current slot)."""
     print("📡 1. Lấy dữ liệu mưa Tomorrow.io...")
-    now = datetime.now(timezone.utc)
-    end_time = now + timedelta(hours=RAIN_LOOKAHEAD_HOURS)
+    start = start or clock_slot(datetime.now(timezone.utc))
+    end_time = start + timedelta(hours=RAIN_LOOKAHEAD_HOURS)
 
     test_rain = os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip()
     if test_rain:
         rain_mm_hr = float(test_rain)
         print(f"🧪 Using FLOOD_TEST_RAIN_MM_HR={rain_mm_hr:g} mm/h")
-        return build_fixed_rain_intervals(rain_mm_hr)
+        return build_fixed_rain_intervals(rain_mm_hr, start_time=start)
 
     url = "https://api.tomorrow.io/v4/timelines"
     params = {
@@ -97,8 +113,8 @@ def get_rain_forecast():
         "fields": ["precipitationIntensity"],
         "timesteps": f"{RAIN_TIMESTEP_MINUTES}m",
         "units": "metric",
-        "startTime": now.isoformat().replace("+00:00", "Z"),
-        "endTime": end_time.isoformat().replace("+00:00", "Z"),
+        "startTime": iso_utc(start),
+        "endTime": iso_utc(end_time),
         "apikey": TOMORROW_API_KEY,
     }
 
@@ -133,25 +149,24 @@ def evaluate_rain_gate(intervals, threshold_mm_hr=RAIN_THRESHOLD_MM_HR):
     }
 
 
-def build_rain_values(intervals):
-    """Convert forecast intervals to 3Di [seconds, metres/second] values."""
+def build_rain_values(intervals, start=None):
+    """Convert forecast intervals to 3Di [seconds, metres/second] values, offset from `start` or the first interval."""
     if not intervals:
         return []
 
-    def parse_time(value):
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-
-    try:
-        first_time = parse_time(intervals[0]["startTime"])
-    except (KeyError, TypeError, ValueError):
-        first_time = None
+    first_time = start
+    if first_time is None:
+        try:
+            first_time = parse_iso(intervals[0]["startTime"])
+        except (KeyError, TypeError, ValueError):
+            first_time = None
 
     values = []
     for index, interval in enumerate(intervals):
         offset_seconds = index * RAIN_TIMESTEP_MINUTES * 60
         if first_time is not None:
             try:
-                offset_seconds = max(0, int((parse_time(interval["startTime"]) - first_time).total_seconds()))
+                offset_seconds = max(0, int((parse_iso(interval["startTime"]) - first_time).total_seconds()))
             except (KeyError, TypeError, ValueError):
                 pass
         rain_m_s = rain_intensity_mm_hr(interval) / (1000 * 3600)
@@ -209,17 +224,26 @@ def monitor_simulation(api, sim_id):
     return False
 
 
-def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=True):
+def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=True, slot_start=None):
+    """Run one 3Di forecast that starts at its clock slot.
+
+    The slot is `slot_start` if given, else the slot of the first rain interval, else the current slot.
+    """
     print(f"🚀 Bắt đầu quy trình Simulation (State: {state_file_path})")
 
-    intervals = rain_intervals if rain_intervals is not None else get_rain_forecast()
+    if rain_intervals is None:
+        slot = slot_start or clock_slot(datetime.now(timezone.utc))
+        intervals = get_rain_forecast(start=slot)
+    else:
+        intervals = rain_intervals
+        slot = slot_start or (clock_slot(parse_iso(intervals[0]["startTime"])) if intervals else None)
     if not intervals:
         print("❌ Không lấy được dữ liệu mưa. Dừng.")
         return None, None
+    print(f"🕒 Slot: {iso_utc(slot)}")
 
     print("🔄 2. Xử lý dữ liệu mưa...")
-    rain_values = build_rain_values(intervals)
-    start_time_str = intervals[0]["startTime"]
+    rain_values = build_rain_values(intervals, start=slot)
 
     api = get_client()
 
@@ -234,9 +258,9 @@ def run_forecast_process(state_file_path, rain_intervals=None, use_saved_state=T
     print("🚀 3. Tạo Simulation...")
     from_template_kwargs = dict(
         template=TEMPLATE_ID,
-        name=f"Forecast_{datetime.now().strftime('%H%M')}",
+        name=f"Forecast_{slot:%Y%m%dT%H%M}",
         organisation=ORG_UUID,
-        start_datetime=start_time_str,
+        start_datetime=iso_utc(slot),
         duration=SIMULATION_DURATION,
         tags=["airflow-forecast"],
         clone_settings=True,
