@@ -16,7 +16,7 @@ last_updated: 2026-09-25
 
 ## Description
 
-`run_forecast_process` in `scripts/create_simulation.py` (lines 267-282) saves the simulation state at
+`run_forecast_process` in `scripts/create_simulation.py` (lines 267-284) saves the simulation state at
 `time=SIMULATION_DURATION`, which is 7200 s, the last second of the run. The next run loads that state
 (`load_last_state`, line 226) and starts at `intervals[0].startTime`, the start of the new forecast window,
 which is about when the rain check runs.
@@ -61,7 +61,7 @@ Change: in `run_forecast_process`, pass a separate setting (for example `HOTSTAR
 - **The gap after dry cycles.** After a dry spell, the saved state can be hours old, and `load_last_state`
   does not check its age. The state file already stores `updated_at`. Decide whether a state older than some
   limit should mean a cold start.
-- **Failed runs.** The state ID is written only when the run succeeds (line 299), so a failed run leaves the
+- **Failed runs.** The state ID is written only when the run succeeds (line 301), so a failed run leaves the
   older state in place. A save at 1800 s exists as soon as the simulation passes 1800 s, so a run that fails
   later could still provide it. The code does not use that today.
 - **Expiry.** Saved states expire after one day (line 270). A dry spell longer than a day leaves an ID

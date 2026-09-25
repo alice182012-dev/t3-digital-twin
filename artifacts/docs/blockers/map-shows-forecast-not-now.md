@@ -37,7 +37,7 @@ user's plan splits "now" (map) from "forecast" (routing and histogram).
 
 ## What the code and the vault say
 
-- **No usable t0 raster exists.** `scripts/calculate_depth.py:208` skips step 0, which is 3Di's placeholder
+- **No usable t0 raster exists.** `scripts/calculate_depth.py:211` skips step 0, which is 3Di's placeholder
   record with nodata for most or all cells. The first real output is one output interval after the trigger,
   30 minutes in the observed run. This matters less than first thought: during rain, runs overlap, so an
   earlier run already has a step at or before now.
