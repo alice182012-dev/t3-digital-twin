@@ -215,3 +215,15 @@ Any option that changes what the map shows also changes the "Updated" line story
   user). They correct part 2's "8 minutes": the depth tifs were done at +7:35, but the map tiles only at
   +15:31. The pipeline in use is `flood_forecast_consecutive_state_test` on `stage-b`; the GeoJSON chain is
   retired. Waiting for the user's approval and a test run with 8 steps.
+- **2026-09-26, open.** Code for the proposed design built on the local branch `fifteen-minute-cycle`, see
+  [[fifteen-minute-cycle-tiles-and-histogram]]: tiles for steps 1 and 2 only, a published flag per step, the cross-run
+  timesteps list, the map's latest-at-or-before-now pick, a 15-minute DAG schedule, and a raster-based depth histogram.
+  Not deployed. Still needed before the blocker can close: the user's new 3Di template and `create_simulation.py`
+  changes, and the test run with 8 steps that measures the three risks above.
+- **2026-09-26, open.** First server test of the design, `manual__2026-09-25T17:35:10` of
+  `flood_forecast_consecutive_state_test` on template 42180 (8 steps at 900 s). Depth for 8 tifs took 6:40, against 4:49
+  for 4 (risk 1: about 1.4 times, under the 8 to 10 minute limit). Tiles for steps 1 and 2 published at +11:33 and +12:11
+  after the trigger, so step 1 has about 3.5 minutes of margin before it becomes now. Flood on roads finished at +13:36, about
+  1.4 minutes before that. Event 2's tiles took 5:05 against 2:40 for event 1 because they overlapped the raster load and
+  flood on roads (risk 3, contention inside one run). Two overlapping runs are not measured yet. The map now shows the latest
+  step at or before now. Found and fixed: depth times drifted by seconds off the grid (`7f87538`).

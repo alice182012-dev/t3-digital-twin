@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-26
 ---
 
 # 3Di simulation orchestration
@@ -56,6 +56,14 @@ on 2026-09-25.
 The DAG uses `VNContinuousTimetable` (`plugins/vn_timetable.py`) with `max_active_runs=1`, so the
 next cycle starts immediately after the previous one finishes rather than on a fixed clock
 schedule.
+
+**Branch `fifteen-minute-cycle` (not deployed).** The schedule becomes `*/15 * * * *` with
+`catchup=False` and `max_active_runs=2`, following the design in [[map-shows-forecast-not-now]]. The
+`wait_before_next_rain_check` sensor, `FLOOD_RAIN_CHECK_INTERVAL_SECONDS`, and the `vn_timetable`
+import are gone, and a dry gate returns `None`, which skips every later task. Two overlapping runs no
+longer share files: each download goes to `RESULT_DIR/<sim_id>/`, and each reprojected raster is named
+after its `run_ts`. `create_simulation.py` is unchanged, so the 3Di start time is still `now()`, not
+the clock slot. The plan is [[fifteen-minute-cycle-tiles-and-histogram]].
 
 ## The rain gate
 

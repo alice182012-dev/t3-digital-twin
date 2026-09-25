@@ -86,3 +86,9 @@ Change: in `run_forecast_process`, pass a separate setting (for example `HOTSTAR
 - **2026-09-25, open.** The proposed design in [[map-shows-forecast-not-now]] replaces the 1800 s fix, pending
   the user's approval. Runs start on a 15-minute clock at tₖ, with the state saved at 900 s (= tₖ₊₁) and at
   1800 s as a backup. The save point then equals the cycle length, so the offset is zero by design.
+- **2026-09-26, open.** Found while preparing `create_simulation.py` for the 15-minute cycle: `run_forecast_process` loads
+  the saved-state ID (`load_last_state`) and only uses it to set `clone_initials=False`. Nothing attaches the state to the
+  new simulation. The 3Di cookbook does it with `simulations_initial_saved_state_create` (`data={"saved_state": id}`),
+  and the code never calls it. So today a "hotstart" run starts without the previous water, and the offset described
+  above never applied to the model at all. Stream E of [[fifteen-minute-cycle-tiles-and-histogram]] attaches the state,
+  saves it at 900 s with a backup at 1800 s, and starts each run at its clock slot. Not deployed.

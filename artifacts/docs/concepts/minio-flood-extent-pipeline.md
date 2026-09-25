@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [minio, airflow, flood-tile]
 related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-26
 ---
 
 # MinIO flood-extent tile pipeline
@@ -145,6 +145,17 @@ never deletes the run it just loaded, even when an older run is loaded again lat
 1 fails the load.
 
 ## How the frontend picks a timestep
+
+**Branch `fifteen-minute-cycle` (not deployed) changes the rest of this section.** `publish_run` builds
+tiles and polygons for the first `tile_steps` steps of a run only (`FLOOD_EXTENT_TILE_STEPS`, default 2).
+After a step's tiles and polygon rows are written, it records the step in `flood_extent_step`
+(`run_ts`, `valid_time_utc`, `is_empty`, `published_at`), which is the published flag. `GET /flood/timesteps`
+reads that table and returns, for each time, the newest run that published it, so entries can carry
+different runs and dry steps stay in the list. `FloodStore.ts` selects the latest step at or before now
+(`findNowTimestepIndex`) and re-picks on every refetch. Retention rises to 8 runs. Runs published before
+the table existed are backfilled only when the table is empty, from the newest 3 runs. The raster load
+still covers every step, and `POST /flood/forecast` reads it for the route depth chart.
+The text below describes the code on the deployed branch.
 
 `GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
 `flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.

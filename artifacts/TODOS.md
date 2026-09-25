@@ -127,6 +127,20 @@ the legend so no band is hidden, with the panel collapsed and expanded.
 
 Status:: active
 
+### Show the right icon for the motorbike routing profile
+
+**What:** The user reported that the bike profile icon is wrong. `findIcon('motorbike')` in `profileIcons.ts` has no
+`motorbike` key, so it likely returns the question-mark icon. Confirm what shows on screen, check the mockup for the
+intended glyph, and map the profile to it.
+
+**Effort:** XS (human ~1 hr / CC ~10 min)
+**Priority:** P3
+**Depends on:** None.
+
+**Blocker tracking:** [[motorbike-profile-icon-wrong]]
+
+Status:: active
+
 ### Mount flood_utils.py where Airflow can import it
 
 **What:** The flood metric extractor imports `flood_utils.py` from `floodmap/graphhopper-flood-road/scripts`,
