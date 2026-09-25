@@ -15,8 +15,9 @@ export type MapMode = 'map' | 'flood'
  * INVARIANTS held by the reducer and relied on by every reader:
  *  I1. selectedIndex === -1 when timesteps is empty, otherwise in [0, timesteps.length - 1].
  *      The reducer holds it, so a consumer never reads a stale or out-of-range index.
- *  I2. every timestep carries the same `run` (the backend pins list_timesteps to one run), so
- *      "latest timestep" is well defined.
+ *  I2. timesteps are ascending by valid_time with one entry per valid_time, each from the newest
+ *      run that published it (backend GET /flood/timesteps). Entries may carry different `run`
+ *      values, so a step's identity is its (valid_time, run) pair, never its position.
  *  I3. mapMode is concrete state, never recomputed from the clock at render time.
  *  I4. userChoseMapMode, once true, is never cleared by arriving data.
  */
@@ -36,7 +37,7 @@ export const FRESH_DATA_WINDOW_MS = 45 * 60 * 1000
 
 /** How often useFloodBootstrap re-fetches timesteps. Well under FRESH_DATA_WINDOW_MS, so a
  *  session left open re-anchors selectedIndex to the clock long before data goes stale, instead
- *  of freezing on whatever was nearest at page load. */
+ *  of freezing on whatever was now at page load. */
 export const TIMESTEP_REFRESH_INTERVAL_MS = 5 * 60 * 1000
 
 /** `receivedAt` is the clock read, taken once at the fetch boundary, so the reducer stays pure
@@ -62,29 +63,30 @@ export class SelectFloodVehicle implements Action {
 export const BACKEND_BASE: string = (config as any).floodBackend || (config as any).routingApi || '/api/gh/'
 
 /**
- * Index of the timestep whose valid_time is closest to `now`, in either direction.
+ * Index of the timestep the map shows as now: the latest valid_time at or before `now`, never a
+ * nearer one in the future, so the map never shows a forecast as the present.
+ *
+ * When every step is after `now`, falls back to the earliest step (index 0 of the ascending
+ * list) rather than a blank map. That happens before the first run has published its first step,
+ * or when the viewer's clock runs behind the server's.
  *
  * Returns -1 for an empty list. Entries whose valid_time does not parse are skipped; if every
  * entry is unparseable the result is -1.
- *
- * Tie-break: an exact tie resolves to the LATER valid_time, so the product leans towards the
- * step you are heading into rather than the one you just left. The `<=` scan only yields the
- * later entry because the backend returns the list ascending by forecast_time (invariant I2);
- * that precondition is what makes the last minimum also the latest one.
  */
-export function findNearestTimestepIndex(timesteps: readonly FloodTimestep[], now: number): number {
-    let best = -1
-    let bestDelta = Infinity
+export function findNowTimestepIndex(timesteps: readonly FloodTimestep[], now: number): number {
+    let latest = -1
+    let latestTime = -Infinity
+    let earliest = -1
     for (let i = 0; i < timesteps.length; i++) {
         const t = Date.parse(timesteps[i].valid_time)
         if (Number.isNaN(t)) continue
-        const delta = Math.abs(t - now)
-        if (delta <= bestDelta) {
-            bestDelta = delta
-            best = i
+        if (earliest < 0) earliest = i
+        if (t <= now && t >= latestTime) {
+            latestTime = t
+            latest = i
         }
     }
-    return best
+    return latest >= 0 ? latest : earliest
 }
 
 /**
@@ -92,7 +94,7 @@ export function findNearestTimestepIndex(timesteps: readonly FloodTimestep[], no
  *
  * If the currently selected (valid_time, run) pair still exists in the new list, follow it to its
  * new position: a refetch must not move the map out from under someone mid-inspection. Otherwise
- * re-anchor to nearest-to-now. Identity, not ordinal position, is what the user selected, so this
+ * re-anchor to the now step. Identity, not ordinal position, is what the user selected, so this
  * needs no separate "has the user picked a step" flag.
  */
 export function reanchorTimestepIndex(prev: FloodStoreState, next: readonly FloodTimestep[], now: number): number {
@@ -101,7 +103,7 @@ export function reanchorTimestepIndex(prev: FloodStoreState, next: readonly Floo
         const i = next.findIndex(s => s.valid_time === current.valid_time && s.run === current.run)
         if (i >= 0) return i
     }
-    return findNearestTimestepIndex(next, now)
+    return findNowTimestepIndex(next, now)
 }
 
 /**
@@ -160,8 +162,8 @@ export async function loadFloodTimesteps() {
     const res = await fetch(new URL(`${BACKEND_BASE}flood/timesteps`, window.location.href))
     if (!res.ok) return
     const data = await res.json()
-    // Read the clock after the await: "nearest to now" should be nearest to the moment the user
-    // sees the result, not to the moment the request left.
+    // Read the clock after the await: the now step should be now at the moment the user sees the
+    // result, not at the moment the request left.
     Dispatcher.dispatch(new FloodTimestepsReceived(data.timesteps || [], Date.now()))
 }
 
