@@ -62,7 +62,8 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 ## D-004: Remove the `flood-results-full` bucket
 
 - **Date:** 2026-09-24
-- **Status:** active. Configuration is removed on `stage-b`. The server bucket is deleted at the Stage B deploy.
+- **Status:** active. Configuration is removed on `stage-b`. The server bucket was deleted on 2026-09-25: 15 objects,
+  14.7 MB, all `.geojson` (the count had grown from 13 because production cycles ran on 2026-09-24).
 - **Decided by:** the user
 - **Decision:** Remove the bucket from compose, `.env.example`, the README, the docs, and the tests. Delete the
   bucket and its 13 objects (12 MB) on the server at the Stage B deploy.
@@ -136,6 +137,23 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   without recomputing from the tiles.
 - **Revisit if:** users report routes that avoid roads that are passable. The tiles are the source of truth, so
   another aggregate can be recomputed from them.
+
+## D-007: The two test events publish under one run name
+
+- **Date:** 2026-09-25
+- **Status:** active. Approved by the user on 2026-09-25.
+- **Decided by:** the user asked for the test DAG to keep two consecutive events and to show in the frontend. Claude proposed the
+  run naming, and the user approved it.
+- **Decision:** In `flood_forecast_state_test_dag.py`, event 1 and event 2 both publish their tiles, raster tiles, and road
+  values under one run name: the stamp of event 1's earliest depth file.
+- **Why:** The frontend's timeline lists the timesteps of the newest single run only. With a run name per event, event 1
+  would vanish from the timeline as soon as event 2 published. Event 2 hotstarts from event 1's saved state and starts when
+  event 1 ends, so one run name gives one continuous four-hour scenario. Every step keys its rows by (run, timestep), so a
+  second publish under the same run name adds timesteps without touching the first event's.
+- **Alternatives:** One run name per event. Rejected: the frontend would show only event 2.
+- **Affects:** [[flood-on-roads]], `raster_load.load_run` (needs a `keep_runs` argument so a test run cannot prune real
+  runs), and the state-test DAG. The test DAG writes `flood_road_values` in place on purpose, so routing shows the test event.
+- **Revisit if:** the frontend gains a run picker that can show two runs at once.
 
 ## Open decisions
 

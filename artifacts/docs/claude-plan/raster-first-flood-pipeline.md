@@ -171,3 +171,17 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   Stage B deploy order.
 - **2026-09-25.** Renamed `create_geojson_tables.py` to `create_flood_road_tables.py` on `stage-b` (`7916abd`), because it creates the routing
   tables and has nothing to do with GeoJSON now. The old scripts under `scripts/mapping/` stay until the server verification.
+- **2026-09-25, Stage B on the server.** Deployed `stage-b` (`2be63a4`) with the DAG still paused, and did steps 1 to 4. Airflow parses the
+  real DAG folder with no import errors and exactly 11 tasks. The three schema scripts and `create_netcdf_tables` ran (twice each,
+  idempotent), `segment_id` was added to `flood_road_values`, and its 25,036 rows are untouched. `road_segment` holds 35,652 pieces
+  from 12,431 ways with a worst length error of 0 m, and a second load changed nothing. For run `20260924T164803`, tiles loaded in
+  55.8 s and `flood_on_roads` wrote 8,444 rows into `flood_road_values_shadow` in 18.8 s, identical to the local result. No backend
+  rebuild was needed. Left in place on the server: the shadow table and one registry row (`flood_road_file` id 8,
+  `flood_on_roads_20260924T164803`). Not done, and waiting for the user: delete the `flood-results-full` bucket, drop
+  `flood_depth_raster`, write in place, unpause, and a full cycle with a graded route.
+- **2026-09-25, Stage B, irreversible steps done on the server (user-approved).** Deleted the `flood-results-full` bucket (15 objects, 14.7 MB;
+  the earlier count of 13 had grown) and dropped `flood_depth_raster` (13 rasters, 122 MB, no dependents). Two of its runs (`163700`,
+  `170000`) had never been tiled, so their point depths are gone. Wrote `flood_on_roads` in place for run `20260924T164803`: 8,444 rows
+  replaced 7,620, and the table total is 25,860 as computed. Routing on the new rows detours around flooded pieces. A full cycle is
+  next, using `flood_forecast_consecutive_state_test` because it is not raining (see D-007 in [[decision-log]]).
+
