@@ -26,19 +26,25 @@ export default function DepthForecastChart({ coordinates }: { coordinates: reado
                 Average water depth
             </figcaption>
             <div className={styles.plot} aria-hidden="true">
-                {chart.bars.map(bar => (
-                    <div className={styles.column} key={bar.validTime} title={`${bar.timeLabel}: ${depthText(bar)}`}>
+                <div className={styles.bars}>
+                    {chart.bars.map(bar => (
                         <div
-                            className={bar.isNow ? styles.nowBar : styles.bar}
-                            style={{ height: `${bar.heightPercent}%` }}
-                        />
-                    </div>
-                ))}
-                {chart.nowLinePercent !== null && (
-                    <div className={styles.nowLine} style={{ bottom: `${chart.nowLinePercent}%` }}>
-                        <span className={styles.nowLineLabel}>{chart.nowDepthCm} cm</span>
-                    </div>
-                )}
+                            className={styles.column}
+                            key={bar.validTime}
+                            title={`${bar.timeLabel}: ${depthText(bar)}`}
+                        >
+                            <div
+                                className={bar.isNow ? styles.nowBar : styles.bar}
+                                style={{ height: `${bar.heightPercent}%` }}
+                            />
+                        </div>
+                    ))}
+                    {chart.nowLinePercent !== null && (
+                        <div className={styles.nowLine} style={{ bottom: `${chart.nowLinePercent}%` }}>
+                            <span className={styles.nowLineLabel}>{chart.nowDepthCm} cm</span>
+                        </div>
+                    )}
+                </div>
             </div>
             <div className={styles.labels} aria-hidden="true">
                 {chart.bars.map(bar => (

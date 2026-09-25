@@ -19,13 +19,23 @@
     text-transform: uppercase;
 }
 
+/* The mean-line label sits in this right-hand gutter, beside the bars instead of over them. */
+.plot,
+.labels {
+    padding-right: 48px;
+}
+
 .plot {
-    position: relative;
     height: 72px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.bars {
+    position: relative;
+    height: 100%;
     display: flex;
     align-items: flex-end;
     gap: 4px;
-    border-bottom: 1px solid #e5e7eb;
 }
 
 .column {
@@ -58,12 +68,13 @@
 
 .nowLineLabel {
     position: absolute;
-    right: 0;
-    bottom: 2px;
-    padding: 0 3px;
-    background: #fff;
+    left: 100%;
+    top: 0;
+    transform: translateY(-50%);
+    padding-left: 4px;
     color: #374151;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .labels {
