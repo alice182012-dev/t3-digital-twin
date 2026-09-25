@@ -3,6 +3,8 @@ import {
     findNowTimestepIndex,
     FloodStoreState,
     FloodTimestep,
+    FloodTimestepsReceived,
+    getFloodStore,
     reanchorTimestepIndex,
 } from '@/floodmap/FloodStore'
 
@@ -98,20 +100,34 @@ describe('reanchorTimestepIndex', () => {
 })
 
 describe('defaultMapMode', () => {
-    it('is map mode for an empty list', () => {
-        expect(defaultMapMode([], at('2026-05-22T10:00:00Z'))).toEqual('map')
+    it('is map mode when no step is selected', () => {
+        expect(defaultMapMode(undefined, at('2026-05-22T10:00:00Z'))).toEqual('map')
     })
 
-    it('is flood mode when the newest step is inside the fresh window, in either direction', () => {
-        expect(defaultMapMode(HOURLY, at('2026-05-22T11:30:00Z'))).toEqual('flood')
-        expect(defaultMapMode(HOURLY, at('2026-05-22T12:30:00Z'))).toEqual('flood')
+    it('is flood mode when the selected step is inside the fresh window, in either direction', () => {
+        expect(defaultMapMode(step('2026-05-22T10:00:00Z'), at('2026-05-22T10:40:00Z'))).toEqual('flood')
+        expect(defaultMapMode(step('2026-05-22T10:00:00Z'), at('2026-05-22T09:20:00Z'))).toEqual('flood')
     })
 
-    it('is map mode when the newest step is outside the fresh window', () => {
-        expect(defaultMapMode(HOURLY, at('2026-05-22T14:00:00Z'))).toEqual('map')
+    it('is map mode when the selected step is outside the fresh window', () => {
+        expect(defaultMapMode(step('2026-05-22T10:00:00Z'), at('2026-05-22T10:50:00Z'))).toEqual('map')
     })
 
-    it('is map mode when the newest valid_time is unparseable', () => {
-        expect(defaultMapMode([step('2026-05-22T12:00:00Z'), step('bad')], at('2026-05-22T12:00:00Z'))).toEqual('map')
+    it('is map mode when the selected valid_time is unparseable', () => {
+        expect(defaultMapMode(step('bad'), at('2026-05-22T12:00:00Z'))).toEqual('map')
+    })
+})
+
+describe('FloodTimestepsReceived', () => {
+    function receive(timesteps: FloodTimestep[], now: string): FloodStoreState {
+        const store = getFloodStore()
+        return store.reduce({ ...store.state, userChoseMapMode: false }, new FloodTimestepsReceived(timesteps, at(now)))
+    }
+
+    it('defaults to map mode when the step shown as now is stale, even if a newer forecast is fresh', () => {
+        const steps = [step('2026-05-22T09:00:00Z', '2026-05-22T08:45:00Z'), step('2026-05-22T10:45:00Z')]
+        const state = receive(steps, '2026-05-22T10:30:00Z')
+        expect(state.selectedIndex).toEqual(0)
+        expect(state.mapMode).toEqual('map')
     })
 })

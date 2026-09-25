@@ -31,7 +31,7 @@ export interface FloodStoreState {
     userChoseMapMode: boolean
 }
 
-/** Data is fresh enough to default into Flood mode when the newest timestep's valid_time is
+/** Data is fresh enough to default into Flood mode when the selected timestep's valid_time is
  *  within this window of now. */
 export const FRESH_DATA_WINDOW_MS = 45 * 60 * 1000
 
@@ -107,14 +107,14 @@ export function reanchorTimestepIndex(prev: FloodStoreState, next: readonly Floo
 }
 
 /**
- * Data-recency default: Flood mode when the newest timestep sits within FRESH_DATA_WINDOW_MS of
- * now. The measure is |t - now|, not now - t, because timesteps are forecasts and the newest one
- * is normally in the future; signed age would default to Map mode almost always.
+ * Data-recency default: Flood mode when the step the map shows sits within FRESH_DATA_WINDOW_MS
+ * of now. It measures the selected step, not the newest one, because the newest step is a
+ * forecast and says nothing about whether the map's picture of now is stale. The measure is
+ * |t - now| so the future step of findNowTimestepIndex's fallback also counts as fresh.
  */
-export function defaultMapMode(timesteps: readonly FloodTimestep[], now: number): MapMode {
-    const last = timesteps[timesteps.length - 1]
-    if (!last) return 'map'
-    const t = Date.parse(last.valid_time)
+export function defaultMapMode(selected: FloodTimestep | undefined, now: number): MapMode {
+    if (!selected) return 'map'
+    const t = Date.parse(selected.valid_time)
     if (Number.isNaN(t)) return 'map'
     return Math.abs(t - now) <= FRESH_DATA_WINDOW_MS ? 'flood' : 'map'
 }
@@ -135,11 +135,14 @@ class FloodStore extends Store<FloodStoreState> {
 
     reduce(state: FloodStoreState, action: Action): FloodStoreState {
         if (action instanceof FloodTimestepsReceived) {
+            const selectedIndex = reanchorTimestepIndex(state, action.timesteps, action.receivedAt)
             return {
                 ...state,
                 timesteps: action.timesteps,
-                selectedIndex: reanchorTimestepIndex(state, action.timesteps, action.receivedAt),
-                mapMode: state.userChoseMapMode ? state.mapMode : defaultMapMode(action.timesteps, action.receivedAt),
+                selectedIndex,
+                mapMode: state.userChoseMapMode
+                    ? state.mapMode
+                    : defaultMapMode(action.timesteps[selectedIndex], action.receivedAt),
             }
         } else if (action instanceof SetMapMode) {
             if (action.mode === state.mapMode && state.userChoseMapMode) return state
