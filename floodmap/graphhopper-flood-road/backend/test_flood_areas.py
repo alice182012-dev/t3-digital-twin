@@ -9,12 +9,14 @@ Run it against a throwaway PostGIS (needs the postgis extension, not plain Postg
 
     docker run -d --rm --name flood-verify-pg -e POSTGRES_PASSWORD=test \
         -e POSTGRES_DB=floodtest -p 55432:5432 postgis/postgis:15-3.4
-    PYTHONPATH=../scripts \
+    PYTHONPATH=../scripts:../../../scripts/database \
         FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
         python test_flood_areas.py
 
 flood_areas imports flood_utils, which the Dockerfile supplies by copying ../scripts
-alongside ../backend; PYTHONPATH stands in for that outside the image.
+alongside ../backend; PYTHONPATH stands in for that outside the image. The table comes from
+scripts/database/create_geojson_tables.py, the same DDL the server runs, so a column the query
+needs but the deploy step lacks fails here first.
 """
 
 from __future__ import annotations
@@ -24,7 +26,9 @@ import sys
 
 import psycopg2
 
+import create_geojson_tables
 from flood_areas import build_custom_model, derive_areas
+from flood_utils import vehicle_threshold_cm, vehicle_types
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
 RUN_OLD = "2026-05-22T06:00:00+00:00"
@@ -42,30 +46,25 @@ DEPTH_B4_MOTORBIKE = 0.25
 # without needing real road geometry. Near flood_utils.DEFAULT_ORIGIN.
 SEGMENT_A = "LINESTRING(105.7610 21.0214, 105.7615 21.0216)"
 SEGMENT_B = "LINESTRING(105.7620 21.0218, 105.7625 21.0220)"
+# About 1 km from A, so its buffer never merges with A's and each shows up as its own feature.
+SEGMENT_FAR = "LINESTRING(105.7710 21.0314, 105.7715 21.0316)"
 
 
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
-        cur.execute("DROP TABLE IF EXISTS flood_road_values;")
-        cur.execute(
-            """
-            CREATE TABLE flood_road_values (
-                timestamp timestamptz NOT NULL,
-                forecast_time timestamptz NOT NULL,
-                depth double precision NOT NULL,
-                geom_4326 geometry(Geometry, 4326) NOT NULL
-            );
-            """
-        )
+        cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
+        cur.execute(create_geojson_tables.SQL)
+        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN_OLD,))
     conn.commit()
 
 
-def insert(conn, run: str, forecast_time: str, depth: float, wkt: str) -> None:
+def insert(conn, run: str, forecast_time: str, depth: float, wkt: str, depth_max: float | None = None) -> None:
+    """depth_max=None is a row from the old GeoJSON chain; a number is a flood_on_roads.py row."""
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO flood_road_values VALUES (%s, %s, %s, ST_GeomFromText(%s, 4326));",
-            (run, forecast_time, depth, wkt),
+            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, depth_max, geom_4326)"
+            " VALUES (1, %s, %s, %s, %s, ST_GeomFromText(%s, 4326));",
+            (run, forecast_time, depth, depth_max, wkt),
         )
     conn.commit()
 
@@ -130,6 +129,8 @@ def main() -> int:
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b2"]
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_NEW)) == ["b4"]
 
+    check_depth_max_decides_impassable(conn)
+
     conn.close()
 
     # build_custom_model is pure: no DB needed. Deepest band first is "if", the rest
@@ -151,6 +152,55 @@ def main() -> int:
 
     print("ok")
     return 0
+
+
+def check_depth_max_decides_impassable(conn) -> None:
+    """D-005: b4 (impassable) tests depth_max, falling back to depth where depth_max is NULL.
+    Depths are fractions of each vehicle's limit in flood_utils, so a changed limit moves the
+    fixtures with it. 0.9 of the limit is b3 by itself; 1.1 is b4."""
+    for vehicle in vehicle_types():
+        limit_m = vehicle_threshold_cm(vehicle) / 100.0
+        under, over = 0.9 * limit_m, 1.1 * limit_m
+
+        reset(conn)
+        insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A, depth_max=over)
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "max over, mean under")
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, "latest")) == ["b4"], (vehicle, "latest")
+
+        reset(conn)
+        insert(conn, RUN_OLD, VALID_TIME, over, SEGMENT_A)
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "NULL max, mean over")
+
+        reset(conn)
+        insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "NULL max, mean under")
+
+        # depth_max under the limit keeps the piece out of b4 even when the fallback would not apply.
+        reset(conn)
+        insert(conn, RUN_OLD, VALID_TIME, 0.6 * limit_m, SEGMENT_A, depth_max=under)
+        assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "max under")
+
+    limit_m = vehicle_threshold_cm("motorbike") / 100.0
+    under, over = 0.9 * limit_m, 1.1 * limit_m
+
+    # Old and new rows in one run for the same forecast_time: each is graded by its own rule.
+    reset(conn)
+    insert(conn, RUN_OLD, VALID_TIME, over, SEGMENT_A)
+    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_FAR, depth_max=over)
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4", "b4"]
+
+    reset(conn)
+    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
+    insert(conn, RUN_OLD, VALID_TIME, 0.6 * limit_m, SEGMENT_FAR, depth_max=under)
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b3", "b3"]
+
+    # An old run and a new run for the same forecast_time: latest reads the new run's depth_max,
+    # a pin on the old run reads its mean.
+    reset(conn)
+    insert(conn, RUN_OLD, VALID_TIME, under, SEGMENT_A)
+    insert(conn, RUN_NEW, VALID_TIME, under, SEGMENT_A, depth_max=over)
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", "latest")) == ["b4"]
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b3"]
 
 
 if __name__ == "__main__":
