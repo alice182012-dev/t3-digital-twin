@@ -66,6 +66,19 @@ def validate_depth_raster(tif_path):
         return False, f"validation error: {e}"
 
 
+def round_to_minute(dt):
+    """Nearest whole minute, half up.
+
+    3Di stamps each output a few seconds past its nominal time (01:15:02,
+    04:30:06), and consecutive runs must name the same instant identically
+    for "newest run per valid time" to find one tile per time.
+    """
+    floored = dt.replace(second=0, microsecond=0)
+    if dt - floored >= timedelta(seconds=30):
+        return floored + timedelta(minutes=1)
+    return floored
+
+
 def get_time_from_tif_and_clean(tif_path):
     """Đọc giờ từ TIF (UTC) -> cộng 7 tiếng -> Làm sạch dữ liệu"""
     time_str_vn = None
@@ -82,7 +95,7 @@ def get_time_from_tif_and_clean(tif_path):
         desc = band.GetDescription()
         match = re.search(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", desc)
         if match:
-            dt_utc = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S")
+            dt_utc = round_to_minute(datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S"))
             dt_vn = dt_utc + timedelta(hours=7)
             time_str_vn = dt_vn.strftime("%Y%m%d_%H%M%S")
             desc = desc.replace(match.group(1), dt_vn.strftime("%Y-%m-%d %H:%M:%S"))
