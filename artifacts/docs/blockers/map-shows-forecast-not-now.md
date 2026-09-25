@@ -6,7 +6,7 @@ status: open
 severity: P2
 subsystem: floodmap-frontend
 approaches_tried: 0
-approaches_remaining: 4
+approaches_remaining: 1
 tags: [blocker, frontend, forecast, routing, product-decision]
 related: ["[[frontend-polish]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[flood-routing-mockup-frontend-gap]]", "[[decision-log]]"]
 last_updated: 2026-09-25
@@ -39,7 +39,8 @@ user's plan splits "now" (map) from "forecast" (routing and histogram).
 
 - **No usable t0 raster exists.** `scripts/calculate_depth.py:208` skips step 0, which is 3Di's placeholder
   record with nodata for most or all cells. The first real output is one output interval after the trigger,
-  30 minutes in the observed run.
+  30 minutes in the observed run. This matters less than first thought: during rain, runs overlap, so an
+  earlier run already has a step at or before now.
 - **Routing sees one moment.** The frontend interceptor sends the selected timestep's `valid_time` and run to
   `POST /route`. Routing is not time-aware along the route, and it uses the same timestep as the map.
 - **The histogram is not built.** [[route-forecast-query]] and [[depth-forecast-chart]] are both `draft` and not
@@ -57,7 +58,88 @@ None yet.
 
 ## Decision and explanation
 
-Pending. The user wants to brainstorm. Candidate options, none tried:
+Proposed design, agreed in the brainstorm on 2026-09-25 and waiting for the user's approval in the
+[[decision-log]]. It takes option C (below) and changes the simulation cycle so option C always has a tile.
+Option D is not needed: overlapping runs already cover now.
+
+### Proposed design: a 15-minute clock cycle with the map fed by step 1 of each run
+
+**Cycle.** A run starts on the clock every 15 minutes, at tₖ = :00, :15, :30, :45. The rain gate still decides
+whether a run happens. Each run:
+
+- sets the 3Di `start_datetime` to tₖ, not to the unrounded time of the rain check;
+- simulates 2 hours with an output interval of 900 s, so 8 depth steps land on the shared 15-minute grid
+  (tₖ+15 to tₖ+120; step 0 stays dropped);
+- saves the state at 900 s (= tₖ₊₁), which the next run hotstarts from, and at 1800 s as a backup if a slot is
+  missed. This replaces the 1800 s fix in [[hotstart-state-saved-at-end-of-run]]: the save point equals the
+  cycle length, so the state chain has no offset;
+- keeps running until no rain is forecast and the deepest water is below 5 cm (not built today; runs stop when
+  the rain check sees no rain).
+
+**What each run produces.**
+
+| Output | Steps | Used by |
+| --- | --- | --- |
+| Depth tif | all 8 | everything below |
+| Raster load (`flood_depth_raster_tile`) | all 8 | point depth and the histogram |
+| Flood on roads (`flood_road_values`) | all 8 | routing |
+| Map tiles and `flood_extent_polygon` | steps 1 and 2 only | the map |
+
+Only step 1 of a run is ever shown as now. Run k's step 2 (tₖ+30) is also run k+1's step 1, and run k+1
+publishes it at about tₖ+26, before tₖ+30 arrives. Steps 3 to 8 become now only after two newer runs have
+replaced them. Step 2 is built as a backup: if run k+1 is late or fails, run k's tile for the same time is
+already published.
+
+**Map rule.** The map shows the tile at `floor(now, 15 min)`, taken from the newest run that has published
+that time. It is 0 to 15 minutes old and never in the future. `GET /flood/timesteps` changes from "the newest
+run's steps" to "for each time, the newest run that published it". The frontend picks the latest time at or
+before now, never the nearest.
+
+**A "published" flag per (run, time).** It is set after the tiles and polygon rows of that step are fully
+uploaded, so the map never loads a half-written step.
+
+**Timing, from the real run.** `manual__2026-09-25T14:09:53` of `flood_forecast_consecutive_state_test`
+(event 1: 20 mm/h, 4 steps at 30-minute output):
+
+| Task | Duration | Done, after trigger |
+| --- | --- | --- |
+| Trigger (3Di simulates the full 2 h) | 2:36 | +2:36 |
+| Download | 0:09 | +2:46 |
+| Depth, 4 tifs on 8 processes | 4:49 | +7:35 |
+| Raster load | 1:10 | +8:45 |
+| Flood on roads | 0:43 | +9:29 |
+| Tiles, 4 steps, 2 workers | 7:51 | +15:31 |
+
+Event 2 (5 mm/h): depth 4:46, tiles 3:50. Tiling takes about 3:55 per step at 20 mm/h and about 1:55 at
+5 mm/h: it grows with the wet area, so heavy storms are the slow case.
+
+Expected cycle, heavy rain, 8 steps, tiles for steps 1 and 2:
+
+| After tₖ | Event |
+| --- | --- |
+| +2:45 | Download done |
+| +7:35 | Depth done for all 8 steps, assuming 8 tifs take as long as 4 (each tif runs on its own process) |
+| +11:30 | Tiles for tₖ+15 and tₖ+30 published, one round of 2 workers |
+| +11 to +12 | Raster load and flood on roads done for all 8 steps |
+| +15 | Tile tₖ+15 becomes now. Margin about 3 minutes. The next run triggers; the CPU has been idle since about +12 |
+
+**Risks to measure.**
+
+1. Depth for 8 tifs. The estimate assumes it stays near 4:50 on 8 processes. If memory limits it and it takes
+   8 to 10 minutes, the heavy-rain margin goes negative. Fallback: a 30-minute cycle with the same design.
+2. Storms heavier than 20 mm/h make tiling slower, which shrinks the margin.
+3. Tiles, raster load, and flood on roads overlapped in the observed run. Their contention at 8 steps is not
+   measured.
+
+**First step.** A test run of `flood_forecast_consecutive_state_test` with a 900 s output interval, to
+measure depth and the rest of the pipeline on 8 steps.
+
+**Out of scope here.** Routing that uses the arrival time on each road is [[routing-not-time-aware]]. The
+back-cast with observed rain (option D) can come later, once Tomorrow.io's past-rain data is confirmed.
+
+### Options considered
+
+The options below were the brainstorm's starting point:
 
 | Option | What the map shows | Effort | Benefit | Cost and risk |
 | --- | --- | --- | --- | --- |
@@ -66,16 +148,16 @@ Pending. The user wants to brainstorm. Candidate options, none tried:
 | C. Never show the future | The latest step at or before now, across runs | M | Never shows a future tile | With a fast run cycle (observed ~8 min), the newest run alone almost never has a step at or before now, so this needs a cross-run query, not just the newest run. `list_timesteps` returns one run only today; this needs a new query. Brings back the cross-run consistency question, though the worked timeline shows the picked tile stays fresh (minutes old, not tens of minutes) |
 | D. A real t0 | A true state at now | L | Exactly what the user wants | A new calculation. Either a raster from the initial water levels, or a back-cast from the saved state with observed rain. Feasibility unknown |
 
-Shortening the output interval (30 to 5 minutes) is not an option: it gives six times the rasters, and a run
-already takes about 28 minutes.
+Shortening the output interval to 5 minutes is not an option: it gives six times the rasters. 15 minutes is
+the proposed interval above, and it matches Tomorrow.io's 15-minute rain steps.
 
 **Safety trade-off.** Showing only now can under-warn: water that rises in 30 minutes is missing from the map,
 and routing could send someone down a road that floods before they arrive. Splitting "now" (map) from
 "forecast" (routing and histogram) is sound, but it needs the route-forecast query and the chart first, and
 time-aware routing.
 
-Recommendation so far (not a decision): do B after the current test, build the route-forecast query and the
-chart, and run a short spike on D.
+The first recommendation (do B, build the route-forecast query and the chart, and spike D) is replaced by the
+proposed design above.
 
 ## Questions for the brainstorm
 
@@ -127,3 +209,9 @@ Any option that changes what the map shows also changes the "Updated" line story
   newest run only. `D` (wall-clock time per run) is one data point, not a measured average, and needs more
   runs to pin down; the qualitative conclusion (cross-run search is required, not optional) does not depend
   on the exact value.
+- **2026-09-25, open.** Proposed design written up in Decision and explanation: a 15-minute clock cycle,
+  output every 900 s, state saved at 900 s, map tiles for steps 1 and 2 only, and a cross-run "latest tile at
+  or before now" rule. Timings come from the task table of `manual__2026-09-25T14:09:53` (screenshot from the
+  user). They correct part 2's "8 minutes": the depth tifs were done at +7:35, but the map tiles only at
+  +15:31. The pipeline in use is `flood_forecast_consecutive_state_test` on `stage-b`; the GeoJSON chain is
+  retired. Waiting for the user's approval and a test run with 8 steps.

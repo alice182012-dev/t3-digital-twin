@@ -83,3 +83,6 @@ Change: in `run_forecast_process`, pass a separate setting (for example `HOTSTAR
   not the 28 minutes first assumed. Recomputed the offset at 112 minutes (not 92), and the 1800 s fix now
   leaves about 22 minutes (not "about 2 minutes"). The fix itself is unchanged; the numbers in Description
   and Concerns are corrected.
+- **2026-09-25, open.** The proposed design in [[map-shows-forecast-not-now]] replaces the 1800 s fix, pending
+  the user's approval. Runs start on a 15-minute clock at tₖ, with the state saved at 900 s (= tₖ₊₁) and at
+  1800 s as a backup. The save point then equals the cycle length, so the offset is zero by design.
