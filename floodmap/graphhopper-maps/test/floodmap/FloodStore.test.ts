@@ -5,7 +5,6 @@ import {
     FloodTimestep,
     FloodTimestepsReceived,
     getFloodStore,
-    reanchorTimestepIndex,
 } from '@/floodmap/FloodStore'
 
 const RUN = '2026-05-22T06:00:00Z'
@@ -64,41 +63,6 @@ describe('findNowTimestepIndex', () => {
     })
 })
 
-describe('reanchorTimestepIndex', () => {
-    function stateWith(timesteps: FloodTimestep[], selectedIndex: number): FloodStoreState {
-        return {
-            timesteps,
-            selectedIndex,
-            vehicleType: 'motorbike',
-            mapMode: 'map',
-            userChoseMapMode: false,
-        }
-    }
-
-    it('follows the selected step to its new position when the identity survives', () => {
-        const prev = stateWith(HOURLY, 2)
-        const next = [step('2026-05-22T09:00:00Z'), ...HOURLY]
-        expect(reanchorTimestepIndex(prev, next, at('2026-05-22T09:00:00Z'))).toEqual(3)
-    })
-
-    it('falls back to the now step when the identity is gone', () => {
-        const prev = stateWith(HOURLY, 0)
-        const next = [step('2026-05-22T13:00:00Z'), step('2026-05-22T14:00:00Z')]
-        expect(reanchorTimestepIndex(prev, next, at('2026-05-22T13:50:00Z'))).toEqual(0)
-    })
-
-    it('treats a same valid_time from a newer run as a different step', () => {
-        const prev = stateWith(CROSS_RUN, 2)
-        const next = [...CROSS_RUN.slice(0, 2), step('2026-05-22T10:45:00Z', '2026-05-22T10:30:00Z')]
-        expect(reanchorTimestepIndex(prev, next, at('2026-05-22T10:40:00Z'))).toEqual(1)
-    })
-
-    it('re-anchors from an empty previous selection', () => {
-        const prev = stateWith([], -1)
-        expect(reanchorTimestepIndex(prev, HOURLY, at('2026-05-22T11:50:00Z'))).toEqual(1)
-    })
-})
-
 describe('defaultMapMode', () => {
     it('is map mode when no step is selected', () => {
         expect(defaultMapMode(undefined, at('2026-05-22T10:00:00Z'))).toEqual('map')
@@ -129,5 +93,13 @@ describe('FloodTimestepsReceived', () => {
         const state = receive(steps, '2026-05-22T10:30:00Z')
         expect(state.selectedIndex).toEqual(0)
         expect(state.mapMode).toEqual('map')
+    })
+
+    it('moves to the newer now step on a refetch, although the old step is still listed', () => {
+        const store = getFloodStore()
+        const first = store.reduce(store.state, new FloodTimestepsReceived(CROSS_RUN, at('2026-05-22T10:16:00Z')))
+        expect(first.timesteps[first.selectedIndex]).toEqual(step('2026-05-22T10:15:00Z', '2026-05-22T10:00:00Z'))
+        const next = store.reduce(first, new FloodTimestepsReceived(CROSS_RUN, at('2026-05-22T10:31:00Z')))
+        expect(next.timesteps[next.selectedIndex]).toEqual(step('2026-05-22T10:30:00Z', '2026-05-22T10:15:00Z'))
     })
 })

@@ -90,23 +90,6 @@ export function findNowTimestepIndex(timesteps: readonly FloodTimestep[], now: n
 }
 
 /**
- * Where selectedIndex should land after a new timestep list arrives.
- *
- * If the currently selected (valid_time, run) pair still exists in the new list, follow it to its
- * new position: a refetch must not move the map out from under someone mid-inspection. Otherwise
- * re-anchor to the now step. Identity, not ordinal position, is what the user selected, so this
- * needs no separate "has the user picked a step" flag.
- */
-export function reanchorTimestepIndex(prev: FloodStoreState, next: readonly FloodTimestep[], now: number): number {
-    const current = prev.timesteps[prev.selectedIndex]
-    if (current) {
-        const i = next.findIndex(s => s.valid_time === current.valid_time && s.run === current.run)
-        if (i >= 0) return i
-    }
-    return findNowTimestepIndex(next, now)
-}
-
-/**
  * Data-recency default: Flood mode when the step the map shows sits within FRESH_DATA_WINDOW_MS
  * of now. It measures the selected step, not the newest one, because the newest step is a
  * forecast and says nothing about whether the map's picture of now is stale. The measure is
@@ -135,7 +118,10 @@ class FloodStore extends Store<FloodStoreState> {
 
     reduce(state: FloodStoreState, action: Action): FloodStoreState {
         if (action instanceof FloodTimestepsReceived) {
-            const selectedIndex = reanchorTimestepIndex(state, action.timesteps, action.receivedAt)
+            // Every refetch re-picks from the clock. Following the previous (valid_time, run) would
+            // freeze the map: a run's first step stays the newest publisher of its valid_time, so
+            // it stays listed long after it stops being now. No UI selects a step by hand.
+            const selectedIndex = findNowTimestepIndex(action.timesteps, action.receivedAt)
             return {
                 ...state,
                 timesteps: action.timesteps,
