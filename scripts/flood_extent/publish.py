@@ -46,10 +46,12 @@ def upload_tiles(s3, bucket, tiles_dir, key_prefix):
         s3.upload_file(str(tile), bucket, key, ExtraArgs={"ContentType": "application/x-protobuf"})
 
 
-def write_polygon_rows(db_conn, run_ts, valid_time, result):
-    """Upserts one row per band in `result.polygons_4326`. Safe to retry: same (run_ts,
-    valid_time, dn_code) triple replaces its own row instead of duplicating it."""
-    if db_conn is None or not result.polygons_4326:
+def write_step_rows(db_conn, run_ts, valid_time, result):
+    """Upserts one `flood_extent_polygon` row per band in `result.polygons_4326`, then the step's
+    `flood_extent_step` row, in one transaction: a reader never sees the step as published before
+    its polygons. Called only after the step's tiles are uploaded. Safe to retry: each key
+    replaces its own row instead of duplicating it."""
+    if db_conn is None:
         return
     with db_conn.cursor() as cur:
         for code, wkb in result.polygons_4326.items():
@@ -62,6 +64,15 @@ def write_polygon_rows(db_conn, run_ts, valid_time, result):
                 """,
                 (run_ts, valid_time, code, result.area_by_band[code], wkb),
             )
+        cur.execute(
+            """
+            INSERT INTO flood_extent_step (run_ts, valid_time_utc, is_empty)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (run_ts, valid_time_utc)
+            DO UPDATE SET is_empty = EXCLUDED.is_empty, published_at = NOW()
+            """,
+            (run_ts, valid_time, result.is_empty),
+        )
     db_conn.commit()
 
 
@@ -99,6 +110,28 @@ def prune_bucket_runs(s3, bucket, keep_runs, always_keep):
             s3.delete_objects(Bucket=bucket, Delete={"Objects": objects[i:i + 1000]})
 
 
+def prune_step_rows(db_conn, keep_runs, always_keep):
+    """Deletes the `flood_extent_step` rows of every run outside the newest `keep_runs`.
+
+    The map lists steps across runs, so a step row whose tiles `prune_bucket_runs` deleted would
+    point the map at a 404. A run with tiles also has step rows, so this never keeps fewer runs
+    than the bucket does."""
+    if db_conn is None:
+        return
+    with db_conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM flood_extent_step
+            WHERE run_ts <> %(always_keep)s
+              AND run_ts NOT IN (
+                  SELECT DISTINCT run_ts FROM flood_extent_step ORDER BY run_ts DESC LIMIT %(keep_runs)s
+              )
+            """,
+            {"keep_runs": keep_runs, "always_keep": always_keep},
+        )
+    db_conn.commit()
+
+
 def cleanup_old_files(root_dirs, max_age_hours=24):
     """Deletes every top-level child of each root older than `max_age_hours`.
 
@@ -121,8 +154,13 @@ def cleanup_old_files(root_dirs, max_age_hours=24):
 
 
 def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=None,
-                 keep_runs=2, cleanup_dirs=(), cleanup_max_age_hours=24, **engine_options):
-    """Builds every depth_*.tif in `depth_dir` and publishes its tiles + polygon rows.
+                 tile_steps=2, keep_runs=8, cleanup_dirs=(), cleanup_max_age_hours=24, **engine_options):
+    """Builds the first `tile_steps` depth_*.tif files in `depth_dir`, by time, and publishes their
+    tiles, polygon rows, and `flood_extent_step` rows.
+
+    Only the first steps get tiles because the map only ever shows a run's earliest steps as now:
+    by the time a later step comes due, a newer run has published it. The rest would cost tiling
+    time inside the cycle for nothing.
 
     Fails loudly (raises) if any timestep fails, without deleting anything already published for
     the timesteps that succeeded — a missing tile 404s and the map treats it as empty, so partial
@@ -132,9 +170,12 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
     depth_dir = Path(depth_dir)
     if not flood_extent.RUN_DIR.match(run_ts):
         raise flood_extent.FloodExtentError(f"run_ts must look like 20260811T014000, got {run_ts!r}")
+    if tile_steps < 1:
+        raise ValueError(f"tile_steps must be at least 1: {tile_steps}")
     depth_files = sorted(p for p in depth_dir.iterdir() if flood_extent.DEPTH_FILE.match(p.name))
     if not depth_files:
         raise flood_extent.FloodExtentError(f"No depth_*.tif files in {depth_dir}")
+    depth_files = depth_files[:tile_steps]
 
     def build(depth_file):
         return publish_step(depth_file, run_ts, work_dir, s3, bucket, engine_options)
@@ -145,7 +186,7 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
             try:
                 key, result = future.result()
                 results[key] = result
-                write_polygon_rows(db_conn, run_ts, valid_time_utc(depth_file), result)
+                write_step_rows(db_conn, run_ts, valid_time_utc(depth_file), result)
                 print(f"{key}: {result.tile_count} tiles", flush=True)
             except Exception as error:
                 failures.append(f"{flood_extent.stamp_key(depth_file)}: {error}")
@@ -155,5 +196,6 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
         )
 
     prune_bucket_runs(s3, bucket, keep_runs, always_keep=run_ts)
+    prune_step_rows(db_conn, keep_runs, always_keep=run_ts)
     cleanup_old_files(cleanup_dirs, cleanup_max_age_hours)
     return results

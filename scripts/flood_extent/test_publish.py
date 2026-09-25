@@ -4,9 +4,143 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import mock
 
+import psycopg2
+from shapely.geometry import box
+
+import create_flood_extent_tables
 import publish
 import flood_extent
+
+RUN = "20260925T171500"
+# Vietnam-local depth file names; 17:15, 17:30, 17:45 local are 10:15, 10:30, 10:45 UTC.
+DEPTH_FILES = ["depth_20260925_171500.tif", "depth_20260925_173000.tif", "depth_20260925_174500.tif"]
+STEP_1, STEP_2, STEP_3 = (flood_extent.stamp_key(name) for name in DEPTH_FILES)
+UTC_1, UTC_2 = datetime(2026, 9, 25, 10, 15), datetime(2026, 9, 25, 10, 30)
+
+
+class FakeS3:
+    """Records uploaded keys. The bucket starts empty, so pruning has nothing to list."""
+
+    def __init__(self):
+        self.keys = []
+
+    def upload_file(self, path, bucket, key, ExtraArgs=None):
+        self.keys.append(key)
+
+    def get_paginator(self, name):
+        return self
+
+    def paginate(self, **kwargs):
+        return []
+
+
+def fake_build(dry=(), failing=()):
+    """Stands in for flood_extent.build_flood_extent: one tile and one band polygon per wet step."""
+
+    def build(depth_file, tiles_dir, **options):
+        stamp = flood_extent.stamp_key(depth_file)
+        if stamp in failing:
+            raise flood_extent.FloodExtentError("build failed")
+        if stamp in dry:
+            return flood_extent.FloodExtentResult(tile_count=0)
+        tile = Path(tiles_dir) / "10" / "1" / "2.pbf"
+        tile.parent.mkdir(parents=True)
+        tile.write_bytes(b"pbf")
+        return flood_extent.FloodExtentResult(
+            tile_count=1, area_by_band={1: 50.0}, polygons_4326={1: box(105.8, 21.0, 105.9, 21.1).wkb}
+        )
+
+    return build
+
+
+class PublishRunTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.s3 = FakeS3()
+
+    def publish(self, run=RUN, build=None, **options):
+        depth_dir = self.root / "depth" / run
+        depth_dir.mkdir(parents=True, exist_ok=True)
+        for name in reversed(DEPTH_FILES):
+            (depth_dir / name).write_bytes(b"")
+        with mock.patch.object(flood_extent, "build_flood_extent", build or fake_build()):
+            return publish.publish_run(depth_dir, run, self.root / "work", self.s3, "bucket", **options)
+
+
+class PublishRunTileStepsTests(PublishRunTestCase):
+    def test_builds_only_the_first_tile_steps_by_time(self):
+        results = self.publish(tile_steps=2)
+
+        self.assertEqual(sorted(results), [STEP_1, STEP_2])
+        self.assertEqual(
+            sorted(self.s3.keys), [f"runs/{RUN}/{STEP_1}/10/1/2.pbf", f"runs/{RUN}/{STEP_2}/10/1/2.pbf"]
+        )
+
+    def test_defaults_to_two_steps(self):
+        self.assertEqual(sorted(self.publish()), [STEP_1, STEP_2])
+
+    def test_rejects_tile_steps_below_one(self):
+        with self.assertRaises(ValueError):
+            self.publish(tile_steps=0)
+
+
+@unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
+class PublishRunStepRowTests(PublishRunTestCase):
+    """Runs against a real PostGIS: the polygon rows go through ST_GeomFromWKB."""
+
+    def setUp(self):
+        super().setUp()
+        self.conn = psycopg2.connect(os.environ["FLOOD_TEST_DSN"])
+        self.addCleanup(self.conn.close)
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'UTC';")
+            cur.execute(create_flood_extent_tables.SQL)
+            cur.execute(create_flood_extent_tables.SQL)
+            cur.execute("TRUNCATE flood_extent_polygon, flood_extent_step;")
+
+    def fetch(self, sql):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(sql)
+            return cur.fetchall()
+
+    def test_writes_a_step_row_for_wet_and_dry_steps(self):
+        self.publish(build=fake_build(dry={STEP_2}), db_conn=self.conn)
+
+        self.assertEqual(
+            self.fetch("SELECT run_ts, valid_time_utc, is_empty FROM flood_extent_step ORDER BY valid_time_utc;"),
+            [(RUN, UTC_1, False), (RUN, UTC_2, True)],
+        )
+        self.assertEqual(
+            self.fetch("SELECT run_ts, valid_time_utc, dn_code FROM flood_extent_polygon;"), [(RUN, UTC_1, 1)]
+        )
+
+    def test_republishing_a_step_keeps_one_row_per_step(self):
+        self.publish(db_conn=self.conn)
+        self.publish(build=fake_build(dry={STEP_1}), db_conn=self.conn)
+
+        self.assertEqual(
+            self.fetch("SELECT valid_time_utc, is_empty FROM flood_extent_step ORDER BY valid_time_utc;"),
+            [(UTC_1, True), (UTC_2, False)],
+        )
+
+    def test_a_failed_step_gets_no_step_row_and_the_run_raises(self):
+        with self.assertRaises(flood_extent.FloodExtentError):
+            self.publish(build=fake_build(failing={STEP_2}), db_conn=self.conn)
+
+        self.assertEqual(self.fetch("SELECT valid_time_utc FROM flood_extent_step;"), [(UTC_1,)])
+
+    def test_keeps_the_step_rows_of_only_the_newest_keep_runs(self):
+        for run in ("20260925T170000", "20260925T171500", "20260925T173000"):
+            self.publish(run=run, db_conn=self.conn, keep_runs=2)
+
+        self.assertEqual(
+            self.fetch("SELECT DISTINCT run_ts FROM flood_extent_step ORDER BY run_ts;"),
+            [("20260925T171500",), ("20260925T173000",)],
+        )
 
 
 class ValidTimeUtcTests(unittest.TestCase):
