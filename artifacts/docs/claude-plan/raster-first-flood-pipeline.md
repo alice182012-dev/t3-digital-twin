@@ -22,6 +22,27 @@ directly, the way `dags/flood_forecast_state_test_dag.py` already does for tiles
 - `run_ts` comes from `flood_extent.stamp_key` of the earliest depth file, as in the test DAG.
   Checked: it equals what the merge task derived, in the same `YYYYMMDDTHHMMSS` format.
 
+## Decisions from the user, 2026-09-24 (Stage B)
+
+1. **Write in place.** The flood-on-roads task writes `flood_road_values`, so routing code and the table's
+   contract do not change. A shadow table is used only for the comparison.
+2. **Mean depth per road piece.** (Superseded on 2026-09-25 by D-006: `depth` is the maximum, and there is no
+   `depth_max` column. The reasoning below is kept as the record.) The vault records "mean" or "average" only for the route chart's
+   route-level average. The old pipeline did no averaging: it cut each road by the 1 m flood cells, so each
+   row carried one cell's depth. Mean over a 50 m piece can hide a short deep spot (5 m at 0.6 m depth over a
+   mostly dry piece averages about 0.06 m, under the motorbike's 0.2 m limit). The new rows therefore also
+   store the piece's maximum depth, and the comparison counts pieces whose passability changes under mean
+   against the old rows and against maximum.
+3. **Retire `dags/test_dag.py`.** It is a live DAG that imports the retired scripts.
+4. **Remove the `flood-results-full` bucket.** Remove it from `minio-init`, compose, the README, and the tests
+   now. Delete the bucket and its 13 objects (12 MB) on the server at the Stage B deploy, after the DAG stops
+   referencing it (the old task `7_upload_minio` would otherwise recreate it).
+
+Each decision, with its reason and alternatives, is also in [[decision-log]].
+
+Work for Stage B happens on the local branch `stage-b`, which holds the merged DAG retirement, so that
+`flood-on-points` stays safe to push.
+
 ## Design points agreed in discussion
 
 - **Flood on points is not a DAG task.** `GET /flood/points` reads the raster per request. A
@@ -75,9 +96,29 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   DAG run.
 - Until the next `9b` run loads tiles, `GET /flood/points` returns 404 for every timestep.
 - `flood_depth_raster` (whole rasters) has no reader or writer after this change. Drop it in Phase 3.
+- After the Stage B backend runs on tiles, drop the legacy whole-raster table on `storage-postgres`:
+  `DROP TABLE IF EXISTS flood_depth_raster;`. Delete the `flood-results-full` bucket and its 13 objects
+  (12 MB) at the same deploy, after the DAG stops referencing it.
 - `server.py` opens a new connection per request, and the first raster call in a connection loads the
   PostGIS raster library (57 ms locally against 1.4 ms for a plain connect). Reuse connections when
   the latency check runs.
+
+## Stage B deploy order
+
+1. Keep `flood_mapping_full` paused. Push `stage-b`, then on the server run `git fetch; git checkout stage-b; git pull`.
+2. Run the schema scripts in `airflow-worker`: `create_flood_road_tables.py` (adds `segment_id`; renamed from `create_geojson_tables.py` on 2026-09-25),
+   `create_road_segment_table.py`, and `create_flood_depth_raster_tables.py` (tile table only). With D-006,
+   routing reads plain `depth`, so the backend no longer needs a new column before it is rebuilt.
+3. Load the roads once with `load_road_segments`, then check the piece count (35,652 expected).
+4. Rebuild `floodmap-backend` from the Mac (`docker compose build`) and recreate it on the server with
+   `--no-deps`.
+5. Verify `flood_on_roads` on a real run into a shadow table first, not into `flood_road_values`: writing in
+   place replaces the old rows of that run.
+6. Delete the `flood-results-full` bucket (13 objects) and drop `flood_depth_raster`, after the DAG no longer
+   references them.
+7. Unpause the DAG and watch one full cycle. The rain gate skips a dry cycle, so a full cycle needs rain, or the
+   tasks are run by hand on a real run.
+8. Take the evidence screenshots (including a graded route built from the new rows), then mark the stories `Done`.
 
 ## Review findings that shape the plan (2026-09-24)
 
@@ -104,4 +145,29 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   credential helper fails in an SSH session on the server, and the containers were recreated on the
   server with `--no-deps`. `flood_mapping_full` was already paused and stays paused. Tiles for run
   `20260924T153638` were loaded by hand. The next steps are Story 3 (flood on roads) and Story 4.
-
+- **2026-09-24.** Stage B decisions recorded. Branch `stage-b` created with the DAG retirement merged. Two
+  delegates started: flood on roads (Story 3) and Story 4 preparation (test DAG, bucket, legacy table).
+- **2026-09-24.** Story 4 preparation is done on `stage-b`, in three commits (`4c1329f`, `d60179f`, `5e50ceb`):
+  `dags/test_dag.py` (DAG `flood_forecast_pipeline_test`) deleted; the `flood-results-full` bucket removed from
+  `compose.yml`, `.env.example`, the README, and the MinIO concept page; `create_flood_depth_raster_tables.py`
+  creates only `flood_depth_raster_tile`. The server bucket, its objects, and the old table stay until the
+  Stage B deploy. Leftovers for the final cleanup: `scripts/merge_to_minio.py` is dead code and should go
+  with `scripts/mapping/*`; the docstring at `dags/flood_mapping_dag.py:205` still names
+  `flood_depth_raster`; `artifacts/raw/T3-Digital-Twin_Architecture.md` (read-only) still lists the bucket
+  at lines 94 and 271, for the user to update.
+- **2026-09-24.** Story 3 merged into `stage-b` and `Reviewed`. Findings: the server runs `SAMPLE_RATE=20`, so old
+  `flood_road_values` depths come from one pixel per 20 m cell and half of the old wet slivers are dry along the
+  road. Mean depth per piece misses 39 to 168 real closures per vehicle and run, and maximum depth misses 0 to 5 (9 in total, all beside a piece boundary).
+  The server's PostgreSQL `TimeZone` is `Etc/UTC`, so the local-time alignment holds. Open decision: routing's
+  band filter on `depth_max`.
+- **2026-09-25.** Created [[decision-log]] with the Stage B decisions and D-005: routing filters on `depth_max`.
+- **2026-09-25.** Built on `stage-b` and merged: `flood_on_roads` and road loader tasks in the DAG (`e397153`,
+  `c39bffb`), routing on `depth_max` (`e6b51e8`, `191e33b`, decision D-005). The DAG loads in a real `DagBag` on the
+  server (11 tasks, 15 edges). Next: the Stage B deploy order above.
+- **2026-09-25.** D-006: depth per road piece is the maximum, stored in `depth`. Supersedes D-002 and D-005, drops the
+  `depth_max` column, and removes the schema-first deploy hazard. Code change in progress on `stage-b`.
+- **2026-09-25.** D-006 code merged into `stage-b` (`ad328a4`, `e258620`, `87271e8`, `71eba9a`, `d31f198`): `depth` is the deepest
+  1 m sample, the `depth_max` column is gone, and routing reads plain `depth`. All tests pass on the merged tree. Next: the
+  Stage B deploy order.
+- **2026-09-25.** Renamed `create_geojson_tables.py` to `create_flood_road_tables.py` on `stage-b` (`7916abd`), because it creates the routing
+  tables and has nothing to do with GeoJSON now. The old scripts under `scripts/mapping/` stay until the server verification.
