@@ -65,6 +65,11 @@ RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # be self-provisioned here; it's created once with `airflow pools set threedi_trigger 2 "..."`
 # as a deploy step, the same way this repo's schema scripts are run once against the server.
 POOL_THREEDI_TRIGGER = "threedi_trigger"
+# 3_calculate_depth spawns MAX_WORKERS threedidepth subprocesses via multiprocessing.Pool
+# (CPU-bound, not I/O-bound like the pool above). Two runs of this task at once would
+# oversubscribe the box, so this one-slot pool exists to serialize it, not to prioritize it.
+# Same out-of-band creation rule as POOL_THREEDI_TRIGGER: `airflow pools set depth_calc 1 "..."`.
+POOL_DEPTH_CALC = "depth_calc"
 
 
 def run_slot(kwargs):
@@ -315,7 +320,9 @@ with DAG(
         task_id="2_download_results", python_callable=task_download_result
     )
     t3 = PythonOperator(
-        task_id="3_calculate_depth", python_callable=task_calculate_depth
+        task_id="3_calculate_depth",
+        python_callable=task_calculate_depth,
+        pool=POOL_DEPTH_CALC,
     )
     t3b = PythonOperator(
         task_id="3b_upload_netcdf_postgres", python_callable=task_upload_netcdf_postgres
