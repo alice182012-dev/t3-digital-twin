@@ -55,6 +55,10 @@ x-airflow-common: &airflow-common
     - ./plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
     - ./data:/opt/airflow/data
+    # scripts/flood_metrics/extract_run.py imports flood_utils.py for per-vehicle impassable
+    # depths (FLOOD_UTILS_DIR). Mount only this folder, read-only, not all of ./floodmap: it has
+    # no import dependency on the rest of that tree (checked: stdlib only).
+    - ./floodmap/graphhopper-flood-road/scripts:/opt/airflow/floodmap/graphhopper-flood-road/scripts:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     airflow-redis:
