@@ -50,3 +50,15 @@
     height: 12px;
     border-radius: 2px;
 }
+
+/* On mobile, the search panel (App.module.css's .smallScreenSidebar) sits at the top of the
+   screen with a height that varies by state (collapsed pill vs. expanded inputs), and covers
+   this card's top-right position from the mockup. Move it to the bottom right instead, mirroring
+   MapModeToggle's existing bottom-left placement on this breakpoint, rather than tracking the
+   panel's runtime height. */
+@media (max-width: 44rem) {
+    .container {
+        top: auto;
+        bottom: 30px;
+    }
+}
