@@ -193,7 +193,14 @@ function installRoutingInterceptor() {
                     if (!body.custom_model) {
                         body.valid_time = step.valid_time
                         body.run = step.run
-                        body.vehicle_type = state.vehicleType
+                        // Not body.vehicle_type = state.vehicleType: that field is never set by
+                        // dispatching SelectFloodVehicle (nothing does), so every request carried
+                        // the initial 'motorbike' regardless of the selected routing profile.
+                        // backend/server.py:_handle_route falls back to body.profile when
+                        // vehicle_type is absent, and profile names (motorbike/car/truck/foot)
+                        // match VEHICLE_PROFILES one to one, so omitting this lets each request
+                        // — including the separate per-mode travel-time requests — use its own
+                        // profile's flood depth limit instead of always the strictest one.
                         init = { ...init, body: JSON.stringify(body) }
                     }
                 }
