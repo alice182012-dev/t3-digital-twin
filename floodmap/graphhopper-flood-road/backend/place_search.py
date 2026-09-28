@@ -38,6 +38,21 @@ def _optional_number(value: str | None, name: str, minimum: float, maximum: floa
     return number
 
 
+def _parse_point(value: str | None) -> tuple[float, float] | None:
+    """Parses the frontend's "lat,lng" query string (Converters.ts's coordinateToText)."""
+    if value in (None, ""):
+        return None
+    parts = [part.strip() for part in value.split(",")]
+    if len(parts) != 2 or "" in parts:
+        raise PlaceSearchValidationError("invalid point")
+    try:
+        lat = _optional_number(parts[0], "point", -90, 90)
+        lon = _optional_number(parts[1], "point", -180, 180)
+    except PlaceSearchValidationError as exc:
+        raise PlaceSearchValidationError("invalid point") from exc
+    return lat, lon
+
+
 def _address(properties: dict, name: str) -> str:
     parts: list[str] = []
     street = str(properties.get("street") or "").strip()
@@ -97,7 +112,13 @@ def _photon_bbox(properties: dict) -> list[float] | None:
     return None
 
 
-def geocode_gh_shape(query: str, locale: str = "en", limit: int = PHOTON_RESULT_LIMIT) -> dict:
+def geocode_gh_shape(
+    query: str,
+    locale: str = "en",
+    point: tuple[float, float] | None = None,
+    location_bias_scale: float | None = None,
+    limit: int = PHOTON_RESULT_LIMIT,
+) -> dict:
     """graphhopper-maps' Api.ts expects the GraphHopper Geocoding API shape
     ({hits: [...]}, see src/api/graphhopper.d.ts GeocodingResult/GeocodingHit),
     which differs from raw Photon's GeoJSON FeatureCollection. This adapts
@@ -107,7 +128,11 @@ def geocode_gh_shape(query: str, locale: str = "en", limit: int = PHOTON_RESULT_
     if not query:
         return {"hits": [], "took": 0}
 
-    params = [("q", query), ("lang", locale or "en"), ("limit", str(limit))]
+    params = [("q", query), ("lang", locale or "en"), ("limit", str(limit)), ("countrycode", "VN")]
+    if point is not None:
+        params.extend((("lat", str(point[0])), ("lon", str(point[1]))))
+    if location_bias_scale is not None:
+        params.append(("location_bias_scale", str(location_bias_scale)))
     request = Request(
         f"{PHOTON_BASE_URL}/api?{urlencode(params)}",
         headers={"Accept": "application/json", "User-Agent": "FloodRouteVietnam/1.0"},
@@ -125,6 +150,9 @@ def geocode_gh_shape(query: str, locale: str = "en", limit: int = PHOTON_RESULT_
         properties = feature.get("properties") or {}
         coordinates = (feature.get("geometry") or {}).get("coordinates")
         if not isinstance(coordinates, list) or len(coordinates) < 2:
+            continue
+        # Backstop for a Photon instance that ignores the countrycode request param.
+        if str(properties.get("countrycode") or "").upper() != "VN":
             continue
         lon, lat = float(coordinates[0]), float(coordinates[1])
         name = str(properties.get("name") or properties.get("street") or properties.get("city") or "")

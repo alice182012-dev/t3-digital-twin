@@ -42,6 +42,8 @@ from place_search import (  # noqa: E402
     PlaceSearchTimeout,
     PlaceSearchUnavailable,
     PlaceSearchValidationError,
+    _optional_number,
+    _parse_point,
     geocode_gh_shape,
     search_places,
 )
@@ -173,7 +175,19 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._send(200, {"results": results})
             elif parsed.path == "/geocode":
-                self._send(200, geocode_gh_shape(qs.get("q", [""])[0], qs.get("locale", ["en"])[0]))
+                point = _parse_point(qs.get("point", [None])[0])
+                location_bias_scale = _optional_number(
+                    qs.get("location_bias_scale", [None])[0], "location_bias_scale", 0.0, 1.0
+                )
+                self._send(
+                    200,
+                    geocode_gh_shape(
+                        qs.get("q", [""])[0],
+                        qs.get("locale", ["en"])[0],
+                        point=point,
+                        location_bias_scale=location_bias_scale,
+                    ),
+                )
             else:
                 self._send(404, {"error": "not found"})
         except FloodPointNotFound as exc:
