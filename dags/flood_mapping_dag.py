@@ -81,7 +81,12 @@ def ensure_threedi_trigger_pool():
             if session.query(Pool).filter(Pool.pool == POOL_THREEDI_TRIGGER).first() is None:
                 # 2 slots: matches max_active_runs below, so each concurrently active DAG run
                 # gets its own rain-check/trigger slot without queuing behind the other run's.
-                session.add(Pool(pool=POOL_THREEDI_TRIGGER, slots=2, description="3Di rain-check and simulation trigger tasks"))
+                session.add(Pool(
+                    pool=POOL_THREEDI_TRIGGER,
+                    slots=2,
+                    description="3Di rain-check and simulation trigger tasks",
+                    include_deferred=False,
+                ))
     except Exception as e:
         logger.warning(f"⚠️ Could not ensure pool {POOL_THREEDI_TRIGGER!r}: {e}")
 
