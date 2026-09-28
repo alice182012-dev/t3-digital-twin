@@ -1,16 +1,11 @@
 from airflow import DAG
 from airflow.exceptions import AirflowException
-from airflow.models import Pool
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
-from airflow.utils.session import create_session
 from datetime import datetime, timedelta, timezone
-import logging
 import sys
 import os
 import boto3
 import psycopg2
-
-logger = logging.getLogger(__name__)
 
 
 BASE_PATH = "/opt/airflow"
@@ -65,33 +60,11 @@ DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # Keeps 0_check_forecast_rain and 1_trigger_simulation off the default pool, so a new run's
 # rain check and 3Di trigger (I/O-bound: they wait on Tomorrow.io and 3Di, not local CPU) don't
-# queue behind a previous run's CPU-heavy tasks for the worker's 2 Celery slots.
+# queue behind a previous run's CPU-heavy tasks for the worker's 2 Celery slots. Airflow 3
+# forbids direct ORM/database access from code that runs at DAG-parse time, so this pool cannot
+# be self-provisioned here; it's created once with `airflow pools set threedi_trigger 2 "..."`
+# as a deploy step, the same way this repo's schema scripts are run once against the server.
 POOL_THREEDI_TRIGGER = "threedi_trigger"
-
-
-def ensure_threedi_trigger_pool():
-    """Create POOL_THREEDI_TRIGGER if it doesn't exist yet. Airflow never auto-creates a pool a
-    task references by name, and this repo has no separate pool-provisioning step, so the DAG
-    creates its own pool at parse time, the same defensive-import-time posture as the
-    try/except ImportError block above. A transient DB hiccup or a race between two dag-processor
-    parses creating the pool at once must not fail DAG parsing, so any error is only logged.
-    """
-    try:
-        with create_session() as session:
-            if session.query(Pool).filter(Pool.pool == POOL_THREEDI_TRIGGER).first() is None:
-                # 2 slots: matches max_active_runs below, so each concurrently active DAG run
-                # gets its own rain-check/trigger slot without queuing behind the other run's.
-                session.add(Pool(
-                    pool=POOL_THREEDI_TRIGGER,
-                    slots=2,
-                    description="3Di rain-check and simulation trigger tasks",
-                    include_deferred=False,
-                ))
-    except Exception as e:
-        logger.warning(f"⚠️ Could not ensure pool {POOL_THREEDI_TRIGGER!r}: {e}")
-
-
-ensure_threedi_trigger_pool()
 
 
 def run_slot(kwargs):
