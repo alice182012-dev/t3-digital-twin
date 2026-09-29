@@ -65,6 +65,51 @@ Never assume a local `docker compose up` reflects what's actually
 running; the local Docker daemon on this machine is not the one this
 project's containers run on.
 
+## Test points stay inside the model border
+
+The 3Di flood model covers a rectangle of Hanoi. Every test that uses a
+coordinate must use one inside it: a depth lookup, a place popup, a route, a
+demo, or an evidence screenshot. Outside the border the raster has no depth
+values and GraphHopper often finds no road, so the test fails for a reason
+that has nothing to do with the change under test.
+
+The border, in EPSG:4326:
+
+- Longitude 105.7015 to 105.7971.
+- Latitude 20.9754 to 21.0269.
+
+The numbers are the extent of `flood_depth_raster_tile`. All 8 retained runs on
+2026-09-29 had the same extent. Check a point before you use it. Write the
+pair as latitude first when you type it into the frontend, and as
+longitude first in an API body.
+
+Do not use the `bbox` from GraphHopper's `/info` as the border. It is
+105.665404, 20.887149, 105.901313, 21.127032, and it contains central Hanoi,
+where a route fails with `Cannot find point`.
+
+Points outside the border, which fail or give no depth:
+
+- 21.0285, 105.8542 (Hoàn Kiếm) is outside on both axes.
+- 21.0300, 105.7620 is outside the north edge by about 340 m.
+
+A route pair inside the border that the frontend routed with the truck profile
+on 2026-09-29 at 18:15 UTC:
+
+- 21.0250, 105.7550 to 21.0255, 105.7620, 1.9 km and 3 min.
+
+A point inside the border can still give no route, because the flood changes
+from run to run. On the same day, 21.0090, 105.7340 started inside deep water
+and the frontend showed an error for the truck profile, and 21.0215, 105.7610
+to 21.0230, 105.7650 showed "No safe route available". Pick a pair, run it once
+in the frontend, and keep it only if it routes.
+
+Read the border again when the 3Di model or its grid changes, and update the
+numbers here. A read-only check on the server:
+
+```bash
+docker --context remote-server exec airflow_new-storage-postgres-1 psql -U minio_custom -d minio_custom -At -c "select ST_Extent(rast::geometry) from flood_depth_raster_tile"
+```
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
