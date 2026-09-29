@@ -334,7 +334,17 @@ the server.
 
 **Blocker tracking:** [[flood-points-connection-per-request]]
 
-Status:: active
+Status:: needs-revalidation
+
+2026-09-29: `db.py` now pools connections with `psycopg2.pool.ThreadedConnectionPool`
+(`FLOOD_DB_POOL_MIN`/`FLOOD_DB_POOL_MAX`, default 1/10), and every `server.py` handler borrows one
+through a `db.connection()` context manager instead of `psycopg2.connect()` per request. Each borrowed
+connection is rolled back before it's returned to the pool. Verified: `server.py` and `db.py` import
+and wire together cleanly, and a new `test_db.py` (no real PostGIS needed) proves the borrow/rollback/
+release contract holds on both a clean exit and an exception. Not yet measured against a real PostGIS
+or the server: no psycopg2/GDAL/remote-server access in this session. Still needed before this closes:
+run `test_server.py` for the full integration pass, then the "measure on the server" comparison this
+item calls for.
 
 ### Decide what the map shows by default: now or the forecast
 
