@@ -307,9 +307,11 @@ so the next run hotstarted from a state that lagged the clock. The fix saves a s
 state whose `valid_at` matches the run's 15-minute slot (`main` at `dd78bcb` and `09e8650`,
 `scripts/create_simulation.py`). The 2026-09-26 test-DAG log shows "Hotstart, exact ... offset 0 min".
 
-**Still open (monitoring, 2026-09-29):** Nothing checks the age of a saved state beyond the two-cycle
-window, states expire after one day, and a failed run leaves only the backup state at twice the
-interval. See the blocker page's Concerns.
+**Still open (monitoring, 2026-09-29):** No live `flood_mapping_full` run shows a hotstart under the
+real schedule yet. The earlier concerns are handled in code: `choose_saved_state` accepts only a state
+at most two cycles (30 minutes) before the slot and otherwise cold starts, a backup state at twice the
+save interval covers a failed run, and the one-day expiry no longer matters because no state older than
+30 minutes is used. Close this item when a live run logs "Hotstart, exact" or "Hotstart, fallback".
 
 **Effort:** S (human ~2 hrs / CC ~30 min)
 **Priority:** P1
