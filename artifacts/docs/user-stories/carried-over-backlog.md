@@ -67,7 +67,8 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   user reviews [[map-shows-forecast-not-now]] and [[five-minute-tile-freshness]], then the user records one
   decision on the blocker page: accept the caption and the 1.5 to 3 minute publish delay, or choose a
   freshness option and add its stories to a sprint.
-  Priority: P2. Status: Reviewed. Estimate: S for the decision. Sprint: 2. Dependencies: None.
+  Priority: P2. Status: Done. Estimate: S for the decision. Sprint: 2. Dependencies: None.
+  Evidence: ![[map-now-caption-as-of-0130.png|420]]
   Details:
   1. What: the map's "now" behavior (Option C, latest published step at or before now, captioned "As of
      `time`") is accepted as built. The user chose to keep narrowing the 1.5 to 3 minute publish delay
@@ -79,6 +80,10 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   4. Effect: scheduled as Story 6 below. Option E, and accepting the delay as final, are both closed for
      this plan; either can be revisited from [[five-minute-tile-freshness]] if Story 6's result doesn't
      reach a satisfactory margin.
+  5. Evidence: a screenshot the user took on the running map at 2026-09-30 01:36 (the menu-bar clock shows it)
+     with the legend caption "As of 30/09/2026 01:30", a step six minutes before the capture. The address bar is not
+     in the image. Earlier that day the caption read 16:45, because `flood_mapping_full` was paused. The image shows the
+     accepted behavior. It does not measure the publish delay, which Story 6 covers.
 
 - **Story 6: Narrow the per-run critical path under the 15-minute cycle (option D).**
   As the pipeline owner, I want each run's step-1 tile to publish with real margin before that step
@@ -106,6 +111,8 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   Story 5 stays in Sprint 2 (its decision sets Sprint 3's wording), Stories 2 and 3 to the next plan (P3 and blocked on user input).
 - **2026-09-29, draft.** Story 3 (the soak) is in [[sprint-plan-2]] Sprint 5, before the routing engine builds on the backend. Story 2
   (`DESIGN.md`) is in [[sprint-plan-3]] Sprint 11.
-- **2026-09-29, draft.** Story 5 is `Reviewed`, not `Done`: the user chose to keep narrowing the publish delay
+- **2026-09-29, draft.** Story 5 was `Reviewed`, not `Done`: the user chose to keep narrowing the publish delay
   ([[five-minute-tile-freshness]] option D), not accept it as final and not commit to option E. Added
   Story 6 (the option D work) to Sprint 4.
+- **2026-09-30, draft.** Story 5 is `Done`: the user's screenshot at 01:36 shows the map captioned "As of 30/09/2026 01:30",
+  saved as `map-now-caption-as-of-0130.png`.
