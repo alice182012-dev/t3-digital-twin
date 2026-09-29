@@ -27,7 +27,7 @@ planning").
   (`GET /flood/points`), Story 4 (latency validation, not run, see Details). The reverse-geocoding source
   turned out to be a new backend endpoint, since the app's geocoder is forward only.
   Evidence: ![[frontend-place-depth-popup-wet.png|420]] ![[frontend-place-depth-popup-with-route.png|420]]
-  ![[frontend-place-depth-map-mode.png|420]]
+  ![[frontend-place-depth-map-mode.png|420]] ![[frontend-place-depth-popup-wet-rebuilt.png|420]]
   Details:
   1. What: a card at the tapped point in Flood mode with the place name, address, coordinates, and
      "Water depth now: N cm" (`PlaceDepthPopup.tsx`), plus `GET /places/reverse` for the place.
@@ -38,7 +38,8 @@ planning").
   3. Why: a user can judge water at a specific place, not only along a route. Checked on the server at
      1366x768: a wet point read 205 cm (`GET /flood/points` returned 2.048 m for the same point and step), a
      dry point read 0 cm, the card also opens with a route on screen, and Map mode still opens the menu.
-     The wet-case screenshot, taken on the rebuilt frontend on 2026-09-30, is saved as `frontend-place-depth-popup-wet.png`.
+     A second wet-case screenshot, taken on the frontend rebuilt from the merged branch, is saved as
+     `frontend-place-depth-popup-wet-rebuilt.png`.
   4. Effect: the depth line says "as of `time`" for a step older than 45 minutes and "Forecast for `time`"
      for a future step, so it never calls a stale or forecast depth the present. One tap costs one request to
      each endpoint: depth about 0.13 to 0.23 s and the place about 1.1 to 1.4 s (5 samples through the proxy
@@ -84,7 +85,8 @@ planning").
 - **2026-09-29, draft.** Story 1 done. A plain click already opened the context menu, so the popup replaces it
   only in Flood mode. See [[place-depth-popup-on-map-tap]].
 - **2026-09-29, draft.** Story 4 added from the tap-a-turn-step item in `TODOS.md`, scheduled in Sprint 3 after Story 2.
-- **2026-09-30, draft.** Saved the missing evidence image `frontend-place-depth-popup-wet.png`, a screenshot the user took
-  on the frontend rebuilt from the merged branch. The card at Đại lộ Thăng Long (Tây Mỗ, Hà Nội) shows the coordinates
+- **2026-09-30, draft.** Added `frontend-place-depth-popup-wet-rebuilt.png`, a second wet-case screenshot the user took on the
+  frontend rebuilt from the merged branch. The card at Đại lộ Thăng Long (Tây Mỗ, Hà Nội) shows the coordinates
   21.008917, 105.733807 and "Water depth as of 29/09/2026 16:45: 62 cm", and the legend reads "As of 29/09/2026 16:45".
-  The image does not show the server address. The other two images this story lists were already saved.
+  The image does not show the server address. The first wet-case image, `frontend-place-depth-popup-wet.png` (212 cm at
+  21.005133, 105.757325, run 15:45), is unchanged. An earlier entry here said that image was never saved. That was wrong.

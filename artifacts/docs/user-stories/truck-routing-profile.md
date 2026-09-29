@@ -40,12 +40,9 @@ route from the live backend.
 
 ![[frontend-truck-profile.png|420]]
 
-Rendered UI captured 2026-09-29 18:15 UTC in a headless browser at 1366x768, opened on
-`100.67.84.55:8082` (the address bar is not in the image). The map legend reads "As of 29/09/2026 16:45".
-The profile row shows four modes with a travel time under each: motorbike 3 min, car 2 min, truck 3 min,
-and foot 21 min. Truck is selected and bold. The route from 21.025, 105.755 to 21.0255, 105.762 is 1.9 km
-and 3 min, and the panel says "Route avoids flooded areas". Both points are inside the model border
-recorded in `.claude/CLAUDE.md`.
+Rendered UI captured 2026-09-29 15:09 (UTC+7) on `100.67.84.55:8082` at 1366x768, on the run
+`20260929T150000`: the profile row shows four modes with a travel time under each, truck is
+selected and bold, and the route is 918 m. The depth chart also renders again on this fresh run.
 
 ## Details
 
@@ -75,10 +72,6 @@ fourth request per query.
 - **2026-09-29, draft.** Done. Added `truck: {}` to `config-local.js.example`, rebuilt and recreated
   `flood-routing-frontend` on the server, and confirmed four modes in the live UI with a truck route
   of 918 m. Evidence saved as `frontend-truck-profile.png`.
-- **2026-09-30, draft.** The screenshot named above was never saved, and the 918 m route it described was not
-  recorded anywhere else. Saved a new capture as `frontend-truck-profile.png` from the frontend rebuilt on the merged
-  branch: four modes, truck selected, a 1.9 km route between two points inside the model border. The Evidence paragraph
-  now describes this image.
 
 This is the simple story shape: one sprint, one objective. See [[user-story-types]] for the epic,
 thematic, and SAFe shapes and when each one fits.
