@@ -310,8 +310,8 @@ that the next run may show one. It never says "stay home".
 Algorithm:
 
 1. Get one route from the router with no flood `custom_model`, so a flooded network still returns a route
-   to walk. The regular flood-aware request returns zero paths when every road is blocked, and that is
-   the case this endpoint exists for. Read the per-piece arrival offsets from `details.time`. **Inference.**
+   to walk. The regular flood-aware request fails with a `ConnectionNotFoundException` (HTTP 400) when every road is
+   blocked, as [[failed-route-shows-previous-mode-route]] records, and that is the case this endpoint exists for. Read the per-piece arrival offsets from `details.time`. **Inference.**
    A request without `custom_model` returns the normal route. This exact request was not run.
 2. Set the start: the later of `depart_from` and the request time, rounded to the containing step. Steps
    before it are the past and are not read. In one SQL statement, read for each piece the `depth` at every
@@ -372,11 +372,11 @@ Decided on 2026-09-29:
    response echoes both, so the UI can show what the advice assumed. A client cannot pick a smaller
    margin than the product intends.
 7. **When to compute: on request.** See the following section.
-8. **Who fetches it: the client.** When the results view becomes `empty`, the client sends `POST /route/departures`.
+8. **Who fetches it: the client.** When a route request fails with a no-connection error, the client sends `POST /route/departures`.
    `POST /route` stays unchanged. The server-attached alternative is rejected, see "Alert behavior".
 9. **Where the advice shows: in the existing no-route alert.** `NoSafeRouteMessage` in
    `floodmap/graphhopper-maps/src/sidebar/RoutingResults.tsx` (line 116) shows "No safe route available"
-   when a route request returns zero paths. The "wait until" recommendation goes into that alert. It
+   when a route request has no route. The "wait until" recommendation goes into that alert. It
    appears only when the alert appears, so a user with a clear route sees no advice. See "Alert behavior".
 
 Still open:
@@ -388,7 +388,10 @@ Still open:
 The advice extends the alert that says no safe route exists. Nothing changes for a user whose route request
 returns at least one path.
 
-- **Trigger.** The route request returns zero paths, and the departure request has not run yet.
+- **Trigger.** The route request fails with a no-connection error, and the departure request has not run yet.
+  Today that failure is not shown. `RouteStore.ts` has no branch for `RouteRequestFailed`, so the previous
+  mode's route stays on the map and the banner is empty (todo 13 in
+  [[frontend-todos-and-backend-dependencies]]). That fix must land first.
 - **Wording.** Where the scan finds a clear departure: "No safe route now. The usual route is clear from 18:00
   (forecast run 12:00)." The time is `earliest_clear_departure`. Where it finds none: "No safe route
   in the next 2 hours. Check again after the next forecast run." Keep the existing advice to reach the
@@ -399,12 +402,13 @@ returns at least one path.
   flood-aware router would draw. The message names it "the usual route" so a user does not expect the map
   to show it. Drawing it is a UI decision.
 - **Client-triggered advice (decided 2026-09-29).** `selectRoutingResultsView` in
-  `routingResultsView.ts` returns `empty` for zero paths, and `NoSafeRouteMessage` renders. Add a fetch on
-  `empty` and show the advice when it returns. Keep `POST /route` unchanged. The cost is one extra request
+  `routingResultsView.ts` returns `empty` only for zero paths, and a failed request never reaches it today.
+  After todo 13 makes a failed request produce the no-route state and `NoSafeRouteMessage`, add a fetch
+  on that state and show the advice when it returns. Keep `POST /route` unchanged. The cost is one extra request
   after a failed route, and a short state where the alert shows without the advice, which needs a
   loading line so the alert does not read as final.
-- **Server-attached advice (rejected).** `_handle_route` adds an `advice` object when the
-  GraphHopper response has zero paths, so the client needs no second request. The cost is that every
+- **Server-attached advice (rejected).** `_handle_route` adds an `advice` object when
+  GraphHopper returns a no-connection error, so the client needs no second request. The cost is that every
   empty route now pays for the scan inside the route call, and the response shape of `POST /route`
   changes for a client that does not expect it.
 

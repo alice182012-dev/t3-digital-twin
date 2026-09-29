@@ -502,7 +502,8 @@ No budget is set yet.
 8. Should the service answer "when should I go?" Every tier above answers "which route, if I leave at
    `t0`?", and `t0` is an input. Decided 2026-09-29: yes, as "wait until", shown in the existing no-route
    alert. The first version is a fixed-route departure timeline, `POST /route/departures`, sent by the
-   client when a route request returns zero paths. It walks the flood-free route and blocks a piece if its
+   client when a route request fails with no connection, once the frontend shows that failure
+   ([[failed-route-shows-previous-mode-route]]). It walks the flood-free route and blocks a piece if its
    depth reaches the limit at any step from the departure step to the arrival time plus a 10-minute margin
    fixed on the server. It does not depend on which
    tier is chosen. A sweep over routes waits until a measurement shows the timeline often says
