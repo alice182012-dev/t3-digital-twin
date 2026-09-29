@@ -332,19 +332,16 @@ the server.
 **Depends on:** [[raster-first-pipeline-stories]] Story 2 deployed. Feeds the latency check in
 [[point-depth-lookup-backend]]'s Story 4.
 
-**Blocker tracking:** [[flood-points-connection-per-request]]
+**Blocker tracking:** [[flood-points-connection-per-request]] (resolved 2026-09-29)
 
-Status:: needs-revalidation
+**Result (2026-09-29):** `db.py` pools connections with `psycopg2.pool.ThreadedConnectionPool`,
+every `server.py` handler borrows through a `db.connection()` context manager. Deployed to the live
+`floodmap-backend` container and measured on the server: sequential median 80.7ms to 4.6ms,
+5-concurrent median 99.4ms to 39.6ms, 10-concurrent median 126.8ms to 103.3ms (hits
+`FLOOD_DB_POOL_MAX`'s default ceiling of 10). No errors at any level tested. Unblocks
+[[point-depth-lookup-backend]] Story 4, now also `Done`.
 
-2026-09-29: `db.py` now pools connections with `psycopg2.pool.ThreadedConnectionPool`
-(`FLOOD_DB_POOL_MIN`/`FLOOD_DB_POOL_MAX`, default 1/10), and every `server.py` handler borrows one
-through a `db.connection()` context manager instead of `psycopg2.connect()` per request. Each borrowed
-connection is rolled back before it's returned to the pool. Verified: `server.py` and `db.py` import
-and wire together cleanly, and a new `test_db.py` (no real PostGIS needed) proves the borrow/rollback/
-release contract holds on both a clean exit and an exception. Not yet measured against a real PostGIS
-or the server: no psycopg2/GDAL/remote-server access in this session. Still needed before this closes:
-run `test_server.py` for the full integration pass, then the "measure on the server" comparison this
-item calls for.
+Status:: done
 
 ### Decide what the map shows by default: now or the forecast
 

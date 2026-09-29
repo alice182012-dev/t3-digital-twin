@@ -34,14 +34,14 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   instead of unpacking a 209 MB raster, and old runs are removed.
   Given the real `depth_20260924_170639.tif`, when it is loaded as tiles, then `ST_Value` at three
   points matches `gdallocationinfo`, a lookup on the server is faster than the current 80 to 280 ms,
-  and only the newest runs are kept (default 3).
-  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 2. Dependencies: None.
-  Evidence: ![[raster-tiles-server-check.png|420]]
+  and only the newest runs are kept (`FLOOD_RASTER_KEEP_RUNS`, default 8).
+  Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: None.
+  Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
   Details:
-  1. What: each timestep's depth raster is stored as 256 by 256 tiles in `flood_depth_raster_tile`, read through a spatial index, and runs older than the newest 3 are pruned.
+  1. What: each timestep's depth raster is stored as 256 by 256 tiles in `flood_depth_raster_tile`, read through a spatial index, and runs older than the newest `FLOOD_RASTER_KEEP_RUNS` are pruned.
   2. How: `load_run` reprojects to EPSG:4326 and cuts tiles with `ST_Tile` in one delete-and-insert transaction. `GET /flood/points` selects the tile under the point, then runs `ST_Value`.
   3. Why: the whole-raster lookup unpacked 209 MB per request and took 80 to 280 ms on the server.
-  4. Effect: deployed on 2026-09-24 (commit `6155f09`). On the server a tile lookup takes a median of 0.56 ms in the database, and a full request about 81 ms, because each request opens a new connection ([[flood-points-connection-per-request]]). Retention has not run on the server, since only one run has tiles, so the story stays `Reviewed`.
+  4. Effect: deployed on 2026-09-24 (commit `6155f09`). On the server a tile lookup takes a median of 0.56 ms in the database. Retention confirmed on the server 2026-09-29: exactly 8 distinct `run_ts` values hold tiles (oldest `20260928T204500`, newest `20260929T163000`), matching `DEFAULT_KEEP_RUNS` in `raster_load.py`, raised from 3 to 8 by commit `002bdce` (2026-09-25) after this story's acceptance criteria were written; older runs are confirmed gone. The connection-per-request cost is fixed separately, see [[flood-points-connection-per-request]] (resolved).
 
 - **Story 3: Compute flood on roads from the raster into a shadow table.**
   As the routing backend, I want each road piece's depth per timestep computed from the raster in
@@ -66,25 +66,26 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   Given the shadow comparison passes, when the DAG is rewritten, then tasks 4 to 8 no longer exist,
   `run_ts` comes from `flood_extent.stamp_key`, a full cycle succeeds on the server, and a graded
   `POST /route` returns a route built from the new table.
-  Priority: P0. Status: In progress. Estimate: M. Sprint: 2. Dependencies: Story 3.
-  Evidence: ![[graded-routing-server-check.png|420]]
+  Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: Story 3.
+  Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
   Details:
   1. What: the DAG no longer builds GeoJSON. It loads roads and computes flood on roads into `flood_road_values`, the table routing reads.
   2. How: `stage-b` removes tasks 4 to 8, `dags/test_dag.py`, and the `flood-results-full` configuration, and adds the `load_road_segments` and `flood_on_roads` tasks. On the server the bucket (15 objects, 14.7 MB) and the old `flood_depth_raster` table (122 MB) were deleted, and `flood_on_roads` was written in place for run `20260924T164803`.
   3. Why: one path from the depth rasters to routing, with the raster as the source of truth.
-  4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. Still open: a full DAG cycle, the frontend on a live event (the state-test DAG will provide one, see D-007), and dropping the `flood_road_values_shadow` table left on the server from Story 3's comparison run. The old scripts are deleted (2026-09-29).
+  4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. The old scripts (`extract_geojson_full.py`, `mapping_geojson.py`, `merge_geojson.py`, `upload_minio.py`, and their two callers) are deleted (2026-09-29). A full cycle succeeded on the server 2026-09-29 (`scheduled__2026-09-29T09:15:00+00:00`, all 10 tasks green). Graded `POST /route` confirmed live on real current data: the same two points connect (1256.4 m) ungraded and lose connection ("Connection between locations not found") once the live `flood_road_values` custom_model applies. Still open: the frontend on a live event (the state-test DAG will provide one, see D-007), and dropping the `flood_road_values_shadow` table on the server (an operational step, not code; `flood_on_roads.py`'s `create_shadow_table` and `compare_with_old.py` stay, they're live comparison tooling).
 
 - **Story 5: Create the netcdf table in the schema task.**
   As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is not marked
   `failed` when every other task succeeded.
   Given a database without `netcdf_files`, when `0b_ensure_schema` runs, then the table exists and
   task 3b succeeds.
-  Priority: P2. Status: Reviewed. Estimate: S. Sprint: 2. Dependencies: None.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 2. Dependencies: None.
+  Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
   Details:
   1. What: the netcdf tables are created by the schema task.
   2. How: `task_ensure_schema` calls `create_netcdf_tables.create_tables()`, which is idempotent.
   3. Why: `3b_upload_netcdf_postgres` failed with `relation "netcdf_files" does not exist`, which marked every run `failed`.
-  4. Effect: on the server the three netcdf tables now exist, created by hand on 2026-09-25 with the same function (run twice). The story stays `Reviewed` until a real cycle shows task 3b succeeding.
+  4. Effect: on the server the three netcdf tables now exist, created by hand on 2026-09-25 with the same function (run twice). Confirmed 2026-09-29: `3b_upload_netcdf_postgres` succeeded in a real cycle (`scheduled__2026-09-29T09:15:00+00:00`), and every other run since has too.
 
 ## Status history
 
@@ -125,4 +126,11 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   event, and dropping the `flood_road_values_shadow` table on the server (an operational step, not
   a code change; `flood_on_roads.py`'s `create_shadow_table` and `compare_with_old.py` stay, since
   they are live comparison tooling, not part of the retired chain).
+- **2026-09-29, draft.** Stories 2, 4, and 5 are `Done`, all with server evidence from the same
+  session: a real full cycle (`scheduled__2026-09-29T09:15:00+00:00`, all 10 tasks green, task 3b
+  included), tile retention confirmed (8 runs kept, matching the current `FLOOD_RASTER_KEEP_RUNS`
+  default of 8, raised from 3 by commit `002bdce`), and graded `POST /route` confirmed against live
+  current data (a route that connects ungraded loses connection once the live `flood_road_values`
+  custom_model applies). Still open on Story 4: the frontend on a live event, and dropping
+  `flood_road_values_shadow` from the server (operational, not code).
 

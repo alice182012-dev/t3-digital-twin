@@ -105,9 +105,11 @@ def postgis_health() -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    def _send(self, status: int, payload: dict) -> None:
+    def _send(self, status: int, payload: dict, headers: dict[str, str] | None = None) -> None:
         encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
@@ -182,6 +184,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(504, {"error": "Place search timed out. Please try again."})
         except PlaceSearchUnavailable:
             self._send(502, {"error": "Place search is temporarily unavailable."})
+        except db.PoolTimeout:
+            self._send_busy()
         except Exception as exc:
             self._send(400, {"error": str(exc)})
 
@@ -198,8 +202,13 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(200, lookup_forecast(conn, query))
             else:
                 self._send(404, {"error": "not found"})
+        except db.PoolTimeout:
+            self._send_busy()
         except Exception as exc:
             self._send(400, {"error": str(exc)})
+
+    def _send_busy(self) -> None:
+        self._send(503, {"error": "The server is busy. Please try again."}, {"Retry-After": "1"})
 
     def _proxy_get_to_graphhopper(self, path: str, query: str) -> None:
         url = f"{GRAPHHOPPER_URL.rstrip('/')}{path}"
