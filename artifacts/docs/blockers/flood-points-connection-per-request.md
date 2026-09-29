@@ -5,11 +5,11 @@ type: blocker
 status: open
 severity: P2
 subsystem: floodmap-backend
-approaches_tried: 0
-approaches_remaining: 2
+approaches_tried: 1
+approaches_remaining: 1
 tags: [blocker, postgis, latency, floodmap-backend]
 related: ["[[point-depth-lookup-backend]]", "[[raster-first-pipeline-stories]]", "[[graphhopper-backend]]", "[[minio-flood-extent-pipeline]]"]
-last_updated: 2026-09-24
+last_updated: 2026-09-29
 ---
 
 # GET /flood/points spends most of its time opening a connection
@@ -53,17 +53,21 @@ request, the tile work is already fast, and the connection is now almost the who
 
 ## Approaches tried
 
-None yet.
+1. Pool the connections (2026-09-29). `db.py`'s `get_connection()` is replaced by a
+   `psycopg2.pool.ThreadedConnectionPool` (`FLOOD_DB_POOL_MIN`/`FLOOD_DB_POOL_MAX`, default 1/10) and
+   a `db.connection()` context manager. Every `server.py` handler borrows through it and rolls back
+   on release, so the raster library load happens once per pooled connection instead of once per
+   request. Not yet measured against the server: this session had no psycopg2/GDAL locally and no
+   remote-server access, so the fix is built and statically reviewed, not benchmarked.
 
 ## Decision and explanation
 
-Pending. Two candidate fixes, neither tried. Measure on the server first, with and without them.
+Pooling (approach 1 below) is built. Approach 2 is not needed unless the server measurement shows
+pooling itself adds contention under load.
 
-1. Pool the connections. Replace `get_connection()` in `db.py` with a `psycopg2.pool.ThreadedConnectionPool`
-   and have each handler borrow and return a connection. This helps every endpoint, not only this
-   one, because `ThreadingHTTPServer` runs a thread per request.
+1. ~~Pool the connections.~~ Built 2026-09-29, unmeasured.
 2. Keep one connection per handler thread (thread-local). Smaller than a pool, but it holds a
-   connection for the life of each thread.
+   connection for the life of each thread. Fallback if pooling underperforms.
 
 ## Concerns
 
@@ -84,4 +88,12 @@ request can leave the next one in an aborted transaction. The pool size must sta
   measurement.
 - **2026-09-24, open.** Measured on the server after the Stage A deploy: the 0.56 ms lookup sits inside an
   81 ms request. The fix (a pool in `db.py`) is still untried.
-
+- **2026-09-29, open.** Scheduled as the first row of Sprint 3 in [[sprint-plan]], ahead of the `GET /flood/points`
+  latency check. Per-step depth and depth badges call the endpoint once per point, so each new connection
+  (about 58 ms) adds up. Still untried.
+- **2026-09-29, open.** The re-cut of [[sprint-plan]] moved this to Sprint 2, ahead of the latency check and Sprint 3's per-step depth.
+- **2026-09-29, open.** Built the pooling fix: `db.py`'s `ThreadedConnectionPool` and `connection()`
+  context manager, all six `server.py` call sites converted. A new `test_db.py` unit test (no real
+  PostGIS) proves the borrow/rollback/release contract on both a clean exit and an exception.
+  `server.py` and `db.py` import and wire together cleanly. Stays `open`: no server measurement yet,
+  and `test_server.py`'s full integration pass needs GDAL, unavailable in this session.
