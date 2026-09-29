@@ -126,14 +126,14 @@ by keyboard and screen reader. The truck routing profile shipped earlier and is 
 | P3 | Revalidate "loading is very slow" | S | [[carried-over-backlog]] Story 4 | Sprint 2's connection reuse and Sprint 3's features, so it measures the app as it ships | None yet | - | Not started |
 | P2 | Show the truck routing profile in the frontend | S | [[truck-routing-profile]] | None | ![[frontend-truck-profile.png\|120]] | 1. What: `truck: {}` in `config-local.js.example`, so the profile row offers four modes.<br />2. How: rebuilt and recreated `flood-routing-frontend` on the server. The served `/config.js` lists `truck`.<br />3. Why: GraphHopper already serves `truck`, and truck drivers need the truck depth limit.<br />4. Effect: on the live UI the row shows four modes, and a truck route of 918 m returned. The per-mode travel time row now sends four requests per query. | Done |
 
-## Carried to the next plan
+## Carried to the next plans
 
-These two rows did not fit in four weeks and block nothing in this plan. The user places them in the next plan, which starts on 2026-10-19.
+These two rows did not fit in four weeks and block nothing in this plan. They are placed in the plans that follow (dates in each plan).
 
-| Priority | Story | Estimate | Epic | Why it waits |
-| -------- | ----- | -------- | ---- | ------------ |
-| P2 | Soak the flood-road backend and compare it with the earlier backend | M | [[carried-over-backlog]] Story 3 | It needs the user's soak length and route set, and it should soak the backend after Sprint 3's changes. |
-| P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | P3, and it blocks nothing. The finished UI of Sprint 3 gives it real components to extract from. |
+| Priority | Story | Estimate | Epic | Placed in | Why it waits |
+| -------- | ----- | -------- | ---- | --------- | ------------ |
+| P2 | Soak the flood-road backend and compare it with the earlier backend | M | [[carried-over-backlog]] Story 3 | [[sprint-plan-2]] Sprint 5 (2026-10-19 to 2026-10-25) | It needs the user's soak length and route set, and it should soak the backend after Sprint 3's changes. |
+| P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | [[sprint-plan-3]] Sprint 11 (2026-11-30 to 2026-12-06) | P3, and it blocks nothing. The finished UI of Sprint 3 gives it real components to extract from. |
 
 ## Risks
 
@@ -242,3 +242,5 @@ Status history.
 - **2026-09-29, active.** Added dates. Sprint 1 starts on 2026-09-21, a Monday, and each sprint runs Monday to Sunday, so Sprint 2 is 2026-09-28 to 2026-10-04,
   Sprint 3 is 2026-10-05 to 2026-10-11, and Sprint 4 is 2026-10-12 to 2026-10-18. Sprint 1 started two days before this plan was drafted on 2026-09-23. The user can move
   the start date, and every date shifts with it.
+- **2026-09-29, active.** The two carried rows have sprints: the backend soak is in [[sprint-plan-2]] Sprint 5, so it runs before the routing
+  engine builds on the backend, and `DESIGN.md` is in [[sprint-plan-3]] Sprint 11. The routing work was re-cut into two four-sprint plans.

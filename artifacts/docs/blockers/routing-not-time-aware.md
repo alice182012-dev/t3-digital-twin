@@ -542,3 +542,6 @@ No budget is set yet.
   disk" needs correcting in `artifacts/raw/`, which the user owns.
 - **2026-09-29, open.** The user chose sticky C-lite as the routing option. The reasoning, cost-benefit, and
   roadmap are in [[sticky-c-lite-routing]]. The decision gate was not run. No code is written.
+- **2026-09-29, open.** Turned the decision into two PRDs, [[time-aware-routing-engine]] and
+  [[edge-depth-table]], with stories in [[time-aware-routing-engine-stories]] and [[edge-depth-table-stories]],
+  scheduled in [[sprint-plan-2]] and [[sprint-plan-3]]. The blocker stays open until the rollout story has evidence.

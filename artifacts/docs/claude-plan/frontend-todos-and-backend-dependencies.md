@@ -43,7 +43,7 @@ file. Nothing here replaces the sprint plan. Where the two disagree, the code ch
 | 9 | Decide how the frontend reads many point depths | S | Needs a backend decision. | Todos 3, 4, 5. | 2 |
 | 10 | Check place search through the browser UI | XS | Ready. | Nothing. | 1 (Reviewed) |
 | 11 | Accessibility pass on the toggle, legend, and route tabs | S | None needed. | Nothing. | 4 |
-| 12 | Write a project `DESIGN.md` | M | None needed. | Nothing. | next plan |
+| 12 | Write a project `DESIGN.md` | M | None needed. | Nothing. | 11 (plan 3) |
 | 13 | Show no route and a clear message when a mode has none (added 2026-09-29, deferred) | S | A small backend change: pass GraphHopper's error body through. | [[failed-route-shows-previous-mode-route]] | 3 |
 
 ### 1. Show the truck routing profile
@@ -182,3 +182,4 @@ either story reaches `Done`.
   Accessibility (11) and `DESIGN.md` (12) are in Sprint 2, in [[carried-over-backlog]].
 - **2026-09-29, active.** Re-cut by dependency and need. Todo 9 (connection reuse and the latency check) is Sprint 2, todo 8
   moved to the end of Sprint 3, accessibility (11) to Sprint 4, and `DESIGN.md` (12) to the next plan.
+- **2026-09-29, active.** `DESIGN.md` (todo 12) is in Sprint 11 of [[sprint-plan-3]], and the backend soak in Sprint 5 of [[sprint-plan-2]].

@@ -97,7 +97,7 @@ on mobile" item (below) is done.
 
 **Blocker tracking:** [[routing-not-time-aware]]
 
-**Sprint:** the stories are in [[sprint-plan-2]] (Sprints 5 to 10). The mobile legend half is done.
+**Sprint:** the stories are in [[sprint-plan-2]] (Sprints 5 to 8) and [[sprint-plan-3]] (Sprints 9 and 10). The mobile legend half is done.
 
 Status:: active
 
@@ -220,7 +220,7 @@ PostGIS and a stub GraphHopper covering `derive_areas()`, `build_custom_model()`
 full HTTP surface. Still open: a soak period and a side-by-side comparison against the old
 Valhalla-based backend for known routes and flood scenarios.
 
-**Sprint:** next plan, [[carried-over-backlog]] Story 3 (the soak and the comparison). It did not fit in [[sprint-plan]]'s four weeks.
+**Sprint:** 5, [[carried-over-backlog]] Story 3 (the soak and the comparison), in [[sprint-plan-2]] (2026-10-19 to 2026-10-25).
 
 Status:: active
 
@@ -406,7 +406,7 @@ proper DESIGN.md rather than continuing to read the source HTML ad hoc.
 **Priority:** P3
 **Depends on:** None.
 
-**Sprint:** next plan, [[carried-over-backlog]] Story 2. It did not fit in [[sprint-plan]]'s four weeks.
+**Sprint:** 11, [[carried-over-backlog]] Story 2, in [[sprint-plan-3]] (2026-11-30 to 2026-12-06).
 
 Status:: active
 

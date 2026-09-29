@@ -37,7 +37,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `DESIGN.md` lists the tokens (colors, type scale, spacing) extracted from the mockup, and each value the
   shipped `FloodLegend.module.css` and `PlaceDepthPopup.module.css` use either matches a token or is listed
   as a known divergence.
-  Priority: P3. Status: Not started. Estimate: M. Sprint: next plan (re-cut 2026-09-29). Dependencies: None. Blocks nothing.
+  Priority: P3. Status: Not started. Estimate: M. Sprint: 11 ([[sprint-plan-3]]; 2026-11-30 to 2026-12-06). Dependencies: None. Blocks nothing.
 
 - **Story 3: Soak the flood-road backend and compare it with the earlier backend.**
   As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a soak period and
@@ -46,7 +46,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   serves the live app for a soak period, then the container logs show no unexplained 5xx responses in that
   period, and a side-by-side run of a fixed set of routes and flood scenarios is recorded with the
   differences explained.
-  Priority: P2. Status: Not started. Estimate: M. Sprint: next plan (re-cut 2026-09-29). Dependencies: None. Open: the soak length and
+  Priority: P2. Status: Not started. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. Open: the soak length and
   the route set are the user's to set. The Valhalla proof of concept was deleted in commit `5d1a606`, so the
   comparison needs it restored from git history (`6394e27^`).
 
@@ -77,3 +77,5 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   described at the top.
 - **2026-09-29, draft.** Re-cut by dependency and need in [[sprint-plan]]: Stories 1 and 4 to Sprint 4 (they check the finished UI),
   Story 5 stays in Sprint 2 (its decision sets Sprint 3's wording), Stories 2 and 3 to the next plan (P3 and blocked on user input).
+- **2026-09-29, draft.** Story 3 (the soak) is in [[sprint-plan-2]] Sprint 5, before the routing engine builds on the backend. Story 2
+  (`DESIGN.md`) is in [[sprint-plan-3]] Sprint 11.
