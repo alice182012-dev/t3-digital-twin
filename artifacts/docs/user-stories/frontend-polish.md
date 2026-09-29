@@ -80,8 +80,7 @@ planning").
   `ConnectionNotFoundException` body and the walking request with a route, since the live flood
   changes and the run is pruned after 8 runs. Also check the live server while the flood blocks the
   pair. A unit test of `RouteStore` on `RouteRequestFailed` covers the store half.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: unscheduled (fix deferred by the user on
-  2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
+  Priority: P1. Status: Not started. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
   (`floodmap/graphhopper-flood-road/backend/server.py`, `_handle_route`), tracked in the blocker.
   Blocker tracking: [[failed-route-shows-previous-mode-route]]
 
@@ -129,3 +128,4 @@ planning").
   unchanged). [[mobile-flood-legend-covered-by-search-panel]] is resolved.
 - **2026-09-29, draft.** Story 4 added: the scenario from [[failed-route-shows-previous-mode-route]], kept as the
   acceptance test for the fix. It is unscheduled until the user picks a sprint.
+- **2026-09-29, draft.** Story 4 scheduled in Sprint 3 at the user's request.

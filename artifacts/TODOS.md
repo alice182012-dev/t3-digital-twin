@@ -35,6 +35,8 @@ latency question.
 
 **Blocker tracking:** [[map-shows-forecast-not-now]]
 
+**Sprint:** 2, decided in [[carried-over-backlog]] Story 5 (what the map shows and the tile latency). See [[sprint-plan]].
+
 Status:: active
 
 ### 2. Mount flood_utils.py where Airflow can import it — done
@@ -95,6 +97,8 @@ on mobile" item (below) is done.
 
 **Blocker tracking:** [[routing-not-time-aware]]
 
+**Sprint:** the stories are in [[sprint-plan-2]] (Sprints 5 to 10). The mobile legend half is done.
+
 Status:: active
 
 ## Untriaged (from artifacts/block.md, 2026-09-08, not yet revalidated)
@@ -131,6 +135,8 @@ Status:: done
 measured, more recent characterization of a related slowness — confirm whether this note refers
 to the same bottleneck before treating as a separate issue.
 
+**Sprint:** 4, [[carried-over-backlog]] Story 4, in [[sprint-plan]].
+
 Status:: needs-revalidation
 **Priority:** unknown (needs revalidation)
 
@@ -141,6 +147,8 @@ Status:: needs-revalidation
 **Context:** `floodmap/graphhopper-maps/src/sidebar/search/AddressInputAutocomplete.tsx` and
 `AddressInput.tsx` already exist, suggesting this may already be implemented. Confirm the actual
 UX still matches the ask before treating as open; likely closeable.
+
+**Sprint:** 3, absorbed by [[mockup-screen-coverage]] Story 2, in [[sprint-plan]].
 
 Status:: needs-revalidation
 **Priority:** unknown (needs revalidation)
@@ -179,6 +187,8 @@ per-step depth data exists (see the mockup-adaptation plan's Phase C item 10).
 **Priority:** P3
 **Depends on:** Phase C item 10 (per-step depth) landing first, so there's a segment to highlight.
 
+**Sprint:** 3, [[frontend-depth-features]] Story 4, after per-step depth, in [[sprint-plan]].
+
 Status:: active
 
 ### Backend hardening/validation for the GraphHopper flood-road backend
@@ -209,6 +219,8 @@ alongside Phase B/C, since those are what actually stack new load onto this back
 PostGIS and a stub GraphHopper covering `derive_areas()`, `build_custom_model()`, and `server.py`'s
 full HTTP surface. Still open: a soak period and a side-by-side comparison against the old
 Valhalla-based backend for known routes and flood scenarios.
+
+**Sprint:** next plan, [[carried-over-backlog]] Story 3 (the soak and the comparison). It did not fit in [[sprint-plan]]'s four weeks.
 
 Status:: active
 
@@ -263,6 +275,8 @@ truck profile, with the user's screenshots of the same 1 km route for walking an
 **Depends on:** None. Deferred by the user on 2026-09-29.
 
 **Blocker tracking:** [[failed-route-shows-previous-mode-route]]
+
+**Sprint:** 3, [[frontend-polish]] Story 4, in [[sprint-plan]] (scheduled 2026-09-29).
 
 Status:: active
 
@@ -349,7 +363,7 @@ the server.
 **Priority:** P2
 **Depends on:** [[raster-first-pipeline-stories]] Story 2 deployed. Feeds the latency check in
 [[point-depth-lookup-backend]]'s Story 4.
-**Sprint:** 3, first row in [[sprint-plan]] (scheduled 2026-09-29).
+**Sprint:** 2, in [[sprint-plan]] (re-cut 2026-09-29).
 
 **Blocker tracking:** [[flood-points-connection-per-request]]
 
@@ -366,6 +380,8 @@ forecast in routing and the histogram. Brainstorm the options (relabel, latest p
 **Depends on:** [[route-forecast-query]] and [[depth-forecast-chart]] for the forecast side.
 
 **Blocker tracking:** [[map-shows-forecast-not-now]]
+
+**Sprint:** 2, [[carried-over-backlog]] Story 5, in [[sprint-plan]].
 
 Status:: active
 
@@ -390,6 +406,8 @@ proper DESIGN.md rather than continuing to read the source HTML ad hoc.
 **Priority:** P3
 **Depends on:** None.
 
+**Sprint:** next plan, [[carried-over-backlog]] Story 2. It did not fit in [[sprint-plan]]'s four weeks.
+
 Status:: active
 
 ### Accessibility spec for Phase A's new interactive elements
@@ -413,6 +431,8 @@ a new interaction pattern with no existing ARIA precedent in this codebase to co
 **Effort:** S (human ~1-1.5 hrs / CC ~20-30 min)
 **Priority:** P2
 **Depends on:** Phase A implementation existing to audit against.
+
+**Sprint:** 4, [[carried-over-backlog]] Story 1, in [[sprint-plan]].
 
 Status:: active
 

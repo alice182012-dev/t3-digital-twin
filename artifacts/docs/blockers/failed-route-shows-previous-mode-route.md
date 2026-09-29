@@ -78,7 +78,7 @@ have a route (walking here)? That is a product call and not part of this blocker
 
 ## Decision and explanation
 
-Pending. The user chose to fix this later. The test scenario is in [[frontend-polish]], Story 4.
+Pending. Scheduled for Sprint 3 on 2026-09-29. The test scenario is in [[frontend-polish]], Story 4.
 
 ## Concerns
 
@@ -97,3 +97,4 @@ fixed fixture, not the live server.
 - **2026-09-29, open.** Logged at the user's request after the walking and car routes looked
   identical. Root causes read in `RouteStore.ts`, `Api.ts`, and `server.py`, and the four-mode
   backend results measured against the live server. No fix attempted.
+- **2026-09-29, open.** Scheduled in Sprint 3 of [[sprint-plan]] at the user's request. No fix attempted yet.

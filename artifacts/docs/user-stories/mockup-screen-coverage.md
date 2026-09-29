@@ -51,7 +51,7 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   off, screen 2c shows both empty inputs with the placeholder text, and screen 2d shows autofill
   suggestions for a query such as "C5" and for "Hồ Gươm" with no results from outside Vietnam. Any
   difference is logged as a new story or blocker.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 2. Dependencies: None. Closes the
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 3, last row (re-cut 2026-09-29). Dependencies: Sprint 3's UI stories, so one pass checks the finished screens. Closes the
   `needs-revalidation` autofill item in `TODOS.md` and re-verifies the `vi` locale fix, which needs
   a rebuild and redeploy.
 
@@ -66,3 +66,4 @@ out of the sprints until someone decides to build them.
 - **2026-09-24, draft.** Mapped screens 2a to 2f against every existing story and found two gaps:
   the route button on the popup (2b to 2f), and no check that the unchanged screens (2a, 2c, 2d)
   match the mockup.
+- **2026-09-29, draft.** Story 2 moved from Sprint 2 to the end of Sprint 3, so one pass verifies the finished screens.

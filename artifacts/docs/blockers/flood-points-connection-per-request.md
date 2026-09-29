@@ -87,3 +87,4 @@ request can leave the next one in an aborted transaction. The pool size must sta
 - **2026-09-29, open.** Scheduled as the first row of Sprint 3 in [[sprint-plan]], ahead of the `GET /flood/points`
   latency check. Per-step depth and depth badges call the endpoint once per point, so each new connection
   (about 58 ms) adds up. Still untried.
+- **2026-09-29, open.** The re-cut of [[sprint-plan]] moved this to Sprint 2, ahead of the latency check and Sprint 3's per-step depth.

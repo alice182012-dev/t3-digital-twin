@@ -63,6 +63,17 @@ planning").
   2e (not fewer, and not one badge per turn regardless of whether depth changed there).
   Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
 
+- **Story 4: Tap a turn step to highlight its segment on the map.**
+  As a user reading the turn list, I want to tap a step and see its segment on the map, so I can tell where the
+  step is and where its depth applies.
+  Given a route with per-step depth ([[frontend-depth-features]] Story 2), when the user clicks a step in the
+  expanded instructions list, then that step's segment is highlighted on the map and the map pans or zooms to
+  it, the same as the route-hint buttons do.
+  Reuse the click handler of `RHButton` in `RoutingResults.tsx`, which dispatches `PathDetailsElevationSelected`
+  and `SetBBox`.
+  Priority: P3. Status: Not started. Estimate: XS. Sprint: 3. Dependencies: Story 2 lands first, so there is a
+  depth to show for the highlighted segment.
+
 ## Status history
 
 - **2026-09-23, draft.** Drafted from [[flood-routing-mockup-frontend-gap]]'s Goals 1, 4, and 5,
@@ -71,3 +82,4 @@ planning").
   screen 2b shows. The popup's route button is a separate story in [[mockup-screen-coverage]].
 - **2026-09-29, draft.** Story 1 done. A plain click already opened the context menu, so the popup replaces it
   only in Flood mode. See [[place-depth-popup-on-map-tap]].
+- **2026-09-29, draft.** Story 4 added from the tap-a-turn-step item in `TODOS.md`, scheduled in Sprint 3 after Story 2.

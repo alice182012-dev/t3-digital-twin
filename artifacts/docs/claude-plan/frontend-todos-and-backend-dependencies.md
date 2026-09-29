@@ -30,21 +30,21 @@ file. Nothing here replaces the sprint plan. Where the two disagree, the code ch
 
 ## Todos, in the order to work them
 
-| # | Todo | Size | Backend state | Blocks or waits on |
-| - | ---- | ---- | ------------- | ------------------ |
-| 1 | Show the truck routing profile (done 2026-09-29) | S | Ready. GraphHopper serves `truck`, and the depth-limit blocker is resolved. | Nothing. |
-| 2 | Lower the default zoom from 17 to a value from 13 to 15 (done 2026-09-29, zoom 14) | XS | None needed. | Nothing. |
-| 3 | Place-depth popup on map tap (done 2026-09-29) | M | Endpoint ready. Latency unmeasured. | Todo 9, reverse geocoding. |
-| 4 | Per-step depth in the turn-by-turn list | S | Endpoint ready, but the call shape is a problem. | Todo 9. |
-| 5 | Depth badges along the route polyline | M | Same as todo 4. | Todo 9. |
-| 6 | "Route to" button on the place popup | S | None needed. | Todo 3. |
-| 7 | Tap a turn step to highlight its segment | XS | None needed. | Todo 4. |
-| 8 | Check the mockup screens 2a, 2c, 2d on the live app | S | None needed. | A frontend rebuild on the remote host. |
-| 9 | Decide how the frontend reads many point depths | S | Needs a backend decision. | Todos 3, 4, 5. |
-| 10 | Check place search through the browser UI | XS | Ready. | Nothing. |
-| 11 | Accessibility pass on the toggle, legend, and route tabs | S | None needed. | Nothing. |
-| 12 | Write a project `DESIGN.md` | M | None needed. | Nothing. |
-| 13 | Show no route and a clear message when a mode has none (added 2026-09-29, deferred) | S | A small backend change: pass GraphHopper's error body through. | [[failed-route-shows-previous-mode-route]] |
+| # | Todo | Size | Backend state | Blocks or waits on | Sprint |
+| - | ---- | ---- | ------------- | ------------------ | ------ |
+| 1 | Show the truck routing profile (done 2026-09-29) | S | Ready. GraphHopper serves `truck`, and the depth-limit blocker is resolved. | Nothing. | 4 (done) |
+| 2 | Lower the default zoom from 17 to a value from 13 to 15 (done 2026-09-29, zoom 14) | XS | None needed. | Nothing. | none, done before the sprint rule |
+| 3 | Place-depth popup on map tap (done 2026-09-29) | M | Endpoint ready. Latency unmeasured. | Todo 9, reverse geocoding. | 3 (done) |
+| 4 | Per-step depth in the turn-by-turn list | S | Endpoint ready, but the call shape is a problem. | Todo 9. | 3 |
+| 5 | Depth badges along the route polyline | M | Same as todo 4. | Todo 9. | 3 |
+| 6 | "Route to" button on the place popup | S | None needed. | Todo 3. | 3 |
+| 7 | Tap a turn step to highlight its segment | XS | None needed. | Todo 4. | 3 |
+| 8 | Check the mockup screens 2a, 2c, 2d on the live app | S | None needed. | A frontend rebuild on the remote host. | 3 |
+| 9 | Decide how the frontend reads many point depths | S | Needs a backend decision. | Todos 3, 4, 5. | 2 |
+| 10 | Check place search through the browser UI | XS | Ready. | Nothing. | 1 (Reviewed) |
+| 11 | Accessibility pass on the toggle, legend, and route tabs | S | None needed. | Nothing. | 4 |
+| 12 | Write a project `DESIGN.md` | M | None needed. | Nothing. | next plan |
+| 13 | Show no route and a clear message when a mode has none (added 2026-09-29, deferred) | S | A small backend change: pass GraphHopper's error body through. | [[failed-route-shows-previous-mode-route]] | 3 |
 
 ### 1. Show the truck routing profile
 
@@ -178,3 +178,7 @@ either story reaches `Done`.
 - **2026-09-29, active.** Todo 2 (default zoom) done.
 - **2026-09-29, active.** Todo 3 (place-depth popup) done.
 - **2026-09-29, active.** Todo 9 scheduled: connection reuse and the latency check open Sprint 3.
+- **2026-09-29, active.** Added a Sprint column. The failed-route item (todo 13) and tap-a-turn-step (todo 7) are in Sprint 3.
+  Accessibility (11) and `DESIGN.md` (12) are in Sprint 2, in [[carried-over-backlog]].
+- **2026-09-29, active.** Re-cut by dependency and need. Todo 9 (connection reuse and the latency check) is Sprint 2, todo 8
+  moved to the end of Sprint 3, accessibility (11) to Sprint 4, and `DESIGN.md` (12) to the next plan.

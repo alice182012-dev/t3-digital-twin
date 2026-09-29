@@ -82,7 +82,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
   popup-tap traffic, then response times land within the same interactive latency budget the
   existing `GET /flood/areas` call already meets.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 3 (moved from 2 on 2026-09-29). Dependencies: Story 3,
+  Priority: P0. Status: Not started. Estimate: S. Sprint: 2 (re-cut 2026-09-29). Dependencies: Story 3,
   and the connection-reuse item in [[flood-points-connection-per-request]], which lands first. The user sets the
   latency budget. The check runs on a route of about 40 points, since per-step depth and depth badges call the
   endpoint once per point.
@@ -117,3 +117,5 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   no longer creates the old table. The deploy runbook drops it.
 - **2026-09-29, draft.** Story 4 moved from Sprint 2 to the start of Sprint 3, after the connection-reuse fix. See
   [[sprint-plan]].
+- **2026-09-29, draft.** The re-cut of [[sprint-plan]] put Story 4 in Sprint 2 after the connection-reuse row, so Sprint 3's per-step
+  depth and depth badges start on a measured endpoint.

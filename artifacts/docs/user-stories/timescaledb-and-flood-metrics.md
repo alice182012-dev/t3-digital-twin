@@ -54,7 +54,7 @@ planning").
   returns a row per road segment per vehicle type with a non-null time-to-peak, pre-closure time,
   and T+1h forecast depth, matching the values computable by hand from the same run's raw depth
   rasters for one spot-checked segment.
-  Priority: P1. Status: Reviewed. Estimate: L. Sprint: 2. Dependencies: None (reads `calculate_depth.py`'s output
+  Priority: P1. Status: Reviewed. Estimate: L. Sprint: 4 (re-cut 2026-09-29). Dependencies: None (reads `calculate_depth.py`'s output
   directly, independent of TimescaleDB).
 
 - **Story 4: Populate TimescaleDB from the extractor's output.**
@@ -66,7 +66,7 @@ planning").
   hourly bars, then bars 1 through 6 return `constant_cycle` data and bars 7 through 24 return
   `background_cycle` data, per the architecture doc's §4.9 split. No serving endpoint exists yet.
   this checks the stored data directly.
-  Priority: P1. Status: Not started. Estimate: M. Sprint: 2. Dependencies: Story 2, Story 3, [[raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
+  Priority: P1. Status: Not started. Estimate: M. Sprint: 4 (re-cut 2026-09-29). Dependencies: Story 2, Story 3, [[raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
   [[airflow-cannot-import-flood-utils]].
 
 ## Status history
@@ -94,4 +94,4 @@ planning").
   `segment_id` of the `road_segment` table ([[raster-first-pipeline-stories]] Story 1). Story 3 is
   `Reviewed` with the old key, and its `flood_segment_metrics` rows on the server must be rebuilt after
   the change. Story 4 waits for the new key and for [[airflow-cannot-import-flood-utils]].
-
+- **2026-09-29, draft.** Stories 3 and 4 moved from Sprint 2 to Sprint 4 in [[sprint-plan]]: no frontend story waits on them, so the point-depth work goes first.
