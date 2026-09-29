@@ -2,14 +2,14 @@
 date_open: 2026-09-25
 date_closed: 
 type: blocker
-status: open
+status: monitoring
 severity: P1
 subsystem: 3di-orchestration
-approaches_tried: 0
-approaches_remaining: 1
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, 3di, hotstart, saved-state, forecast]
 related: ["[[map-shows-forecast-not-now]]", "[[3di-simulation-orchestration]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-29
 ---
 
 # Each run hotstarts from a state saved at the end of the previous run
@@ -92,3 +92,16 @@ Change: in `run_forecast_process`, pass a separate setting (for example `HOTSTAR
   and the code never calls it. So today a "hotstart" run starts without the previous water, and the offset described
   above never applied to the model at all. Stream E of [[fifteen-minute-cycle-tiles-and-histogram]] attaches the state,
   saves it at 900 s with a backup at 1800 s, and starts each run at its clock slot. Not deployed.
+- **2026-09-29, monitoring.** The fix is built and on main as `dd78bcb` (hotstart from the saved state valid at
+  the run's slot) and `09e8650` (start each run at its 15-minute clock slot). The Description, Decision and
+  Concerns above describe the code before those commits. In `scripts/create_simulation.py`:
+  `HOTSTART_SAVE_SECONDS` defaults to one cycle, 900 s (line 40), and each run saves states at 900 s and at
+  1800 s (line 274). The run attaches the chosen state with `simulations_initial_saved_state_create` (line
+  311). `choose_saved_state` (line 76) takes an exact match for the slot, else the newest state at most two
+  cycles old, else a cold start. The 2026-09-26 test-DAG log shows event 2 logging `[Hotstart, exact] ...
+  offset 0 min`, which is the offset this blocker measured at 112 minutes. Three of the four Concerns now
+  have a code answer. State age is checked, with a 30-minute limit (line 81). A failed run falls back to the
+  1800 s state within that limit. The one-day expiry (line 333) no longer matters, because a state older
+  than 30 minutes is never used. The fourth, pipeline time, is replaced by the 15-minute clock design. Still
+  unverified: an exact or fallback hotstart on `flood_mapping_full` under its real schedule. Status is
+  `monitoring`, not `resolved`, until the user accepts the code evidence or a live run shows it.

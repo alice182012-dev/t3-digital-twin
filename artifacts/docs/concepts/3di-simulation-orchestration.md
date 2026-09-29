@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-26
+last_updated: 2026-09-29
 ---
 
 # 3Di simulation orchestration
@@ -57,13 +57,21 @@ The DAG uses `VNContinuousTimetable` (`plugins/vn_timetable.py`) with `max_activ
 next cycle starts immediately after the previous one finishes rather than on a fixed clock
 schedule.
 
-**Branch `fifteen-minute-cycle` (not deployed).** The schedule becomes `*/15 * * * *` with
-`catchup=False` and `max_active_runs=2`, following the design in [[map-shows-forecast-not-now]]. The
-`wait_before_next_rain_check` sensor, `FLOOD_RAIN_CHECK_INTERVAL_SECONDS`, and the `vn_timetable`
-import are gone, and a dry gate returns `None`, which skips every later task. Two overlapping runs no
-longer share files: each download goes to `RESULT_DIR/<sim_id>/`, and each reprojected raster is named
-after its `run_ts`. `create_simulation.py` is unchanged, so the 3Di start time is still `now()`, not
-the clock slot. The plan is [[fifteen-minute-cycle-tiles-and-histogram]].
+**Fifteen-minute cycle.** Branch `fifteen-minute-cycle` is merged into `main`. The schedule is
+`*/15 * * * *` with `catchup=False` and `max_active_runs=2` (`dags/flood_mapping_dag.py`), following the
+design in [[map-shows-forecast-not-now]]. The `wait_before_next_rain_check` sensor,
+`FLOOD_RAIN_CHECK_INTERVAL_SECONDS`, and the `vn_timetable` import are gone, and a dry gate returns
+`None`, which skips every later task. Two overlapping runs no longer share files: each download goes to
+`RESULT_DIR/<sim_id>/`, and each reprojected raster is named after its `run_ts`.
+
+Each run starts at its 15-minute clock slot, not at `now()`. `create_simulation.clock_slot()` floors the
+time to the slot, and `run_forecast_process` sets the 3Di start time and the rain series from that slot
+(`dd78bcb`, `09e8650`, `00b42b0`). `choose_saved_state` hotstarts from the saved state whose `valid_at`
+equals the slot, or the newest state at most two cycles older, else it cold starts. See
+[[hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
+[[flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
+[[fifteen-minute-cycle-tiles-and-histogram]]. The live deployment state after 2026-09-28 is
+unverified, because the DAG was paused again that day.
 
 ## The rain gate
 

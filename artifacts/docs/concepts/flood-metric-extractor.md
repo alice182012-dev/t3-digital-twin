@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
 related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-29
 ---
 
 # Flood metric extractor
@@ -93,10 +93,9 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
 - The loader SQL and the table script have not run against PostGIS. No local PostGIS server was
   available. The Python tests cover the computation, the grouping of rows into segments, and the
   flattening of metrics into rows.
-- The Airflow containers mount `./scripts` but not `./floodmap`, so `impassable_from_m()` fails
-  inside Airflow. Before a DAG task calls the extractor, mount
-  `floodmap/graphhopper-flood-road/scripts` into the container, or move `flood_utils.py` to a
-  path that both the backend and Airflow can import.
+- Resolved 2026-09-28: `compose.yml` mounts `floodmap/graphhopper-flood-road/scripts` read-only into
+  the Airflow containers at `/opt/airflow/floodmap/graphhopper-flood-road/scripts` (`245fe66`), so
+  `impassable_from_m()` imports. See [[airflow-cannot-import-flood-utils]].
 - The PRD acceptance asks for a non-NULL pre-closure time on every row. That is not possible for a
   vehicle whose threshold the segment never reaches. For those rows, pre-closure time is NULL by
   design.

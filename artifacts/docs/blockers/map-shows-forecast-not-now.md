@@ -2,14 +2,14 @@
 date_open: 2026-09-25
 date_closed: 
 type: blocker
-status: open
+status: monitoring
 severity: P2
 subsystem: floodmap-frontend
-approaches_tried: 0
+approaches_tried: 1
 approaches_remaining: 1
 tags: [blocker, frontend, forecast, routing, product-decision]
 related: ["[[frontend-polish]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[flood-routing-mockup-frontend-gap]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-29
 ---
 
 # The map shows a forecast timestep, not the situation now
@@ -54,7 +54,7 @@ user's plan splits "now" (map) from "forecast" (routing and histogram).
 
 ## Approaches tried
 
-None yet.
+The 15-minute cycle design below is built and on main, see the 2026-09-26 and 2026-09-29 status entries.
 
 ## Decision and explanation
 
@@ -227,3 +227,18 @@ Any option that changes what the map shows also changes the "Updated" line story
   1.4 minutes before that. Event 2's tiles took 5:05 against 2:40 for event 1 because they overlapped the raster load and
   flood on roads (risk 3, contention inside one run). Two overlapping runs are not measured yet. The map now shows the latest
   step at or before now. Found and fixed: depth times drifted by seconds off the grid (`7f87538`).
+- **2026-09-28, open.** Ran the Stage 2 test on `flood_mapping_full` itself (its real 15-minute schedule, not the manual
+  state-test DAG), under `FLOOD_TEST_RAIN_MM_HR=50`. Two runs genuinely overlapped and both succeeded, but risk 3's margin
+  is gone under overlap: tiles published around +20 minutes instead of +11:30, already past the +15:00 point step 1 is
+  supposed to become now, and the delay compounded on further overlapping runs (one run took 35:24). Root cause is not
+  same-run task contention as risk 3 assumed, but a new run's simulation trigger queuing behind the previous run's entire
+  downstream pipeline, since no Airflow pool separates them from the heavy tasks on the 2-slot worker. New blocker:
+  [[flood-mapping-full-worker-concurrency-serializes-runs]]. The proposed design's margin numbers above needed
+  re-verifying once that blocker had a fix (done on 2026-09-29, see the last entry). `flood_mapping_full` is paused again and the test rain variable is unset.
+- **2026-09-29, monitoring.** [[flood-mapping-full-worker-concurrency-serializes-runs]] is resolved (2026-09-28). Four
+  consecutive real runs after the deploy took a flat 17 to 18 minutes, where the old configuration gave 17, 32, 37,
+  and 25. The margins above are re-measured. Each run's own critical path (trigger about 3.5 minutes, depth about 7,
+  raster load about 2.3, tile build about 6) adds to slightly more than the 15-minute cycle, so a step's tile
+  publishes 1.5 to 3 minutes after its target moment, not the 3 minutes before it that the design expected. The
+  page's remaining gap is that latency, tracked in [[five-minute-tile-freshness]]. Contention between runs is no
+  longer the cause. Status is `monitoring` until the latency work lands or the user accepts the delay.

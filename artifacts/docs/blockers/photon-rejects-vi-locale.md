@@ -1,15 +1,15 @@
 ---
 date_open: 2026-09-24
-date_closed: 
+date_closed: 2026-09-28
 type: blocker
-status: monitoring
+status: resolved
 severity: P1
 subsystem: floodmap-frontend
-approaches_tried: 1
-approaches_remaining: 1
+approaches_tried: 2
+approaches_remaining: 0
 tags: [blocker, geocoding, photon, frontend, backend]
 related: ["[[frontend-polish]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-24
+last_updated: 2026-09-28
 ---
 
 # Photon rejects the vi locale, so place search fails
@@ -55,23 +55,37 @@ suggestions again, the request carries `locale=en`, and the browser console has 
 
 ![[frontend-en-geocoder-check.png|500]]
 
-Still open: relevance. The search for "Hồ Gươm" lists "Hồ Gươm Plaza" in Hanoi first, then "Ho Guom" in
-Ottawa, the Hoàn Kiếm Lake third, and another "Ho Guom" in Munich. `place_search.py` passes only `q`,
-`lang`, and `limit` to Photon, so the `point` and `location_bias_scale` the frontend sends are ignored.
-Passing them on, or limiting results to a Vietnam bounding box, is the remaining candidate. One side effect: `setTranslation` also sets the UI language, so every
+Was open: relevance. The search for "Hồ Gươm" listed "Hồ Gươm Plaza" in Hanoi first, then "Ho Guom" in
+Ottawa, the Hoàn Kiếm Lake third, and another "Ho Guom" in Munich. `place_search.py` passed only `q`,
+`lang`, and `limit` to Photon, so the `point` and `location_bias_scale` the frontend sends were ignored.
+One side effect of Approach 1 remains: `setTranslation` also sets the UI language, so every
 label switches from Vietnamese to English ("Từ" becomes "From", "Ô tô" becomes "Car").
+
+### Approach 2
+
+Forward the frontend's existing `point` and `location_bias_scale` to Photon (splitting `point`'s
+`"lat,lng"` string into Photon's separate `lat`/`lon` params), and always send `countrycode=VN`, with
+a response-side backstop that drops any hit whose `properties.countrycode` isn't `VN` in case Photon
+doesn't honor the request-side filter. `server.py`'s `/geocode` route parses and forwards the two new
+query params, reusing `place_search.py`'s existing `_optional_number` validation so a malformed
+`point` or an out-of-range `location_bias_scale` returns 400, the same as other validation errors on
+this endpoint. `main` at `6429923`.
+
+Verified live on 2026-09-28: "Hồ Gươm" now returns only Vietnam results, with "Hồ Gươm Plaza" (Hanoi)
+first, "Hoàn Kiếm Lake" (Hanoi) second, and "Ho Guom Theatre" (Hanoi) third. Neither Ottawa nor Munich
+appears anywhere in the response. A malformed `point` returns HTTP 400. A request with no bias (the
+Enter-key path and `NavBar`'s URL resolution, neither of which sends `point`) still returns
+Vietnam-only results, because the `countrycode=VN` filter doesn't depend on a bias point being
+present.
 
 ## Decision and explanation
 
-Pending confirmation on the live UI. Two candidate fixes. The second is in progress (Approach 1).
-
-1. Map the locale in `geocode_gh_shape`: pass `locale` to Photon only when it is `default`, `de`,
-   `en`, or `fr`, and otherwise send `default`. This fixes every unsupported locale, and it needs a
-   backend rebuild.
-2. Change the frontend to send `locale=default`. This is a one-line change but leaves the backend
-   fragile to any other unsupported locale.
-
-The first candidate is safer, since the backend is the component that knows what Photon supports.
+Both approaches shipped. Approach 1 fixed the 502 (an unsupported `locale` reaching Photon). Approach
+2 fixed relevance (same-name places outside Vietnam outranking the real Hanoi result). The originally
+proposed first candidate (map `locale` to a supported value inside `geocode_gh_shape` rather than
+changing the frontend's default) was not needed: the frontend's `en` default already avoids sending an
+unsupported locale, so the backend's remaining fragility to some other unsupported locale is accepted,
+not revisited here.
 
 ## Concerns
 
@@ -98,4 +112,7 @@ bias as well, so check "Hồ Gươm" after the change and confirm the Hanoi lake
 - **2026-09-24, monitoring.** Deployed the `en` default (commit `6155f09`). Place search works on the live
   UI. Relevance is the remaining issue: results from Ottawa and Munich appear. Close the blocker when
   the user accepts that, or after results are biased toward Hanoi.
+- **2026-09-28, resolved.** Shipped Approach 2: forward `point`/`location_bias_scale` to Photon and
+  filter to `countrycode=VN` (`main` at `6429923`). Deployed and verified live: "Hồ Gươm" returns
+  Hanoi-only results, ranked correctly, Ottawa and Munich no longer appear.
 

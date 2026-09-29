@@ -1,5 +1,102 @@
 # TODOS
 
+## Today, 2026-09-28
+
+Working through these one at a time, with a manual check after each before starting the next.
+
+### 1. Run the Stage 2 fifteen-minute-cycle test — done, blocker found, fixed, and confirmed
+
+**What it was:** Trigger two overlapping `flood_mapping_full` runs under `FLOOD_TEST_RAIN_MM_HR`
+(15-minute clock, `max_active_runs=2`) to measure the contention risk flagged in
+[[fifteen-minute-cycle-tiles-and-histogram]] (risk 3: tiling, raster load, and flood on roads
+overlapping at 8 steps, not yet measured across two runs).
+
+**Result (2026-09-28):** Ran at `FLOOD_TEST_RAIN_MM_HR=50`. Runs under overlap took 20 to 37
+minutes and the delay compounded run over run (found across two rounds of live testing: no
+Airflow `pool=` separated the trigger chain from the heavy tasks, then even after that fix, the
+heavy tasks still contended with each other and could oversubscribe the server's CPU). Fixed in two
+parts, both deployed: a `threedi_trigger` pool (2 slots) for `0_check_forecast_rain` and
+`1_trigger_simulation`, and a `depth_calc` pool (1 slot) for `3_calculate_depth` paired with raising
+`AIRFLOW__CELERY__WORKER_CONCURRENCY` from 2 to 4 (`main` at `26b6133`). Confirmed live across four
+consecutive real runs: the trigger chain never queues behind a previous run's heavy tasks, no two
+depth-calc tasks ever overlap, and run duration is now flat at 17 to 18 minutes instead of growing
+run over run. Full detail: [[flood-mapping-full-worker-concurrency-serializes-runs]] (now
+`resolved`). Residual, smaller, and now a latency question rather than a contention one: each run's
+own critical path still runs a bit past the 15-minute cycle, so tiles publish 1.5 to 3 minutes after
+their target moment instead of with margin before it. Tracked in [[five-minute-tile-freshness]].
+
+**Effort:** S (human ~1 hr / CC ~30 min, plus DAG run time)
+**Priority:** P1
+**Depends on:** None. Unblocks closing [[map-shows-forecast-not-now]], pending its own residual
+latency question.
+
+**Blocker tracking:** [[flood-mapping-full-worker-concurrency-serializes-runs]] (resolved
+2026-09-28)
+
+**Blocker tracking:** [[map-shows-forecast-not-now]]
+
+Status:: active
+
+### 2. Mount flood_utils.py where Airflow can import it — done
+
+Same item as below ("Mount flood_utils.py where Airflow can import it"), bumped to today's
+priority: it unblocks [[timescaledb-and-flood-metrics]]'s Story 4.
+
+**Result (2026-09-28):** Mounted `./floodmap/graphhopper-flood-road/scripts` into the Airflow
+containers read-only (`main` at `245fe66`). Confirmed live on the server: `impassable_from_m()`
+now returns real values inside `airflow-worker` instead of raising `ImportError`, no DAG import
+errors. Full detail: [[airflow-cannot-import-flood-utils]] (resolved). Story 4 itself is still not
+started, only unblocked.
+
+Status:: done
+
+### 3. Route each vehicle with its own flood depth limit — done, spot-checked
+
+Same item as below ("Route each vehicle with its own flood depth limit"), bumped to today's
+priority: small fix, unblocks [[truck-routing-profile]] reaching real users.
+
+**Result (2026-09-28):** Removed `body.vehicle_type = state.vehicleType` from the routing
+interceptor (`main` at `18d1c42`), so `server.py` falls back to each request's real `profile`.
+Built and deployed. Mechanism confirmed (bundle no longer sends the field). The first spot-check
+attempt was inconclusive (test area too deeply flooded for any vehicle). Redone later the same day
+against a moderately-flooded railway overpass (20.2 cm): motorbike (20 cm limit) is blocked with
+`ConnectionNotFoundException`, while car, truck, and foot (30/35/40 cm limits) all route through it
+at 928-932 m. `GET /flood/areas` also showed motorbike and car now get different avoid-polygon
+counts (814 vs. 651) for the same timestep. Full detail:
+[[flood-routing-vehicle-type-always-motorbike]] (resolved 2026-09-28).
+
+Status:: done
+
+### 4. Bias Photon place search toward Hanoi — done
+
+Same item as below ("Make place search work with the vi locale"), specifically its still-open
+relevance half: pass the frontend's `point` and `location_bias_scale` on to Photon, or bound
+results to a Vietnam box, so "Hồ Gươm" ranks the Hanoi lake above Ottawa and Munich.
+
+**Result (2026-09-28):** `place_search.py`'s `geocode_gh_shape()` now forwards the frontend's
+`point` (split into Photon's `lat`/`lon`) and `location_bias_scale`, and always sends
+`countrycode=VN` to Photon, with a response-side backstop dropping any non-VN feature. `server.py`'s
+`/geocode` route parses and forwards both params, reusing `place_search`'s existing validation so a
+malformed `point` or out-of-range `location_bias_scale` returns 400. `main` at `6429923`. Verified
+live on the server: "Hồ Gươm" now returns only Hanoi results (Hồ Gươm Plaza, Hoàn Kiếm Lake, Ho Guom
+Theatre), Ottawa and Munich are gone, a malformed `point` returns 400, and the no-bias fallback path
+(Enter-key search, `NavBar` URL resolution) stays Vietnam-filtered. New unit and live-Photon tests in
+`test_place_search.py`.
+
+Status:: done
+
+### 5. Time-aware routing (P1) and the mobile legend overlap
+
+[[routing-not-time-aware]] is a P1 safety gap. Research is done: industry practice and the academic
+literature (2026-09-28), an engine survey for Option C, and a build plan that keeps GraphHopper
+(2026-09-29), all in that blocker page. It still needs your decision on the approach (A-prime first,
+then C-lite if a measurement justifies it) and the trip-time bound. The "Keep the flood legend visible
+on mobile" item (below) is done.
+
+**Blocker tracking:** [[routing-not-time-aware]]
+
+Status:: active
+
 ## Untriaged (from artifacts/block.md, 2026-09-08, not yet revalidated)
 
 ### Depth TIF generation looks wrong
@@ -50,6 +147,22 @@ Status:: needs-revalidation
 
 ## FloodNav Map Redesign
 
+### The map's default zoom is too tight
+
+**What:** The frontend opens too zoomed in. `floodmap/graphhopper-maps/src/map/map.ts:19` sets the
+initial view's `zoom: 17`, centered on the flood-forecast study area. Bring it down to somewhere in
+the 13 to 15 range so more of the study area is visible on open.
+
+**Context:** Found 2026-09-28 while checking what the frontend's current default zoom is. The
+comment at `map.ts:16-17` notes this is a fixed initial view (not overridden by the routing graph's
+own bbox), so the fix is just changing the literal.
+
+**Effort:** XS (human ~15 min / CC ~5 min, plus eyeballing the right value in the range)
+**Priority:** P3
+**Depends on:** None.
+
+Status:: active
+
 ### Tap-a-turn-step-to-highlight-that-segment-on-the-map
 
 **What:** Clicking a turn-by-turn instruction row highlights that segment on the map.
@@ -99,33 +212,41 @@ Valhalla-based backend for known routes and flood scenarios.
 
 Status:: active
 
-### Route each vehicle with its own flood depth limit
+### Route each vehicle with its own flood depth limit — RESOLVED 2026-09-28
 
-**What:** Every route request sends `vehicle_type=motorbike`, so car, foot, and truck routes use the
-20 cm motorbike limit instead of 30, 40, and 35 cm. `FloodStore.ts`'s `SelectFloodVehicle` action is
-never dispatched. Make the route follow the selected routing profile.
+**What it was:** Every route request sent `vehicle_type=motorbike`, so car, foot, and truck routes
+used the 20 cm motorbike limit instead of 30, 40, and 35 cm. `FloodStore.ts`'s `SelectFloodVehicle`
+action was never dispatched.
 
-**Effort:** S (human ~half a day / CC ~1 hr)
-**Priority:** P2
-**Depends on:** None. Should land before [[truck-routing-profile]] reaches real users.
+**Fix:** Stopped sending `vehicle_type` from the interceptor, so `server.py` falls back to each
+request's own `profile` (`main` at `18d1c42`). Deployed and mechanism-verified.
 
-**Blocker tracking:** [[flood-routing-vehicle-type-always-motorbike]]
+**Spot-checked 2026-09-28:** Unpaused `flood_mapping_full`, let a cycle complete, and tested a
+railway overpass at 20.2 cm depth: motorbike (20 cm) is blocked with `ConnectionNotFoundException`,
+car/truck/foot (30/35/40 cm) all route through at 928-932 m. `GET /flood/areas` also returned
+different avoid-polygon counts for motorbike (814) versus car (651) at the same timestep.
 
-Status:: active
+**Blocker tracking:** [[flood-routing-vehicle-type-always-motorbike]] (resolved, full detail and
+verification)
 
-### Keep the flood legend visible on mobile
+Status:: resolved
 
-**What:** On a phone-width screen, the mobile search panel covers the top of the flood legend, and
-the "Updated" line added by [[frontend-polish]]'s Story 2 makes the legend one line taller. Position
-the legend so no band is hidden, with the panel collapsed and expanded.
+### Keep the flood legend visible on mobile — RESOLVED 2026-09-28
 
-**Effort:** S (human ~half a day / CC ~1 hr)
-**Priority:** P2
-**Depends on:** None.
+**What it was:** On a phone-width screen, the mobile search panel covers the top of the flood
+legend, and the "Updated" line added by [[frontend-polish]]'s Story 2 makes the legend one line
+taller. Position the legend so no band is hidden, with the panel collapsed and expanded.
 
-**Blocker tracking:** [[mobile-flood-legend-covered-by-search-panel]]
+**Fix:** Moved the legend to bottom-right on mobile via a `@media (max-width: 44rem)` override in
+`FloodLegend.module.css`, mirroring `MapModeToggle`'s existing bottom-left placement, instead of
+tracking the search panel's runtime height (`main` at `e5b155a`). Desktop is unchanged. Verified
+live: at 390x844 the full legend (title, all seven bands, "As of" line) renders clear of the search
+panel and the Map/Flood toggle; at 1440x900 the desktop position is unchanged.
 
-Status:: active
+**Blocker tracking:** [[mobile-flood-legend-covered-by-search-panel]] (resolved, full detail and
+verification)
+
+Status:: resolved
 
 ### Show the right icon for the motorbike routing profile
 
@@ -141,34 +262,60 @@ intended glyph, and map the profile to it.
 
 Status:: resolved
 
-### Mount flood_utils.py where Airflow can import it
+### Mount flood_utils.py where Airflow can import it — RESOLVED 2026-09-28
 
-**What:** The flood metric extractor imports `flood_utils.py` from `floodmap/graphhopper-flood-road/scripts`,
-which the Airflow containers do not mount, so it fails with `ImportError` inside Airflow. Mount that
-folder read-only into the Airflow services and point the extractor at it, before wiring the extractor
-into a DAG.
+**What it was:** The flood metric extractor imports `flood_utils.py` from
+`floodmap/graphhopper-flood-road/scripts`, which the Airflow containers did not mount, so it failed
+with `ImportError` inside Airflow.
 
-**Effort:** S (human ~1-2 hrs / CC ~30 min)
-**Priority:** P2
-**Depends on:** None. Blocks [[timescaledb-and-flood-metrics]]'s Story 4.
+**Fix:** Mounted `./floodmap/graphhopper-flood-road/scripts` into the Airflow containers, read-only
+(`main` at `245fe66`). Verified live: the extractor's `impassable_from_m()` returns real values
+inside `airflow-worker`, no DAG import errors.
 
-**Blocker tracking:** [[airflow-cannot-import-flood-utils]]
+**Still open:** Wiring the extractor into a DAG (this only unblocks that) — see
+[[timescaledb-and-flood-metrics]]'s Story 4.
 
-Status:: active
+**Blocker tracking:** [[airflow-cannot-import-flood-utils]] (resolved, full detail and verification)
 
-### Make place search work with the vi locale
+Status:: resolved
 
-**What:** The frontend sends `locale=vi`, `place_search.py` passes it to Photon as `lang=vi`, and Photon
-rejects it (it supports only `default`, `de`, `en`, `fr`), so the backend answers 502 and search shows no
-suggestions on the live UI. Deployed 2026-09-24: the frontend default is now `en` and place search works on the live UI. Still open:
-results are not biased toward Hanoi ("Hồ Gươm" lists Ottawa and Munich, and the lake is third), because
-`place_search.py` ignores the request's `point` and `location_bias_scale`.
+### Make place search work with the vi locale — RESOLVED 2026-09-28
+
+**What it was:** The frontend sent `locale=vi`, `place_search.py` passed it to Photon as `lang=vi`, and
+Photon rejects it (it supports only `default`, `de`, `en`, `fr`). The backend answered 502 and search
+showed no suggestions on the live UI.
+
+**Fix:** The frontend default became `en` and place search worked on the live UI (deployed
+2026-09-24). On 2026-09-28 `place_search.py` also started forwarding the request's `point` and
+`location_bias_scale` to Photon and filtering to `countrycode=VN` (`main` at `6429923`). Verified
+live: "Hồ Gươm" returns only Hanoi results, ranked first, with Ottawa and Munich gone.
+Full detail: [[photon-rejects-vi-locale]] (resolved).
 
 **Effort:** S (human ~2 hrs / CC ~30 min)
 **Priority:** P1
 **Depends on:** None.
 
 **Blocker tracking:** [[photon-rejects-vi-locale]]
+
+Status:: resolved
+
+### Hotstart from the saved state valid at the run's slot
+
+**What:** [[hotstart-state-saved-at-end-of-run]]. Each 3Di run saved its state at the end of the run,
+so the next run hotstarted from a state that lagged the clock. The fix saves a state at
+`HOTSTART_SAVE_SECONDS` (default 900 s) with a backup at twice that, and `choose_saved_state` picks the
+state whose `valid_at` matches the run's 15-minute slot (`main` at `dd78bcb` and `09e8650`,
+`scripts/create_simulation.py`). The 2026-09-26 test-DAG log shows "Hotstart, exact ... offset 0 min".
+
+**Still open (monitoring, 2026-09-29):** Nothing checks the age of a saved state beyond the two-cycle
+window, states expire after one day, and a failed run leaves only the backup state at twice the
+interval. See the blocker page's Concerns.
+
+**Effort:** S (human ~2 hrs / CC ~30 min)
+**Priority:** P1
+**Depends on:** None.
+
+**Blocker tracking:** [[hotstart-state-saved-at-end-of-run]]
 
 Status:: active
 

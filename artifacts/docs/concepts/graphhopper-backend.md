@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+last_updated: 2026-09-29
 ---
 
 # GraphHopper flood-road backend
@@ -173,8 +173,9 @@ checks one run that mixes old-chain rows and `flood_on_roads.py` rows.
 a road piece becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, truck 35 cm, foot
 40 cm. The backend compares that limit with the piece's `depth`.
 All four limits apply, because a GraphHopper `foot` profile exists to use the `foot` entry.
-The frontend does not use them yet: `FloodStore` sends `vehicle_type=motorbike` with every route
-request, so only the motorbike limit applies. See [[flood-routing-vehicle-type-always-motorbike]].
+`FloodStore` no longer sends `vehicle_type` (`18d1c42`, 2026-09-28), so `server.py` uses each
+request's own `profile` and each vehicle gets its own limit. See
+[[flood-routing-vehicle-type-always-motorbike]] (resolved).
 
 ## Open items
 

@@ -1,15 +1,15 @@
 ---
 date_open: 2026-09-23
-date_closed: 
+date_closed: 2026-09-28
 type: blocker
-status: open
+status: resolved
 severity: P2
 subsystem: floodmap-frontend
-approaches_tried: 0
-approaches_remaining: 2
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, frontend, mobile, flood-legend]
 related: ["[[frontend-polish]]", "[[flood-routing-mockup-frontend-gap]]"]
-last_updated: 2026-09-23
+last_updated: 2026-09-28
 ---
 
 # Mobile search panel covers the flood legend
@@ -38,24 +38,49 @@ most likely to be used.
 
 ## Approaches tried
 
-None yet.
+### Approach 1
+
+Candidate 2 from Decision and explanation: move the legend to the bottom right on mobile instead of
+top right, via a `@media (max-width: 44rem)` override in `FloodLegend.module.css` (`top: auto;
+bottom: 30px;`), mirroring `MapModeToggle`'s existing `position: absolute; bottom: 30px; left: 30px`
+on the same breakpoint. Desktop is untouched.
+
+Reproduced first: at 390x844 with the search panel in its expanded (inputs-visible) state, only the
+legend's last two bands and the "Updated" line peeked out below the opaque search panel; the title
+and first five bands were fully hidden behind it, matching the bug's original report. Verified live
+on the server after deploy (`main` at `e5b155a`): the legend now renders fully at the bottom right,
+title through all seven bands plus the "As of" line, with no overlap with the search panel or with
+`MapModeToggle`'s bottom-left Map/Flood toggle. Desktop, checked at 1440x900, is unchanged: the
+legend still renders top right exactly as before.
+
+Not separately verified: the collapsed search-pill state (`MobileSidebar.tsx`'s `isSmallSearchView`,
+which needs a resolved route on a short viewport to trigger). Not needed for this fix, since bottom
+positioning is independent of the search panel's height or state in either direction, unlike the
+original bug, which was.
 
 ## Decision and explanation
 
-Pending. Two candidate fixes, neither tried.
+Candidate 2, done (see Approaches tried). Two original candidates, for the record:
 
 1. Anchor the legend below the mobile header, so its `top` offset accounts for the panel's height.
    This needs the panel height at runtime, since the expanded panel is taller than the collapsed
-   one.
+   one. Not chosen: no existing mechanism in this codebase measures the panel's runtime height
+   (`.smallScreenMapOptions`'s own below-the-header placement relies on a zero-height grid row that
+   only works because its own content is short; it would collide with a card as tall as the legend).
 2. Move the legend on mobile to the bottom of the map, above the results sheet, where nothing
-   overlaps it. This avoids measuring the panel but changes where users look for the legend, and
-   the approved mockup places it at the top right.
+   overlaps it. Chosen. This avoids measuring the panel but changes where users look for the legend,
+   and the approved mockup places it at the top right (see Concerns).
 
 ## Concerns
 
-The mockup (screens 2b and 2e) shows the legend at the top right, so either fix departs from it on
-mobile. Check the fix at 390 by 844 pixels with the panel collapsed and expanded, and with the
-maximum number of bands.
+The mockup (screens 2b and 2e) shows the legend at the top right, so this fix departs from it on
+mobile. Accepted: this project's own mobile-priority stance treats mobile fidelity to the desktop
+mockup as secondary to desktop, which is unchanged. `MapModeToggle` already uses the same
+viewport-anchored bottom positioning technique on mobile, so this isn't a new pattern in the
+codebase. A route's results sheet (`.smallScreenFooter`, grid row 4) could in principle grow tall
+enough to reach the legend's `bottom: 30px` zone, the same latent risk `MapModeToggle` already
+carries on its own bottom-left corner; not fixed here, since it's a pre-existing pattern this fix
+follows rather than a regression it introduces.
 
 ## Related topics
 
@@ -68,3 +93,6 @@ maximum number of bands.
   reported the overlap. Confirmed in its mobile screenshots (`mobile.png` and `mobile-open.png` in
   its untracked `marie-curie/profile-times-stub/` folder). Not yet known whether the overlap
   predates the "Updated" line.
+- **2026-09-28, resolved.** Shipped Approach 2: moved the legend to bottom-right on mobile (`main` at
+  `e5b155a`). Reproduced the original bug live first, then verified the fix live on both mobile
+  (390x844, full legend visible, no overlap) and desktop (1440x900, unchanged).
