@@ -1,8 +1,8 @@
 ---
 date_open: 2026-09-25
-date_closed: 
+date_closed: 2026-09-29
 type: blocker
-status: monitoring
+status: resolved
 severity: P1
 subsystem: 3di-orchestration
 approaches_tried: 1
@@ -105,3 +105,9 @@ Change: in `run_forecast_process`, pass a separate setting (for example `HOTSTAR
   than 30 minutes is never used. The fourth, pipeline time, is replaced by the 15-minute clock design. Still
   unverified: an exact or fallback hotstart on `flood_mapping_full` under its real schedule. Status is
   `monitoring`, not `resolved`, until the user accepts the code evidence or a live run shows it.
+- **2026-09-29, resolved.** Read the Airflow task logs on the server (`1_trigger_simulation` of each
+  `flood_mapping_full` run on 2026-09-28). From 04:15 UTC onward the runs log `[Hotstart, exact]` with
+  `offset 0 min`, for example saved state 266747 valid at 07:30 for the 07:30 slot. One run at 07:00 logged
+  `[Hotstart, fallback]` with a 30-minute offset, the newest state within the two-cycle limit. Runs at 04:00,
+  08:45 and 13:15 logged `[Coldstart] No saved state within 0:30:00`, each after a gap with no run, which is
+  the intended behavior. This closes the unverified point above, so the blocker is resolved.

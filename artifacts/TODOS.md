@@ -307,11 +307,10 @@ so the next run hotstarted from a state that lagged the clock. The fix saves a s
 state whose `valid_at` matches the run's 15-minute slot (`main` at `dd78bcb` and `09e8650`,
 `scripts/create_simulation.py`). The 2026-09-26 test-DAG log shows "Hotstart, exact ... offset 0 min".
 
-**Still open (monitoring, 2026-09-29):** No live `flood_mapping_full` run shows a hotstart under the
-real schedule yet. The earlier concerns are handled in code: `choose_saved_state` accepts only a state
-at most two cycles (30 minutes) before the slot and otherwise cold starts, a backup state at twice the
-save interval covers a failed run, and the one-day expiry no longer matters because no state older than
-30 minutes is used. Close this item when a live run logs "Hotstart, exact" or "Hotstart, fallback".
+**Resolved (2026-09-29):** The Airflow task logs on the server show `flood_mapping_full` runs on 2026-09-28
+logging `[Hotstart, exact]` with `offset 0 min` from 04:15 UTC onward. One run logged `[Hotstart, fallback]`
+at a 30-minute offset, and runs after a gap logged `[Coldstart]`, as designed. The age limit, the backup
+state and the expiry are handled in code (`choose_saved_state`, two-cycle limit).
 
 **Effort:** S (human ~2 hrs / CC ~30 min)
 **Priority:** P1
@@ -319,7 +318,7 @@ save interval covers a failed run, and the one-day expiry no longer matters beca
 
 **Blocker tracking:** [[hotstart-state-saved-at-end-of-run]]
 
-Status:: active
+Status:: resolved
 
 ### Reuse database connections in floodmap-backend
 
