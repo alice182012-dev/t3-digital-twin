@@ -82,7 +82,30 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
   popup-tap traffic, then response times land within the same interactive latency budget the
   existing `GET /flood/areas` call already meets.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 2. Dependencies: Story 3.
+  Priority: P0. Status: Not started. Estimate: S. Sprint: 2. Dependencies: Story 3, and Story 5's
+  fix, because the check must run above the pool ceiling.
+- **Story 5: Handle a full connection pool in `floodmap-backend`.**
+  As a person checking flood depth while many others use the app, I want a burst of simultaneous
+  requests to slow down instead of fail, so the depth popup still answers.
+  Given the pool is at its ceiling of 10 connections (`FLOOD_DB_POOL_MAX`), when 30 concurrent
+  `GET /flood/points` requests arrive, then each request returns 200, or returns 503 with a
+  `Retry-After` header after the wait limit passes. None returns 400.
+  Given a pooled connection whose database session has died, when its request ends, then the pool
+  discards that connection and the slot is free for the next request.
+  Priority: P0. Status: Not started. Estimate: S. Sprint: 2. Dependencies: Story 4's measurement,
+  and the pooling change from [[flood-points-connection-per-request]].
+  Details:
+  1. What: a full pool makes a request wait for a free connection, up to a limit, then answer 503.
+  2. How: `db.connection()` waits for a free connection instead of calling `pool.getconn()`, which
+     raises `PoolError` at once. `server.py` maps `PoolError` to 503, not to the 400 that its
+     `except Exception` blocks return. `connection()` returns the connection to the pool even when
+     `rollback()` raises.
+  3. Why: on 2026-09-29, 30 concurrent requests against the live backend returned `connection pool
+     exhausted` as HTTP 400 on about half of the requests, in three runs. The rollback leak comes
+     from a code review of PR #5 and is not reproduced yet.
+  4. Effect: Story 4's latency check has to run again above the pool ceiling, at 30 concurrent
+     requests, before it can be `Done`. Sprint 3's per-point depth stories call this endpoint once
+     per route point, so they depend on this fix.
 
 ## Status history
 
@@ -112,3 +135,6 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
 - **2026-09-24, draft.** Stories 2 and 3 name `flood_depth_raster`, the table they shipped with.
   Both paths now use `flood_depth_raster_tile` instead, and `create_flood_depth_raster_tables.py`
   no longer creates the old table. The deploy runbook drops it.
+- **2026-09-30, draft.** Added Story 5 (a full connection pool) to Sprint 2. A live measurement on
+  2026-09-29 found that 30 concurrent requests return HTTP 400 `connection pool exhausted`, so
+  Story 4 cannot pass until the pool waits or answers 503.
