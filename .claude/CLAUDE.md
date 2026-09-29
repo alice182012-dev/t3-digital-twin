@@ -143,18 +143,19 @@ Epic, Thematic, SAFe).
    deviating from the template. A Simple-shape story carries the same
    information as a `sprint` frontmatter field instead, since it has only one
    row to schedule; leave it empty for a story still in the backlog.
-3. Determine sprint count from real dependencies, not a round number. Read
-   each source PRD's Dependencies and assumptions and Definition of done
-   sections, and let a story that reads another story's output land in a
-   later sprint than the one that produces it. A story with no unresolved
-   dependency can go in the earliest sprint that has room.
+3. A sprint plan has four sprints (rule 10). Real dependencies decide which of
+   the four a story lands in, not how many sprints there are. Read each source
+   PRD's Dependencies and assumptions and Definition of done sections, and let
+   a story that reads another story's output land in a later sprint than the one
+   that produces it. A story with no unresolved dependency can go in the
+   earliest sprint that has room.
 4. A story whose PRD marks its data source or design as an open risk (its
    Risks and open questions section) gets no sprint number and stays in a
    backlog table instead, cross-linked to the blocking risk. Scheduling a
    blocked story just to fill a sprint hides its real state.
 5. Write one sprint-plan file per planning pass under
    `artifacts/docs/user-stories/`, summarizing every epic's story-to-sprint
-   assignment, a "how many sprints, and why" explanation, and a Risks table.
+   assignment, a "why these four sprints" explanation, and a Risks table.
    Update it, don't replace it, when stories are added to the sprint it
    already covers. Start a new planning pass (new sprints, not an addition to
    the current one) as a new file instead: the first plan is `sprint-plan.md`
@@ -199,6 +200,19 @@ Epic, Thematic, SAFe).
    Status history entry that says what blocks it (see rule 4). A bug found while
    working goes to a blocker page and a sprint-plan row first, and `TODOS.md`
    second. Ask which sprint if the right one is unclear, instead of guessing.
+10. A sprint is one week, and a sprint plan covers four sprints, so four weeks.
+   Every story in a plan lands in one of those four sprints. Work that does not
+   fit in the four weeks goes to the next plan (`sprint-plan-N.md`, whose sprint
+   numbers continue where the last plan stopped) or, if a risk blocks it, to a
+   backlog table with the blocking reason (rule 4). Never add a fifth sprint to a
+   plan. Size each sprint to what fits in one week, by relative estimate until
+   real velocity exists (rule 6). When a sprint looks too full, move rows to a
+   later sprint or the next plan and record the move in the plan's Status
+   history. Ask before moving a row the user placed.
+   Every plan records `start_date` and `end_date` in its frontmatter, starts on
+   a Monday, and gives each sprint a `**Dates:**` line (`YYYY-MM-DD to
+   YYYY-MM-DD`, Monday to Sunday). The next plan starts on the Monday after the
+   last sprint ends, so sprint dates never overlap or leave a gap.
 
 ## Verification discipline for PRDs and cross-referencing documents
 
