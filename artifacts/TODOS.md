@@ -349,6 +349,7 @@ the server.
 **Priority:** P2
 **Depends on:** [[raster-first-pipeline-stories]] Story 2 deployed. Feeds the latency check in
 [[point-depth-lookup-backend]]'s Story 4.
+**Sprint:** 3, first row in [[sprint-plan]] (scheduled 2026-09-29).
 
 **Blocker tracking:** [[flood-points-connection-per-request]]
 

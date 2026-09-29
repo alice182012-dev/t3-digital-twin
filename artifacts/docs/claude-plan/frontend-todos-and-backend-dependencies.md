@@ -116,6 +116,8 @@ blocker. This also closes the `needs-revalidation` autofill item in `TODOS.md`. 
 
 ### 9. Decide how the frontend reads many point depths
 
+Decided 2026-09-29 (option 2) and scheduled as the first two rows of Sprint 3 in [[sprint-plan]]: reuse database connections, then run the latency check on a 40-point route. The batch endpoint is built only if that check fails the budget, which the user still has to set. The options are kept below for the record.
+
 This is the one open backend question that blocks the frontend. `GET /flood/points` takes one
 point. Todos 4 and 5 need tens of points per route, and todo 3 needs one. Three ways to close it:
 
@@ -175,3 +177,4 @@ either story reaches `Done`.
 - **2026-09-29, active.** Added todo 13 from [[failed-route-shows-previous-mode-route]]. Deferred by the user.
 - **2026-09-29, active.** Todo 2 (default zoom) done.
 - **2026-09-29, active.** Todo 3 (place-depth popup) done.
+- **2026-09-29, active.** Todo 9 scheduled: connection reuse and the latency check open Sprint 3.

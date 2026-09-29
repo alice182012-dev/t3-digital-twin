@@ -9,7 +9,7 @@ approaches_tried: 0
 approaches_remaining: 2
 tags: [blocker, postgis, latency, floodmap-backend]
 related: ["[[point-depth-lookup-backend]]", "[[raster-first-pipeline-stories]]", "[[graphhopper-backend]]", "[[minio-flood-extent-pipeline]]"]
-last_updated: 2026-09-24
+last_updated: 2026-09-29
 ---
 
 # GET /flood/points spends most of its time opening a connection
@@ -84,4 +84,6 @@ request can leave the next one in an aborted transaction. The pool size must sta
   measurement.
 - **2026-09-24, open.** Measured on the server after the Stage A deploy: the 0.56 ms lookup sits inside an
   81 ms request. The fix (a pool in `db.py`) is still untried.
-
+- **2026-09-29, open.** Scheduled as the first row of Sprint 3 in [[sprint-plan]], ahead of the `GET /flood/points`
+  latency check. Per-step depth and depth badges call the endpoint once per point, so each new connection
+  (about 58 ms) adds up. Still untried.
