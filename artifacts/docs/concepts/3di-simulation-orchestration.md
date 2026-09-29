@@ -221,5 +221,6 @@ therefore opens in map mode, and the tester switches to flood mode by hand.
   Confirm which is actually current before assuming either concurrency figure without re-reading
   `.env`.
 - No regression tests found for `create_simulation.py`'s hotstart/cold-start branching beyond
-  `test_threedi_connection.py` (connectivity only) and `test/test.py` (see its own contents for
-  coverage).
+  `test_threedi_connection.py` (connectivity only). `test/test.py`, a local end-to-end harness for
+  the retired GeoJSON chain, was removed on 2026-09-29; it called `create_simulation` but asserted
+  nothing about hotstart/cold-start behavior.
