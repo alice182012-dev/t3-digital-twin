@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from db import get_connection  # noqa: E402
+import db  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
 from flood_forecast import lookup_forecast, parse_forecast_body  # noqa: E402
@@ -60,11 +60,8 @@ def cached_areas(valid_time: str, vehicle_type: str, run: str, buffer_m: float, 
     hit = _areas_cache.get(key)
     if hit and now - hit[0] < AREAS_CACHE_TTL_SECONDS:
         return hit[1]
-    conn = get_connection()
-    try:
+    with db.connection() as conn:
         areas_fc = derive_areas(conn, valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2)
-    finally:
-        conn.close()
     _areas_cache[key] = (now, areas_fc)
     return areas_fc
 
@@ -99,13 +96,9 @@ def graphhopper_health() -> dict:
 
 def postgis_health() -> dict:
     try:
-        conn = get_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute("SELECT PostGIS_Version();")
-                version = cur.fetchone()[0]
-        finally:
-            conn.close()
+        with db.connection() as conn, conn.cursor() as cur:
+            cur.execute("SELECT PostGIS_Version();")
+            version = cur.fetchone()[0]
         return {"ok": True, "postgis_version": version}
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
@@ -137,18 +130,12 @@ class Handler(BaseHTTPRequestHandler):
                 # and click-to-snap); no flood logic involved, just forward as-is.
                 self._proxy_get_to_graphhopper(parsed.path, parsed.query)
             elif parsed.path == "/flood/runs":
-                conn = get_connection()
-                try:
+                with db.connection() as conn:
                     self._send(200, {"runs": list_runs(conn)})
-                finally:
-                    conn.close()
             elif parsed.path == "/flood/timesteps":
                 run = qs.get("run", ["latest"])[0]
-                conn = get_connection()
-                try:
+                with db.connection() as conn:
                     self._send(200, {"run": run, "timesteps": list_timesteps(conn, run)})
-                finally:
-                    conn.close()
             elif parsed.path == "/flood/areas":
                 valid_time = qs.get("valid_time", [""])[0]
                 if not valid_time:
@@ -161,11 +148,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, cached_areas(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2))
             elif parsed.path == "/flood/points":
                 query = parse_point_query(qs)
-                conn = get_connection()
-                try:
+                with db.connection() as conn:
                     self._send(200, lookup_point_depth(conn, query))
-                finally:
-                    conn.close()
             elif parsed.path == "/places/search":
                 results = search_places(
                     qs.get("q", [""])[0],
@@ -210,11 +194,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._handle_route(body)
             elif path == "/flood/forecast":
                 query = parse_forecast_body(body, datetime.now(timezone.utc))
-                conn = get_connection()
-                try:
+                with db.connection() as conn:
                     self._send(200, lookup_forecast(conn, query))
-                finally:
-                    conn.close()
             else:
                 self._send(404, {"error": "not found"})
         except Exception as exc:
