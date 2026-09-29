@@ -74,3 +74,11 @@ tifs exist, raster load and flood on roads over all 8 steps, a 15-minute clock s
   overlapping runs (Stage 2, needs `flood_mapping_full` with `FLOOD_TEST_RAIN_MM_HR`).
 - **2026-09-26.** Motorbike profile icon fixed (`7290847`) and the chart label moved into a right-hand gutter
   (`a107c78`), see [[motorbike-profile-icon-wrong]].
+- **2026-09-28, Stage 2 test.** Ran two genuinely overlapping runs under `FLOOD_TEST_RAIN_MM_HR=50`
+  (risk 3, previously unmeasured). Both runs succeeded, but risk 3's contention is real and worse
+  than expected: not same-run task contention, but a new run's simulation-trigger chain queuing
+  behind the previous run's entire downstream pipeline, because no Airflow pool separates them.
+  Runs under overlap took 20 to 35 minutes instead of ~14, and the delay compounded across
+  successive overlapping runs. New blocker:
+  [[flood-mapping-full-worker-concurrency-serializes-runs]]. Not yet fixed; `flood_mapping_full`
+  is paused again.
