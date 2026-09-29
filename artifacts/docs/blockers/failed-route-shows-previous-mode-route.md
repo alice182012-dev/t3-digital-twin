@@ -1,0 +1,99 @@
+---
+date_open: 2026-09-29
+date_closed: 
+type: blocker
+status: open
+severity: P1
+subsystem: floodmap-frontend, floodmap-backend
+approaches_tried: 0
+approaches_remaining: 2
+tags: [blocker, frontend, backend, routing, safety, error-handling]
+related: ["[[frontend-polish]]", "[[truck-routing-profile]]", "[[flood-routing-vehicle-type-always-motorbike]]", "[[graphhopper-backend]]"]
+last_updated: 2026-09-29
+---
+
+# A failed route request leaves the previous mode's route on the map
+
+## Description
+
+When the selected mode has no route, the app keeps drawing the route of the mode the user selected
+before, and the red error banner has no text.
+
+Found on 2026-09-29 while checking the truck profile ([[truck-routing-profile]]). The user selected
+walking, then car, between the same two points. Both screens showed the same 1 km route, "12 min".
+The car request had failed. The screen still showed the walking route under the car icon.
+
+**Reproduction.** Route from `21.014103,105.764718` to `21.014534,105.768982` at flood step
+`2026-09-29T15:15:00+07:00` (run `20260929T150000`, under the test rain of 50 mm/h). Select walking,
+then car.
+
+| Mode | Depth limit | Backend result |
+| ---- | ----------- | -------------- |
+| motorbike | 20 cm | `ConnectionNotFoundException` |
+| car | 30 cm | `ConnectionNotFoundException` |
+| truck | 35 cm | `ConnectionNotFoundException` |
+| foot | 40 cm | 1,011 m in 747 s |
+
+Without the flood, every mode routes in 508 m. So the road modes have no connection, and the
+walking route is a real 1,011 m detour. The backend answer is correct. The display is wrong.
+
+**Cause 1, stale route.** `floodmap/graphhopper-maps/src/stores/RouteStore.ts` reduces
+`RouteRequestSuccess`, `SetSelectedPath`, and the point actions. It has no branch for
+`RouteRequestFailed`, so a failed request leaves `routingResult` and `selectedPath` as they were.
+`Api.ts` dispatches `RouteRequestFailed` only for the newest request.
+
+**Cause 2, empty banner.** `_handle_route` in `floodmap/graphhopper-flood-road/backend/server.py`
+answers a GraphHopper error with `{"error": "<GraphHopper's JSON as text>"}` and status 400.
+`Api.ts` (lines 220 to 232) reads `message` and `hints` from the response. It finds neither, builds
+an `Error` with no message, and the banner renders empty. The comment on `_handle_route` says
+GraphHopper's response is returned as is so `Api.ts` needs no changes. That holds for a success and
+not for an error.
+
+The per-mode travel times under the icons fail separately. Each logs a warning and shows no time,
+which is acceptable.
+
+## Why this matters
+
+This is a safety gap, in the same class as [[flood-routing-vehicle-type-always-motorbike]]. A car
+driver sees a route on the map that is not a car route. It was planned for a mode that tolerates 40
+cm of water and it is labeled for a mode that tolerates 30 cm. The user is also never told that no
+car route exists, because the banner is empty.
+
+## Approaches tried
+
+None yet.
+
+## Candidate approaches
+
+1. **Pass GraphHopper's error through.** In `server.py`, parse the GraphHopper error body and send
+   it as is, so the response has `message` and `hints` and the banner reads "Connection between
+   locations not found". `test_server.py` asserts `payload["error"]` on other errors, so check
+   which of those cover the `/route` proxy before changing the shape. Backend change, S.
+2. **Clear the route on a failed request.** In `RouteStore.ts`, reset to the initial state on
+   `RouteRequestFailed`, so the map shows no route when the selected mode has none. Frontend change,
+   S. Do both. Approach 2 alone leaves an empty banner, and approach 1 alone leaves the stale route.
+
+Open question for the fix: when the selected mode fails, should the app suggest a mode that does
+have a route (walking here)? That is a product call and not part of this blocker.
+
+## Decision and explanation
+
+Pending. The user chose to fix this later. The test scenario is in [[frontend-polish]], Story 4.
+
+## Concerns
+
+The reproduction depends on the live flood. The pair stops failing once the water recedes or the
+run is pruned (the backend keeps the newest 8 runs). A repeatable test needs a stub backend or a
+fixed fixture, not the live server.
+
+## Related topics
+
+- [[frontend-polish]], Story 4
+- [[graphhopper-backend]]
+- [[truck-routing-profile]]
+
+## Status history
+
+- **2026-09-29, open.** Logged at the user's request after the walking and car routes looked
+  identical. Root causes read in `RouteStore.ts`, `Api.ts`, and `server.py`, and the four-mode
+  backend results measured against the live server. No fix attempted.

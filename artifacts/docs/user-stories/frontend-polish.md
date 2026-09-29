@@ -4,7 +4,7 @@ type: user-story
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
-related: ["[[flood-routing-mockup-frontend-gap]]", "[[sprint-plan]]", "[[mobile-flood-legend-covered-by-search-panel]]", "[[photon-rejects-vi-locale]]"]
+related: ["[[flood-routing-mockup-frontend-gap]]", "[[failed-route-shows-previous-mode-route]]", "[[sprint-plan]]", "[[mobile-flood-legend-covered-by-search-panel]]", "[[photon-rejects-vi-locale]]"]
 tags: [user-story, epic, frontend, sprint-1]
 ---
 
@@ -43,24 +43,47 @@ planning").
   1. What: an "Updated" line under the legend bands.
   2. How: `FloodLegend` formats the selected timestep with `formatTimestepTime`, in the viewer's local time.
   3. Why: it shows how current the flood data is.
-  4. Effect: the legend is one line taller, and the mobile search panel covers it ([[mobile-flood-legend-covered-by-search-panel]]).
+  4. Effect: the legend is one line taller. The mobile search panel covered it
+     ([[mobile-flood-legend-covered-by-search-panel]], resolved 2026-09-28 by moving the legend to
+     bottom-right on mobile).
 
-- **Story 3 (blocked): Switch the search geocoder's default locale to `vi`.**
+- **Story 3 (reviewed): Switch the search geocoder's default locale to `vi`.**
   As a user searching for a Vietnamese address, I want Vietnam-relevant results, so I'm not shown
   same-name places outside Vietnam mixed into the suggestion list.
   Given the search input's autofill geocoding, when a query like "Hồ Gươm" is typed, then the
   results are correctly encoded and prioritize Vietnam-relevant matches instead of mixing in
-  unrelated same-name places elsewhere. Verified live against `http://100.67.84.55:8082` before the
-  code fix (correct encoding, wrong relevance). Not yet re-verified after the fix, which needs a
-  rebuild and redeploy on the remote host.
-  Priority: P2. Status: Blocked. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
+  unrelated same-name places elsewhere. Verified live against `http://100.67.84.55:8010/geocode`
+  directly (2026-09-28): "Hồ Gươm" returns only Hanoi results, ranked correctly, with Ottawa and
+  Munich gone. Not yet re-verified through the actual browser UI at `100.67.84.55:8082`, only against
+  the backend endpoint the frontend calls, so the story stays `Reviewed`, not `Done`.
+  Priority: P2. Status: Reviewed. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
   Dependencies: None.
   Evidence: ![[frontend-vi-geocoder-check.png|420]]
   Details:
-  1. What: the frontend sends `locale=vi` to the geocoder.
-  2. How: the request now carries `locale=vi` with the accents encoded correctly.
-  3. Why: Vietnam-relevant suggestions.
-  4. Effect: place search fails on the live UI, because Photon rejects `lang=vi` and the backend answers 502. See [[photon-rejects-vi-locale]].
+  1. What: the geocode backend now forwards the frontend's existing `point`/`location_bias_scale` to
+     Photon and filters to `countrycode=VN`.
+  2. How: `place_search.py`'s `geocode_gh_shape()` and `server.py`'s `/geocode` route, `main` at `6429923`.
+  3. Why: Vietnam-relevant suggestions, and no unsupported-locale 502.
+  4. Effect: place search works on the live UI (locale fix) and now also ranks Vietnam results correctly
+     (relevance fix). See [[photon-rejects-vi-locale]] (resolved).
+
+- **Story 4: Show no route and a clear message when the selected mode has none.**
+  As a driver whose mode has no safe route, I want the map to show no route and say why, so I am
+  not shown another mode's route under my mode's icon.
+  Given a start and destination where the selected mode has no connection under the current flood
+  (for example `21.014103,105.764718` to `21.014534,105.768982` at flood step
+  `2026-09-29T15:15:00+07:00`, where motorbike, car, and truck have none and foot has a 1,011 m
+  detour), when the user selects walking and then car, then the map draws no route for car and the
+  panel shows "Connection between locations not found" in the error banner, and the walking route is
+  not on the map. When the user selects walking again, the 1,011 m route returns.
+  Test with a stub backend that answers the car request with GraphHopper's
+  `ConnectionNotFoundException` body and the walking request with a route, since the live flood
+  changes and the run is pruned after 8 runs. Also check the live server while the flood blocks the
+  pair. A unit test of `RouteStore` on `RouteRequestFailed` covers the store half.
+  Priority: P1. Status: Not started. Estimate: S. Sprint: unscheduled (fix deferred by the user on
+  2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
+  (`floodmap/graphhopper-flood-road/backend/server.py`, `_handle_route`), tracked in the blocker.
+  Blocker tracking: [[failed-route-shows-previous-mode-route]]
 
 ## Status history
 
@@ -89,7 +112,20 @@ planning").
 - **2026-09-24, draft.** The `en` default is deployed and place search works again
   ([[photon-rejects-vi-locale]]), shown in ![[frontend-en-geocoder-check.png|300]]. The story's goal,
   Vietnam-relevant results, is still unmet, so Story 3 stays `Blocked`.
+- **2026-09-28, draft.** Story 3's relevance goal shipped: the backend forwards `point`/`location_bias_scale`
+  to Photon and filters to `countrycode=VN` (`main` at `6429923`). Verified against the live
+  `/geocode` endpoint directly. Story 3 moves from `Blocked` to `Reviewed`, not `Done`, pending a
+  check through the actual browser UI. [[photon-rejects-vi-locale]] is resolved.
 - **2026-09-25, draft.** Story 2's "Updated" line shows the selected timestep's time, which is a forecast, so it can read as a future
   time (for example "Updated 21:40" at 21:22). Tracked as [[map-shows-forecast-not-now]]. The story stays `Done` against its
   written criteria, and its label may change once the team decides what the map shows.
-
+- **2026-09-29, draft.** Story 2's caption no longer says "Updated". `timestepLabel.ts` returns
+  "As of `time`" for a step at or before now and "Forecast for `time`" for a future step, because
+  the timestep shows when the data is valid, not when it was updated. The written criteria and the
+  evidence screenshot still show "Updated". Retake the screenshot if the story is to stay `Done`,
+  and confirm the wording against the mockup with the user ([[map-shows-forecast-not-now]]).
+- **2026-09-28, draft.** Story 2's mobile overlap is fixed: the legend moved to bottom-right on
+  mobile (`main` at `e5b155a`). Verified live at 390x844 (full legend visible) and 1440x900 (desktop
+  unchanged). [[mobile-flood-legend-covered-by-search-panel]] is resolved.
+- **2026-09-29, draft.** Story 4 added: the scenario from [[failed-route-shows-previous-mode-route]], kept as the
+  acceptance test for the fix. It is unscheduled until the user picks a sprint.

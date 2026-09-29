@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
-status: draft
+status: done
 subsystem: floodmap-frontend
 sprint: 4
 source_ideas: []
@@ -27,7 +27,7 @@ S
 
 ## Status
 
-Not started
+Done
 
 ## Acceptance criteria
 
@@ -36,13 +36,29 @@ object in `floodmap/graphhopper-maps/config-local.js.example` and `flood-routing
 rebuilt on the remote host, then the profile row shows four modes, and selecting truck returns a
 route from the live backend.
 
-## Known risk
+## Evidence
 
-`FloodStore` sends `vehicle_type` as `motorbike` with every route request, whatever profile is
-selected. A truck route would therefore avoid roads by the motorbike depth limit (20 cm), not the
-truck limit (35 cm) in `flood_utils.py`'s `VEHICLE_PROFILES`. The same mismatch already affects car
-and foot routes. Tracked as [[flood-routing-vehicle-type-always-motorbike]]. Decide whether to fix it in this
-story or in a separate one before the truck profile ships to real users.
+![[frontend-truck-profile.png|420]]
+
+Rendered UI captured 2026-09-29 15:09 (UTC+7) on `100.67.84.55:8082` at 1366x768, on the run
+`20260929T150000`: the profile row shows four modes with a travel time under each, truck is
+selected and bold, and the route is 918 m. The depth chart also renders again on this fresh run.
+
+## Details
+
+1. What: `truck: {}` in the `profiles` object of `config-local.js.example`, so the profile row
+   offers four modes.
+2. How: the Dockerfile copies the example file to `config-local.js`, so rebuilding
+   `flood-routing-frontend` and recreating it on the server (`--no-deps`) picks the change up.
+   The served `/config.js` lists `truck`. The icon and label already existed in the frontend.
+3. Why: GraphHopper already serves `truck`, and a truck driver needs a route that respects the
+   truck's depth limit.
+4. Effect: a truck route returned 801 m against 773 m for a car on the same pair. The known risk
+   in the first draft is gone: [[flood-routing-vehicle-type-always-motorbike]] is resolved, so a
+   truck route uses the truck limit of 35 cm. The per-mode travel time row now sends four requests
+   per query. On two of five pairs tried under the current test flood, car and foot found a
+   route and truck did not. The cause is not investigated. It may be the 35 cm limit, the truck
+   profile's own road restrictions, or both.
 
 [[frontend-polish]]'s Story 1 also fires one route request per mode, so a fourth mode adds a
 fourth request per query.
@@ -52,6 +68,10 @@ fourth request per query.
 - **2026-09-23, draft.** Created from `artifacts/TODOS.md`'s "Still open" note on the `foot`
   profile blocker and [[graphhopper-backend]]'s Open items. Assigned to Sprint 4 at the user's
   request. No backend change is needed, since GraphHopper already serves the profile.
+
+- **2026-09-29, draft.** Done. Added `truck: {}` to `config-local.js.example`, rebuilt and recreated
+  `flood-routing-frontend` on the server, and confirmed four modes in the live UI with a truck route
+  of 918 m. Evidence saved as `frontend-truck-profile.png`.
 
 This is the simple story shape: one sprint, one objective. See [[user-story-types]] for the epic,
 thematic, and SAFe shapes and when each one fits.

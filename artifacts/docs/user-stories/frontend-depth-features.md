@@ -23,10 +23,29 @@ planning").
   user taps a point on the map that isn't a query point, then a card opens at that point showing its
   name, its address, its coordinates (for example "20.992987, 105.773723"), and a "Water depth now:
   `N` cm" line, matching mockup screen 2b.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3
-  (`GET /flood/points`), Story 4 (latency validation). Also needs a reverse-geocoding source for the
-  place name and address. Check `AddressInputAutocomplete.tsx`'s geocoder first (see
-  [[flood-routing-mockup-frontend-gap]]'s Dependencies and assumptions).
+  Priority: P0. Status: Done. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3
+  (`GET /flood/points`), Story 4 (latency validation, not run, see Details). The reverse-geocoding source
+  turned out to be a new backend endpoint, since the app's geocoder is forward only.
+  Evidence: ![[frontend-place-depth-popup-wet.png|420]] ![[frontend-place-depth-popup-with-route.png|420]]
+  ![[frontend-place-depth-map-mode.png|420]]
+  Details:
+  1. What: a card at the tapped point in Flood mode with the place name, address, coordinates, and
+     "Water depth now: N cm" (`PlaceDepthPopup.tsx`), plus `GET /places/reverse` for the place.
+  2. How: `ContextMenu.tsx` hands a plain click on empty map to the popup when Flood mode is on. The popup
+     calls `GET /flood/points` with the selected timestep's `valid_time` and `run`, and `GET /places/reverse`
+     (Photon `/reverse`), each on its own so one failing leaves the other. `placeDepth.ts` holds the parsing
+     and the wording. In Map mode, and on right-click or long touch, the context menu opens as before.
+  3. Why: a user can judge water at a specific place, not only along a route. Checked on the server at
+     1366x768: a wet point read 205 cm (`GET /flood/points` returned 2.048 m for the same point and step), a
+     dry point read 0 cm, the card also opens with a route on screen, and Map mode still opens the menu.
+  4. Effect: the depth line says "as of `time`" for a step older than 45 minutes and "Forecast for `time`"
+     for a future step, so it never calls a stale or forecast depth the present. One tap costs one request to
+     each endpoint: depth about 0.13 to 0.23 s and the place about 1.1 to 1.4 s (5 samples through the proxy
+     from a Mac), so the place name is the slow part. [[point-depth-lookup-backend]] Story 4 (concurrent-tap
+     latency) has not run. The card has no route button yet ([[mockup-screen-coverage]] Story 1). The address
+     Photon returns includes the postcode and country, which the mockup omits. Photon returns the nearest OSM
+     object, so the name can be a building near the tap. See [[place-depth-popup-on-map-tap]].
+
 
 - **Story 2: Per-step depth in turn-by-turn instructions.**
   As a user following a route, I want to see the depth at each turn alongside its distance, so I
@@ -50,3 +69,5 @@ planning").
   after the popup's data source was corrected from `flood_road_values` to `GET /flood/points`.
 - **2026-09-24, draft.** Story 1's acceptance now includes the coordinates line that mockup
   screen 2b shows. The popup's route button is a separate story in [[mockup-screen-coverage]].
+- **2026-09-29, draft.** Story 1 done. A plain click already opened the context menu, so the popup replaces it
+  only in Flood mode. See [[place-depth-popup-on-map-tap]].

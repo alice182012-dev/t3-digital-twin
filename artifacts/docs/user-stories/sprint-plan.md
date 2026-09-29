@@ -56,8 +56,8 @@ frontend stories with no backend dependency ship.
 | P2 | Add the "Updated `date` `time`" line to the flood legend | S | [[frontend-polish]] | None | ![[frontend-legend-updated-line.png\|120]] | 1. What: an "Updated" line under the legend bands. How:`FloodLegend` formats the selected timestep with `formatTimestepTime`, in the viewer's local time.<br />2. Why: it shows how current the flood data is.<br />3. Effect: the legend is one line taller, and the mobile search panel covers it ([[mobile-flood-legend-covered-by-search-panel]]). | Done |
 
 Logged for traceability, outside the table: switching the search geocoder's default locale to `vi`
-(see [[frontend-polish]]). It is `Blocked`, because place search fails on the live UI
-([[photon-rejects-vi-locale]]).
+(see [[frontend-polish]]). It is `Reviewed`: place search works on the live UI and now ranks Vietnam
+results correctly ([[photon-rejects-vi-locale]], resolved 2026-09-28).
 
 ## Sprint 2: new backend surface
 
@@ -68,7 +68,7 @@ is writing real output into TimescaleDB.
 | -------- | --------------------------------------------------------------------------- | -------- | ---- | -------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | P0 | Build `GET /flood/points` | M | [[point-depth-lookup-backend]] | Sprint 1's harden and raster-load stories | ![[flood-points-endpoint.png\|120]] | 1. What:`GET /flood/points` returns the depth at a lat/lon and timestep.<br />2. How: `flood_points.py` reads `flood_depth_raster` with `ST_Value`. A pixel of 0 reads `dry`, and a point outside the raster reads `no_data`.<br />3. Why: the popup and badges need the exact pixel, not a band.<br />4. Effect: unblocks the latency check and the three Sprint 3 point stories. Without `run=`, it returns 404 when the newest run has no raster. On a real `depth.tif`, it matched `gdallocationinfo` at three points. | Done |
 | P0 | Validate `GET /flood/points`'s latency under concurrent taps | S | [[point-depth-lookup-backend]] | This sprint's endpoint story | None yet | - | Not started |
-| P1 | Build the route-forecast query against `flood_road_values` | M | [[route-forecast-query]] | Sprint 1's harden-first story | None yet | - | Not started |
+| P1 | Build the route-forecast query (`POST /flood/forecast`, from the raster tiles) | M | [[route-forecast-query]] | Sprint 1's harden-first story | None yet | 1. What: `POST /flood/forecast` returns the mean depth along a route per 15-minute column.<br />2. How: `flood_forecast.py` samples the polyline (at most 200 samples) and reads `flood_depth_raster_tile`, taking each column from the newest run that has it.<br />3. Why: the raster is the source of truth, and it needs no stable road segment ID.<br />4. Effect: [[depth-forecast-chart]] no longer waits on it. On the server a 5-point route returned 13 columns in 1.5 s. The endpoint tests have not run against a real PostGIS, and no hand-checked column or screenshot exists. | Reviewed |
 | P1 | Build the flood metric extractor | L | [[timescaledb-and-flood-metrics]] | None (reads`calculate_depth.py` output directly) | None yet | 1. What: the flood metric extractor, covered by 19 unit tests.<br />2. How: a pure function turns one segment's depth series into its metrics, and `extract_run.py` reads `flood_road_values` for a run and writes `flood_segment_metrics`.<br />3. Why: real flood-impact metrics (time to peak, recession onset, passability restoration, T+1h and T+2h depth, pre-closure time) instead of raw depth rasters alone.<br />4. Effect: it has not run against a real run, and it cannot run in Airflow until [[airflow-cannot-import-flood-utils]] is fixed. | Reviewed |
 | P1 | Populate TimescaleDB from the extractor's output | M | [[timescaledb-and-flood-metrics]] | Sprint 1's schema and service stories, this sprint's extractor story, the `segment_id` story of the new epic, [[airflow-cannot-import-flood-utils]] | None yet | - | Not started |
 | P0 | Load the roads into PostGIS with a stable segment ID | M | [[raster-first-pipeline-stories]] | None | ![[road-segment-server-check.png\|120]] | 1. What: a `road_segment` table with one row per road piece, keyed by `segment_id` such as `way/11835354#0`.<br />2. How: `load_road_segments.py` cuts each of the 12,431 ways into equal pieces of at most 50 m in EPSG:3405 and upserts them in one transaction.<br />3. Why: routing data, TimescaleDB, and the route-forecast query need one stable road ID, and the old mapping step dropped the OSM id.<br />4. Effect: it feeds the DAG tasks and the TimescaleDB key change. On the server (2026-09-25): 35,652 pieces, every way present, worst length error 0.000000000 m, and a second load changed nothing. IDs shift if the roads file or the piece length changes. | Done |
@@ -85,10 +85,10 @@ the UI, matching the mockup.
 
 | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | -------- | ----------------------------------------------- | -------- | ---- | --------------------------------------- | -------- | ------- | ----------- |
-| P0 | Place-depth popup on map tap | M | [[frontend-depth-features]] | Sprint 2's`GET /flood/points` stories | None yet | - | Not started |
-| P0 | Per-step depth in turn-by-turn instructions | S | [[frontend-depth-features]] | Sprint 2's`GET /flood/points` stories | None yet | - | Not started |
-| P0 | Per-point depth badges along the route polyline | M | [[frontend-depth-features]] | Sprint 2's`GET /flood/points` stories | None yet | - | Not started |
-| P0 | Depth-versus-time forecast chart | M | [[depth-forecast-chart]] | Sprint 2's route-forecast query story | None yet | - | Not started |
+| P0 | Place-depth popup on map tap | M | [[frontend-depth-features]] | `GET /flood/points` (done), its latency check (not started), and a reverse-geocoding source | ![[frontend-place-depth-popup-wet.png\|120]] | 1. What: a card at the tapped point in Flood mode with place name, address, coordinates, and the water depth, plus `GET /places/reverse`.<br />2. How: `ContextMenu.tsx` passes a plain click to `PlaceDepthPopup`, which calls `GET /flood/points` (selected step and run) and `GET /places/reverse` independently.<br />3. Why: a user can judge water at any point, not only along a route.<br />4. Effect: on the server a wet point read 205 cm, matching the endpoint's 2.048 m. Map mode keeps the context menu. Place lookup takes about 1.1 to 1.4 s (Photon). The latency check story has not run, and the route button is a separate story. | Done |
+| P0 | Per-step depth in turn-by-turn instructions | S | [[frontend-depth-features]] | `GET /flood/points` (done), and the many-points decision in [[frontend-todos-and-backend-dependencies]] | None yet | - | Not started |
+| P0 | Per-point depth badges along the route polyline | M | [[frontend-depth-features]] | Same as the per-step story | None yet | - | Not started |
+| P0 | Depth-versus-time forecast chart | M | [[depth-forecast-chart]] | Sprint 2's route-forecast query story (built) | None yet | 1. What: `DepthForecastChart` in the route panel, in 15-minute columns with the "now" column highlighted and a dashed line at the now depth.<br />2. How: `RoutingResults.tsx` renders it in flood mode, from `POST /flood/forecast`.<br />3. Why: a user can see whether depth along the route rises or falls, and decide whether to leave now or wait.<br />4. Effect: it replaces the 30-minute columns of the mockup with 15-minute ones. The chart renders on the server (2026-09-26), but no screenshot is saved, so the story stays `Reviewed`. | Reviewed |
 | P1 | Route to a place from the place popup | S | [[mockup-screen-coverage]] | This sprint's place-depth popup story | None yet | - | Not started |
 
 ## Sprint 4: truck routing profile
@@ -98,11 +98,20 @@ backend already serves.
 
 | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | -------- | ---------------------------------------------- | -------- | ---- | ------------ | -------- | ------- | ----------- |
-| P2 | Show the truck routing profile in the frontend | S | [[truck-routing-profile]] | None | None yet | - | Not started |
+| P2 | Show the truck routing profile in the frontend | S | [[truck-routing-profile]] | None | ![[frontend-truck-profile.png\|120]] | 1. What: `truck: {}` in `config-local.js.example`, so the profile row offers four modes.<br />2. How: rebuilt and recreated `flood-routing-frontend` on the server. The served `/config.js` lists `truck`.<br />3. Why: GraphHopper already serves `truck`, and truck drivers need the truck depth limit.<br />4. Effect: on the live UI the row shows four modes, and a truck route of 918 m returned. The per-mode travel time row now sends four requests per query. | Done |
 
 This sprint holds one story. It has no dependency on Sprints 1 to 3, so it can move earlier if
 capacity allows. The user placed it in Sprint 4. See the story's Known risk about the flood depth
 limit that a truck route uses.
+
+## Not scheduled
+
+| Priority | Story | Estimate | Epic | Blocker | Status |
+| -------- | ----- | -------- | ---- | ------- | ------ |
+| P1 | Show no route and a clear message when the selected mode has none | S | [[frontend-polish]] (Story 4) | [[failed-route-shows-previous-mode-route]] | Not started |
+
+The user deferred this fix on 2026-09-29. The story holds the acceptance scenario, so it can move
+into a sprint without new writing.
 
 ## Risks
 
@@ -111,7 +120,8 @@ limit that a truck route uses.
 | `GET /flood/points`'s latency under concurrent taps (Sprint 2) comes back too slow for a live raster query.                                                                                                                                                 | Sprint 3's three stories would need a pre-computed lookup grid instead, a larger change than currently scoped, pushing Sprint 3 out.                                                                         | Run the latency validation story early in Sprint 2, not last, so a redesign decision has runway before Sprint 3 starts.                                     |
 | The flood metric extractor (Sprint 2, estimated L) runs long, since it computes five distinct metrics (time-to-peak, recession onset, per-vehicle passability restoration, T+1h and T+2h forecast depth, pre-closure time) per road segment per vehicle type. | TimescaleDB population slips, which does not block Sprint 3 (frontend work depends on`GET /flood/points`, not on TimescaleDB), but slips [[timescaledb-and-flood-metrics]]'s own definition of done.                                        | Track it as its own story rather than folding it into the TimescaleDB story, so a slip is visible and isolated instead of hiding inside a bundled estimate. |
 | No team roster or velocity data is connected to this plan.                                                                                                                                                                                                    | Sprint boundaries above are dependency-ordered, not capacity-checked, so a sprint could be over- or under-loaded for the actual team size.                                                                   | Revise the per-sprint story count once real velocity from Sprint 1 is known, rather than trusting the estimate column blind.                                |
-| The route-forecast query's segment-matching approach (Sprint 2) is unresolved:`flood_road_values` has no stable segment ID.                                                                                                                                 | If neither a GraphHopper path-detail nor a spatial join proves accurate, the forecast chart (Sprint 3) could ship averaging the wrong segments, a wrong-but-plausible number rather than an obvious failure. | Don't start[[depth-forecast-chart]] until [[route-forecast-query]]'s own spot-checked acceptance criteria pass, not just until the query returns something.                                                 |
+| The route-forecast query is built on the raster, not `flood_road_values`, so segment matching no longer applies. Its mean depth has not been checked against a hand calculation.                                                                          | The chart could show a plausible but wrong average, a wrong number that does not look like a failure.                                                                                                        | Check one column against `flood_depth_raster_tile` by hand before either story moves to `Done`.                                                            |
+| The three point-depth stories in Sprint 3 need many `GET /flood/points` calls per route, and each call opens a new database connection ([[flood-points-connection-per-request]]). The latency check ([[point-depth-lookup-backend]] Story 4) has not run. | A route with dozens of steps and badges could be slow enough to fail the interactive budget, and no budget is set.                                                                                           | Fix the connection cost, run the Story 4 check on a 40-point route, and add a batch endpoint only if it fails. See [[frontend-todos-and-backend-dependencies]]. |
 
 ## Definition of done
 
@@ -172,3 +182,21 @@ Status history.
 - **2026-09-25, active.** [[raster-first-pipeline-stories]] Story 3 now stores the maximum in `depth` (D-006). The `depth_max` column is dropped.
 - **2026-09-25, active.** Stage B checked on the server. [[raster-first-pipeline-stories]] Stories 1 and 3 are `Done` with server evidence, and Story 5 is `Reviewed`.
 - **2026-09-25, active.** [[raster-first-pipeline-stories]] Story 4 (still `In progress`): bucket and old table deleted on the server, `flood_on_roads` written in place for one run, graded routing confirmed.
+- **2026-09-28, active.** [[frontend-polish]]'s geocoder locale story moved from `Blocked` to
+  `Reviewed`: the backend now biases and filters `/geocode` results to Vietnam
+  ([[photon-rejects-vi-locale]], resolved).
+- **2026-09-29, active.** [[truck-routing-profile]] (Sprint 4) is `Done`: four modes show in the live UI
+  and a truck route returns. Evidence is `frontend-truck-profile.png`.
+- **2026-09-29, active.** [[frontend-depth-features]] Story 1 (place-depth popup, Sprint 3) is `Done`, with server
+  evidence. It added `GET /places/reverse`. See [[place-depth-popup-on-map-tap]].
+- **2026-09-29, active.** Added an unscheduled story, [[frontend-polish]] Story 4, for
+  [[failed-route-shows-previous-mode-route]]. Fix deferred by the user.
+- **2026-09-29, active.** Reconciled the plan with the code at `main` (`88070cd`). [[route-forecast-query]]
+  (Sprint 2) and [[depth-forecast-chart]] (Sprint 3) were built on 2026-09-26 as `POST /flood/forecast`
+  and `DepthForecastChart`, from the raster in 15-minute columns, not from `flood_road_values` in
+  30-minute columns. Both move from `Not started` to `Reviewed`, with no evidence yet. The three
+  point-depth stories in Sprint 3 stay `Not started`: no frontend code calls `GET /flood/points`. Their
+  dependencies now name the latency check and the many-points decision. The risk row on segment
+  matching is replaced, and a risk row on point-depth latency is added. The "Updated" line in
+  [[frontend-polish]] Story 2 now reads "As of" or "Forecast for" in the code. See
+  [[frontend-todos-and-backend-dependencies]].

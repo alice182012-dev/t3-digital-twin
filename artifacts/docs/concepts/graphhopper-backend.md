@@ -69,6 +69,7 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
 | `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster_tile`. |
 | `/route` | POST | Flood-graded route; see the flow above. |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
+| `/places/reverse` | GET | The nearest named Vietnamese place to `lat` and `lon` (Photon `/reverse`), as `{"result": {name, address, ...} or null}`. Backs the place-depth popup. |
 
 ## Point depth lookup
 
@@ -145,9 +146,9 @@ service's `entrypoint` in `compose.yml`, which makes the app import the mounted 
 the real, persistent volume using whatever `graph.encoded_values` `config.yml` declares.
 `graphhopper/config.yml` now registers a fourth profile, `foot`, backed by `foot_custom.json`
 (`foot_priority` stays trimmed out; see that file's own comment for why). See
-[[graphhopper-vehicle-profile-rejection]] for the full investigation. `truck` is a separate,
-still-open config gap: GraphHopper already serves it server-side, but
-`config-local.js.example`'s `profiles` object never lists it (see Open items below).
+[[graphhopper-vehicle-profile-rejection]] for the full investigation. `truck` was a separate
+config gap: GraphHopper already served it, but `config-local.js.example`'s `profiles` object did
+not list it. It does since 2026-09-29 (see [[truck-routing-profile]]).
 
 ## Flood areas grade each road piece on its deepest stretch
 
@@ -179,9 +180,9 @@ request's own `profile` and each vehicle gets its own limit. See
 
 ## Open items
 
-- `floodmap/graphhopper-maps/config-local.js.example` now lists `foot` alongside `motorbike` and
-  `car`, but not `truck`, which GraphHopper already serves. `flood-routing-frontend` was rebuilt
-  and redeployed 2026-09-23; `foot` is confirmed selectable in the live UI.
+- `floodmap/graphhopper-maps/config-local.js.example` lists all four profiles: `motorbike`, `car`,
+  `truck`, and `foot`. `foot` was confirmed selectable in the live UI on 2026-09-23 and `truck` on
+  2026-09-29, after `flood-routing-frontend` was rebuilt and redeployed.
 - Routing through the UI was failing with a safety-framed "No safe route available" error on every
   request, for every vehicle profile, whenever a `valid_time` was attached — which is always,
   since `TimeSlider` supplies one on mount. Root cause was a missing `geom_4326` column on

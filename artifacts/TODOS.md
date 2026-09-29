@@ -147,21 +147,21 @@ Status:: needs-revalidation
 
 ## FloodNav Map Redesign
 
-### The map's default zoom is too tight
+### The map's default zoom is too tight — RESOLVED 2026-09-29
 
-**What:** The frontend opens too zoomed in. `floodmap/graphhopper-maps/src/map/map.ts:19` sets the
-initial view's `zoom: 17`, centered on the flood-forecast study area. Bring it down to somewhere in
-the 13 to 15 range so more of the study area is visible on open.
+**What it was:** The frontend opened at zoom 17 (`floodmap/graphhopper-maps/src/map/map.ts`), too
+close to see the flood-forecast study area.
 
-**Context:** Found 2026-09-28 while checking what the frontend's current default zoom is. The
-comment at `map.ts:16-17` notes this is a fixed initial view (not overridden by the routing graph's
-own bbox), so the fix is just changing the literal.
+**Fix:** Set the initial view to zoom 14. Compared zooms 13, 14, and 15 on the live app: 15 still
+shows only part of the area, and 13 shrinks the flood shapes too far to read. Deployed
+(`flood-routing-frontend` rebuilt and recreated with `--no-deps`). Verified live at 1366x768 and
+390x844: the map opens on the study area with the flood layer, legend, and toggle in place.
 
-**Effort:** XS (human ~15 min / CC ~5 min, plus eyeballing the right value in the range)
+**Effort:** XS
 **Priority:** P3
 **Depends on:** None.
 
-Status:: active
+Status:: resolved
 
 ### Tap-a-turn-step-to-highlight-that-segment-on-the-map
 
@@ -247,6 +247,24 @@ panel and the Map/Flood toggle; at 1440x900 the desktop position is unchanged.
 verification)
 
 Status:: resolved
+
+### Show no route and a clear message when a mode has no route
+
+**What:** When the selected mode has no route under the current flood, the app keeps drawing the
+previous mode's route, and the red error banner is empty. Clear the route on a failed request
+(`stores/RouteStore.ts`) and pass GraphHopper's error body through (`server.py`, `_handle_route`) so
+the banner says why. The scenario to test with is in [[frontend-polish]], Story 4.
+
+**Why:** A car driver can see a walking route under the car icon. Found 2026-09-29 while checking the
+truck profile, with the user's screenshots of the same 1 km route for walking and car.
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P1
+**Depends on:** None. Deferred by the user on 2026-09-29.
+
+**Blocker tracking:** [[failed-route-shows-previous-mode-route]]
+
+Status:: active
 
 ### Show the right icon for the motorbike routing profile
 
@@ -412,9 +430,8 @@ restored the `foot` profile and its encoded values (`foot_access`, `foot_average
 `graphhopper-maps/config-local.js.example`. Verified live on the remote host: real OSM import,
 `foot` registered with its encoded values, and an actual walking route returned end to end.
 
-**Still open:** `truck` is still missing from `config-local.js.example`'s `profiles`, a separate,
-already-understood config gap: add `truck: {}` to its `profiles` object and rebuild the frontend.
-GraphHopper already serves the profile, so no backend change is needed. Scheduled as [[truck-routing-profile]] in Sprint 4. See
+**Resolved 2026-09-29:** `truck` was missing from `config-local.js.example`'s `profiles`, a separate
+config gap. It now lists `truck: {}` and the live UI shows four modes ([[truck-routing-profile]], Done). See
 `artifacts/docs/concepts/graphhopper-backend.md`'s Open items.
 
 A separate P1 bug was found and fixed the same day while verifying this in the UI: routing (any
