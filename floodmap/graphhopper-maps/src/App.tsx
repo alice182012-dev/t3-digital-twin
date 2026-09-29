@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
 import styles from './App.module.css'
 import {
@@ -56,6 +56,8 @@ import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
+import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
+import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
 import Dispatcher from '@/stores/Dispatcher'
 
@@ -81,6 +83,13 @@ export default function App() {
     const [currentLocation, setCurrentLocation] = useState(getCurrentLocationStore().state)
     const flood = useFloodState()
     useFloodBootstrap()
+    const [placeCoordinate, setPlaceCoordinate] = useState<Coordinate | null>(null)
+    const floodMode = flood.mapMode === 'flood'
+    // the popup reads the flood layer's depth, so it goes away with the layer
+    useEffect(() => {
+        if (!floodMode) setPlaceCoordinate(null)
+    }, [floodMode])
+    const closePlacePopup = useCallback(() => setPlaceCoordinate(null), [])
     const profileTimes = useProfileTimes(query, flood, route.routingResult.paths.length > 0)
 
     const map = getMap()
@@ -164,7 +173,18 @@ export default function App() {
                     poiState={pois}
                     query={query}
                 />
-                <ContextMenu map={map} route={route} queryPoints={query.queryPoints} />
+                <PlaceDepthPopup
+                    map={map}
+                    coordinate={placeCoordinate}
+                    timestep={flood.timesteps[flood.selectedIndex]}
+                    onClose={closePlacePopup}
+                />
+                <ContextMenu
+                    map={map}
+                    route={route}
+                    queryPoints={query.queryPoints}
+                    onPlaceClick={floodMode ? setPlaceCoordinate : undefined}
+                />
                 {isSmallScreen ? (
                     <SmallScreenLayout
                         query={query}
