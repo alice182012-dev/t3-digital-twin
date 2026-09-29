@@ -499,6 +499,16 @@ No budget is set yet.
 6. Is a custom GraphHopper image, with Java code we own, acceptable for the routing service?
 7. Should the exact source revision of the pinned image be found first (unverified visibility and
    signatures above)?
+8. Should the service answer "when should I go?" Every tier above answers "which route, if I leave at
+   `t0`?", and `t0` is an input. Decided 2026-09-29: yes, as "wait until", shown in the existing no-route
+   alert. The first version is a fixed-route departure timeline, `POST /route/departures`, sent by the
+   client when a route request returns zero paths. It walks the flood-free route and blocks a piece if its
+   depth reaches the limit at any step from the departure step to the arrival time plus a 10-minute margin
+   fixed on the server. It does not depend on which
+   tier is chosen. A sweep over routes waits until a measurement shows the timeline often says
+   "blocked" while a detour exists. The team chose sticky C-lite on 2026-09-29, with closure measured from the departure
+   step so that "wait until" works. Details are in [[departure-time-advice-research]] and
+   [[sticky-c-lite-routing]].
 
 ## Questions
 
@@ -529,3 +539,5 @@ No budget is set yet.
   Valhalla has no graded area penalty. Adapting Valhalla is possible but not worthwhile, and it does not
   change the Option C answer. The Valhalla proof of concept was deleted in `5d1a606`, so ADR-002's "left on
   disk" needs correcting in `artifacts/raw/`, which the user owns.
+- **2026-09-29, open.** The user chose sticky C-lite as the routing option. The reasoning, cost-benefit, and
+  roadmap are in [[sticky-c-lite-routing]]. The decision gate was not run. No code is written.
