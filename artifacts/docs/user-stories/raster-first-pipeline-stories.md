@@ -72,7 +72,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   1. What: the DAG no longer builds GeoJSON. It loads roads and computes flood on roads into `flood_road_values`, the table routing reads.
   2. How: `stage-b` removes tasks 4 to 8, `dags/test_dag.py`, and the `flood-results-full` configuration, and adds the `load_road_segments` and `flood_on_roads` tasks. On the server the bucket (15 objects, 14.7 MB) and the old `flood_depth_raster` table (122 MB) were deleted, and `flood_on_roads` was written in place for run `20260924T164803`.
   3. Why: one path from the depth rasters to routing, with the raster as the source of truth.
-  4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. Still open: a full DAG cycle, the frontend on a live event (the state-test DAG will provide one, see D-007), deleting the old scripts, and removing the test shadow table.
+  4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. Still open: a full DAG cycle, the frontend on a live event (the state-test DAG will provide one, see D-007), and dropping the `flood_road_values_shadow` table left on the server from Story 3's comparison run. The old scripts are deleted (2026-09-29).
 
 - **Story 5: Create the netcdf table in the schema task.**
   As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is not marked
@@ -115,4 +115,14 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
 - **2026-09-25, draft.** Story 4 progress on the server: deleted the `flood-results-full` bucket and `flood_depth_raster`, wrote
   `flood_on_roads` in place for run `20260924T164803` (8,444 rows replacing 7,620), and confirmed graded routing on the new rows.
   Still `In progress`: a full cycle, the frontend on a live event, and deleting the old scripts.
+- **2026-09-29, draft.** Deleted the retired GeoJSON chain's source: `scripts/extract_geojson.py`,
+  `scripts/mapping/extract_geojson_full.py`, `mapping_geojson.py`, `merge_geojson.py`, and
+  `upload_minio.py`, plus their only two callers, `scripts/run_d1_ingest.py` and `test/test.py`
+  (both local harnesses for the retired chain, confirmed unused by `dags/flood_mapping_dag.py` or
+  anything else in the repo). `scripts/database/geojson_to_pg.py` stayed: `flood_on_roads.py` and
+  `extract_run.py` still call it. Corrected a stale `test/test.py` reference in
+  [[3di-simulation-orchestration]]. Still `In progress`: a full DAG cycle, the frontend on a live
+  event, and dropping the `flood_road_values_shadow` table on the server (an operational step, not
+  a code change; `flood_on_roads.py`'s `create_shadow_table` and `compare_with_old.py` stay, since
+  they are live comparison tooling, not part of the retired chain).
 

@@ -145,9 +145,9 @@ _DELETE_SQL = """
 DELETE FROM {target} WHERE timestamp = %(timestamp)s AND forecast_time = ANY(%(forecast_times)s)
 """
 
-# A piece wet at any timestep of the run gets a row at every timestep, 0 where it is dry, the way
-# merge_geojson.py filled a cell's dry timesteps with 0. routing's winner run for a forecast_time is
-# the newest run with rows at that time, and flood_metrics reads each piece's full series.
+# A piece wet at any timestep of the run gets a row at every timestep, 0 where it is dry. routing's
+# winner run for a forecast_time is the newest run with rows at that time, and flood_metrics reads
+# each piece's full series.
 _INSERT_SQL = """
 WITH wet AS (
     SELECT segment_id FROM piece_depth GROUP BY segment_id HAVING max(depth) > 0
