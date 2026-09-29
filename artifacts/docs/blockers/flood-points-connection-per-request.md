@@ -1,8 +1,8 @@
 ---
 date_open: 2026-09-24
-date_closed: 
+date_closed: 2026-09-29
 type: blocker
-status: open
+status: resolved
 severity: P2
 subsystem: floodmap-backend
 approaches_tried: 1
@@ -53,21 +53,18 @@ request, the tile work is already fast, and the connection is now almost the who
 
 ## Approaches tried
 
-1. Pool the connections (2026-09-29). `db.py`'s `get_connection()` is replaced by a
-   `psycopg2.pool.ThreadedConnectionPool` (`FLOOD_DB_POOL_MIN`/`FLOOD_DB_POOL_MAX`, default 1/10) and
-   a `db.connection()` context manager. Every `server.py` handler borrows through it and rolls back
-   on release, so the raster library load happens once per pooled connection instead of once per
-   request. Not yet measured against the server: this session had no psycopg2/GDAL locally and no
-   remote-server access, so the fix is built and statically reviewed, not benchmarked.
+1. Pool the connections (2026-09-29). `db.py`'s `get_connection()` replaced with a
+   `psycopg2.pool.ThreadedConnectionPool` (`FLOOD_DB_POOL_MIN`/`FLOOD_DB_POOL_MAX`, default 1/10)
+   behind a `db.connection()` context manager, rolled back on release. Built, deployed to the live
+   `floodmap-backend` container, and measured on the server: worked, see Status history.
 
 ## Decision and explanation
 
-Pooling (approach 1 below) is built. Approach 2 is not needed unless the server measurement shows
-pooling itself adds contention under load.
+Done: pooling (candidate 1). Candidate 2 (thread-local) wasn't needed; pooling resolved the
+blocker on the first measurement.
 
-1. ~~Pool the connections.~~ Built 2026-09-29, unmeasured.
-2. Keep one connection per handler thread (thread-local). Smaller than a pool, but it holds a
-   connection for the life of each thread. Fallback if pooling underperforms.
+1. ~~Pool the connections.~~ Built and deployed 2026-09-29, resolved.
+2. Keep one connection per handler thread (thread-local). Not needed.
 
 ## Concerns
 
@@ -92,8 +89,10 @@ request can leave the next one in an aborted transaction. The pool size must sta
   latency check. Per-step depth and depth badges call the endpoint once per point, so each new connection
   (about 58 ms) adds up. Still untried.
 - **2026-09-29, open.** The re-cut of [[sprint-plan]] moved this to Sprint 2, ahead of the latency check and Sprint 3's per-step depth.
-- **2026-09-29, open.** Built the pooling fix: `db.py`'s `ThreadedConnectionPool` and `connection()`
-  context manager, all six `server.py` call sites converted. A new `test_db.py` unit test (no real
-  PostGIS) proves the borrow/rollback/release contract on both a clean exit and an exception.
-  `server.py` and `db.py` import and wire together cleanly. Stays `open`: no server measurement yet,
-  and `test_server.py`'s full integration pass needs GDAL, unavailable in this session.
+- **2026-09-29, resolved.** Built the pooling fix, rebuilt and redeployed `floodmap-backend` on the
+  server, and measured with the same methodology as the original numbers above (30 sequential, 5 at
+  once/20 requests, 10 at once/40 requests), against the same endpoint. Sequential median 80.7ms to
+  4.6ms (about 17x). 5-concurrent median 99.4ms to 39.6ms. 10-concurrent median 126.8ms to 103.3ms,
+  a smaller gain because 10 concurrent requests hits `FLOOD_DB_POOL_MAX`'s default ceiling of 10, not
+  a regression; raise the env var if sustained 10-way concurrency shows up in production. No errors
+  at any level. Closes this blocker and [[point-depth-lookup-backend]] Story 4.
