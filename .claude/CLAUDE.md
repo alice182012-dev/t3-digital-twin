@@ -190,6 +190,15 @@ Epic, Thematic, SAFe).
      `<br />`.
    - Take the screenshot before changing the status. If the check fails, log
      the failure as a blocker and leave the story off `Done`.
+9. `TODOS.md` follows the sprint plan strictly. Any new fix or feature, including
+   one that comes up mid-task, is first written as a story and given a sprint in
+   the current `sprint-plan.md` (or in a new plan if it starts a new pass), with
+   its epic file updated to match. Only after that does it appear in `TODOS.md`,
+   and its item carries a `**Sprint:**` line linking to the plan. Never add a
+   `TODOS.md` item directly, and never leave a story unscheduled without a
+   Status history entry that says what blocks it (see rule 4). A bug found while
+   working goes to a blocker page and a sprint-plan row first, and `TODOS.md`
+   second. Ask which sprint if the right one is unclear, instead of guessing.
 
 ## Verification discipline for PRDs and cross-referencing documents
 
