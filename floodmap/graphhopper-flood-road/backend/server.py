@@ -45,6 +45,7 @@ from place_search import (  # noqa: E402
     _optional_number,
     _parse_point,
     geocode_gh_shape,
+    reverse_place,
     search_places,
 )
 
@@ -174,6 +175,9 @@ class Handler(BaseHTTPRequestHandler):
                     qs.get("zoom", [None])[0],
                 )
                 self._send(200, {"results": results})
+            elif parsed.path == "/places/reverse":
+                place = reverse_place(qs.get("lat", [None])[0], qs.get("lon", [None])[0])
+                self._send(200, {"result": place})
             elif parsed.path == "/geocode":
                 point = _parse_point(qs.get("point", [None])[0])
                 location_bias_scale = _optional_number(
