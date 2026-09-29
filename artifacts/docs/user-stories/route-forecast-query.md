@@ -27,7 +27,11 @@ M
 
 ## Status
 
-Reviewed
+Done
+
+## Evidence
+
+![[connection-pooling-and-forecast-verification.png|420]]
 
 ## Acceptance criteria
 
@@ -47,9 +51,11 @@ replace the 30-minute buckets and `flood_road_values` of the first draft, see
 3. Why: the raster is the source of truth for depth ([[flood-routing-mockup-frontend-gap]]
    Decisions), and sampling the polyline needs no stable road segment ID.
 4. Effect: [[depth-forecast-chart]] no longer waits on this story. On the server, a 5-point route
-   returned 13 columns in 1.5 s (2026-09-26). The story stays `Reviewed`: the endpoint checks in
-   `test_flood_forecast.py` have not run against a real PostGIS, the hand-calculation spot check is
-   not done, and no evidence screenshot is saved.
+   returned 13 columns in 1.5 s (2026-09-26). Hand-checked 2026-09-29: an independent Python replica
+   of `sample_polyline`'s 23-sample algorithm, run as raw SQL against `flood_depth_raster_tile`
+   directly, matched the endpoint's `max_depth_m`, `mean_depth_m`, and `wet_fraction` to every digit
+   for one column. `test_flood_forecast.py`'s own automated pass against a real PostGIS still has not
+   run (needs GDAL, unavailable in the session that did the hand-check).
 
 ## Status history
 
@@ -67,6 +73,10 @@ replace the 30-minute buckets and `flood_road_values` of the first draft, see
 - **2026-09-29, draft.** Status moved from `Not started` to `Reviewed`. Acceptance criteria and
   details rewritten to match the code. Still needed for `Done`: the endpoint tests against a real
   PostGIS, one hand-checked column, and a server screenshot of the response.
+- **2026-09-29, draft.** Status moved to `Done`. Hand-checked one column against
+  `flood_depth_raster_tile` directly on the live server, exact match. `test_flood_forecast.py`'s own
+  pass still hasn't run (needs GDAL), tracked separately, not blocking this story's own acceptance
+  criteria.
 
 This is the simple story shape: one sprint, one objective. See [[user-story-types]] for the epic,
 thematic, and SAFe shapes and when each one fits. Move `status` to `ready` once acceptance criteria

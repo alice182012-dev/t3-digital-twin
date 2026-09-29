@@ -67,8 +67,35 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   user reviews [[map-shows-forecast-not-now]] and [[five-minute-tile-freshness]], then the user records one
   decision on the blocker page: accept the caption and the 1.5 to 3 minute publish delay, or choose a
   freshness option and add its stories to a sprint.
-  Priority: P2. Status: Not started. Estimate: S for the decision. Sprint: 2. Dependencies: None. This story
-  needs the user. The freshness work itself, if chosen, is new stories and not part of this one.
+  Priority: P2. Status: Reviewed. Estimate: S for the decision. Sprint: 2. Dependencies: None.
+  Details:
+  1. What: the map's "now" behavior (Option C, latest published step at or before now, captioned "As of
+     `time`") is accepted as built. The user chose to keep narrowing the 1.5 to 3 minute publish delay
+     rather than accept it as final.
+  2. How: the user picked [[five-minute-tile-freshness]]'s option D, finishing the worker-concurrency
+     fix's own follow-on (a per-run critical-path narrowing, not the bigger staggered-streams option E).
+  3. Why: option D is the cheapest of the remaining options and doesn't require the added pipeline load
+     and shrunk 3Di turnaround margin that option E needs.
+  4. Effect: scheduled as Story 6 below. Option E, and accepting the delay as final, are both closed for
+     this plan; either can be revisited from [[five-minute-tile-freshness]] if Story 6's result doesn't
+     reach a satisfactory margin.
+
+- **Story 6: Narrow the per-run critical path under the 15-minute cycle (option D).**
+  As the pipeline owner, I want each run's step-1 tile to publish with real margin before that step
+  becomes "now" again, so the 1.5 to 3 minute publish delay [[flood-mapping-full-worker-concurrency-serializes-runs]]'s
+  resolution left behind goes away.
+  Given a run's critical path (trigger ~3.5 min, `3_calculate_depth` ~7 min, raster load ~2.3 min, tile
+  build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
+  or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
+  now, with a measured margin, not after.
+  Priority: P2. Status: Not started. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
+  frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
+  set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
+  so there may be headroom to raise it (12 logical cores available per
+  [[flood-mapping-full-worker-concurrency-serializes-runs]]). `9_build_flood_tiles`'s
+  `FLOOD_EXTENT_WORKERS` is 2 threads, well under the same headroom. Measure CPU and memory use during a
+  real run before raising either, since depth-calc's subprocess count and tile-build's thread count are
+  the two knobs, and both share the same box.
 
 ## Status history
 
@@ -79,3 +106,6 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   Story 5 stays in Sprint 2 (its decision sets Sprint 3's wording), Stories 2 and 3 to the next plan (P3 and blocked on user input).
 - **2026-09-29, draft.** Story 3 (the soak) is in [[sprint-plan-2]] Sprint 5, before the routing engine builds on the backend. Story 2
   (`DESIGN.md`) is in [[sprint-plan-3]] Sprint 11.
+- **2026-09-29, draft.** Story 5 is `Reviewed`, not `Done`: the user chose to keep narrowing the publish delay
+  ([[five-minute-tile-freshness]] option D), not accept it as final and not commit to option E. Added
+  Story 6 (the option D work) to Sprint 4.

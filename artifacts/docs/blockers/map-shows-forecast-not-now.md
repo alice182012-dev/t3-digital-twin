@@ -8,7 +8,7 @@ subsystem: floodmap-frontend
 approaches_tried: 1
 approaches_remaining: 1
 tags: [blocker, frontend, forecast, routing, product-decision]
-related: ["[[frontend-polish]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[flood-routing-mockup-frontend-gap]]", "[[decision-log]]"]
+related: ["[[frontend-polish]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[flood-routing-mockup-frontend-gap]]", "[[decision-log]]", "[[five-minute-tile-freshness]]", "[[carried-over-backlog]]"]
 last_updated: 2026-09-29
 ---
 
@@ -242,3 +242,8 @@ Any option that changes what the map shows also changes the "Updated" line story
   publishes 1.5 to 3 minutes after its target moment, not the 3 minutes before it that the design expected. The
   page's remaining gap is that latency, tracked in [[five-minute-tile-freshness]]. Contention between runs is no
   longer the cause. Status is `monitoring` until the latency work lands or the user accepts the delay.
+- **2026-09-29, monitoring.** [[carried-over-backlog]] Story 5 decided: the map's "now" behavior (this page's
+  Option C, already built) is accepted as final. The 1.5 to 3 minute publish delay is not accepted as final;
+  the user chose to narrow it via [[five-minute-tile-freshness]]'s option D, scheduled as Story 6 in Sprint 4.
+  Stays `monitoring` until that work lands and a fresh measurement shows real margin, or the delay is
+  re-accepted.

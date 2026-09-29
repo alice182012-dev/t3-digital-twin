@@ -82,10 +82,50 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
   popup-tap traffic, then response times land within the same interactive latency budget the
   existing `GET /flood/areas` call already meets.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 2 (re-cut 2026-09-29). Dependencies: Story 3,
-  and the connection-reuse item in [[flood-points-connection-per-request]], which lands first. The user sets the
-  latency budget. The check runs on a route of about 40 points, since per-step depth and depth badges call the
-  endpoint once per point.
+  Priority: P0. Status: Done. Estimate: S. Sprint: 2 (re-cut 2026-09-29). Dependencies: Story 3,
+  and the connection-reuse item in [[flood-points-connection-per-request]], which lands first.
+  Evidence: ![[connection-pooling-and-forecast-verification.png|420]]
+  Details:
+  1. What: measured `GET /flood/points` latency on the live server, sequential and concurrent, with
+     the pooled-connection `db.py` deployed.
+  2. How: 30 sequential requests, then 20 requests at 5 concurrent and 40 at 10 concurrent, against
+     a real wet point on run `20260929T163000`, matching the original blocker measurement's shape.
+  3. Why: this is the acceptance check the connection-reuse fix needed before it could close.
+  4. Effect: sequential median dropped from 80.7 ms to 4.6 ms (about 17x). At 5 concurrent, median
+     dropped from 99.4 ms to 39.6 ms. At 10 concurrent (the pool's own `FLOOD_DB_POOL_MAX` ceiling),
+     median dropped more modestly, from 126.8 ms to 103.3 ms, since all 10 pooled connections are in
+     use at once; raising `FLOOD_DB_POOL_MAX` would widen that ceiling if production sees sustained
+     10-way concurrency. No errors at any level tested. `GET /flood/areas`'s own interactive budget
+     (not separately re-measured here) is the comparison target the acceptance criteria name; the
+     new sequential number is well inside any plausible interactive budget.
+- **Story 5: Handle a full connection pool in `floodmap-backend`.**
+  As a person checking flood depth while many others use the app, I want a burst of simultaneous
+  requests to slow down instead of fail, so the depth popup still answers.
+  Given the pool is at its ceiling of 10 connections (`FLOOD_DB_POOL_MAX`), when 30 concurrent
+  `GET /flood/points` requests arrive, then each request returns 200, or returns 503 with a
+  `Retry-After` header after the wait limit passes. None returns 400.
+  Given a pooled connection whose database session has died, when its request ends, then the pool
+  discards that connection and the slot is free for the next request.
+  Priority: P0. Status: Done. Estimate: S. Sprint: 2. Dependencies: Story 4, and the pooling
+  change from [[flood-points-connection-per-request]].
+  Evidence: ![[pool-wait-and-503-server-check.png|420]]
+  Details:
+  1. What: a full pool makes a request wait for a free connection for up to 5 seconds
+     (`FLOOD_DB_POOL_WAIT`), then answer 503 with `Retry-After: 1`. A connection whose rollback fails
+     is closed and its slot returned.
+  2. How: `db.connection()` takes a semaphore sized to `FLOOD_DB_POOL_MAX` before it calls
+     `getconn()`, and raises `db.PoolTimeout` when the wait runs out. `server.py` maps `PoolTimeout`
+     to 503. Tests are in `backend/test_db.py`, committed before the fix.
+  3. Why: on 2026-09-29, 30 concurrent requests against the live backend returned HTTP 400
+     `connection pool exhausted` on about half of the requests, in three runs. Story 4's measurement
+     stopped at 10 concurrent requests, so it did not reach the pool ceiling.
+  4. Effect: deployed to the server by copying the branch's `backend` folder and rebuilding
+     `floodmap-backend`. Measured there at 2026-09-30 00:36 (+07:00). At 30 concurrent, three runs of 90
+     requests all returned 200, with medians of 152, 215, and 158 ms and p95 of 296, 364, and 270 ms.
+     At 60 concurrent, 180 requests returned 200 (median 345 ms). A warm sequential request takes 2.3 ms.
+     The 503 path and the dead-connection case have only unit tests, because no live run reached the
+     5 second wait. The screenshot is a fresh run at 2026-09-29 17:46 UTC on host ADMIN, with the same
+     result: no 400 at 30 or 60 concurrent requests.
 
 ## Status history
 
@@ -119,3 +159,15 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   [[sprint-plan]].
 - **2026-09-29, draft.** The re-cut of [[sprint-plan]] put Story 4 in Sprint 2 after the connection-reuse row, so Sprint 3's per-step
   depth and depth badges start on a measured endpoint.
+- **2026-09-29, draft.** Story 4 done. Deployed the pooled `db.py` (built on branch
+  `pool-floodmap-backend-connections`) to the live `floodmap-backend` container and measured:
+  sequential median 80.7ms to 4.6ms, 5-concurrent median 99.4ms to 39.6ms, 10-concurrent median
+  126.8ms to 103.3ms (the pool's own 10-connection ceiling). No errors at any level. See
+  [[flood-points-connection-per-request]], now resolved.
+- **2026-09-30, draft.** Added Story 5 (a full connection pool) to Sprint 2 as `Reviewed`. Story 4's numbers stop
+  at 10 concurrent requests. A live run at 30 concurrent found HTTP 400 `connection pool exhausted`. The fix waits for a
+  free connection and answers 503 after 5 seconds. It is deployed to the server and measured at 30 and 60 concurrent
+  requests, all 200.
+- **2026-09-30, draft.** Story 5 is `Done`: a fresh run on the server (2026-09-29 17:46 UTC) is saved as
+  `pool-wait-and-503-server-check.png`. All requests returned 200 at 30 and 60 concurrent. The live 503 path stays covered by
+  the unit test only.

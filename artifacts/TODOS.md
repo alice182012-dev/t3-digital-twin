@@ -365,9 +365,16 @@ the server.
 [[point-depth-lookup-backend]]'s Story 4.
 **Sprint:** 2, in [[sprint-plan]] (re-cut 2026-09-29).
 
-**Blocker tracking:** [[flood-points-connection-per-request]]
+**Blocker tracking:** [[flood-points-connection-per-request]] (resolved 2026-09-29)
 
-Status:: active
+**Result (2026-09-29):** `db.py` pools connections with `psycopg2.pool.ThreadedConnectionPool`,
+every `server.py` handler borrows through a `db.connection()` context manager. Deployed to the live
+`floodmap-backend` container and measured on the server: sequential median 80.7ms to 4.6ms,
+5-concurrent median 99.4ms to 39.6ms, 10-concurrent median 126.8ms to 103.3ms (hits
+`FLOOD_DB_POOL_MAX`'s default ceiling of 10). No errors at any level tested. Unblocks
+[[point-depth-lookup-backend]] Story 4, now also `Done`.
+
+Status:: done
 
 ### Decide what the map shows by default: now or the forecast
 

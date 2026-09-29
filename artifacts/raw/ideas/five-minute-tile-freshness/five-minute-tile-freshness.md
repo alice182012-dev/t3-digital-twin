@@ -1,7 +1,7 @@
 ---
 date_captured: 2026-09-28
 type: idea
-status: exploring
+status: go
 source: conversation with the user, 2026-09-28, after observing the frontend serve a 14:30 tile at 14:37
 subsystem: airflow-pipeline, floodmap-backend, floodmap-frontend
 tags: [idea, freshness, tiles, fifteen-minute-cycle, worker-concurrency]
@@ -123,3 +123,9 @@ for D; it can be scoped directly as E, since D alone provably cannot satisfy it.
   `run_forecast_process` if 3Di falls behind. B's larger problem is still the same worker-
   concurrency bottleneck, now at 3x the load. Downgraded B's verdict in the comparison table from a
   plain "yes, if paired with a concurrency fix" to "fragile even after that fix."
+- **2026-09-29, go.** [[flood-mapping-full-worker-concurrency-serializes-runs]] resolved, meeting this
+  page's own "Trigger to revisit" condition. [[carried-over-backlog]] Story 5 asked the user to decide
+  between D-only and E; the user chose D: narrow the per-run critical path (trigger ~3.5 min, depth-calc
+  ~7 min, raster load ~2.3 min, tile build ~6 min, summing to ~18.8 min against the 15-minute cycle), not
+  the bigger staggered-streams option E. Scheduled as [[carried-over-backlog]] Story 6, Sprint 4. Option E
+  stays parked here, not killed, in case D's result doesn't reach a satisfactory margin.
