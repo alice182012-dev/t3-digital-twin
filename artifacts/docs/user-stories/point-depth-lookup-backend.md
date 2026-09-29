@@ -106,8 +106,9 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   `Retry-After` header after the wait limit passes. None returns 400.
   Given a pooled connection whose database session has died, when its request ends, then the pool
   discards that connection and the slot is free for the next request.
-  Priority: P0. Status: Reviewed. Estimate: S. Sprint: 2. Dependencies: Story 4, and the pooling
+  Priority: P0. Status: Done. Estimate: S. Sprint: 2. Dependencies: Story 4, and the pooling
   change from [[flood-points-connection-per-request]].
+  Evidence: ![[pool-wait-and-503-server-check.png|420]]
   Details:
   1. What: a full pool makes a request wait for a free connection for up to 5 seconds
      (`FLOOD_DB_POOL_WAIT`), then answer 503 with `Retry-After: 1`. A connection whose rollback fails
@@ -122,8 +123,9 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
      `floodmap-backend`. Measured there at 2026-09-30 00:36 (+07:00). At 30 concurrent, three runs of 90
      requests all returned 200, with medians of 152, 215, and 158 ms and p95 of 296, 364, and 270 ms.
      At 60 concurrent, 180 requests returned 200 (median 345 ms). A warm sequential request takes 2.3 ms.
-     The 503 path has only a unit test, because no live run reached the 5 second wait. The story stays
-     `Reviewed` until a screenshot of this output is saved as evidence (rule 8).
+     The 503 path and the dead-connection case have only unit tests, because no live run reached the
+     5 second wait. The screenshot is a fresh run at 2026-09-29 17:46 UTC on host ADMIN, with the same
+     result: no 400 at 30 or 60 concurrent requests.
 
 ## Status history
 
@@ -166,3 +168,6 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   at 10 concurrent requests. A live run at 30 concurrent found HTTP 400 `connection pool exhausted`. The fix waits for a
   free connection and answers 503 after 5 seconds. It is deployed to the server and measured at 30 and 60 concurrent
   requests, all 200.
+- **2026-09-30, draft.** Story 5 is `Done`: a fresh run on the server (2026-09-29 17:46 UTC) is saved as
+  `pool-wait-and-503-server-check.png`. All requests returned 200 at 30 and 60 concurrent. The live 503 path stays covered by
+  the unit test only.
