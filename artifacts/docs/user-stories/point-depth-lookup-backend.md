@@ -82,7 +82,22 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
   popup-tap traffic, then response times land within the same interactive latency budget the
   existing `GET /flood/areas` call already meets.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 2. Dependencies: Story 3.
+  Priority: P0. Status: Done. Estimate: S. Sprint: 2 (re-cut 2026-09-29). Dependencies: Story 3,
+  and the connection-reuse item in [[flood-points-connection-per-request]], which lands first.
+  Evidence: ![[connection-pooling-and-forecast-verification.png|420]]
+  Details:
+  1. What: measured `GET /flood/points` latency on the live server, sequential and concurrent, with
+     the pooled-connection `db.py` deployed.
+  2. How: 30 sequential requests, then 20 requests at 5 concurrent and 40 at 10 concurrent, against
+     a real wet point on run `20260929T163000`, matching the original blocker measurement's shape.
+  3. Why: this is the acceptance check the connection-reuse fix needed before it could close.
+  4. Effect: sequential median dropped from 80.7 ms to 4.6 ms (about 17x). At 5 concurrent, median
+     dropped from 99.4 ms to 39.6 ms. At 10 concurrent (the pool's own `FLOOD_DB_POOL_MAX` ceiling),
+     median dropped more modestly, from 126.8 ms to 103.3 ms, since all 10 pooled connections are in
+     use at once; raising `FLOOD_DB_POOL_MAX` would widen that ceiling if production sees sustained
+     10-way concurrency. No errors at any level tested. `GET /flood/areas`'s own interactive budget
+     (not separately re-measured here) is the comparison target the acceptance criteria name; the
+     new sequential number is well inside any plausible interactive budget.
 
 ## Status history
 
@@ -112,3 +127,12 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
 - **2026-09-24, draft.** Stories 2 and 3 name `flood_depth_raster`, the table they shipped with.
   Both paths now use `flood_depth_raster_tile` instead, and `create_flood_depth_raster_tables.py`
   no longer creates the old table. The deploy runbook drops it.
+- **2026-09-29, draft.** Story 4 moved from Sprint 2 to the start of Sprint 3, after the connection-reuse fix. See
+  [[sprint-plan]].
+- **2026-09-29, draft.** The re-cut of [[sprint-plan]] put Story 4 in Sprint 2 after the connection-reuse row, so Sprint 3's per-step
+  depth and depth badges start on a measured endpoint.
+- **2026-09-29, draft.** Story 4 done. Deployed the pooled `db.py` (built on branch
+  `pool-floodmap-backend-connections`) to the live `floodmap-backend` container and measured:
+  sequential median 80.7ms to 4.6ms, 5-concurrent median 99.4ms to 39.6ms, 10-concurrent median
+  126.8ms to 103.3ms (the pool's own 10-connection ceiling). No errors at any level. See
+  [[flood-points-connection-per-request]], now resolved.
