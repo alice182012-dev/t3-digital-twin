@@ -80,9 +80,15 @@ planning").
   `ConnectionNotFoundException` body and the walking request with a route, since the live flood
   changes and the run is pruned after 8 runs. Also check the live server while the flood blocks the
   pair. A unit test of `RouteStore` on `RouteRequestFailed` covers the store half.
-  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
+  Priority: P1. Status: Done. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
   (`floodmap/graphhopper-flood-road/backend/server.py`, `_handle_route`), tracked in the blocker.
   Blocker tracking: [[failed-route-shows-previous-mode-route]]
+  Evidence: ![[failed-route-car-no-route-server-check.png|420]] ![[failed-route-walking-returns-server-check.png|420]]
+  Details:
+  1. What: a failed route request clears the route from the map, and the error banner shows GraphHopper's message.
+  2. How: `route_error_payload()` in `server.py` sends GraphHopper's error JSON through with `message` and `hints` at the top level. `RouteStore.ts` returns to its initial state on `RouteRequestFailed`. Deployed 2026-09-30 from branch `front-end-according-to-mock-up` at `dc5ed15`.
+  3. Why: a car driver was shown the walking route under the car icon, with an empty banner.
+  4. Effect: on the live UI at 1366x768, `21.011,105.748` to `21.010,105.750` gave a 760 m walking route, then car showed no route and the banner "Connection between locations not found", then walking returned the route. The original pair (`21.014103,105.764718` to `21.014534,105.768982`) could not be reused, because its run is pruned. Whether to suggest a mode that has a route stays a product call.
 
 ## Status history
 
@@ -130,3 +136,4 @@ planning").
   acceptance test for the fix. It is unscheduled until the user picks a sprint.
 - **2026-09-29, draft.** Story 4 scheduled in Sprint 3 at the user's request.
 - **2026-09-30, draft.** Story 4 built and `Reviewed`. `route_error_payload()` in `server.py` passes GraphHopper's error body through, and `RouteStore.ts` clears the route on `RouteRequestFailed`. Tests: `test_route_error.py` (4) and a new `RouteStore` test, with all 208 frontend tests passing. A local run of `server.py` against a stub GraphHopper answered 400 with `message` and `hints`. Still to do: deploy, check the pair `21.014103,105.764718` to `21.014534,105.768982` on the server, and save a screenshot.
+- **2026-09-30, draft.** Story 4 is `Done`. Deployed and checked on the live UI, see Details. [[failed-route-shows-previous-mode-route]] is `resolved`.

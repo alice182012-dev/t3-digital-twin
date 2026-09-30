@@ -11,30 +11,7 @@ Sprint 2 has no open blocker, so today starts the stories of Sprint 3 (2026-10-0
 nothing else gates. Every coordinate in a test stays inside the model border (see the `CLAUDE.md`
 section "Test points stay inside the model border").
 
-### 1. Show no route and a clear message when a mode has none
-
-**What:** Fix both causes in [[failed-route-shows-previous-mode-route]]. In `server.py`
-(`_handle_route`), pass GraphHopper's error body through so the response has `message` and `hints`.
-In `stores/RouteStore.ts`, reset the route on `RouteRequestFailed`. Cover the store with a unit test,
-and cover the walking-then-car scenario with a stub backend, because the live flood that produced
-the failure changes and the run is pruned after 8 runs. Then check the live server while the flood
-still blocks the pair `21.014103,105.764718` to `21.014534,105.768982`.
-
-**Why:** This is the P1 safety gap. A car driver sees a walking route under the car icon and reads no
-error. It is also the same class of bug as [[flood-routing-vehicle-type-always-motorbike]].
-
-**Effort:** S (human ~half a day / CC ~1 hr)
-**Priority:** P1
-**Depends on:** None. `test_server.py` asserts `payload["error"]` for other errors, so check which of
-those cover the `/route` proxy before changing the response shape.
-
-**Blocker tracking:** [[failed-route-shows-previous-mode-route]]
-
-**Sprint:** 3, [[frontend-polish]] Story 4, in [[sprint-plan]].
-
-Status:: active
-
-### 2. Show the depth at each turn-by-turn step
+### 1. Show the depth at each turn-by-turn step
 
 **What:** Each step in the expanded instructions list shows its depth next to its distance, for
 example "320 m · 8 cm", matching mockup screen 2e ([[frontend-depth-features]] Story 2). Call
@@ -55,7 +32,7 @@ batch endpoint only if that is too slow, as the Sprint 3 risk row says.
 
 Status:: active
 
-### 3. Tap a turn step to highlight its segment on the map
+### 2. Tap a turn step to highlight its segment on the map
 
 **What:** Clicking a turn-by-turn instruction row highlights that segment on the map. Reuse the
 click handler of `RHButton` (`floodmap/graphhopper-maps/src/sidebar/RoutingResults.tsx:508-531`),
@@ -63,11 +40,11 @@ which dispatches `PathDetailsElevationSelected` (highlights a segment) and `SetB
 pans to it).
 
 **Why:** It is not in the mockup, but the app already has this pattern for route-hint buttons, so it
-is cheap once item 2 gives each step a depth.
+is cheap once item 1 gives each step a depth.
 
 **Effort:** XS (human ~2-3 hrs / CC ~15 min)
 **Priority:** P3
-**Depends on:** Item 2.
+**Depends on:** Item 1.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 4, in [[sprint-plan]].
 
@@ -81,7 +58,7 @@ it starts.
 ### Sprint 3 stories not yet started
 
 - **Per-point depth badges along the route** ([[frontend-depth-features]] Story 3, P0, M, Sprint 3).
-  The largest Sprint 3 row. Start it after today's item 2, since it decides where depth changes along
+  The largest Sprint 3 row. Start it after today's item 1, since it decides where depth changes along
   the polyline and needs the same lookup.
 - **Route to a place from the place popup** ([[mockup-screen-coverage]] Story 1, P1, S, Sprint 3).
   Reuse the route-to action in `ContextMenuContent.tsx`.

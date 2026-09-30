@@ -1,8 +1,8 @@
 ---
 date_open: 2026-09-29
-date_closed: 
+date_closed: 2026-09-30
 type: blocker
-status: open
+status: resolved
 severity: P1
 subsystem: floodmap-frontend, floodmap-backend
 approaches_tried: 2
@@ -69,7 +69,7 @@ car route exists, because the banner is empty.
 
 `RouteStore.ts` returns to its initial state on `RouteRequestFailed`. A new test in `RouteStore.test.ts` dispatches a success and then a failure and expects the initial state. All 208 frontend tests pass.
 
-Result: both are built and tested locally. The live check is still open.
+Result: both are built and tested locally, then deployed and checked on the live UI (see Decision and explanation).
 
 ## Candidate approaches
 
@@ -86,7 +86,7 @@ have a route (walking here)? That is a product call and not part of this blocker
 
 ## Decision and explanation
 
-Both approaches are built. Waiting for the server check. Scheduled for Sprint 3 on 2026-09-29. The test scenario is in [[frontend-polish]], Story 4.
+Both approaches shipped together on 2026-09-30 (branch `front-end-according-to-mock-up` at `dc5ed15`, `floodmap-backend` and `flood-routing-frontend` rebuilt on the server). On the live UI, `21.011,105.748` to `21.010,105.750` gives a 760 m walking route. Selecting car draws no route and shows "Connection between locations not found". Selecting walking again returns the route. Screenshots: ![[failed-route-car-no-route-server-check.png|420]] ![[failed-route-walking-returns-server-check.png|420]]. The original pair's run was pruned, so this pair replaced it. Suggesting a mode that has a route stays a product call and is not part of this blocker. The test scenario is in [[frontend-polish]], Story 4.
 
 ## Concerns
 
@@ -107,3 +107,4 @@ fixed fixture, not the live server.
   backend results measured against the live server. No fix attempted.
 - **2026-09-29, open.** Scheduled in Sprint 3 of [[sprint-plan]] at the user's request. No fix attempted yet.
 - **2026-09-30, open.** Both approaches built and tested locally, see Approaches tried. Stays `open` until the fix is deployed and the reproduction pair shows no route and the message on the live UI.
+- **2026-09-30, resolved.** Deployed and checked on the live UI, see Decision and explanation.

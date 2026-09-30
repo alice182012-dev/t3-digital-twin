@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-29
+last_updated: 2026-09-30
 ---
 
 # GraphHopper flood-road backend
@@ -55,7 +55,10 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
    the body. `ch.disable` is required because contraction hierarchies precompute routes assuming a
    fixed cost graph; a per-request flood-graded model needs flexible mode instead.
 4. Forwards the rest of the body to GraphHopper's own `/route` and returns its response unchanged,
-   so `graphhopper-maps`' `Api.ts` needs no changes to parse it.
+   so `graphhopper-maps`' `Api.ts` needs no changes to parse it. A GraphHopper error goes through the
+   same way: `route_error_payload()` sends its JSON, with `message` and `hints`, at the original
+   status. Any other failure becomes `{"message": text, "error": text}`. Before 2026-09-30 the body
+   was `{"error": "<JSON as text>"}`, which left the frontend's error banner empty.
 
 ## Endpoints
 
