@@ -41,6 +41,30 @@ describe('buildRouteTabs', () => {
     })
 })
 
+describe('buildRouteTabs with a description the backend sends as a list', () => {
+    // GraphHopper answers `"description": ["Đường Hoàng Tùng"]`. Reading that as a string threw
+    // "trim is not a function" and blanked the whole app.
+    const listPath = (description: unknown): Path => ({ description }) as Path
+
+    it('labels the tab with the text of the list', () => {
+        expect(buildRouteTabs([listPath(['Đường Hoàng Tùng'])]).map(t => t.label)).toEqual(['Đường Hoàng Tùng'])
+    })
+
+    it('joins a list of several names', () => {
+        expect(buildRouteTabs([listPath(['Phố A', 'Phố B'])]).map(t => t.label)).toEqual(['Phố A, Phố B'])
+    })
+
+    it('falls back to Route N for an empty list and for a value that is not text', () => {
+        const tabs = buildRouteTabs([listPath([]), listPath(42), listPath({}), listPath(null)])
+        expect(tabs.map(t => t.label)).toEqual(['Route 1', 'Route 2', 'Route 3', 'Route 4'])
+    })
+
+    it('still gives a colliding pair of lists Route N', () => {
+        const tabs = buildRouteTabs([listPath(['via A1']), listPath(['via A1'])])
+        expect(tabs.map(t => t.label)).toEqual(['Route 1', 'Route 2'])
+    })
+})
+
 describe('activeTabIndex', () => {
     it('finds the selected path by reference', () => {
         const paths = [path('a'), path('b')]

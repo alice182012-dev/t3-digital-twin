@@ -51,14 +51,25 @@ export function hasPendingRequests(subRequests: SubRequest[]): boolean {
  * "via A1" would otherwise give two identical tabs. Every member of a colliding group falls back
  * to "Route N", not just the later duplicates, so the strip stays internally consistent.
  */
+/**
+ * A path's description as text. The typings say string, but GraphHopper answers a list of street
+ * names (`["Đường Hoàng Tùng"]`) when it has one, and calling `trim` on that threw and blanked the
+ * app. Anything that is not text or a list of text reads as empty.
+ */
+function descriptionText(path: Path): string {
+    const raw: unknown = path.description
+    const text = Array.isArray(raw) ? raw.filter(part => typeof part === 'string').join(', ') : raw
+    return typeof text === 'string' ? text.trim() : ''
+}
+
 export function buildRouteTabs(paths: readonly Path[]): RouteTab[] {
     const counts = new Map<string, number>()
     for (const path of paths) {
-        const description = (path.description ?? '').trim()
+        const description = descriptionText(path)
         if (description) counts.set(description, (counts.get(description) ?? 0) + 1)
     }
     return paths.map((path, index) => {
-        const description = (path.description ?? '').trim()
+        const description = descriptionText(path)
         const label = description && counts.get(description) === 1 ? description : `Route ${index + 1}`
         return { index, label, path }
     })
