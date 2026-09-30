@@ -3,7 +3,7 @@
 
 Both tables are written by scripts/flood_extent/publish.py per (run_ts, valid_time_utc), a
 separate table and pipeline from flood_areas.py's `flood_road_values`, which the routing engine
-reads instead. See artifacts/raw/SW Architecture.md #8 for why the split is intentional: this
+reads instead. See artifacts/raw/T3-Digital-Twin_Architecture.md section 4.2 for why the split is intentional: this
 module backs GET /flood/runs and GET /flood/timesteps (map display only), never routing.
 
 `list_timesteps` reads `flood_extent_step`, not `flood_extent_polygon`: a step row exists only

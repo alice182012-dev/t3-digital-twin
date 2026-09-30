@@ -7,10 +7,24 @@ Diff from upstream, for Workstream C of the Phase 2 plan (see
 `/Users/maianhtran/.claude/plans/okay-now-lets-plan-iterative-fiddle.md`):
 - `config.js` -> replaced by `config-local.js` at build time (see
   `config-local.js.example`); untouched otherwise.
-- `src/App.tsx`: two added lines (`useFloodLayer(...)` and `<TimeSlider/>`).
-- New: `src/floodmap/FloodStore.ts`, `src/floodmap/FloodLayer.tsx`,
-  `src/floodmap/TimeSlider.tsx`, `src/floodmap/TimeSlider.module.css`.
+- New: the `src/floodmap/` directory. It holds the flood store
+  (`FloodStore.ts`, `useFloodState.ts`), the flood extent map layer
+  (`FloodExtentLayer.tsx`, `floodExtentTiles.ts`), the map and flood mode toggle
+  (`MapModeToggle.tsx`), the legend (`FloodLegend.tsx`), the depth badges and
+  forecast chart (`RouteDepthBadges.tsx`, `DepthForecastChart.tsx`), the place
+  depth popup (`PlaceDepthPopup.tsx`), and the helpers they use.
+- `src/App.tsx` imports `useFloodExtentLayer`, `useFloodBootstrap`,
+  `useFloodState`, `MapModeToggle`, `FloodLegend`, `RouteDepthBadges`,
+  `PlaceDepthPopup`, and `destinationForPlace` from `src/floodmap/`.
+- `src/sidebar/RoutingResults.tsx` imports `DepthForecastChart` from
+  `src/floodmap/`. `src/sidebar/instructions/Instructions.tsx` imports
+  `stepDepthText` and `useStepDepths` from it.
+- New: `test/floodmap/`, the unit tests for the flood helpers.
 - New: `Dockerfile`, `nginx.conf` (not part of upstream, which ships as a
   library-style webpack app with no server of its own).
 
-No other upstream files were touched.
+Git history shows other upstream files changed after the import, for example
+`src/App.module.css`, `src/map/map.ts`, `src/index.tsx`, `webpack.dev.js`, and the
+stores under `src/stores/`. Their edits are not listed here, because they were
+not compared with the pinned upstream commit. To list them, diff this directory
+against upstream at the commit above.

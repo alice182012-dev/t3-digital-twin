@@ -6,7 +6,7 @@ type: home
 
 Vault root is this `artifacts/` folder. It holds engineering logs, plans, design docs, and the
 project backlog (`TODOS.md`) for the flood-mapping digital twin. See
-[[SW Architecture]] for the system architecture.
+[[T3-Digital-Twin_Architecture]] for the system architecture.
 
 ## Raw sources
 

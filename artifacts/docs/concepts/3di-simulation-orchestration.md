@@ -3,13 +3,13 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [3di, airflow, simulation]
-related: ["[[SW Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-29
+related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
+last_updated: 2026-09-30
 ---
 
 # 3Di simulation orchestration
 
-`dags/flood_mapping_dag.py` runs one continuous cycle: check the rain forecast, decide whether to
+`dags/flood_mapping_dag.py` runs one cycle every 15 minutes: check the rain forecast, decide whether to
 run a 3Di simulation, run it, download the result, turn it into depth rasters, and hand those to
 the flood-extent tile task, the depth raster load, and the flood-on-roads task. This page covers the first three steps,
 through the depth raster. See [[minio-flood-extent-pipeline]] for what happens to the rasters after.
@@ -18,7 +18,7 @@ The last section covers the manual two-event test DAG, which runs the same steps
 ## The DAG's task order
 
 ```
-0_check_forecast_rain --(dry)--> wait_before_next_rain_check
+0_check_forecast_rain --(dry)--> run ends, every later task skipped
         |
       (rain)
         v
@@ -53,16 +53,11 @@ the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG
 [[raster-first-flood-pipeline]]. `flood_on_roads` replaced it as the writer of `flood_road_values`
 on 2026-09-25.
 
-The DAG uses `VNContinuousTimetable` (`plugins/vn_timetable.py`) with `max_active_runs=1`, so the
-next cycle starts immediately after the previous one finishes rather than on a fixed clock
-schedule.
-
-**Fifteen-minute cycle.** Branch `fifteen-minute-cycle` is merged into `main`. The schedule is
-`*/15 * * * *` with `catchup=False` and `max_active_runs=2` (`dags/flood_mapping_dag.py`), following the
-design in [[map-shows-forecast-not-now]]. The `wait_before_next_rain_check` sensor,
-`FLOOD_RAIN_CHECK_INTERVAL_SECONDS`, and the `vn_timetable` import are gone, and a dry gate returns
-`None`, which skips every later task. Two overlapping runs no longer share files: each download goes to
-`RESULT_DIR/<sim_id>/`, and each reprojected raster is named after its `run_ts`.
+**Schedule.** The DAG runs on the cron `*/15 * * * *` with `catchup=False` and `max_active_runs=2`
+(`dags/flood_mapping_dag.py`), following the design in [[map-shows-forecast-not-now]]. The repository
+has no `plugins/` directory and no custom timetable. A run can last about 15 minutes, so the next
+slot's run may start while the previous one finishes. The two runs share no files. Each download goes
+to `RESULT_DIR/<sim_id>/`, and each reprojected raster is named after its `run_ts`.
 
 Each run starts at its 15-minute clock slot, not at `now()`. `create_simulation.clock_slot()` floors the
 time to the slot, and `run_forecast_process` sets the 3Di start time and the rain series from that slot
@@ -78,9 +73,8 @@ unverified, because the DAG was paused again that day.
 `task_check_forecast_rain` calls `create_simulation.get_rain_forecast()` (Tomorrow.io, 15-minute
 steps, `RAIN_LOOKAHEAD_HOURS` ahead) and `evaluate_rain_gate()`. A cycle only proceeds to
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
-mm/h). Otherwise the `BranchPythonOperator` routes to `wait_before_next_rain_check`
-(`RAIN_CHECK_INTERVAL_SECONDS`, default 900) and the cycle ends as a successful dry-cycle skip, not
-a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
+mm/h). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
+run ends as a successful dry-cycle skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
 `sim_id` there always means a real 3Di failure, so it raises `AirflowException` rather than
 `AirflowSkipException`, which would otherwise show identically green in the Airflow UI for both a
 legitimate skip and an actual failure.

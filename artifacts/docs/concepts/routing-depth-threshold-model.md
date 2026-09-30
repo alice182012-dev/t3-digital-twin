@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing, flood-depth]
-related: ["[[graphhopper-backend]]", "[[SW Architecture]]", "[[decision-log]]"]
+related: ["[[graphhopper-backend]]", "[[T3-Digital-Twin_Architecture]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -86,7 +86,7 @@ actually ships.
 
 ## Design rationale not yet in code
 
-`artifacts/raw/SW Architecture.md`, section 9, describes a pre-closure threshold: proactively closing a
+`artifacts/raw/T3-Digital-Twin_Architecture.md`, section 4.5, describes a pre-closure threshold: proactively closing a
 segment when its depth forecast 1 hour ahead reaches the vehicle's hard block threshold, even if
 the current depth is still passable, as a safety buffer distinct from the hard block itself. That
 document is FloodNav's broader target architecture, not a record of what is currently implemented;

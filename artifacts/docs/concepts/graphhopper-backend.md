@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[SW Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-09-30
 ---
 
@@ -40,7 +40,7 @@ The backend reads from three separate PostGIS tables, and they are not interchan
 
 Routing and map display run on different cadences and different upstream pipelines on purpose. Do
 not point the routing derivation at `flood_extent_polygon`, and do not point the timestep picker at
-`flood_road_values`. `artifacts/raw/SW Architecture.md`, section 8, records the decision.
+`flood_road_values`. `artifacts/raw/T3-Digital-Twin_Architecture.md`, section 4.2, records the decision.
 
 ## Request flow for POST /route
 

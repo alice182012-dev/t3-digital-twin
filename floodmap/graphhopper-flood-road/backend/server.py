@@ -11,7 +11,7 @@ never drift apart.
 
 /flood/runs and /flood/timesteps are a separate concern: they back the
 map's timestep picker, not routing, and read flood_extent_runs.py's
-flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
+flood_extent_polygon table instead. See artifacts/raw/T3-Digital-Twin_Architecture.md section 4.2.
 /flood/points reads the exact depth at one point from flood_depth_raster_tile;
 see flood_points.py. POST /flood/forecast reads depth over time along a route from the same
 table; see flood_forecast.py. POST /flood/profile reads the depth at samples along a route at one
