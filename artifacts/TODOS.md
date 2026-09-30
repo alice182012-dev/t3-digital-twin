@@ -199,6 +199,22 @@ no later build.
 
 Status:: active
 
+### 11. US-057 Show only the "No safe route available" box when a mode has no connection
+
+**What:** Drop the red "Connection between locations not found" bar when GraphHopper answers `ConnectionNotFoundException`, so only the yellow "No safe route available" box shows ([[frontend-polish]] Story 6). Other failures, such as "Cannot find point", keep their red bar. The frontend reads the exception type in the response hints, not the English text.
+
+**Why:** The bar repeats the yellow box. The user pointed it out on 2026-09-30 with the pair Vincom Center to Cổng Thiên đường Bảo Sơn.
+
+**Result so far (2026-09-30):** Built and checked on a preview build on the server: the no-connection pair shows only the yellow box, and a pin off the road network still shows its red bar. [[frontend-polish]] Story 6 (US-057) is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+
+**Effort:** XS (human ~1 hr / CC ~30 min)
+**Priority:** P2
+**Depends on:** None. It refines US-009.
+
+**Sprint:** 3, item US-057, [[frontend-polish]] Story 6 (US-057), in [[sprint-plan]].
+
+Status:: active
+
 ## Backlog
 
 Every item here is unfinished and not scheduled for today. Pull an item into the daily section when

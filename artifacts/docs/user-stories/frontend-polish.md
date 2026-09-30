@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
-us_ids: ["US-006", "US-007", "US-008", "US-009", "US-010"]
+us_ids: ["US-006", "US-007", "US-008", "US-009", "US-010", "US-057"]
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
@@ -84,6 +84,7 @@ planning").
   Priority: P1. Status: Done. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
   (`floodmap/graphhopper-flood-road/backend/server.py`, `_handle_route`), tracked in the blocker.
   Blocker tracking: [[failed-route-shows-previous-mode-route]]
+  Later change: the red bar for the no-connection case was dropped on 2026-09-30 (Story 6, US-057). The yellow "No safe route available" box stays.
   Evidence: ![[failed-route-car-no-route-server-check.png|420]] ![[failed-route-walking-returns-server-check.png|420]]
   Details:
   1. What: a failed route request clears the route from the map, and the error banner shows GraphHopper's message.
@@ -104,6 +105,23 @@ planning").
   2. How: `descriptionText` in `routingResultsView.ts` reads the description as text or a list of text. `buildRouteTabs` uses it in both places it read the field.
   3. Why: `.trim` on a list threw `trim is not a function` and blanked the whole app.
   4. Effect: four new tests failed with the exact production error before the fix. On a preview build on the server, a response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up. Deployed 2026-09-30 (`5d08b99`). On the live site the response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up (`frontend-route-description-list-live-check.png`).
+
+- **Story 6 (US-057): Show only the "No safe route available" box when a mode has no connection.**
+  As a driver whose mode has no route, I want one clear message, so I am not shown the same news twice.
+  Given a start and destination where GraphHopper answers `ConnectionNotFoundException` for the selected mode, when
+  the panel renders, then it shows the yellow "No safe route available" box and no red error bar. A failure of another
+  kind, such as "Cannot find point", still shows its message in the red bar. An earlier error bar goes away when this
+  failure arrives.
+  This refines [[frontend-polish]] Story 4 (US-009), which put GraphHopper's message in the red bar. The user judged the bar
+  redundant next to the yellow box on 2026-09-30, after the pair Vincom Center to Cổng Thiên đường Bảo Sơn showed both.
+  The frontend reads the exception type in the response hints, not the English text, so another locale still matches.
+  Priority: P2. Status: Reviewed. Estimate: XS. Sprint: 3 (follow-up to US-009). Dependencies: US-009.
+  Evidence: ![[frontend-no-connection-yellow-only-preview-check.png|420]] ![[frontend-off-road-red-bar-kept-preview-check.png|420]]
+  Details:
+  1. What: when GraphHopper answers that no connection exists, the panel shows the yellow "No safe route available" box and no red bar. Any other failure keeps its red bar, and a later no-connection failure hides an earlier bar.
+  2. How: `Api.ts` reads `ConnectionNotFoundException` in the response hints and throws an error with `noConnection` set. `routeWithDispatch` passes it to `RouteRequestFailed`, and `ErrorStore` skips the bar for it. The exception type is read, not the English text, so another locale still matches.
+  3. Why: the bar repeated the yellow box, as the user saw on 2026-09-30 with Vincom Center to Cổng Thiên đường Bảo Sơn.
+  4. Effect: on a preview build on the server, that pair shows only the yellow box, and a pin in Hoàn Kiếm, outside the road data, still shows "Cannot find point 1: 21.0285,105.8542" in the red bar. Seven tests are new (`ErrorStore.test.ts` and two in `Api.test.ts`), and all 240 pass. The live site does not have it yet, so the story is `Reviewed`.
 
 ## Status history
 
@@ -155,3 +173,6 @@ planning").
 - **2026-09-30, draft.** Story 5 added for [[route-description-list-blanks-app]], found while checking the place popup's route button.
 - **2026-09-30, draft.** Story 5 built and `Reviewed`. See Details.
 - **2026-09-30, draft.** Story 5 is `Done`: deployed at `5d08b99` and checked on the live site.
+- **2026-09-30, draft.** Story 6 (`US-057`) added: with no connection, only the yellow "No safe route available" box shows. It refines Story 4 (`US-009`), whose criteria named the red bar.
+- **2026-09-30, draft.** Story 6 built and `Reviewed`. See Details.
+
