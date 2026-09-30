@@ -245,12 +245,17 @@ Epic, Thematic, SAFe).
    Status history entry that says what blocks it (see rule 4). A bug found while
    working goes to a blocker page and a sprint-plan row first, and `TODOS.md`
    second. Ask which sprint if the right one is unclear, instead of guessing.
-   `TODOS.md` has two sections only: a daily "Today, YYYY-MM-DD" section and a
-   "Backlog". When an item finishes, set its `Status:: done` in `TODOS.md` in the
-   same pass that moves its story to `Done`, and add a one-line result. It stays
-   in the daily section for the rest of the day. At the next day's rollover,
-   delete the done items, because the logs and the sprint plan already record
-   them, and move every unfinished item to the Backlog.
+   `TODOS.md` has three sections: the current sprint, a "Backlog", and "Blockers
+   for the next sprint". The current sprint lists only the items whose story is
+   in that sprint. The Backlog lists the unfinished items carried over from the
+   sprint before it. The third section lists the blockers that would stop the
+   next sprint, and the current sprint's items that the next sprint waits on.
+   Items of later sprints stay in the sprint plans, not in `TODOS.md`. When an
+   item finishes, set its `Status:: done` in `TODOS.md` in the same pass that
+   moves its story to `Done`, and add a one-line result. It stays until the next
+   day's rollover, then it is deleted, because the logs and the sprint plan
+   already record it. When a sprint ends, move its unfinished items to the
+   Backlog and list the next sprint's items as the current sprint.
 10. A sprint is one week, and a sprint plan covers four sprints, so four weeks.
    Every story in a plan lands in one of those four sprints. Work that does not
    fit in the four weeks goes to the next plan (`sprint-plan-N.md`, whose sprint

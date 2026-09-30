@@ -1,19 +1,23 @@
 # TODOS
 
-This file holds one daily section and a backlog. The daily section lists what to do today, one
-item at a time, with a manual check after each. A finished item is set to `Status:: done` with a
-one-line result and stays in the daily section for the rest of the day. At the next day's
-rollover, done items are deleted, because the logs (`artifacts/logs/`) and the sprint plan
-already record them, and unfinished items move to the backlog.
+This file holds three sections, and each one lists only what the sprint plan puts there.
 
-## Today, 2026-09-30
+1. **The current sprint** lists every item whose story is in that sprint. A finished item is set to
+   `Status:: done` with a one-line result and stays until the next day's rollover, then it is deleted,
+   because the logs (`artifacts/logs/`) and the sprint plan already record it.
+2. **Backlog** lists the unfinished items carried over from the sprint before the current one.
+3. **Blockers for the next sprint** lists the blockers that would stop the next sprint from starting,
+   and the current sprint's items that the next sprint waits on.
 
-Sprint 2 has no open blocker, so today starts the stories of Sprint 3 (2026-10-05 to 2026-10-11) that
-nothing else gates. Every coordinate in a test stays inside the model border (see the `CLAUDE.md`
-section "Test points stay inside the model border").
+When a sprint ends, its unfinished items move to the Backlog and the next sprint becomes the current one.
+Items of later sprints are not listed here. Read them in [[sprint-plan]], [[sprint-plan-2]], and
+[[sprint-plan-3]].
 
-**Rest of today (plan: [[tap-fills-from-and-rest-of-2026-09-30]]):** finish the two open Sprint 3 rows in this order.
-Items 10 (`US-038`) and 12 (`US-058`) are done. Item 15 (`US-059`) is the follow-up found in the `US-058` live check. `US-025` and `US-026` moved to Sprint 3 at the user's request (items 13 and 14). Build them after `US-058` if time allows.
+## Current sprint: Sprint 3, 2026-10-05 to 2026-10-11
+
+Sprint 3's work started early, on 2026-09-30. Its open items are 13 (`US-025`), 14 (`US-026`), and 15
+(`US-059`). Every coordinate in a test stays inside the model border (see the `CLAUDE.md` section "Test
+points stay inside the model border").
 
 ### 1. US-001 Save evidence for the depth forecast chart and hand-check its average
 
@@ -280,86 +284,17 @@ Status:: active
 
 ## Backlog
 
-Every item here is unfinished and not scheduled for today. Pull an item into the daily section when
-it starts.
+Unfinished items carried over from Sprint 2, the sprint before the current one.
 
-### Time-aware routing (P1)
+None. All 11 rows of Sprint 2 are `Done` (see [[sprint-plan]]).
 
-[[routing-not-time-aware]] is a P1 safety gap. Research is done: industry practice and the academic
-literature (2026-09-28), an engine survey for Option C, and a build plan that keeps GraphHopper
-(2026-09-29), all in that blocker page. It still needs your decision on the approach (A-prime first,
-then C-lite if a measurement justifies it) and the trip-time bound.
+## Blockers for the next sprint
 
-**Blocker tracking:** [[routing-not-time-aware]]
+The next sprint is Sprint 4, 2026-10-12 to 2026-10-18. Checked on 2026-09-30 against its rows.
 
-**Sprint:** the stories are in [[sprint-plan-2]] (Sprints 5 to 8) and [[sprint-plan-3]] (Sprints 9 and 10).
+No logged blocker stops Sprint 4. The unresolved blockers are [[no-safe-route-box-shown-with-empty-start]],
+[[route-panel-stuck-on-loading-bars]], [[map-shows-forecast-not-now]], and [[routing-not-time-aware]]. None
+stops a Sprint 4 row.
 
-Status:: active
-
-### US-034 Backend hardening and validation for the GraphHopper flood-road backend
-
-**What:** Harden and validate `floodmap/graphhopper-flood-road/backend/` (`server.py`,
-`flood_areas.py`) before or alongside stacking more infrastructure on it.
-
-**Why:** This backend is the result of a single commit (`6394e27`, "replace valhalla with
-grasshopper routing logic to embed flood as a cost factor more effectively") with no production
-soak time. Later phases add new load and new dependencies on top of it.
-
-**Progress (2026-09-23):** [[point-depth-lookup-backend]]'s Story 1 added
-`backend/test_flood_areas.py` and `backend/test_server.py`, a regression pass against a real
-PostGIS and a stub GraphHopper. Still open: a soak period and a side-by-side comparison against the
-old Valhalla-based backend for known routes and flood scenarios.
-
-**Effort:** M (human ~2-3 days / CC ~4-6 hrs)
-**Priority:** P2
-**Depends on:** None.
-
-**Sprint:** 5, [[carried-over-backlog]] Story 3 (US-034) (the soak and the comparison), in [[sprint-plan-2]] (2026-10-19 to 2026-10-25).
-
-Status:: active
-
-### US-035 Loading is very slow
-
-**What:** Flagged on 2026-09-08 as "very slow" with no further detail. See [[sample_rate_1_bottleneck]]
-memory (SAMPLE_RATE=1 pipeline perf facts) for a measured characterization of a related slowness.
-Confirm whether this note refers to the same bottleneck before treating it as a separate issue.
-
-**Sprint:** 4, [[carried-over-backlog]] Story 4 (US-035), in [[sprint-plan]].
-
-Status:: needs-revalidation
-**Priority:** unknown (needs revalidation)
-
-### US-032 Accessibility spec for Phase A's new interactive elements
-
-**What:** Keyboard nav, ARIA roles, touch target sizing, and contrast requirements for
-`MapModeToggle`, `FloodLegend`, and the route tabs (for example `role="tablist"` and `"tab"` with
-arrow-key navigation, `aria-pressed` on the toggle, `aria-selected` on the active tab, 44px minimum
-touch targets, 4.5:1 minimum contrast on legend text).
-
-**Why:** Nothing in the plan requires these elements to be keyboard-operable or
-screen-reader-friendly. Surfaced by `/plan-design-review`'s Pass 6 (Responsive and Accessibility).
-
-**Effort:** S (human ~1-1.5 hrs / CC ~20-30 min)
-**Priority:** P2
-**Depends on:** Phase A implementation existing to audit against.
-
-**Sprint:** 4, [[carried-over-backlog]] Story 1 (US-032), in [[sprint-plan]].
-
-Status:: active
-
-### US-033 Establish a project DESIGN.md
-
-**What:** Run `/design-consultation` to establish a project DESIGN.md with real design tokens
-(colors, typography, spacing scale).
-
-**Why:** Plans calibrate against a one-off approved mockup HTML file, read manually each review,
-rather than a reusable, versioned token set. The risk is drift as more screens get built without a
-shared vocabulary.
-
-**Effort:** M (human ~half day / CC ~1-2 hrs)
-**Priority:** P3
-**Depends on:** None.
-
-**Sprint:** 11, [[carried-over-backlog]] Story 2 (US-033), in [[sprint-plan-3]] (2026-11-30 to 2026-12-06).
-
-Status:: active
+Sprint 4's `US-032` (accessibility of the map toggle, legend, and route tabs) waits on three items of the
+current sprint: `US-025`, `US-026`, and `US-059`. Finish them before 2026-10-12.

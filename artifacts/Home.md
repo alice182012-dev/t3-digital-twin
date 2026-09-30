@@ -155,7 +155,7 @@ FROM "designs"
   moves to another sprint, and the parts of a split story get new IDs. The ID follows the story's
   label in its file (`Story 4 (US-014)`) and is listed in the file's `us_ids` frontmatter. The
   `Item` column of each sprint table and each matching `TODOS.md` item carry it too. The next free
-  ID is `US-060`. Raise this number when you assign one.
+  ID is `US-061`. Raise this number when you assign one.
 - A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of
@@ -173,11 +173,13 @@ FROM "designs"
   `date` (when the page was created).
 - `TODOS.md` items keep their existing prose format; each item gets one inline field line,
   `Status:: active`, so Dataview can query it without restructuring the file.
-- `TODOS.md` has two sections only: a daily "Today, YYYY-MM-DD" section and a "Backlog". When an
-  item finishes, set its `Status:: done` in the same pass that moves its story to `Done`, with a
-  one-line result. It stays in the daily section for the rest of the day. At the next day's
-  rollover, done items are deleted, because the logs and the sprint plan already record them, and
-  unfinished items move to the Backlog.
+- `TODOS.md` has three sections: the current sprint, a "Backlog", and "Blockers for the next sprint".
+  The current sprint lists only the items whose story is in it. The Backlog lists the unfinished
+  items carried over from the sprint before. The third section lists the blockers that would stop
+  the next sprint. When an item finishes, set its `Status:: done` in the same pass that moves its
+  story to `Done`, with a one-line result. It stays until the next day's rollover, then it is
+  deleted, because the logs and the sprint plan already record it. Items of later sprints stay in
+  the sprint plans.
 - Screenshots referenced from a log go under `logs/image/<date>/`; create the folder when the
   first screenshot for that date is added, don't pre-create empty ones.
 - New logs and plans should start from the templates in `templates/` (Templater) so the
