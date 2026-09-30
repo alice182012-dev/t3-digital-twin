@@ -229,7 +229,11 @@ export class ApiImpl implements Api {
                 })
                 if (messagesFromHints) message += (message ? ' and ' : '') + messagesFromHints
             }
-            throw new Error(message)
+            // Read the exception type, not the English text, so another locale still matches.
+            const noConnection = (errorResult.hints ?? []).some(hint =>
+                String(hint?.details).endsWith('ConnectionNotFoundException'),
+            )
+            throw Object.assign(new Error(message), { noConnection })
         } else {
             throw new Error(tr('route_request_failed'))
         }
@@ -251,7 +255,7 @@ export class ApiImpl implements Api {
                 if (routeNumber > this.lastRouteNumber) {
                     console.warn('error when performing /route request ' + routeNumber + ': ', error)
                     this.lastRouteNumber = routeNumber
-                    Dispatcher.dispatch(new RouteRequestFailed(args, error.message))
+                    Dispatcher.dispatch(new RouteRequestFailed(args, error.message, error.noConnection === true))
                 } else {
                     const tmp = JSON.stringify(args) + ' ' + routeNumber + ' <= ' + this.lastRouteNumber
                     console.log('Ignore error ' + error.message + ' of earlier started route ' + tmp)

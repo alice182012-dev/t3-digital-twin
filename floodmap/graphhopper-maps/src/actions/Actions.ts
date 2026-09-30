@@ -135,10 +135,14 @@ export class ErrorAction implements Action {
 
 export class RouteRequestFailed extends ErrorAction {
     readonly request: RoutingArgs
+    /** GraphHopper answered that no connection exists between the points. The panel's "No safe route
+     *  available" box already says so, so the error bar stays hidden for this failure. */
+    readonly noConnection: boolean
 
-    constructor(request: RoutingArgs, message: string) {
+    constructor(request: RoutingArgs, message: string, noConnection = false) {
         super(message)
         this.request = request
+        this.noConnection = noConnection
     }
 }
 

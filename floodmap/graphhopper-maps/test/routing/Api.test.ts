@@ -286,6 +286,68 @@ describe('route', () => {
         expect(mockedDispatcher).toHaveBeenCalledWith(new RouteRequestFailed(args, error.message))
     })
 
+    it('flags a connection-not-found answer, so the no-safe-route box is the only message', async () => {
+        const args: RoutingArgs = {
+            points: [
+                [0, 0],
+                [1, 1],
+            ],
+            maxAlternativeRoutes: 1,
+            profile: 'car',
+            customModel: null,
+        }
+        const noConnection = {
+            message: 'Connection between locations not found',
+            hints: [
+                {
+                    message: 'Connection between locations not found',
+                    details: 'com.graphhopper.util.exceptions.ConnectionNotFoundException',
+                },
+            ],
+        }
+        fetchMock.mockResponseOnce(JSON.stringify(noConnection), { status: 400 })
+        const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+
+        new ApiImpl('https://some.api/', 'https://some.api/', 'key').routeWithDispatch(args, true)
+        await flushPromises()
+
+        expect(mockedDispatcher).toHaveBeenCalledTimes(1)
+        expect(mockedDispatcher).toHaveBeenCalledWith(
+            new RouteRequestFailed(args, 'Connection between locations not found', true),
+        )
+    })
+
+    it('does not flag a point that is off the road network, which still needs its message', async () => {
+        const args: RoutingArgs = {
+            points: [
+                [0, 0],
+                [1, 1],
+            ],
+            maxAlternativeRoutes: 1,
+            profile: 'car',
+            customModel: null,
+        }
+        const offRoad = {
+            message: 'Cannot find point 0: 21.0,105.7',
+            hints: [
+                {
+                    message: 'Cannot find point 0: 21.0,105.7',
+                    details: 'com.graphhopper.util.exceptions.PointNotFoundException',
+                    point_index: 0,
+                },
+            ],
+        }
+        fetchMock.mockResponseOnce(JSON.stringify(offRoad), { status: 400 })
+        const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+
+        new ApiImpl('https://some.api/', 'https://some.api/', 'key').routeWithDispatch(args, true)
+        await flushPromises()
+
+        expect(mockedDispatcher).toHaveBeenCalledWith(
+            new RouteRequestFailed(args, 'Cannot find point 0: 21.0,105.7', false),
+        )
+    })
+
     it('should handle 500 error', async () => {
         const args: RoutingArgs = {
             profile: 'car',
