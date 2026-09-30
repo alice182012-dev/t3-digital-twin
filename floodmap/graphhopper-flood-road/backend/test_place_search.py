@@ -85,6 +85,18 @@ def test_non_vietnam_features_are_dropped() -> None:
     ], result
 
 
+def test_hit_carries_the_district() -> None:
+    hanoi = feature("C5 Định Công", "VN", 105.8, 20.98)
+    hanoi["properties"]["district"] = "Định Công"
+    result, _ = photon_request({"features": [hanoi]}, "C5")
+    assert result["hits"][0]["district"] == "Định Công", result
+
+
+def test_hit_without_a_district_has_an_empty_district() -> None:
+    result, _ = photon_request({"features": [feature("Hồ Hoàn Kiếm", "VN", 105.8524, 21.0287)]}, "Hồ")
+    assert result["hits"][0]["district"] == "", result
+
+
 def test_parse_point() -> None:
     assert _parse_point("21.03,105.85") == (21.03, 105.85)
     assert _parse_point(" 21.03 , 105.85 ") == (21.03, 105.85)

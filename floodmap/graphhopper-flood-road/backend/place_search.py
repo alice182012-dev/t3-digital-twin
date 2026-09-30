@@ -174,6 +174,7 @@ def geocode_gh_shape(
                 "street": str(properties.get("street") or ""),
                 "housenumber": str(properties.get("housenumber") or ""),
                 "postcode": str(properties.get("postcode") or ""),
+                "district": str(properties.get("district") or ""),
             }
         )
     return {"hits": hits[:limit], "took": 0}
