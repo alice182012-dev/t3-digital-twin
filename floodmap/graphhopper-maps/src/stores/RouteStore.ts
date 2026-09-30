@@ -5,6 +5,7 @@ import {
     ClearPoints,
     ClearRoute,
     RemovePoint,
+    RouteRequestFailed,
     RouteRequestSuccess,
     SetPoint,
     SetSelectedPath,
@@ -70,6 +71,8 @@ export default class RouteStore extends Store<RouteStoreState> {
     reduce(state: RouteStoreState, action: Action): RouteStoreState {
         if (action instanceof RouteRequestSuccess) {
             return this.reduceRouteReceived(state, action)
+        } else if (action instanceof RouteRequestFailed) {
+            return RouteStore.getInitialState()
         } else if (action instanceof SetSelectedPath) {
             return {
                 ...state,
