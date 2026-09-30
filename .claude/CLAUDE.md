@@ -264,6 +264,23 @@ Epic, Thematic, SAFe).
    a Monday, and gives each sprint a `**Dates:**` line (`YYYY-MM-DD to
    YYYY-MM-DD`, Monday to Sunday). The next plan starts on the Monday after the
    last sprint ends, so sprint dates never overlap or leave a gap.
+11. A blocker found in a sprint is settled before a new sprint starts, by whether
+   it blocks further build:
+   - If it blocks build in the next sprint, fix it first. Do not touch a story of
+     the next sprint until the blocker is `resolved`.
+   - If it does not block further build, spin a subagent to fix it and continue
+     with the next sprint in the meantime. Give the subagent its own worktree and
+     a brief that points to the blocker page. Review its diff before it lands.
+   Say which case a blocker is, and why, on the blocker page and in the sprint
+   plan's Status history, when it is logged. A blocker in a sprint that is
+   unscheduled or not yet started stays with rule 9 (ask which sprint).
+12. Every user story has one global ID, `US-nnn`, assigned once from the next free
+   number in the Conventions of `artifacts/Home.md`, and never reused or renumbered.
+   The ID follows the story's label in its file (`Story 4 (US-014)`), is listed in
+   the file's `us_ids` frontmatter, and fills the `Item` column of its sprint-table
+   row and the header of its `TODOS.md` item. A story keeps its ID when it changes
+   sprint, and the parts of a split story get new IDs. Take the number before
+   writing the story, and raise the next free number in `Home.md`.
 
 ## Verification discipline for PRDs and cross-referencing documents
 
