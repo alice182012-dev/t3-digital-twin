@@ -167,6 +167,10 @@ FROM "designs"
   `date` (when the page was created).
 - `TODOS.md` items keep their existing prose format; each item gets one inline field line,
   `Status:: active`, so Dataview can query it without restructuring the file.
+- `TODOS.md` has two sections only: a daily "Today, YYYY-MM-DD" section and a "Backlog". An item
+  not finished by the end of the day moves to the Backlog. A finished item is deleted from the
+  file, because the day's log and the sprint plan already record it, so no item carries
+  `Status:: done` or `resolved`.
 - Screenshots referenced from a log go under `logs/image/<date>/`; create the folder when the
   first screenshot for that date is added, don't pre-create empty ones.
 - New logs and plans should start from the templates in `templates/` (Templater) so the
