@@ -57,7 +57,7 @@ import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
 import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
-import { destinationForPlace } from '@/floodmap/routeToPlace'
+import { namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
 import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
 import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
@@ -98,9 +98,29 @@ export default function App() {
     const routeToPlace = useCallback(
         (placeName: string | undefined) => {
             if (!placeCoordinate) return
-            Dispatcher.dispatch(new SetPoint(destinationForPlace(query.queryPoints, placeCoordinate, placeName), false))
+            pointsForRoute(query.queryPoints, placeCoordinate, placeName).forEach(point =>
+                Dispatcher.dispatch(new SetPoint(point, false)),
+            )
             setShowSidebar(true)
             setPlaceCoordinate(null)
+        },
+        [placeCoordinate, query.queryPoints],
+    )
+    const tapPlace = useCallback(
+        (coordinate: Coordinate) => {
+            setPlaceCoordinate(coordinate)
+            const start = startForTap(query.queryPoints, coordinate)
+            if (!start) return
+            Dispatcher.dispatch(new SetPoint(start, false))
+            setShowSidebar(true)
+        },
+        [query.queryPoints],
+    )
+    const namePlace = useCallback(
+        (placeName: string) => {
+            if (!placeCoordinate) return
+            const start = namedStart(query.queryPoints, placeCoordinate, placeName)
+            if (start) Dispatcher.dispatch(new SetPoint(start, false))
         },
         [placeCoordinate, query.queryPoints],
     )
@@ -193,6 +213,7 @@ export default function App() {
                     timestep={flood.timesteps[flood.selectedIndex]}
                     onClose={closePlacePopup}
                     onRoute={routeToPlace}
+                    onPlaceName={namePlace}
                 />
                 <RouteDepthBadges
                     map={map}
@@ -203,7 +224,7 @@ export default function App() {
                     map={map}
                     route={route}
                     queryPoints={query.queryPoints}
-                    onPlaceClick={floodMode ? setPlaceCoordinate : undefined}
+                    onPlaceClick={floodMode ? tapPlace : undefined}
                 />
                 {isSmallScreen ? (
                     <SmallScreenLayout

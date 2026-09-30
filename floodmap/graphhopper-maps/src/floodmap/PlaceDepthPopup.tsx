@@ -13,19 +13,33 @@ interface PlaceDepthPopupProps {
     onClose: () => void
     /** Starts a route to the tapped point. `placeName` is undefined while the place lookup has no name. */
     onRoute: (placeName: string | undefined) => void
+    /** Called once the place lookup returns a name for the tapped point. */
+    onPlaceName: (placeName: string) => void
 }
 
 /**
  * The card of the approved mockup's screen 2b: place name, address, coordinates, and the water
  * depth at the tapped point, read from the selected flood timestep.
  */
-export default function PlaceDepthPopup({ map, coordinate, timestep, onClose, onRoute }: PlaceDepthPopupProps) {
+export default function PlaceDepthPopup({
+    map,
+    coordinate,
+    timestep,
+    onClose,
+    onRoute,
+    onPlaceName,
+}: PlaceDepthPopupProps) {
     const point = coordinate && { lat: String(coordinate.lat), lon: String(coordinate.lng) }
     const depthParams = coordinate && timestep && depthQuery(coordinate, timestep)
     const depthBody = useJson('flood/points', depthParams)
     const placeBody = useJson('places/reverse', point && new URLSearchParams(point))
     const depth = depthBody === undefined ? null : readingFromResponse(depthBody)
     const place = placeBody === undefined ? undefined : placeFromResponse(placeBody)
+
+    const placeName = place?.name
+    useEffect(() => {
+        if (placeName) onPlaceName(placeName)
+    }, [placeName, onPlaceName])
 
     useEffect(() => {
         if (!coordinate) return
@@ -95,22 +109,21 @@ export default function PlaceDepthPopup({ map, coordinate, timestep, onClose, on
  * soon as it arrives and a failure of one leaves the other readable.
  */
 function useJson(path: string, params: URLSearchParams | null | undefined): unknown {
-    const [body, setBody] = useState<unknown>(undefined)
+    const [loaded, setLoaded] = useState<{ query: string | undefined; body: unknown }>()
     const query = params?.toString()
 
     useEffect(() => {
-        setBody(undefined)
         if (query === undefined) {
-            setBody(null)
+            setLoaded({ query, body: null })
             return
         }
         const controller = new AbortController()
         fetch(new URL(`${BACKEND_BASE}${path}?${query}`, window.location.href), { signal: controller.signal })
             .then(res => (res.ok ? res.json() : null))
             .catch(() => null)
-            .then(json => controller.signal.aborted || setBody(json))
+            .then(json => controller.signal.aborted || setLoaded({ query, body: json }))
         return () => controller.abort()
     }, [path, query])
 
-    return body
+    return loaded && loaded.query === query ? loaded.body : undefined
 }
