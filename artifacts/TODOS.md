@@ -1,9 +1,10 @@
 # TODOS
 
 This file holds one daily section and a backlog. The daily section lists what to do today, one
-item at a time, with a manual check after each. An item that is not finished by the end of the
-day moves to the backlog. A finished item is deleted, because the day's log
-(`artifacts/logs/`) and the sprint plan already record it.
+item at a time, with a manual check after each. A finished item is set to `Status:: done` with a
+one-line result and stays in the daily section for the rest of the day. At the next day's
+rollover, done items are deleted, because the logs (`artifacts/logs/`) and the sprint plan
+already record them, and unfinished items move to the backlog.
 
 ## Today, 2026-09-30
 
@@ -11,7 +12,30 @@ Sprint 2 has no open blocker, so today starts the stories of Sprint 3 (2026-10-0
 nothing else gates. Every coordinate in a test stays inside the model border (see the `CLAUDE.md`
 section "Test points stay inside the model border").
 
-### 1. Show the depth at each turn-by-turn step
+### 1. Save evidence for the depth forecast chart and hand-check its average
+
+**Result (2026-09-30):** Saved a server screenshot of the chart (`depth-forecast-chart-server-check.png`)
+and hand-checked the 17:00 and 18:15 columns against `flood_depth_raster_tile`. Mean depth, maximum
+depth, and wet fraction all match the endpoint. [[depth-forecast-chart]] is `Done`. The screenshot
+needed a browser clock set to 2026-09-29 17:00 +07:00, because `flood_mapping_full` is paused.
+
+**Sprint:** 3, [[depth-forecast-chart]], in [[sprint-plan]].
+
+Status:: done
+
+### 2. Show no route and a clear message when a mode has none
+
+**Result (2026-09-30):** Fixed both causes in [[failed-route-shows-previous-mode-route]]. `server.py`
+passes GraphHopper's error body through, and `RouteStore.ts` clears the route on
+`RouteRequestFailed`. Deployed (branch `front-end-according-to-mock-up`, now at `f2c0534`) and checked
+on the live UI: car shows no route and "Connection between locations not found", and walking returns
+its 760 m route. [[frontend-polish]] Story 4 is `Done`, and the blocker is `resolved`.
+
+**Sprint:** 3, [[frontend-polish]] Story 4, in [[sprint-plan]].
+
+Status:: done
+
+### 3. Show the depth at each turn-by-turn step
 
 **What:** Each step in the expanded instructions list shows its depth next to its distance, for
 example "320 m · 8 cm", matching mockup screen 2e ([[frontend-depth-features]] Story 2). Call
@@ -32,7 +56,7 @@ batch endpoint only if that is too slow, as the Sprint 3 risk row says.
 
 Status:: active
 
-### 2. Tap a turn step to highlight its segment on the map
+### 4. Tap a turn step to highlight its segment on the map
 
 **What:** Clicking a turn-by-turn instruction row highlights that segment on the map. Reuse the
 click handler of `RHButton` (`floodmap/graphhopper-maps/src/sidebar/RoutingResults.tsx:508-531`),
@@ -40,11 +64,11 @@ which dispatches `PathDetailsElevationSelected` (highlights a segment) and `SetB
 pans to it).
 
 **Why:** It is not in the mockup, but the app already has this pattern for route-hint buttons, so it
-is cheap once item 1 gives each step a depth.
+is cheap once item 3 gives each step a depth.
 
 **Effort:** XS (human ~2-3 hrs / CC ~15 min)
 **Priority:** P3
-**Depends on:** Item 1.
+**Depends on:** Item 3.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 4, in [[sprint-plan]].
 
@@ -58,7 +82,7 @@ it starts.
 ### Sprint 3 stories not yet started
 
 - **Per-point depth badges along the route** ([[frontend-depth-features]] Story 3, P0, M, Sprint 3).
-  The largest Sprint 3 row. Start it after today's item 1, since it decides where depth changes along
+  The largest Sprint 3 row. Start it after today's item 3, since it decides where depth changes along
   the polyline and needs the same lookup.
 - **Route to a place from the place popup** ([[mockup-screen-coverage]] Story 1, P1, S, Sprint 3).
   Reuse the route-to action in `ContextMenuContent.tsx`.
