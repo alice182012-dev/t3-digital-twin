@@ -98,6 +98,46 @@ plan and the badge rule are in [[route-depth-badges]].
 
 Status:: done
 
+### 6. Route to a place from the place popup
+
+**What:** The place popup has a route button in its header. Clicking it opens the routing panel with the
+place's name as the destination and the start empty, matching mockup screen 2f
+([[mockup-screen-coverage]] Story 1). The right-click menu already has a route-to action in
+`ContextMenuContent.tsx` to reuse.
+
+**Why:** A user who tapped a place should not retype it in the destination field.
+
+**Result so far (2026-09-30):** Built and checked on a preview build on the server: the popup's round blue button opens the panel with the place name in To, and a start already set is kept. [[mockup-screen-coverage]] Story 1 is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P1
+**Depends on:** None. The place popup is done.
+
+**Sprint:** 3, [[mockup-screen-coverage]] Story 1, in [[sprint-plan]].
+
+Status:: active
+
+### 7. Do not blank the app when a route description is a list
+
+**What:** Fix [[route-description-list-blanks-app]]. `buildRouteTabs` calls `.trim()` on `path.description`,
+and the backend can return a list of strings there, so the whole app goes blank. Read the description as a
+string or a list of strings, in one helper, with a test first.
+
+**Why:** Found while checking item 6. Any route with a description takes the whole UI down, and it likely
+caused the earlier unexplained blank pages.
+
+**Result so far (2026-09-30):** Fixed with a test first: four tests reproduced `trim is not a function`, and a preview build now shows a description list as the tab label. [[frontend-polish]] Story 5 is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+
+**Effort:** XS (human ~1 hr / CC ~15 min)
+**Priority:** P0
+**Depends on:** None.
+
+**Blocker tracking:** [[route-description-list-blanks-app]]
+
+**Sprint:** 3, [[frontend-polish]] Story 5, in [[sprint-plan]].
+
+Status:: active
+
 ## Backlog
 
 Every item here is unfinished and not scheduled for today. Pull an item into the daily section when
@@ -105,8 +145,6 @@ it starts.
 
 ### Sprint 3 stories not yet started
 
-- **Route to a place from the place popup** ([[mockup-screen-coverage]] Story 1, P1, S, Sprint 3).
-  Reuse the route-to action in `ContextMenuContent.tsx`.
 - **Verify screens 2a, 2c, and 2d against the mockup** ([[mockup-screen-coverage]] Story 2, P2, S,
   Sprint 3). The last Sprint 3 row on purpose: one pass checks the finished screens, and it needs the
   frontend rebuilt on the remote host.

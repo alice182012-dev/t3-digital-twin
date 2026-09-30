@@ -38,9 +38,15 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   route button in the card header (or the route pill on the map pin), then the routing panel opens
   with that place's name pre-filled as the destination and the start field empty, matching mockup
   screen 2f.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 3. Dependencies: [[frontend-depth-features]]
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 3. Dependencies: [[frontend-depth-features]]
   Story 1. The existing right-click menu (`floodmap/graphhopper-maps/src/map/ContextMenuContent.tsx`)
   already has a route-to action to reuse for the click handler.
+  Evidence: ![[frontend-route-to-place-preview-check.png|420]]
+  Details:
+  1. What: the place popup has a 36 px round blue route button in its header, as in mockup screen 2b. Clicking it opens the routing panel with the place's name as the destination and closes the popup, as in screen 2f.
+  2. How: `destinationForPlace` in `routeToPlace.ts` moves the last query point to the tapped coordinate and names it after the place, or after the coordinates when the place has no name. `App.tsx` dispatches `SetPoint` with it and opens the panel. `showSidebar` moved up from `LargeScreenLayout` into `App` for that. The other query points stay as they are, so a start the user already set is kept and an empty start stays empty.
+  3. Why: a user who tapped a place should not retype it in the destination field.
+  4. Effect: checked on a preview build on the server. With an empty start, the panel shows an empty From and "Trường Trung học phổ thông Tây Mỗ" in To. With a start set (`21.0000,105.7450`), the route is planned to the place. The pin on the map does not get its own route pill, which the story allowed as an alternative. The small-screen layout keeps its search panel open all the time, so it needs no change. The live site does not have it yet, so the story is `Reviewed`.
 
 - **Story 2: Verify the first-load, empty-panel, and autofill screens against the mockup.**
   As a product owner, I want screens 2a, 2c, and 2d checked against the approved mockup on the live
@@ -67,3 +73,4 @@ out of the sprints until someone decides to build them.
   the route button on the popup (2b to 2f), and no check that the unchanged screens (2a, 2c, 2d)
   match the mockup.
 - **2026-09-29, draft.** Story 2 moved from Sprint 2 to the end of Sprint 3, so one pass verifies the finished screens.
+- **2026-09-30, draft.** Story 1 built and `Reviewed`. See Details. Found on the way: [[route-description-list-blanks-app]].
