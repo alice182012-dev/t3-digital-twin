@@ -54,7 +54,9 @@ batch endpoint only if that is too slow, as the Sprint 3 risk row says.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 2, in [[sprint-plan]].
 
-Status:: active
+**Result (2026-09-30):** Built, deployed (`ac1ab84`), and checked on the live frontend. The 17-step car route shows "N m · 0 cm" on every step, and the values match `GET /flood/points` for 22 step start points, including a start point 16 cm deep. [[frontend-depth-features]] Story 2 is `Done`.
+
+Status:: done
 
 ### 4. Tap a turn step to highlight its segment on the map
 
