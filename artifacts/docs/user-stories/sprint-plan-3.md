@@ -22,12 +22,12 @@ carried, dependency-free item. Sprint 12 is spare capacity for slips, and no sto
 
 Calendar, from `start_date` in the frontmatter:
 
-| Sprint | Start | End |
-| ------ | ----- | --- |
-| 9 | 2026-11-16 | 2026-11-22 |
-| 10 | 2026-11-23 | 2026-11-29 |
-| 11 | 2026-11-30 | 2026-12-06 |
-| 12 | 2026-12-07 | 2026-12-13 |
+| Sprint | Start | End | Actual start | Actual end |
+| ------ | ----- | --- | ------------ | ---------- |
+| 9 | 2026-11-16 | 2026-11-22 |  |  |
+| 10 | 2026-11-23 | 2026-11-29 |  |  |
+| 11 | 2026-11-30 | 2026-12-06 |  |  |
+| 12 | 2026-12-07 | 2026-12-13 |  |  |
 
 - **Sprint 9** adds the other two profiles, the backend switch with its fallback, and the departure endpoint.
 - **Sprint 10** shows the advice in the alert and rolls the engine out.

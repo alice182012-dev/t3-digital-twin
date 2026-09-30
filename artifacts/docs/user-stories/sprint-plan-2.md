@@ -31,12 +31,12 @@ sprints, so this plan takes the first four links and [[sprint-plan-3]] takes the
 
 Calendar, from `start_date` in the frontmatter:
 
-| Sprint | Start | End |
-| ------ | ----- | --- |
-| 5 | 2026-10-19 | 2026-10-25 |
-| 6 | 2026-10-26 | 2026-11-01 |
-| 7 | 2026-11-02 | 2026-11-08 |
-| 8 | 2026-11-09 | 2026-11-15 |
+| Sprint | Start | End | Actual start | Actual end |
+| ------ | ----- | --- | ------------ | ---------- |
+| 5 | 2026-10-19 | 2026-10-25 |  |  |
+| 6 | 2026-10-26 | 2026-11-01 |  |  |
+| 7 | 2026-11-02 | 2026-11-08 |  |  |
+| 8 | 2026-11-09 | 2026-11-15 |  |  |
 
 - **Sprint 5** has no dependencies. It records baselines, builds the reference and checker, defines the table
   format, and soaks the current backend before the engine builds on it.

@@ -79,13 +79,17 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   As a first-time user, I want the empty panel to read like the approved design, so it tells me what to type.
   Given the routing panel is opened with no points, when it renders, then the inputs read "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order.
   The live panel differs in these ways: the placeholders read "From" and "To", the modes run motorbike, car, truck, walking with motorbike selected, and it also shows a settings gear, "Add location", "Settings", and "Powered by GraphHopper", which the mockup does not. Whether to keep those extras is a product call.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
+  Priority: P3. Status: Done. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
+  Evidence: ![[frontend-empty-panel-live-check.png|420]] ![[frontend-empty-panel-preview-check.png|420]]
+  Details: On the live site (2026-09-30) both hints and the mode order show as specified, with motorbike selected. Checked on a preview build first, then on the live site. Frontend and backend deployed on 2026-09-30.
 
 - **Story 4 (US-026): Match the autofill rows to screen 2d.**
   As a user typing a place, I want each suggestion to show the place name and its district on one line, so I can tell places apart quickly.
   Given "C5" is typed into an input, when the suggestions show, then each row has a pin icon, the name in bold, and its district at the right edge, as in the mockup's four rows.
   The live rows show a bold name with the full address on a second line, up to six rows, and no pin icon. The results themselves are correct: all are in Vietnam, and "Hồ Gươm" ranks the Hanoi lake first.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
+  Priority: P3. Status: Done. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
+  Evidence: ![[frontend-autofill-rows-live-check.png|420]] ![[frontend-autofill-rows-preview-check.png|420]]
+  Details: On the live site "C5" gives six rows, each with a pin, the bold name, and an area at the right edge ("Định Công", "Cầu Giấy", "Nghĩa Đô"). Some areas come in English from Photon ("Tu Liem Ward", "Yen Hoa Ward"). Deployed with `7fb4266`. Checked on a preview build first, then on the live site. Frontend and backend deployed on 2026-09-30.
 
 - **Story 5 (US-058): Fill From when the user taps a second point after choosing a destination.**
   As a user planning a route on the map, I want to tap a second point and have it become the start, so I can
@@ -122,8 +126,10 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   As a user who just pressed the arrow on a point that filled From, I want the panel to say nothing about routes until both points are set, so I am not told there is no safe route when I have not asked for one.
   Given a route was shown and the user presses the arrow on the point that filled From, when From goes back to empty, then the panel shows no route result and no "No safe route available" box. With both points set and no route, the box still shows.
   Cause and evidence are in [[no-safe-route-box-shown-with-empty-start]].
-  Priority: P2. Status: Not started. Estimate: XS. Sprint: 3 (follow-up to US-058, found 2026-09-30). Dependencies: US-058, US-057.
+  Priority: P2. Status: Done. Estimate: XS. Sprint: 3 (follow-up to US-058, found 2026-09-30). Dependencies: US-058, US-057.
   Blocker tracking: [[no-safe-route-box-shown-with-empty-start]]
+  Evidence: ![[frontend-no-message-empty-from-live-check.png|420]] ![[frontend-no-message-empty-from-preview-check.png|420]]
+  Details: On the live site, the arrow on the point that filled From moves it to To, From shows its hint, and no "No safe route" text shows. Checked on a preview build first, then on the live site. Frontend and backend deployed on 2026-09-30.
 
 ## Not scheduled
 
@@ -145,3 +151,5 @@ out of the sprints until someone decides to build them.
 - **2026-09-30, draft.** Story 5 (`US-058`) added from the user's tap-to-route flow: the second tapped point fills From. It follows Story 1 (`US-023`). The user decided on 2026-09-30 that the tap itself fills From, that the popup still opens with depth and arrow, and that the arrow then moves the point to To and empties From. Sprint 3 confirmed.
 - **2026-09-30, draft.** Stories 3 (`US-025`) and 4 (`US-026`) moved from Sprint 4 to Sprint 3 at the user's request. `US-032` stays in Sprint 4.
 - **2026-09-30, draft.** Story 5 (`US-058`) is `Done`: deployed and checked on the live site. Story 6 (`US-059`) added for a side effect found in that check: the yellow box shows while From is empty.
+- **2026-09-30, draft.** Stories 3, 4, and 6 (`US-025`, `US-026`, `US-059`) are `Reviewed`: built and checked on a preview build. Story 4 also changed `place_search.py`, because the backend dropped Photon's `district`.
+- **2026-09-30, draft.** Stories 3, 4, and 6 (`US-025`, `US-026`, `US-059`) are `Done`: deployed and checked on the live site.

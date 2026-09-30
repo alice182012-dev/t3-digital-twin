@@ -1,12 +1,12 @@
 ---
 date_open: 2026-09-30
-date_closed: 
+date_closed: 2026-09-30
 type: blocker
-status: open
+status: resolved
 severity: P3
 subsystem: floodmap-frontend
-approaches_tried: 0
-approaches_remaining: 1
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, frontend, routing, panel]
 related: ["[[mockup-screen-coverage]]", "[[frontend-polish]]", "[[route-panel-stuck-on-loading-bars]]"]
 last_updated: 2026-09-30
@@ -39,3 +39,5 @@ Pending. The likely fix is to select `idle` when either query point is not initi
 ## Status history
 
 - **2026-09-30, open.** Found in the live check of `US-058`. Not reproduced by clearing From by hand.
+- **2026-09-30, open.** Fix built as `5193d86` (`US-059`) and checked on a preview build: the arrow empties From and no box shows. It moves to `resolved` after the live check.
+- **2026-09-30, resolved.** `5193d86` is deployed. On the live site the arrow empties From and no box shows (`frontend-no-message-empty-from-live-check.png`).
