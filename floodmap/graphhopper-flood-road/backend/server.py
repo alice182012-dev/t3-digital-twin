@@ -86,6 +86,20 @@ def post_graphhopper_route(body: dict, timeout: int = 15) -> dict:
         return {"ok": False, "status": None, "error": str(exc)}
 
 
+def route_error_payload(raw: str | None) -> dict:
+    """The body for a failed /route. graphhopper-maps' Api.ts reads `message` and `hints` from a
+    400 response, so GraphHopper's own error JSON goes through unchanged. Anything else becomes
+    the message, with `error` kept for callers that read it."""
+    try:
+        parsed = json.loads(raw) if raw else None
+    except ValueError:
+        parsed = None
+    if isinstance(parsed, dict) and isinstance(parsed.get("message"), str):
+        return parsed
+    text = raw or "Routing failed"
+    return {"message": text, "error": text}
+
+
 def graphhopper_health() -> dict:
     req = urllib.request.Request(f"{GRAPHHOPPER_URL.rstrip('/')}/health", method="GET")
     try:
@@ -238,7 +252,7 @@ class Handler(BaseHTTPRequestHandler):
         fields (valid_time, run, vehicle_type) to that same body. We strip
         those here, derive the graded custom_model server-side from PostGIS,
         and forward the rest of the request unchanged. GraphHopper's own
-        response is returned as-is so Api.ts needs no changes to parse it.
+        response, success or error, is returned as-is so Api.ts needs no changes to parse it.
         """
         valid_time = body.pop("valid_time", None)
         run = body.pop("run", "latest")
@@ -257,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
         if response.get("ok"):
             self._send(response.get("status") or 200, response["json"])
         else:
-            self._send(response.get("status") or 400, {"error": response.get("error")})
+            self._send(response.get("status") or 400, route_error_payload(response.get("error")))
 
 
 def main() -> int:
