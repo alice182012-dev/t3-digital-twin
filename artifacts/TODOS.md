@@ -68,13 +68,15 @@ pans to it).
 **Why:** It is not in the mockup, but the app already has this pattern for route-hint buttons, so it
 is cheap once item 3 gives each step a depth.
 
+**Result (2026-09-30):** Built, deployed (`448a434`), and checked on the live frontend: clicking a step zooms the map to it and draws it in red, and the step popup still opens. [[frontend-depth-features]] Story 4 is `Done`.
+
 **Effort:** XS (human ~2-3 hrs / CC ~15 min)
 **Priority:** P3
 **Depends on:** Item 3.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 4, in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ## Backlog
 
