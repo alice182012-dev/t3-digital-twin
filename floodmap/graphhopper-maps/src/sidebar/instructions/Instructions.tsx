@@ -23,7 +23,8 @@ import { Instruction } from '@/api/graphhopper'
 import { CircleComponent, MarkerComponent } from '@/map/Marker'
 import QueryStore, { QueryPointType } from '@/stores/QueryStore'
 import Dispatcher from '@/stores/Dispatcher'
-import { InstructionClicked } from '@/actions/Actions'
+import { InstructionClicked, PathDetailsElevationSelected, SetBBox } from '@/actions/Actions'
+import { stepHighlight } from '@/sidebar/instructions/stepHighlight'
 import { useContext } from 'react'
 import { FloodTimestep } from '@/floodmap/FloodStore'
 import { stepDepthText } from '@/floodmap/placeDepth'
@@ -60,14 +61,17 @@ const Line = function ({
     return (
         <li
             className={styles.instruction}
-            onClick={() =>
+            onClick={() => {
                 Dispatcher.dispatch(
                     new InstructionClicked(
                         { lng: instruction.points[0][0], lat: instruction.points[0][1] },
                         instruction.text,
                     ),
                 )
-            }
+                const { segment, bbox } = stepHighlight(instruction)
+                Dispatcher.dispatch(new PathDetailsElevationSelected([segment]))
+                if (bbox) Dispatcher.dispatch(new SetBBox(bbox))
+            }}
         >
             {getTurnSign(instruction.sign, index)}
             <span className={styles.mainText}>{instruction.text}</span>
