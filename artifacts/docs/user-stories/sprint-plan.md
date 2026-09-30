@@ -28,7 +28,7 @@ Calendar, from `start_date` in the frontmatter. Each plan starts on a Monday and
 | 1 | 2026-09-21 | 2026-09-27 |  |  |
 | 2 | 2026-09-28 | 2026-10-04 |  | 2026-09-30 |
 | 3 | 2026-10-05 | 2026-10-11 | 2026-09-29 | 2026-09-30 |
-| 4 | 2026-10-12 | 2026-10-18 |  |  |
+| 4 | 2026-10-12 | 2026-10-18 | 2026-10-01 (planned) |  |
 
 The next plan starts on 2026-10-19.
 
@@ -320,3 +320,4 @@ Status history.
 - **2026-09-30, active.** Added Actual start and Actual end columns to the timeline table. Sprint 2 ended on 2026-09-30 with all 11 rows `Done`. Sprint 3 started on 2026-09-29, when the plan was re-cut and its first backend rows opened. Sprint 1 and Sprint 2 start dates were not recorded.
 - **2026-09-30, active.** [[mockup-screen-coverage]] Stories 3, 4, and 6 (`US-025`, `US-026`, `US-059`) moved from `Not started` to `Reviewed`: built by subagents in separate worktrees, reviewed, and checked on a preview build on the server (263 frontend tests pass). `US-026` also needed `place_search.py` to forward `district` (`7fb4266`). They move to `Done` once the frontend and the backend are deployed and checked live.
 - **2026-09-30, active.** [[mockup-screen-coverage]] Stories 3, 4, and 6 (`US-025`, `US-026`, `US-059`) moved from `Reviewed` to `Done`: the frontend and the backend are deployed and checked on the live site, with screenshots. [[no-safe-route-box-shown-with-empty-start]] is `resolved`. All 16 rows of Sprint 3 are `Done`, so Sprint 3 ended on 2026-09-30, before its planned end of 2026-10-11.
+- **2026-09-30, active.** Sprint 3 is finished. Sprint 4 starts tomorrow, 2026-10-01, 11 days before its planned start. The timeline table shows that start as planned and it becomes the actual date tomorrow. Sprint 4's order: `US-060`, then `US-020` (Done with US-060's evidence), `US-021`, `US-037`, `US-032`, `US-035`. `US-022` is already `Done`.

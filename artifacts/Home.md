@@ -174,7 +174,7 @@ FROM "designs"
 - `TODOS.md` follows the template the user set on 2026-09-30, with no extra text. It has three
   sections: the current sprint, a "Backlog" (the unfinished items carried over from the sprint
   before), and "Blockers for the next sprint". Each story is a heading `### <Status> - US-nnn
-  <title>` (Active or Done), with no `Status::` line and no item numbers. When an item finishes,
+  <title>` (Active or Done), with no `Status::` line and no item numbers. The current-sprint heading runs from the sprint's actual start date to its planned end date. When an item finishes,
   change the status in its heading in the same pass that moves its story to `Done`, with a
   one-line result. Done items stay until the next day's rollover, then they are deleted. Items of
   later sprints stay in the sprint plans.
