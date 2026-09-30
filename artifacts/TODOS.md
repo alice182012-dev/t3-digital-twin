@@ -12,6 +12,9 @@ Sprint 2 has no open blocker, so today starts the stories of Sprint 3 (2026-10-0
 nothing else gates. Every coordinate in a test stays inside the model border (see the `CLAUDE.md`
 section "Test points stay inside the model border").
 
+**Rest of today (plan: [[tap-fills-from-and-rest-of-2026-09-30]]):** finish the two open Sprint 3 rows in this order.
+Items 10 (`US-038`) and 12 (`US-058`) are done. Item 15 (`US-059`) is the follow-up found in the `US-058` live check. `US-025` and `US-026` moved to Sprint 3 at the user's request (items 13 and 14). Build them after `US-058` if time allows.
+
 ### 1. US-001 Save evidence for the depth forecast chart and hand-check its average
 
 **Result (2026-09-30):** Saved a server screenshot of the chart (`depth-forecast-chart-server-check.png`)
@@ -184,10 +187,12 @@ Status:: done
 
 **What:** [[documentation-and-config-drift-after-graphhopper]]. Bring `.env.example`, the `[[SW Architecture]]`
 links, the 3Di orchestration concept page, and `PINNED_COMMIT.md` in line with the code
-([[carried-over-backlog]] Story 7). Fixed by a subagent under rule 11 while the next work continues.
+([[carried-over-backlog]] Story 7). The subagent's fix landed as `1792d37`. What remains is the acceptance check and its screenshot.
 
 **Why:** A fresh checkout should start from `.env.example`, and the docs should not contradict the DAG. It blocks
 no later build.
+
+**Result (2026-09-30):** `us-038-drift-check.sh` passes all four checks and its output is saved as an image. [[carried-over-backlog]] Story 7 is `Done` and [[documentation-and-config-drift-after-graphhopper]] is `resolved`.
 
 **Effort:** S (human ~2 hrs / CC ~30 min)
 **Priority:** P3
@@ -197,7 +202,7 @@ no later build.
 
 **Sprint:** 3, [[carried-over-backlog]] Story 7 (US-038), in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ### 11. US-057 Show only the "No safe route available" box when a mode has no connection
 
@@ -214,6 +219,64 @@ Status:: active
 **Sprint:** 3, item US-057, [[frontend-polish]] Story 6 (US-057), in [[sprint-plan]].
 
 Status:: done
+
+### 12. US-058 Fill From when the user taps a second point after choosing a destination
+
+**What:** After the popup's route button sets the destination (US-023), a second tapped point fills From at once, with no arrow click ([[mockup-screen-coverage]] Story 5). Change `destinationForPlace` in `routeToPlace.ts` to pick the point to fill.
+
+**Why:** The user described a tap-only flow on 2026-09-30. Today a second tap on an empty From replaces the destination.
+
+**Decided (2026-09-30):** the tap itself fills From and the popup still opens with depth and arrow. The arrow moves that point to To, replaces the old destination, and empties From.
+
+**Result (2026-09-30):** Built by a subagent (`d0502f0`), checked on a preview build and on the live site. From filled with the place name and a 1.8 km route planned. The arrow moved the point to To and emptied From. [[mockup-screen-coverage]] Story 5 (US-058) is `Done`. Side effect: [[no-safe-route-box-shown-with-empty-start]] (US-059).
+
+**Effort:** S (human ~half a day / CC ~1 hr)
+**Priority:** P2
+**Depends on:** US-023 (done).
+
+**Sprint:** 3, item US-058, [[mockup-screen-coverage]] Story 5 (US-058), in [[sprint-plan]].
+
+Status:: done
+
+### 13. US-025 Match the empty routing panel to screen 2c
+
+**What:** The empty routing panel reads like the mockup's screen 2c: the inputs say "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order ([[mockup-screen-coverage]] Story 3). Whether to keep the settings gear, "Add location", "Settings", and "Powered by GraphHopper" is a product call.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None.
+
+**Sprint:** 3, item US-025, [[mockup-screen-coverage]] Story 3 (US-025), in [[sprint-plan]].
+
+Status:: active
+
+### 14. US-026 Match the autofill rows to screen 2d
+
+**What:** Each autofill suggestion shows a pin icon, the place name in bold, and its district at the right edge, on one line, as in the mockup's screen 2d ([[mockup-screen-coverage]] Story 4). The live rows show the name with the full address on a second line, and up to six rows.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None.
+
+**Sprint:** 3, item US-026, [[mockup-screen-coverage]] Story 4 (US-026), in [[sprint-plan]].
+
+Status:: active
+
+### 15. US-059 Show no result message while From or To is empty
+
+**What:** After the arrow empties From, the panel shows the yellow "No safe route available" box. Show no route result until both points are set ([[mockup-screen-coverage]] Story 6).
+
+**Why:** Found in the live check of US-058 on 2026-09-30. The box says nothing is safe when the user has not asked for a route.
+
+**Blocker tracking:** [[no-safe-route-box-shown-with-empty-start]]
+
+**Effort:** XS
+**Priority:** P2
+**Depends on:** US-058 (done), US-057 (done).
+
+**Sprint:** 3, item US-059, [[mockup-screen-coverage]] Story 6 (US-059), in [[sprint-plan]].
+
+Status:: active
 
 ## Backlog
 
@@ -265,30 +328,6 @@ Confirm whether this note refers to the same bottleneck before treating it as a 
 
 Status:: needs-revalidation
 **Priority:** unknown (needs revalidation)
-
-### US-025 Match the empty routing panel to screen 2c
-
-**What:** The empty routing panel reads like the mockup's screen 2c: the inputs say "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order ([[mockup-screen-coverage]] Story 3). Whether to keep the settings gear, "Add location", "Settings", and "Powered by GraphHopper" is a product call.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** None.
-
-**Sprint:** 4, item US-025, [[mockup-screen-coverage]] Story 3 (US-025), in [[sprint-plan]].
-
-Status:: active
-
-### US-026 Match the autofill rows to screen 2d
-
-**What:** Each autofill suggestion shows a pin icon, the place name in bold, and its district at the right edge, on one line, as in the mockup's screen 2d ([[mockup-screen-coverage]] Story 4). The live rows show the name with the full address on a second line, and up to six rows.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** None.
-
-**Sprint:** 4, item US-026, [[mockup-screen-coverage]] Story 4 (US-026), in [[sprint-plan]].
-
-Status:: active
 
 ### US-032 Accessibility spec for Phase A's new interactive elements
 
