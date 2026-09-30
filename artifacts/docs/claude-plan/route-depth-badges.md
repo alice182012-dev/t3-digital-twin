@@ -2,7 +2,7 @@
 date: 2026-09-30
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [frontend, backend, sprint-3, depth-badges]
 related: ["[[frontend-depth-features]]", "[[sprint-plan]]", "[[point-depth-lookup-backend]]", "[[depth-forecast-chart]]"]
 ---
@@ -47,3 +47,4 @@ The backend returns one depth per sample along the route. The frontend turns sam
 
 - **2026-09-30, active.** Plan written before code.
 - **2026-09-30, active.** Built. Backend tests (`test_flood_profile.py`) and frontend tests (`depthBadges.test.ts`) written first. A preview build on the server showed 6 badges on a 6.4 km route. One bug found and fixed on the way: a `MapPopup` that unmounts leaves React removing a node OpenLayers moved, which blanks the app, so the badges use six always-mounted slots. Waiting for approval to deploy.
+- **2026-09-30, done.** Deployed at `1b80cc3` and checked on the live site. Follow-up if wanted: space nearby badges by screen distance, since stretches about 100 m apart overlap at wide zoom.

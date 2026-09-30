@@ -88,7 +88,7 @@ plan and the badge rule are in [[route-depth-badges]].
 
 **Why:** A user can spot the flooded stretches on the map itself, not only in the step list.
 
-**Result so far (2026-09-30):** Built and checked on a preview build on the server: a 6.4 km walking route showed 6 badges, and the profile endpoint matched separate raster reads on 66 samples. [[frontend-depth-features]] Story 3 is `Reviewed`. It moves to `Done` and this item to `done` once the backend and frontend are deployed.
+**Result (2026-09-30):** Built, deployed (`1b80cc3`, backend and frontend), and checked on the live site: a 6.4 km walking route shows 6 badges, `POST /flood/profile` matched separate raster reads on 66 samples, and a mode with no route no longer risks a blank app. [[frontend-depth-features]] Story 3 is `Done`.
 
 **Effort:** M (human ~1 day / CC ~2-3 hrs)
 **Priority:** P0
@@ -96,7 +96,7 @@ plan and the badge rule are in [[route-depth-badges]].
 
 **Sprint:** 3, [[frontend-depth-features]] Story 3, in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ## Backlog
 
