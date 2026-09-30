@@ -69,7 +69,13 @@ planning").
   Given a route exists, when the route renders on the map, then the map shows depth badges at
   points along the route polyline where the depth changes, matching the four badges in mockup screen
   2e (not fewer, and not one badge per turn regardless of whether depth changed there).
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 3. Dependencies: [[point-depth-lookup-backend]] Story 3, Story 4.
+  Evidence: ![[frontend-route-depth-badges-preview-check.png|420]]
+  Details:
+  1. What: the map shows depth badges at the stretches of the route where the depth band changes, at most 6, each a white pill with a band-colored dot and text such as "36 cm", with the deepest in bold, as in mockup screen 2e.
+  2. How: `POST /flood/profile` (`flood_profile.py`) resamples the route like the forecast (every 25 m, at most 200 samples) and reads `flood_depth_raster_tile` for the selected timestep. `depthBadges` groups samples by display band, drops one-sample stretches unless they are local peaks, and keeps the first, the last, and the deepest. `RouteDepthBadges` draws them through six always-mounted `MapPopup` slots. The plan and the rule are in [[route-depth-badges]].
+  3. Why: a user can spot the flooded stretches on the map itself, not only in the step list.
+  4. Effect: checked on a preview build on the server with real data. A 6.4 km walking route from `21.0141,105.764` to `21.0145,105.769` at the 02:15 step showed 6 badges: 0, < 5, 30, 36, 23, and 26 cm. All 66 samples of two other routes (41 and 25 samples) matched separate `ST_Value` reads. Badges of nearby stretches overlap at wide zoom levels (23 and 36 cm sit about 100 m apart), so a later story could space them by screen distance. The backend and frontend are not deployed yet, so the story is `Reviewed`.
 
 - **Story 4: Tap a turn step to highlight its segment on the map.**
   As a user reading the turn list, I want to tap a step and see its segment on the map, so I can tell where the
@@ -106,3 +112,4 @@ planning").
 - **2026-09-30, draft.** Story 2 is `Done`: deployed at `ac1ab84` and checked on the live frontend.
 - **2026-09-30, draft.** Story 4 built and `Reviewed`. See Details.
 - **2026-09-30, draft.** Story 4 is `Done`: deployed at `448a434` and checked on the live frontend.
+- **2026-09-30, draft.** Story 3 built and `Reviewed`. See Details.

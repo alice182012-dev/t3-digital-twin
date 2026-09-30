@@ -78,6 +78,26 @@ is cheap once item 3 gives each step a depth.
 
 Status:: done
 
+### 5. Show depth badges along the route
+
+**What:** The map shows depth badges at the points along the route where the depth changes, matching the
+four badges of mockup screen 2e ([[frontend-depth-features]] Story 3). A badge is a white pill with a dot in
+the depth-band color and text such as "22 cm". A new `POST /flood/profile` returns the depth at evenly
+spaced samples along the route at the selected timestep, and the frontend picks the badge points. The
+plan and the badge rule are in [[route-depth-badges]].
+
+**Why:** A user can spot the flooded stretches on the map itself, not only in the step list.
+
+**Result so far (2026-09-30):** Built and checked on a preview build on the server: a 6.4 km walking route showed 6 badges, and the profile endpoint matched separate raster reads on 66 samples. [[frontend-depth-features]] Story 3 is `Reviewed`. It moves to `Done` and this item to `done` once the backend and frontend are deployed.
+
+**Effort:** M (human ~1 day / CC ~2-3 hrs)
+**Priority:** P0
+**Depends on:** None. Per-step depth (item 3) is done and the sampling code exists in `flood_forecast.py`.
+
+**Sprint:** 3, [[frontend-depth-features]] Story 3, in [[sprint-plan]].
+
+Status:: active
+
 ## Backlog
 
 Every item here is unfinished and not scheduled for today. Pull an item into the daily section when
@@ -85,9 +105,6 @@ it starts.
 
 ### Sprint 3 stories not yet started
 
-- **Per-point depth badges along the route** ([[frontend-depth-features]] Story 3, P0, M, Sprint 3).
-  The largest Sprint 3 row. Start it after today's item 3, since it decides where depth changes along
-  the polyline and needs the same lookup.
 - **Route to a place from the place popup** ([[mockup-screen-coverage]] Story 1, P1, S, Sprint 3).
   Reuse the route-to action in `ContextMenuContent.tsx`.
 - **Verify screens 2a, 2c, and 2d against the mockup** ([[mockup-screen-coverage]] Story 2, P2, S,
