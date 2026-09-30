@@ -9,7 +9,7 @@ approaches_tried: 0
 approaches_remaining: 3
 tags: [blocker, routing, forecast, graphhopper, safety]
 related: ["[[map-shows-forecast-not-now]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-29
+last_updated: 2026-09-30
 ---
 
 # Routing checks each road at one moment, not at the time the traveller reaches it
@@ -545,3 +545,4 @@ No budget is set yet.
 - **2026-09-29, open.** Turned the decision into two PRDs, [[time-aware-routing-engine]] and
   [[edge-depth-table]], with stories in [[time-aware-routing-engine-stories]] and [[edge-depth-table-stories]],
   scheduled in [[sprint-plan-2]] and [[sprint-plan-3]]. The blocker stays open until the rollout story has evidence.
+- **2026-09-30, open.** Checked against the sprint plans. It blocks no story of Sprint 4, and Sprint 5 (2026-10-19) has no dependency on it. The build runs in [[sprint-plan-2]] (Sprints 5 to 8) and [[sprint-plan-3]] (Sprints 9 to 12). The user still has to answer four gates: the soak length and route set for `US-034` before Sprint 5, the sticky-from-departure wording for `US-050` and the build-time limit for `US-045` before Sprint 8, and the latency factor for `US-055` before Sprint 10. The blocker closes when `US-055` has evidence.

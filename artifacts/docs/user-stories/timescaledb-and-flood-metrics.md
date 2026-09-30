@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
-us_ids: ["US-018", "US-019", "US-020", "US-021"]
+us_ids: ["US-018", "US-019", "US-020", "US-021", "US-060"]
 status: draft
 subsystem: architecture-backend
 source_ideas: []
@@ -70,6 +70,21 @@ planning").
   Priority: P1. Status: Not started. Estimate: M. Sprint: 4 (re-cut 2026-09-29). Dependencies: Story 2, Story 3, [[raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
   [[airflow-cannot-import-flood-utils]].
 
+- **Story 5 (US-060): Run the flood metric extractor on a retained run.**
+  As the owner of Sprint 4's goal, I want the extractor (Story 3, `US-020`) run against a real run, so the
+  metrics are proven on real depth series before Story 4 loads them on a schedule.
+  Given a retained run in `flood_road_values` on the server, for example `timestamp` 2026-09-30 02:00:00 (46,648
+  rows, forecast times 02:00 to 03:45), when `scripts/flood_metrics/extract_run.py` runs with that run's
+  timestamp, then `flood_segment_metrics` holds one row per segment and vehicle type for that run, the segment
+  count equals the number of distinct `geom_4326` values of the run, and for three segments chosen by hand the
+  stored `peak_depth_m` equals the largest `depth` of the segment in `flood_road_values`.
+  On 2026-09-30 the server held retained runs from 2026-09-29 15:00 to 16:30 and 2026-09-30 01:30 to 02:00, so the
+  data exists today. `flood_mapping_full` is paused, so no new run arrives until it is unpaused. This story needs
+  none. Story 4's scheduled load does need the DAG unpaused, and that stays with Story 4.
+  Priority: P1. Status: Not started. Estimate: XS. Sprint: 4 (added 2026-09-30). Dependencies: Story 3 (built, `Reviewed`),
+  Story 2 (`US-019`, the TimescaleDB service). Story 3 moves to `Done` with this story's evidence.
+  Test points: no coordinate is involved.
+
 ## Status history
 
 - **2026-09-23, draft.** Drafted from [[t3-digital-twin-architecture-gaps]]'s Goals and Definition
@@ -96,3 +111,4 @@ planning").
   `Reviewed` with the old key, and its `flood_segment_metrics` rows on the server must be rebuilt after
   the change. Story 4 waits for the new key and for [[airflow-cannot-import-flood-utils]].
 - **2026-09-29, draft.** Stories 3 and 4 moved from Sprint 2 to Sprint 4 in [[sprint-plan]]: no frontend story waits on them, so the point-depth work goes first.
+- **2026-09-30, draft.** Story 5 (`US-060`) added to Sprint 4: run the extractor on a retained run. Story 3 (`US-020`) had never run on real data, and the sprint goal needs it. Retained runs exist on the server.

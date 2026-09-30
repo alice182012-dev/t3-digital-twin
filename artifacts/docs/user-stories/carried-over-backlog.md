@@ -59,6 +59,10 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   are measured, and the result either closes the item or becomes a blocker page with the measured cause.
   Confirm first whether the note means the `SAMPLE_RATE=1` bottleneck in [[sample_rate_1_bottleneck]], which
   is a pipeline speed and not a page load.
+  Also measure the routing panel's wait for a pair with no connection. On the live site on 2026-09-30, the panel
+  kept its grey loading bars for more than 9 seconds before the yellow "No safe route available" box appeared
+  ([[route-panel-stuck-on-loading-bars]]). Record the seconds per mode, and whether the four per-mode requests of
+  [[frontend-polish]] Story 1 add to it.
   Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None.
 
 - **Story 5 (US-036): Decide what the map shows by default, and close or schedule the latency work.**
@@ -136,3 +140,4 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-09-30, draft.** Story 7 added for [[documentation-and-config-drift-after-graphhopper]]. It blocks no later build, so a subagent fixes it (rule 11).
 - **2026-09-30, draft.** Story 7 (`US-038`) moved to `Reviewed`: the fix landed as `1792d37`. The acceptance check and its screenshot are still to do.
 - **2026-09-30, draft.** Story 7 (`US-038`) is `Done`: the check script passes and its output is saved as `us-038-drift-check-output.png`.
+- **2026-09-30, draft.** Story 4 (`US-035`) also measures the routing panel's wait for a no-connection pair, after the 9-second loading bars seen on the live site.
