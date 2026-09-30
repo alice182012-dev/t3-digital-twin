@@ -81,6 +81,7 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths: [],
             selectedPath: path(),
+            allPointsSet: true,
             currentRequest: { subRequests: [] },
         })
         expect(view.kind).toEqual('idle')
@@ -90,6 +91,7 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths: [],
             selectedPath: path(),
+            allPointsSet: true,
             currentRequest: { subRequests: [sent()] },
         })
         expect(view.kind).toEqual('loading')
@@ -99,6 +101,7 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths: [],
             selectedPath: path(),
+            allPointsSet: true,
             currentRequest: { subRequests: [done()] },
         })
         expect(view.kind).toEqual('empty')
@@ -109,6 +112,7 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths,
             selectedPath: paths[1],
+            allPointsSet: true,
             currentRequest: { subRequests: [done()] },
         })
         expect(view).toEqual({
@@ -123,6 +127,7 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths,
             selectedPath: paths[0],
+            allPointsSet: true,
             currentRequest: { subRequests: [done(), sent()] },
         })
         expect(view.kind).toEqual('routes')
@@ -132,8 +137,19 @@ describe('selectRoutingResultsView', () => {
         const view = selectRoutingResultsView({
             paths: [],
             selectedPath: path(),
+            allPointsSet: true,
             currentRequest: { subRequests: [done(), sent()] },
         })
         expect(view.kind).toEqual('loading')
+    })
+
+    it('is idle when a point is empty, although sub requests from an earlier route remain', () => {
+        const view = selectRoutingResultsView({
+            paths: [],
+            selectedPath: path(),
+            allPointsSet: false,
+            currentRequest: { subRequests: [done()] },
+        })
+        expect(view.kind).toEqual('idle')
     })
 })

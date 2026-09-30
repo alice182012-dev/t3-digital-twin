@@ -339,6 +339,7 @@ function LargeScreenLayout({
                             paths={route.routingResult.paths}
                             selectedPath={route.selectedPath}
                             currentRequest={query.currentRequest}
+                            allPointsSet={query.queryPoints.every(point => point.isInitialized)}
                             profile={query.routingProfile.name}
                             floodActive={flood.mapMode === 'flood'}
                             timestep={flood.timesteps[flood.selectedIndex]}
@@ -480,6 +481,7 @@ function SmallScreenLayout({
                         paths={route.routingResult.paths}
                         selectedPath={route.selectedPath}
                         currentRequest={query.currentRequest}
+                        allPointsSet={query.queryPoints.every(point => point.isInitialized)}
                         profile={query.routingProfile.name}
                         floodActive={flood.mapMode === 'flood'}
                         timestep={flood.timesteps[flood.selectedIndex]}

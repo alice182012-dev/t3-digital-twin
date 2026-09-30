@@ -14,6 +14,8 @@ export interface RoutingResultsViewInput {
     paths: Path[]
     selectedPath: Path
     currentRequest: CurrentRequest
+    /** Every query point is initialized. */
+    allPointsSet: boolean
 }
 
 /**
@@ -34,9 +36,11 @@ export type RoutingResultsView =
  * empty, so a pending alternative never flashes "no safe route".
  */
 export function selectRoutingResultsView(input: RoutingResultsViewInput): RoutingResultsView {
-    const { paths, selectedPath, currentRequest } = input
+    const { paths, selectedPath, currentRequest, allPointsSet } = input
     if (paths.length > 0)
         return { kind: 'routes', tabs: buildRouteTabs(paths), activeIndex: activeTabIndex(paths, selectedPath) }
+    // Sub requests outlive the route they belonged to, so an emptied point still leaves them behind.
+    if (!allPointsSet) return { kind: 'idle' }
     if (hasPendingRequests(currentRequest.subRequests)) return { kind: 'loading' }
     if (currentRequest.subRequests.length === 0) return { kind: 'idle' }
     return { kind: 'empty' }
