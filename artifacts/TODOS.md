@@ -205,7 +205,7 @@ Status:: active
 
 **Why:** The bar repeats the yellow box. The user pointed it out on 2026-09-30 with the pair Vincom Center to Cổng Thiên đường Bảo Sơn.
 
-**Result so far (2026-09-30):** Built and checked on a preview build on the server: the no-connection pair shows only the yellow box, and a pin off the road network still shows its red bar. [[frontend-polish]] Story 6 (US-057) is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+**Result (2026-09-30):** Built, deployed (`f87ffb9`), and checked on the live site: the no-connection pair shows only the yellow box, a pin off the road network keeps its red bar, and a normal route still works. [[frontend-polish]] Story 6 (US-057) is `Done`.
 
 **Effort:** XS (human ~1 hr / CC ~30 min)
 **Priority:** P2
@@ -213,7 +213,7 @@ Status:: active
 
 **Sprint:** 3, item US-057, [[frontend-polish]] Story 6 (US-057), in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ## Backlog
 
