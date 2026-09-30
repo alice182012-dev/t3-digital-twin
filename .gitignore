@@ -70,3 +70,5 @@ artifacts/.obsidian/
 # Scratch space for experiments; everything but the folder's own README is disposable
 /marie-curie/*
 !/marie-curie/README.md
+# Story evidence screenshots stay local, only files already committed remain tracked
+artifacts/docs/user-stories/evidence/
