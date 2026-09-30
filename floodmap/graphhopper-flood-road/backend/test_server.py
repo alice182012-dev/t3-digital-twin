@@ -102,6 +102,17 @@ def gdallocationinfo_value(tif: Path, lon: float, lat: float) -> float:
     return float(out.stdout.strip())
 
 
+def pixels_around_boundary(tif_4326: Path, lon: float, lat: float) -> list[np.float32]:
+    """The four pixels that touch the pixel boundary nearest the point. A tile-edge point sits a
+    float-noise hair off the boundary, so either neighbor is a correct answer there, and the test
+    accepts these four pixels and nothing else."""
+    ds = gdal.Open(str(tif_4326))
+    ulx, scale_x, _, uly, _, scale_y = ds.GetGeoTransform()
+    col, row = round((lon - ulx) / scale_x), round((lat - uly) / scale_y)
+    window = ds.GetRasterBand(1).ReadAsArray(col - 1, row - 1, 2, 2)
+    return [np.float32(value) for value in window.ravel()]
+
+
 def tile_edge_lonlat(tif_4326: Path, tile_x: float, tile_y: float) -> tuple[float, float]:
     """The EPSG:4326 point tile_x and tile_y tiles in from the raster's top-left corner; a whole
     number lands on a tile edge, so this names points that several tiles' hulls share."""
@@ -322,11 +333,12 @@ def main() -> int:
             "edge of two tiles": tile_edge_lonlat(warped_tif, 2, 0.5),
         }
         for name, (edge_lon, edge_lat) in edge_points.items():
-            expected_depth = gdallocationinfo_value(warped_tif, edge_lon, edge_lat)
+            neighbours = pixels_around_boundary(warped_tif, edge_lon, edge_lat)
+            assert len(set(neighbours)) == 4, (name, neighbours)
             status, payload = request(points_url(base, lat=edge_lat, lon=edge_lon, valid_time=SHARED_VALID_TIME))
             assert status == 200, (name, status, payload)
             assert payload["status"] == "wet", (name, payload)
-            assert np.float32(payload["depth_m"]) == np.float32(expected_depth), (name, payload, expected_depth)
+            assert np.float32(payload["depth_m"]) in neighbours, (name, payload, neighbours)
 
         status, payload = request(points_url(base, lat=10.0, lon=100.0, valid_time=SHARED_VALID_TIME))
         assert status == 200, (status, payload)
