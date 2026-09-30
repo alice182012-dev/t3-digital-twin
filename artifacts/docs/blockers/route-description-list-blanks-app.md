@@ -1,8 +1,8 @@
 ---
 date_open: 2026-09-30
-date_closed: 
+date_closed: 2026-09-30
 type: blocker
-status: monitoring
+status: resolved
 severity: P0
 subsystem: floodmap-frontend
 approaches_tried: 1
@@ -46,7 +46,7 @@ tabs since [[frontend-polish]] Story 1.
 comma and a space, and an empty string for anything else. Four new tests in `routingResultsView.test.ts`
 failed with the production error, `trim is not a function`, before the change and pass after it. All 233
 frontend tests pass. On a preview build on the server, a response with `["Đường Hoàng Tùng"]` shows the tab
-"Đường Hoàng Tùng" and the app stays up. Not deployed yet.
+"Đường Hoàng Tùng" and the app stays up. Deployed and confirmed on the live site.
 
 ## Candidate approaches
 
@@ -56,7 +56,7 @@ frontend tests pass. On a preview build on the server, a response with `["Đư�
 
 ## Decision and explanation
 
-Approach 1 is built and checked on a preview build. Waiting for the deploy and a check on the live site.
+Approach 1 shipped on 2026-09-30 (`5d08b99`). On the live site, a route response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up. ![[frontend-route-description-list-live-check.png|420]]
 
 ## Related topics
 
@@ -67,3 +67,4 @@ Approach 1 is built and checked on a preview build. Waiting for the deploy and a
 - **2026-09-30, open.** Found with a live-backend response. Cause read in `routingResultsView.ts` and
   confirmed in the built bundle. No fix attempted yet.
 - **2026-09-30, monitoring.** Fix built and checked on a preview build, see Approaches tried. Moves to `resolved` once it is deployed and checked on the live site.
+- **2026-09-30, resolved.** Deployed at `5d08b99` and checked on the live site.

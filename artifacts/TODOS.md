@@ -107,7 +107,7 @@ place's name as the destination and the start empty, matching mockup screen 2f
 
 **Why:** A user who tapped a place should not retype it in the destination field.
 
-**Result so far (2026-09-30):** Built and checked on a preview build on the server: the popup's round blue button opens the panel with the place name in To, and a start already set is kept. [[mockup-screen-coverage]] Story 1 is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+**Result (2026-09-30):** Built, deployed (`5d08b99`), and checked on the live site: the popup's round blue button opens the panel with the place name in To, an empty From stays empty, and a start already set is kept and the route is planned. [[mockup-screen-coverage]] Story 1 is `Done`.
 
 **Effort:** S (human ~half a day / CC ~1 hr)
 **Priority:** P1
@@ -115,7 +115,7 @@ place's name as the destination and the start empty, matching mockup screen 2f
 
 **Sprint:** 3, [[mockup-screen-coverage]] Story 1, in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ### 7. Do not blank the app when a route description is a list
 
@@ -126,7 +126,7 @@ string or a list of strings, in one helper, with a test first.
 **Why:** Found while checking item 6. Any route with a description takes the whole UI down, and it likely
 caused the earlier unexplained blank pages.
 
-**Result so far (2026-09-30):** Fixed with a test first: four tests reproduced `trim is not a function`, and a preview build now shows a description list as the tab label. [[frontend-polish]] Story 5 is `Reviewed`. It moves to `Done` and this item to `done` once the frontend is deployed.
+**Result (2026-09-30):** Fixed test first (four tests reproduced `trim is not a function`), deployed (`5d08b99`), and checked on the live site: a route with a list description shows its tab and the app stays up. [[frontend-polish]] Story 5 is `Done` and [[route-description-list-blanks-app]] is `resolved`.
 
 **Effort:** XS (human ~1 hr / CC ~15 min)
 **Priority:** P0
@@ -136,7 +136,7 @@ caused the earlier unexplained blank pages.
 
 **Sprint:** 3, [[frontend-polish]] Story 5, in [[sprint-plan]].
 
-Status:: active
+Status:: done
 
 ## Backlog
 

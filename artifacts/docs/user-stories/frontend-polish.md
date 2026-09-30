@@ -95,14 +95,14 @@ planning").
   Given a route response whose `description` is a list of strings (for example `["Đường Hoàng Tùng"]`), when
   the route panel renders, then the tab is labeled with that text and the app stays up. A response with no
   description, an empty one, or one that is not text still labels the tab "Route N".
-  Priority: P0. Status: Reviewed. Estimate: XS. Sprint: 3 (found 2026-09-30). Dependencies: None.
+  Priority: P0. Status: Done. Estimate: XS. Sprint: 3 (found 2026-09-30). Dependencies: None.
   Blocker tracking: [[route-description-list-blanks-app]]
-  Evidence: ![[frontend-route-description-list-preview-check.png|420]]
+  Evidence: ![[frontend-route-description-list-live-check.png|420]] ![[frontend-route-description-list-preview-check.png|420]]
   Details:
   1. What: a route whose description is a list of street names labels its tab with them, and the app stays up. A description that is empty, or is not text or a list of text, still gives "Route N".
   2. How: `descriptionText` in `routingResultsView.ts` reads the description as text or a list of text. `buildRouteTabs` uses it in both places it read the field.
   3. Why: `.trim` on a list threw `trim is not a function` and blanked the whole app.
-  4. Effect: four new tests failed with the exact production error before the fix. On a preview build on the server, a response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up. The live site does not have it yet, so the story is `Reviewed`.
+  4. Effect: four new tests failed with the exact production error before the fix. On a preview build on the server, a response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up. Deployed 2026-09-30 (`5d08b99`). On the live site the response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up (`frontend-route-description-list-live-check.png`).
 
 ## Status history
 
@@ -153,3 +153,4 @@ planning").
 - **2026-09-30, draft.** Story 4 is `Done`. Deployed and checked on the live UI, see Details. [[failed-route-shows-previous-mode-route]] is `resolved`.
 - **2026-09-30, draft.** Story 5 added for [[route-description-list-blanks-app]], found while checking the place popup's route button.
 - **2026-09-30, draft.** Story 5 built and `Reviewed`. See Details.
+- **2026-09-30, draft.** Story 5 is `Done`: deployed at `5d08b99` and checked on the live site.
