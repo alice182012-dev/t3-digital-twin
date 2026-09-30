@@ -1,12 +1,12 @@
 ---
 date_open: 2026-09-30
-date_closed: 
+date_closed: 2026-09-30
 type: blocker
-status: open
+status: resolved
 severity: P3
 subsystem: docs, config
-approaches_tried: 0
-approaches_remaining: 1
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, docs, config, drift]
 related: ["[[graphhopper-backend]]", "[[3di-simulation-orchestration]]", "[[carried-over-backlog]]"]
 last_updated: 2026-09-30
@@ -71,3 +71,5 @@ Pending. Approach 1 goes to a subagent under rule 11.
 
 - **2026-09-30, open.** Found by the README rewrite. Facts checked in the repository. Rule 11 case: does not
   block further build, so a subagent fixes it.
+- **2026-09-30, open.** The subagent's fix landed as `1792d37`. The blocker stays `open` until the acceptance check of `US-038` passes.
+- **2026-09-30, resolved.** `us-038-drift-check.sh` passes all four checks (see `us-038-drift-check-output.png`).
