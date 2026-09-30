@@ -1,25 +1,8 @@
 # TODOS
 
-This file holds three sections, and each one lists only what the sprint plan puts there.
+## Current sprint: Sprint 3, 2026-09-30 to 2026-10-11
 
-1. **The current sprint** lists every item whose story is in that sprint. A finished item is set to
-   `Status:: done` with a one-line result and stays until the next day's rollover, then it is deleted,
-   because the logs (`artifacts/logs/`) and the sprint plan already record it.
-2. **Backlog** lists the unfinished items carried over from the sprint before the current one.
-3. **Blockers for the next sprint** lists the blockers that would stop the next sprint from starting,
-   and the current sprint's items that the next sprint waits on.
-
-When a sprint ends, its unfinished items move to the Backlog and the next sprint becomes the current one.
-Items of later sprints are not listed here. Read them in [[sprint-plan]], [[sprint-plan-2]], and
-[[sprint-plan-3]].
-
-## Current sprint: Sprint 3, 2026-10-05 to 2026-10-11
-
-Sprint 3's work started early, on 2026-09-30. Its open items are 13 (`US-025`), 14 (`US-026`), and 15
-(`US-059`). Every coordinate in a test stays inside the model border (see the `CLAUDE.md` section "Test
-points stay inside the model border").
-
-### 1. US-001 Save evidence for the depth forecast chart and hand-check its average
+### Done - US-001 Save evidence for the depth forecast chart and hand-check its average
 
 **Result (2026-09-30):** Saved a server screenshot of the chart (`depth-forecast-chart-server-check.png`)
 and hand-checked the 17:00 and 18:15 columns against `flood_depth_raster_tile`. Mean depth, maximum
@@ -28,9 +11,7 @@ needed a browser clock set to 2026-09-29 17:00 +07:00, because `flood_mapping_fu
 
 **Sprint:** 3, [[depth-forecast-chart]] (US-001), in [[sprint-plan]].
 
-Status:: done
-
-### 2. US-009 Show no route and a clear message when a mode has none
+### Done - US-009 Show no route and a clear message when a mode has none
 
 **Result (2026-09-30):** Fixed both causes in [[failed-route-shows-previous-mode-route]]. `server.py`
 passes GraphHopper's error body through, and `RouteStore.ts` clears the route on
@@ -40,9 +21,7 @@ its 760 m route. [[frontend-polish]] Story 4 is `Done`, and the blocker is `reso
 
 **Sprint:** 3, [[frontend-polish]] Story 4 (US-009), in [[sprint-plan]].
 
-Status:: done
-
-### 3. US-003 Show the depth at each turn-by-turn step
+### Done - US-003 Show the depth at each turn-by-turn step
 
 **What:** Each step in the expanded instructions list shows its depth next to its distance, for
 example "320 m · 8 cm", matching mockup screen 2e ([[frontend-depth-features]] Story 2). Call
@@ -63,9 +42,7 @@ batch endpoint only if that is too slow, as the Sprint 3 risk row says.
 
 **Result (2026-09-30):** Built, deployed (`ac1ab84`), and checked on the live frontend. The 17-step car route shows "N m · 0 cm" on every step, and the values match `GET /flood/points` for 22 step start points, including a start point 16 cm deep. [[frontend-depth-features]] Story 2 is `Done`.
 
-Status:: done
-
-### 4. US-005 Tap a turn step to highlight its segment on the map
+### Done - US-005 Tap a turn step to highlight its segment on the map
 
 **What:** Clicking a turn-by-turn instruction row highlights that segment on the map. Reuse the
 click handler of `RHButton` (`floodmap/graphhopper-maps/src/sidebar/RoutingResults.tsx:508-531`),
@@ -73,19 +50,17 @@ which dispatches `PathDetailsElevationSelected` (highlights a segment) and `SetB
 pans to it).
 
 **Why:** It is not in the mockup, but the app already has this pattern for route-hint buttons, so it
-is cheap once item 3 gives each step a depth.
+is cheap once US-003 gives each step a depth.
 
 **Result (2026-09-30):** Built, deployed (`448a434`), and checked on the live frontend: clicking a step zooms the map to it and draws it in red, and the step popup still opens. [[frontend-depth-features]] Story 4 is `Done`.
 
 **Effort:** XS (human ~2-3 hrs / CC ~15 min)
 **Priority:** P3
-**Depends on:** Item 3.
+**Depends on:** US-003.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 4 (US-005), in [[sprint-plan]].
 
-Status:: done
-
-### 5. US-004 Show depth badges along the route
+### Done - US-004 Show depth badges along the route
 
 **What:** The map shows depth badges at the points along the route where the depth changes, matching the
 four badges of mockup screen 2e ([[frontend-depth-features]] Story 3). A badge is a white pill with a dot in
@@ -99,13 +74,11 @@ plan and the badge rule are in [[route-depth-badges]].
 
 **Effort:** M (human ~1 day / CC ~2-3 hrs)
 **Priority:** P0
-**Depends on:** None. Per-step depth (item 3) is done and the sampling code exists in `flood_forecast.py`.
+**Depends on:** None. Per-step depth (US-003) is done and the sampling code exists in `flood_forecast.py`.
 
 **Sprint:** 3, [[frontend-depth-features]] Story 3 (US-004), in [[sprint-plan]].
 
-Status:: done
-
-### 6. US-023 Route to a place from the place popup
+### Done - US-023 Route to a place from the place popup
 
 **What:** The place popup has a route button in its header. Clicking it opens the routing panel with the
 place's name as the destination and the start empty, matching mockup screen 2f
@@ -122,15 +95,13 @@ place's name as the destination and the start empty, matching mockup screen 2f
 
 **Sprint:** 3, [[mockup-screen-coverage]] Story 1 (US-023), in [[sprint-plan]].
 
-Status:: done
-
-### 7. US-010 Do not blank the app when a route description is a list
+### Done - US-010 Do not blank the app when a route description is a list
 
 **What:** Fix [[route-description-list-blanks-app]]. `buildRouteTabs` calls `.trim()` on `path.description`,
 and the backend can return a list of strings there, so the whole app goes blank. Read the description as a
 string or a list of strings, in one helper, with a test first.
 
-**Why:** Found while checking item 6. Any route with a description takes the whole UI down, and it likely
+**Why:** Found while checking US-023. Any route with a description takes the whole UI down, and it likely
 caused the earlier unexplained blank pages.
 
 **Result (2026-09-30):** Fixed test first (four tests reproduced `trim is not a function`), deployed (`5d08b99`), and checked on the live site: a route with a list description shows its tab and the app stays up. [[frontend-polish]] Story 5 is `Done` and [[route-description-list-blanks-app]] is `resolved`.
@@ -143,9 +114,7 @@ caused the earlier unexplained blank pages.
 
 **Sprint:** 3, [[frontend-polish]] Story 5 (US-010), in [[sprint-plan]].
 
-Status:: done
-
-### 8. US-016 Fix test_server.py's tile-edge check
+### Done - US-016 Fix test_server.py's tile-edge check
 
 **What:** [[test-server-tile-edge-check-fails]]. The "edge of two tiles" check compares the endpoint with
 `gdallocationinfo` at a point 3e-11 pixels off a pixel boundary, and the two break the tie differently. Expect
@@ -165,9 +134,7 @@ again. It blocks no later build and has no effect on production.
 
 **Sprint:** 3, [[point-depth-lookup-backend]] Story 6 (US-016), in [[sprint-plan]].
 
-Status:: done
-
-### 9. US-024 Verify the first-load, empty-panel, and autofill screens against the mockup
+### Done - US-024 Verify the first-load, empty-panel, and autofill screens against the mockup
 
 **What:** Check screens 2a, 2c, and 2d of the approved mockup against the live app at 1366x768
 ([[mockup-screen-coverage]] Story 2). 2a is the first load with the "Search Floodmap" pill, Map on, and Flood
@@ -185,9 +152,7 @@ closes the `needs-revalidation` autofill item below and re-verifies the `vi` loc
 
 **Sprint:** 3, [[mockup-screen-coverage]] Story 2 (US-024), in [[sprint-plan]].
 
-Status:: done
-
-### 10. US-038 Fix the documentation and config drift
+### Done - US-038 Fix the documentation and config drift
 
 **What:** [[documentation-and-config-drift-after-graphhopper]]. Bring `.env.example`, the `[[SW Architecture]]`
 links, the 3Di orchestration concept page, and `PINNED_COMMIT.md` in line with the code
@@ -206,9 +171,7 @@ no later build.
 
 **Sprint:** 3, [[carried-over-backlog]] Story 7 (US-038), in [[sprint-plan]].
 
-Status:: done
-
-### 11. US-057 Show only the "No safe route available" box when a mode has no connection
+### Done - US-057 Show only the "No safe route available" box when a mode has no connection
 
 **What:** Drop the red "Connection between locations not found" bar when GraphHopper answers `ConnectionNotFoundException`, so only the yellow "No safe route available" box shows ([[frontend-polish]] Story 6). Other failures, such as "Cannot find point", keep their red bar. The frontend reads the exception type in the response hints, not the English text.
 
@@ -222,9 +185,7 @@ Status:: done
 
 **Sprint:** 3, item US-057, [[frontend-polish]] Story 6 (US-057), in [[sprint-plan]].
 
-Status:: done
-
-### 12. US-058 Fill From when the user taps a second point after choosing a destination
+### Done - US-058 Fill From when the user taps a second point after choosing a destination
 
 **What:** After the popup's route button sets the destination (US-023), a second tapped point fills From at once, with no arrow click ([[mockup-screen-coverage]] Story 5). Change `destinationForPlace` in `routeToPlace.ts` to pick the point to fill.
 
@@ -240,11 +201,11 @@ Status:: done
 
 **Sprint:** 3, item US-058, [[mockup-screen-coverage]] Story 5 (US-058), in [[sprint-plan]].
 
-Status:: done
-
-### 13. US-025 Match the empty routing panel to screen 2c
+### Done - US-025 Match the empty routing panel to screen 2c
 
 **What:** The empty routing panel reads like the mockup's screen 2c: the inputs say "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order ([[mockup-screen-coverage]] Story 3). Whether to keep the settings gear, "Add location", "Settings", and "Powered by GraphHopper" is a product call.
+
+**Result (2026-09-30):** Deployed and checked live: the hints and the mode order match screen 2c, motorbike still selected.
 
 **Effort:** S
 **Priority:** P3
@@ -252,11 +213,11 @@ Status:: done
 
 **Sprint:** 3, item US-025, [[mockup-screen-coverage]] Story 3 (US-025), in [[sprint-plan]].
 
-Status:: active
-
-### 14. US-026 Match the autofill rows to screen 2d
+### Done - US-026 Match the autofill rows to screen 2d
 
 **What:** Each autofill suggestion shows a pin icon, the place name in bold, and its district at the right edge, on one line, as in the mockup's screen 2d ([[mockup-screen-coverage]] Story 4). The live rows show the name with the full address on a second line, and up to six rows.
+
+**Result (2026-09-30):** Deployed (frontend and `place_search.py`) and checked live: each row shows a pin, the name, and the area.
 
 **Effort:** S
 **Priority:** P3
@@ -264,9 +225,7 @@ Status:: active
 
 **Sprint:** 3, item US-026, [[mockup-screen-coverage]] Story 4 (US-026), in [[sprint-plan]].
 
-Status:: active
-
-### 15. US-059 Show no result message while From or To is empty
+### Done - US-059 Show no result message while From or To is empty
 
 **What:** After the arrow empties From, the panel shows the yellow "No safe route available" box. Show no route result until both points are set ([[mockup-screen-coverage]] Story 6).
 
@@ -274,27 +233,29 @@ Status:: active
 
 **Blocker tracking:** [[no-safe-route-box-shown-with-empty-start]]
 
+**Result (2026-09-30):** Deployed and checked live: after the arrow empties From, no route result shows.
+
 **Effort:** XS
 **Priority:** P2
 **Depends on:** US-058 (done), US-057 (done).
 
 **Sprint:** 3, item US-059, [[mockup-screen-coverage]] Story 6 (US-059), in [[sprint-plan]].
 
-Status:: active
-
 ## Backlog
 
-Unfinished items carried over from Sprint 2, the sprint before the current one.
+Unfinished items carried over from Sprint 2: None
 
-None. All 11 rows of Sprint 2 are `Done` (see [[sprint-plan]]).
+All 11 rows of Sprint 2 are `Done` (see [[sprint-plan]]).
 
 ## Blockers for the next sprint
 
 The next sprint is Sprint 4, 2026-10-12 to 2026-10-18. Checked on 2026-09-30 against its rows.
 
-No logged blocker stops Sprint 4. The unresolved blockers are [[no-safe-route-box-shown-with-empty-start]],
-[[route-panel-stuck-on-loading-bars]], [[map-shows-forecast-not-now]], and [[routing-not-time-aware]]. None
-stops a Sprint 4 row.
+Any blocker stops Sprint 4: None
 
-Sprint 4's `US-032` (accessibility of the map toggle, legend, and route tabs) waits on three items of the
-current sprint: `US-025`, `US-026`, and `US-059`. Finish them before 2026-10-12.
+The unresolved blockers are:
+
+1. [[no-safe-route-box-shown-with-empty-start]]
+2. [[route-panel-stuck-on-loading-bars]]
+3. [[map-shows-forecast-not-now]]
+4. [[routing-not-time-aware]]

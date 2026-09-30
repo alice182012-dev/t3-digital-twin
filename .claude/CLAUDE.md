@@ -245,17 +245,15 @@ Epic, Thematic, SAFe).
    Status history entry that says what blocks it (see rule 4). A bug found while
    working goes to a blocker page and a sprint-plan row first, and `TODOS.md`
    second. Ask which sprint if the right one is unclear, instead of guessing.
-   `TODOS.md` has three sections: the current sprint, a "Backlog", and "Blockers
-   for the next sprint". The current sprint lists only the items whose story is
-   in that sprint. The Backlog lists the unfinished items carried over from the
-   sprint before it. The third section lists the blockers that would stop the
-   next sprint, and the current sprint's items that the next sprint waits on.
-   Items of later sprints stay in the sprint plans, not in `TODOS.md`. When an
-   item finishes, set its `Status:: done` in `TODOS.md` in the same pass that
-   moves its story to `Done`, and add a one-line result. It stays until the next
-   day's rollover, then it is deleted, because the logs and the sprint plan
-   already record it. When a sprint ends, move its unfinished items to the
-   Backlog and list the next sprint's items as the current sprint.
+   `TODOS.md` follows the template the user set on 2026-09-30, with no extra
+   text. It has three sections: the current sprint, a "Backlog" (the unfinished
+   items carried over from the sprint before), and "Blockers for the next
+   sprint". Items of later sprints stay in the sprint plans. Each story is a
+   heading `### <Status> - US-nnn <title>` (Active or Done), with no `Status::`
+   line and no item numbers. When an item finishes, change the status in its
+   heading in the same pass that moves its story to `Done`, and add a one-line
+   result. Done items stay until the next day's rollover, then they are deleted.
+   When a sprint ends, move its unfinished items to the Backlog.
 10. A sprint is one week, and a sprint plan covers four sprints, so four weeks.
    Every story in a plan lands in one of those four sprints. Work that does not
    fit in the four weeks goes to the next plan (`sprint-plan-N.md`, whose sprint
@@ -269,6 +267,9 @@ Epic, Thematic, SAFe).
    a Monday, and gives each sprint a `**Dates:**` line (`YYYY-MM-DD to
    YYYY-MM-DD`, Monday to Sunday). The next plan starts on the Monday after the
    last sprint ends, so sprint dates never overlap or leave a gap.
+   When a sprint starts or finishes, record its actual date in the timeline table
+   of its sprint plan (the "Actual start" and "Actual end" columns) and add a
+   Status history line. The planned "Start" and "End" columns do not change.
 11. A blocker found in a sprint is settled before a new sprint starts, by whether
    it blocks further build:
    - If it blocks build in the next sprint, fix it first. Do not touch a story of

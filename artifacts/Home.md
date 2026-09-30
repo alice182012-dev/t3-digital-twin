@@ -171,15 +171,13 @@ FROM "designs"
   something a concept page describes, update that page in the same pass instead of leaving the
   fact stranded in the log. `last_updated` tracks the date of the last such pass, separate from
   `date` (when the page was created).
-- `TODOS.md` items keep their existing prose format; each item gets one inline field line,
-  `Status:: active`, so Dataview can query it without restructuring the file.
-- `TODOS.md` has three sections: the current sprint, a "Backlog", and "Blockers for the next sprint".
-  The current sprint lists only the items whose story is in it. The Backlog lists the unfinished
-  items carried over from the sprint before. The third section lists the blockers that would stop
-  the next sprint. When an item finishes, set its `Status:: done` in the same pass that moves its
-  story to `Done`, with a one-line result. It stays until the next day's rollover, then it is
-  deleted, because the logs and the sprint plan already record it. Items of later sprints stay in
-  the sprint plans.
+- `TODOS.md` follows the template the user set on 2026-09-30, with no extra text. It has three
+  sections: the current sprint, a "Backlog" (the unfinished items carried over from the sprint
+  before), and "Blockers for the next sprint". Each story is a heading `### <Status> - US-nnn
+  <title>` (Active or Done), with no `Status::` line and no item numbers. When an item finishes,
+  change the status in its heading in the same pass that moves its story to `Done`, with a
+  one-line result. Done items stay until the next day's rollover, then they are deleted. Items of
+  later sprints stay in the sprint plans.
 - Screenshots referenced from a log go under `logs/image/<date>/`; create the folder when the
   first screenshot for that date is added, don't pre-create empty ones.
 - New logs and plans should start from the templates in `templates/` (Templater) so the
