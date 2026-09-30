@@ -30,11 +30,12 @@ const config = {
         details: ['road_class', 'road_environment', 'road_access', 'surface', 'max_speed', 'average_speed', 'track_type'],
     },
     profiles: {
-        motorbike: {},
         car: {},
-        truck: {},
+        motorbike: {},
         foot: {},
+        truck: {},
     },
+    default_profile: 'motorbike',
     profile_group_mapping: {},
     // Consumed directly by src/floodmap/FloodStore.ts — not an upstream field.
     floodBackend: apiBase + '/api/gh/',

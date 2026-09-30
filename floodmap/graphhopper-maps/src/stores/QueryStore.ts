@@ -246,8 +246,10 @@ export default class QueryStore extends Store<QueryStoreState> {
                 ? Object.keys(config.profiles).map(profile => ({ name: profile }))
                 : action.result.profiles
 
-            // if a routing profile was in the url keep it, otherwise select the first entry as default profile
-            const profile = state.routingProfile.name ? state.routingProfile : profiles[0]
+            // if a routing profile was in the url keep it, otherwise select default_profile from the config, or the first entry
+            const profile = state.routingProfile.name
+                ? state.routingProfile
+                : (profiles.find(p => p.name === config.default_profile) ?? profiles[0])
             return this.routeIfReady(
                 {
                     ...state,

@@ -21,4 +21,12 @@ describe('profile icons', () => {
         expect(profiles).toContain('motorbike')
         expect(profiles.filter(name => findIcon(name) === 'question_mark.svg')).toEqual([])
     })
+
+    it('lists the modes as car, motorbike, walking, truck in config-local.js.example', () => {
+        expect(Object.keys(loadExampleConfig().profiles)).toEqual(['car', 'motorbike', 'foot', 'truck'])
+    })
+
+    it('keeps motorbike as the default profile in config-local.js.example', () => {
+        expect(loadExampleConfig().default_profile).toBe('motorbike')
+    })
 })
