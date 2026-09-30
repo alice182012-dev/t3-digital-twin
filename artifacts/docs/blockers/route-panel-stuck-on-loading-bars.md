@@ -71,3 +71,4 @@ browser's Network tab first and note whether a `/route` request is still pending
 
 - **2026-09-30, open.** Reported with a screenshot of the panel on its loading bars. Not reproduced, see "What was checked".
 - **2026-09-30, monitoring.** The user judged it probably a cached page and asked to keep the blocker on `monitoring`.
+- **2026-09-30, monitoring.** Observed on the live site with a fresh headless browser: a no-connection pair (20.999844, 105.742304 to 21.004652, 105.752604, motorbike) kept the grey loading bars for more than 9 seconds, then showed the yellow "No safe route available" box after about 20 seconds. So the bars can be a slow no-connection answer, not only a cached page. Not a fix, only a second explanation.

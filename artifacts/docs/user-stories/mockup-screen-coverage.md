@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-24
 type: user-story
-us_ids: ["US-023", "US-024", "US-025", "US-026"]
+us_ids: ["US-023", "US-024", "US-025", "US-026", "US-058", "US-059"]
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
@@ -79,13 +79,51 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   As a first-time user, I want the empty panel to read like the approved design, so it tells me what to type.
   Given the routing panel is opened with no points, when it renders, then the inputs read "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order.
   The live panel differs in these ways: the placeholders read "From" and "To", the modes run motorbike, car, truck, walking with motorbike selected, and it also shows a settings gear, "Add location", "Settings", and "Powered by GraphHopper", which the mockup does not. Whether to keep those extras is a product call.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (2026-10-12 to 2026-10-18, placed by the user on 2026-09-30). Dependencies: None.
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
 
 - **Story 4 (US-026): Match the autofill rows to screen 2d.**
   As a user typing a place, I want each suggestion to show the place name and its district on one line, so I can tell places apart quickly.
   Given "C5" is typed into an input, when the suggestions show, then each row has a pin icon, the name in bold, and its district at the right edge, as in the mockup's four rows.
   The live rows show a bold name with the full address on a second line, up to six rows, and no pin icon. The results themselves are correct: all are in Vietnam, and "Hồ Gươm" ranks the Hanoi lake first.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (2026-10-12 to 2026-10-18, placed by the user on 2026-09-30). Dependencies: None.
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 3 (moved from Sprint 4 by the user on 2026-09-30). Dependencies: None.
+
+- **Story 5 (US-058): Fill From when the user taps a second point after choosing a destination.**
+  As a user planning a route on the map, I want to tap a second point and have it become the start, so I can
+  build a route with taps alone and never type a place.
+  The flow the user described on 2026-09-30:
+  1. The user opens the map.
+  2. The user taps a point. The place popup opens.
+  3. The user clicks the route button (the arrow) in the popup. That point becomes the destination ([[mockup-screen-coverage]] Story 1, `US-023`, already done).
+  4. The user taps another point. That point becomes the start, and the From field fills in at once, with no arrow click.
+  Given the destination is set and From is empty, when the user taps another point on the map, then that point fills
+  From with its reverse-geocoded place name (or its coordinates when it has no name), the destination stays as it was,
+  and the route is planned because both points are set.
+  Decided by the user on 2026-09-30: the tap itself fills From, and the place popup still opens on that tap, so the user
+  sees the depth at the point. The user does not need to click the arrow for From to fill.
+  Given the popup of that second point is open and From is already filled by the tap, when the user clicks the arrow, then
+  the point moves from From to To. It replaces the old destination, and From goes back to empty until the next tap fills
+  it. A route from a point to itself never occurs.
+  When both points are empty, a tap opens the popup and the arrow sets the destination, as in `US-023`. When both points
+  are set, a tap opens the popup and the arrow replaces the destination, as in `US-023`, and a tap does not change From.
+  This story changes only the case of a set destination with an empty From.
+  `App.tsx` decides today what a map tap does, and `destinationForPlace` in
+  `floodmap/graphhopper-maps/src/floodmap/routeToPlace.ts` always moves the last query point. The story adds the rule
+  that picks the point a tap fills.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 3 (follow-up to US-023, placed 2026-09-30). Dependencies: US-023.
+  Evidence: ![[frontend-tap-fills-from-live-check.png|420]] ![[frontend-tap-arrow-empties-from-live-check.png|420]] ![[frontend-tap-fills-from-preview-check.png|420]] ![[frontend-tap-arrow-empties-from-preview-check.png|420]]
+  Details:
+  1. What: with a destination set and From empty, a tap in flood mode fills From at once. The popup still opens with the depth and the arrow. The arrow on that point moves it to To and empties From.
+  2. How: `startForTap`, `namedStart`, and `pointsForRoute` in `routeToPlace.ts` decide the points, and `App.tsx` dispatches them with `SetPoint` (`d0502f0`). A subagent built it tests first, 12 new tests, and I reviewed the diff. The popup's `useJson` also stopped reusing the previous tap's lookup while a new one loads. That would have named a new From after the old place.
+  3. Why: a user builds a route with taps alone and never types a place.
+  4. Effect: checked on a preview build and then on the live site at `100.67.84.55:8082` (2026-09-30), with the destination tapped at 21.025484, 105.761959 and the start at 21.025003, 105.754921. From filled with "Đại đội 26", the popup showed the depth, and a 1.8 km route planned itself. The arrow then gave To "Đại đội 26" and an empty From. One side effect is logged as [[no-safe-route-box-shown-with-empty-start]] and Story 6: after the arrow, the panel shows the yellow "No safe route available" box although From is empty.  Test points: two points inside the model border, for example 21.0250, 105.7550 and 21.0255, 105.7620
+  (`.claude/CLAUDE.md`, "Test points stay inside the model border").
+
+- **Story 6 (US-059): Show no result message while From or To is empty.**
+  As a user who just pressed the arrow on a point that filled From, I want the panel to say nothing about routes until both points are set, so I am not told there is no safe route when I have not asked for one.
+  Given a route was shown and the user presses the arrow on the point that filled From, when From goes back to empty, then the panel shows no route result and no "No safe route available" box. With both points set and no route, the box still shows.
+  Cause and evidence are in [[no-safe-route-box-shown-with-empty-start]].
+  Priority: P2. Status: Not started. Estimate: XS. Sprint: 3 (follow-up to US-058, found 2026-09-30). Dependencies: US-058, US-057.
+  Blocker tracking: [[no-safe-route-box-shown-with-empty-start]]
 
 ## Not scheduled
 
@@ -104,4 +142,6 @@ out of the sprints until someone decides to build them.
 - **2026-09-30, draft.** Story 2 is `Done`. The comparison found a decision to make (the opening mode) and two differences, added as Stories 3 and 4. They have no sprint yet: which sprint is still to be chosen.
 - **2026-09-30, draft.** The opening-mode difference is decided: the app opens in Flood mode until further notice (D-008 in [[decision-log]]). Stories 3 and 4 are still waiting for a sprint.
 - **2026-09-30, draft.** Stories 3 (`US-025`) and 4 (`US-026`) are placed in Sprint 4, ahead of the accessibility story `US-032`.
-
+- **2026-09-30, draft.** Story 5 (`US-058`) added from the user's tap-to-route flow: the second tapped point fills From. It follows Story 1 (`US-023`). The user decided on 2026-09-30 that the tap itself fills From, that the popup still opens with depth and arrow, and that the arrow then moves the point to To and empties From. Sprint 3 confirmed.
+- **2026-09-30, draft.** Stories 3 (`US-025`) and 4 (`US-026`) moved from Sprint 4 to Sprint 3 at the user's request. `US-032` stays in Sprint 4.
+- **2026-09-30, draft.** Story 5 (`US-058`) is `Done`: deployed and checked on the live site. Story 6 (`US-059`) added for a side effect found in that check: the yellow box shows while From is empty.
