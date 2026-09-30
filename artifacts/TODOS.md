@@ -250,6 +250,30 @@ Confirm whether this note refers to the same bottleneck before treating it as a 
 Status:: needs-revalidation
 **Priority:** unknown (needs revalidation)
 
+### US-025 Match the empty routing panel to screen 2c
+
+**What:** The empty routing panel reads like the mockup's screen 2c: the inputs say "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order ([[mockup-screen-coverage]] Story 3). Whether to keep the settings gear, "Add location", "Settings", and "Powered by GraphHopper" is a product call.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None.
+
+**Sprint:** 4, item US-025, [[mockup-screen-coverage]] Story 3 (US-025), in [[sprint-plan]].
+
+Status:: active
+
+### US-026 Match the autofill rows to screen 2d
+
+**What:** Each autofill suggestion shows a pin icon, the place name in bold, and its district at the right edge, on one line, as in the mockup's screen 2d ([[mockup-screen-coverage]] Story 4). The live rows show the name with the full address on a second line, and up to six rows.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** None.
+
+**Sprint:** 4, item US-026, [[mockup-screen-coverage]] Story 4 (US-026), in [[sprint-plan]].
+
+Status:: active
+
 ### US-032 Accessibility spec for Phase A's new interactive elements
 
 **What:** Keyboard nav, ARIA roles, touch target sizing, and contrast requirements for

@@ -79,13 +79,13 @@ No existing story duplicates Story 1 or Story 2. The nearest overlap is the `TOD
   As a first-time user, I want the empty panel to read like the approved design, so it tells me what to type.
   Given the routing panel is opened with no points, when it renders, then the inputs read "Choose starting point, or click on the map" and "Choose destination", and the mode row lists car, motorbike, walking, and truck in that order.
   The live panel differs in these ways: the placeholders read "From" and "To", the modes run motorbike, car, truck, walking with motorbike selected, and it also shows a settings gear, "Add location", "Settings", and "Powered by GraphHopper", which the mockup does not. Whether to keep those extras is a product call.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: none yet, to be chosen. Dependencies: None.
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (2026-10-12 to 2026-10-18, placed by the user on 2026-09-30). Dependencies: None.
 
 - **Story 4 (US-026): Match the autofill rows to screen 2d.**
   As a user typing a place, I want each suggestion to show the place name and its district on one line, so I can tell places apart quickly.
   Given "C5" is typed into an input, when the suggestions show, then each row has a pin icon, the name in bold, and its district at the right edge, as in the mockup's four rows.
   The live rows show a bold name with the full address on a second line, up to six rows, and no pin icon. The results themselves are correct: all are in Vietnam, and "Hồ Gươm" ranks the Hanoi lake first.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: none yet, to be chosen. Dependencies: None.
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (2026-10-12 to 2026-10-18, placed by the user on 2026-09-30). Dependencies: None.
 
 ## Not scheduled
 
@@ -103,3 +103,5 @@ out of the sprints until someone decides to build them.
 - **2026-09-30, draft.** Story 1 is `Done`: deployed at `5d08b99` and checked on the live site.
 - **2026-09-30, draft.** Story 2 is `Done`. The comparison found a decision to make (the opening mode) and two differences, added as Stories 3 and 4. They have no sprint yet: which sprint is still to be chosen.
 - **2026-09-30, draft.** The opening-mode difference is decided: the app opens in Flood mode until further notice (D-008 in [[decision-log]]). Stories 3 and 4 are still waiting for a sprint.
+- **2026-09-30, draft.** Stories 3 (`US-025`) and 4 (`US-026`) are placed in Sprint 4, ahead of the accessibility story `US-032`.
+
