@@ -1,0 +1,36 @@
+/* Pill values follow the approved mockup, screen 2e
+   (artifacts/raw/frontend-mockups/Flood Routing Mockups v2.dc.html). */
+.anchor {
+    position: relative;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.pill,
+.deepestPill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    background: #fff;
+    font-size: 12px;
+    padding: 3px 8px 3px 6px;
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.deepestPill {
+    font-weight: 500;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: none;
+}

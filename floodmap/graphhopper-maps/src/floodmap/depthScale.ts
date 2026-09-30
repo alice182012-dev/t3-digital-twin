@@ -37,10 +37,26 @@ export const DISPLAY_DEPTH_BANDS: readonly DepthBand[] = [
     { id: 'd7', minCm: 60, maxCm: null, label: '> 60 cm', color: '#08306b' },
 ]
 
+/** Rank of each band, so two depths compare by band. */
+export const DEPTH_BAND_INDEX: Readonly<Record<DepthBandId, number>> = {
+    d1: 0,
+    d2: 1,
+    d3: 2,
+    d4: 3,
+    d5: 4,
+    d6: 5,
+    d7: 6,
+}
+
 /** Maps a `DN` code from scripts/flood_extent/flood_extent.py's `BAND_TABLE` to its display
  *  band. Codes 10 to 60 are the band's upper limit in cm, and `TOP_CODE` (600) is the open-ended
  *  band. Returns undefined for 0 (dry) and for any code the notebook doesn't emit. */
 export function bandForExtentCode(code: number): DepthBand | undefined {
     if (code === 600) return DISPLAY_DEPTH_BANDS.find(band => band.maxCm === null)
     return DISPLAY_DEPTH_BANDS.find(band => band.maxCm === code)
+}
+
+/** The display band of a depth in centimetres. Undefined under 5 cm, which the map does not paint. */
+export function bandForDepthCm(depthCm: number): DepthBand | undefined {
+    return DISPLAY_DEPTH_BANDS.find(band => depthCm >= band.minCm && (band.maxCm === null || depthCm < band.maxCm))
 }

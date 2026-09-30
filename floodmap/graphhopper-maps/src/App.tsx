@@ -56,6 +56,7 @@ import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
+import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
 import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
 import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
@@ -178,6 +179,11 @@ export default function App() {
                     coordinate={placeCoordinate}
                     timestep={flood.timesteps[flood.selectedIndex]}
                     onClose={closePlacePopup}
+                />
+                <RouteDepthBadges
+                    map={map}
+                    coordinates={route.selectedPath.points.coordinates}
+                    timestep={floodMode ? flood.timesteps[flood.selectedIndex] : undefined}
                 />
                 <ContextMenu
                     map={map}
