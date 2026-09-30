@@ -1,4 +1,11 @@
-import { coordinatesText, depthLine, placeFromResponse, readingFromResponse } from '@/floodmap/placeDepth'
+import {
+    coordinatesText,
+    depthLine,
+    depthQuery,
+    placeFromResponse,
+    readingFromResponse,
+    stepDepthText,
+} from '@/floodmap/placeDepth'
 import { FRESH_DATA_WINDOW_MS } from '@/floodmap/FloodStore'
 
 describe('readingFromResponse', () => {
@@ -51,7 +58,9 @@ describe('depthLine', () => {
 
     it('labels a step older than the freshness window with its time', () => {
         const late = step.getTime() + FRESH_DATA_WINDOW_MS + 60 * 1000
-        expect(depthLine({ kind: 'wet', depthCm: 8 }, timestep, late)).toEqual('Water depth as of 29/09/2026 15:15: 8 cm')
+        expect(depthLine({ kind: 'wet', depthCm: 8 }, timestep, late)).toEqual(
+            'Water depth as of 29/09/2026 15:15: 8 cm',
+        )
     })
 
     it('labels a future step as a forecast', () => {
@@ -72,5 +81,37 @@ describe('depthLine', () => {
 
     it('drops the time claim when there is no timestep', () => {
         expect(depthLine({ kind: 'wet', depthCm: 12 }, undefined, now)).toEqual('Water depth: 12 cm')
+    })
+})
+
+describe('stepDepthText', () => {
+    it('prints a wet depth in centimetres, with a floor for under 1 cm', () => {
+        expect(stepDepthText({ kind: 'wet', depthCm: 8 })).toEqual('8 cm')
+        expect(stepDepthText({ kind: 'wet', depthCm: 0 })).toEqual('< 1 cm')
+    })
+
+    it('prints a dry point as 0 cm', () => {
+        expect(stepDepthText({ kind: 'dry' })).toEqual('0 cm')
+    })
+
+    it('prints nothing while loading, without data, or when the lookup failed', () => {
+        expect(stepDepthText(undefined)).toBeNull()
+        expect(stepDepthText({ kind: 'no_data' })).toBeNull()
+        expect(stepDepthText({ kind: 'unavailable' })).toBeNull()
+    })
+})
+
+describe('depthQuery', () => {
+    it('names the point and the timestep of GET /flood/points', () => {
+        const query = depthQuery(
+            { lat: 21.005133, lng: 105.757325 },
+            { valid_time: '2026-09-29T17:00:00+07:00', run: '20260929T163000' },
+        )
+        expect(Object.fromEntries(query)).toEqual({
+            lat: '21.005133',
+            lon: '105.757325',
+            valid_time: '2026-09-29T17:00:00+07:00',
+            run: '20260929T163000',
+        })
     })
 })

@@ -297,6 +297,7 @@ function LargeScreenLayout({
                             currentRequest={query.currentRequest}
                             profile={query.routingProfile.name}
                             floodActive={flood.mapMode === 'flood'}
+                            timestep={flood.timesteps[flood.selectedIndex]}
                         />
                         <div>
                             <PoweredBy />
@@ -437,6 +438,7 @@ function SmallScreenLayout({
                         currentRequest={query.currentRequest}
                         profile={query.routingProfile.name}
                         floodActive={flood.mapMode === 'flood'}
+                        timestep={flood.timesteps[flood.selectedIndex]}
                     />
                     <PoweredBy />
                 </div>

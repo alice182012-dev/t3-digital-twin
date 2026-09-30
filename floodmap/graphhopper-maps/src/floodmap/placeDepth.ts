@@ -28,6 +28,16 @@ export function readingFromResponse(body: unknown): DepthReading {
     return { kind: 'unavailable' }
 }
 
+/** The query of GET /flood/points for one point at one timestep. */
+export function depthQuery(coordinate: Coordinate, timestep: FloodTimestep): URLSearchParams {
+    return new URLSearchParams({
+        lat: String(coordinate.lat),
+        lon: String(coordinate.lng),
+        valid_time: timestep.valid_time,
+        run: timestep.run,
+    })
+}
+
 /** A body of GET /places/reverse (backend/place_search.py's reverse_place). */
 export function placeFromResponse(body: unknown): Place | null {
     const result = (body as { result?: { name?: unknown; address?: unknown } | null } | null)?.result
@@ -48,8 +58,21 @@ export function coordinatesText(coordinate: Coordinate): string {
 export function depthLine(reading: DepthReading, timestep: FloodTimestep | undefined, now: number): string {
     if (reading.kind === 'unavailable') return 'Water depth unavailable'
     if (reading.kind === 'no_data') return 'No flood data at this point'
-    const value = reading.kind === 'dry' ? '0 cm' : reading.depthCm < 1 ? '< 1 cm' : `${reading.depthCm} cm`
-    return `${depthLabel(timestep, now)}: ${value}`
+    return `${depthLabel(timestep, now)}: ${depthValue(reading)}`
+}
+
+/**
+ * The depth on a turn-by-turn step, next to its distance. `undefined` is a request still in
+ * flight. A missing reading prints nothing, so a step never claims a depth it does not have. The
+ * step list sits under the legend, which already says which timestep the depths are from.
+ */
+export function stepDepthText(reading: DepthReading | undefined): string | null {
+    if (!reading || reading.kind === 'no_data' || reading.kind === 'unavailable') return null
+    return depthValue(reading)
+}
+
+function depthValue(reading: { kind: 'wet'; depthCm: number } | { kind: 'dry' }): string {
+    return reading.kind === 'dry' ? '0 cm' : reading.depthCm < 1 ? '< 1 cm' : `${reading.depthCm} cm`
 }
 
 function depthLabel(timestep: FloodTimestep | undefined, now: number): string {

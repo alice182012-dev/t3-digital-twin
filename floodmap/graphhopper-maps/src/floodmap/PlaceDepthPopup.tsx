@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Map } from 'ol'
 import MapPopup from '@/layers/MapPopup'
 import { BACKEND_BASE, FloodTimestep } from '@/floodmap/FloodStore'
-import { coordinatesText, depthLine, placeFromResponse, readingFromResponse } from '@/floodmap/placeDepth'
+import { coordinatesText, depthLine, depthQuery, placeFromResponse, readingFromResponse } from '@/floodmap/placeDepth'
 import { Coordinate } from '@/utils'
 import styles from './PlaceDepthPopup.module.css'
 
@@ -19,8 +19,7 @@ interface PlaceDepthPopupProps {
  */
 export default function PlaceDepthPopup({ map, coordinate, timestep, onClose }: PlaceDepthPopupProps) {
     const point = coordinate && { lat: String(coordinate.lat), lon: String(coordinate.lng) }
-    const depthParams =
-        point && timestep && new URLSearchParams({ ...point, valid_time: timestep.valid_time, run: timestep.run })
+    const depthParams = coordinate && timestep && depthQuery(coordinate, timestep)
     const depthBody = useJson('flood/points', depthParams)
     const placeBody = useJson('places/reverse', point && new URLSearchParams(point))
     const depth = depthBody === undefined ? null : readingFromResponse(depthBody)

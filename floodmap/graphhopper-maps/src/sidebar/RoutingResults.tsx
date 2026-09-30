@@ -33,6 +33,7 @@ import { Bbox } from '@/api/graphhopper'
 import { SettingsContext } from '@/contexts/SettingsContext'
 import { Settings } from '@/stores/SettingsStore'
 import DepthForecastChart from '@/floodmap/DepthForecastChart'
+import { FloodTimestep } from '@/floodmap/FloodStore'
 
 let persistedElevationMounted = false
 
@@ -41,6 +42,8 @@ export interface RoutingResultsProps extends RoutingResultsViewInput {
     profile: string
     /** Flood mode is on. Gates the static reroute-context line. */
     floodActive?: boolean
+    /** The selected flood timestep. The step list shows depths from it when `floodActive`. */
+    timestep?: FloodTimestep
 }
 
 export default function RoutingResults(props: RoutingResultsProps) {
@@ -77,6 +80,7 @@ export default function RoutingResults(props: RoutingResultsProps) {
                             info={props.info}
                             isExpanded={isExpanded}
                             setExpanded={setExpanded}
+                            timestep={props.floodActive ? props.timestep : undefined}
                         />
                     </ul>
                 </>
@@ -129,6 +133,7 @@ function RoutingResult({
     profile,
     isExpanded,
     setExpanded,
+    timestep,
 }: {
     info: RoutingResultInfo
     path: Path
@@ -137,6 +142,7 @@ function RoutingResult({
     profile: string
     isExpanded: boolean
     setExpanded: (v: boolean) => void
+    timestep?: FloodTimestep
 }) {
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     const [elevationMounted, setElevationMounted] = useState(persistedElevationMounted)
@@ -533,7 +539,7 @@ function RoutingResult({
             )}
             {isExpanded && showInstructions && (
                 <>
-                    <Instructions instructions={path.instructions} us={showDistanceInMiles} />
+                    <Instructions instructions={path.instructions} us={showDistanceInMiles} timestep={timestep} />
                     <div className={styles.routingResultRoadData}>
                         {tr('road_data_from')}: {info.road_data_timestamp}
                     </div>

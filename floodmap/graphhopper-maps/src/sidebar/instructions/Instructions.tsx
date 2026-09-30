@@ -25,19 +25,37 @@ import QueryStore, { QueryPointType } from '@/stores/QueryStore'
 import Dispatcher from '@/stores/Dispatcher'
 import { InstructionClicked } from '@/actions/Actions'
 import { useContext } from 'react'
+import { FloodTimestep } from '@/floodmap/FloodStore'
+import { stepDepthText } from '@/floodmap/placeDepth'
+import { useStepDepths } from '@/floodmap/useStepDepths'
 import { SettingsContext } from '@/contexts/SettingsContext'
 
-export default function (props: { instructions: Instruction[]; us: boolean }) {
+/** `timestep` is set in Flood mode. Each step then shows the water depth at its start point. */
+export default function (props: { instructions: Instruction[]; us: boolean; timestep?: FloodTimestep }) {
+    const depths = useStepDepths(
+        props.instructions.map(instruction => ({ lng: instruction.points[0][0], lat: instruction.points[0][1] })),
+        props.timestep,
+    )
     return (
         <ul className={styles.instructionsList}>
             {props.instructions.map((instruction, i) => (
-                <Line key={i} instruction={instruction} index={i} us={props.us} />
+                <Line key={i} instruction={instruction} index={i} us={props.us} depthText={stepDepthText(depths[i])} />
             ))}
         </ul>
     )
 }
 
-const Line = function ({ instruction, index, us }: { instruction: Instruction; index: number; us: boolean }) {
+const Line = function ({
+    instruction,
+    index,
+    us,
+    depthText,
+}: {
+    instruction: Instruction
+    index: number
+    us: boolean
+    depthText: string | null
+}) {
     const settings = useContext(SettingsContext)
     return (
         <li
@@ -58,7 +76,10 @@ const Line = function ({ instruction, index, us }: { instruction: Instruction; i
                     {instruction.motorway_junction}
                 </span>
             )}
-            <span className={styles.distance}>{metersToText(instruction.distance, settings.showDistanceInMiles)}</span>
+            <span className={styles.distance}>
+                {metersToText(instruction.distance, settings.showDistanceInMiles)}
+                {depthText && ` · ${depthText}`}
+            </span>
         </li>
     )
 }
