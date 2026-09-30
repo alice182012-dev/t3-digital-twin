@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-24
 type: user-story
+us_ids: ["US-027", "US-028", "US-029", "US-030", "US-031"]
 status: draft
 subsystem: airflow-pipeline
 source_ideas: []
@@ -15,7 +16,7 @@ Replaces the GeoJSON chain (tasks `4_extract_geojson_full` to `8_upload_postgres
 order of work are in the plan [[raster-first-flood-pipeline]]. Rows carry Priority, Status,
 Estimate, and Sprint per the vault's sprint-delegation convention.
 
-- **Story 1: Load the roads into PostGIS with a stable segment ID.**
+- **Story 1 (US-027): Load the roads into PostGIS with a stable segment ID.**
   As a pipeline engineer, I want the roads in a `road_segment` table keyed by a stable ID, so
   routing data, TimescaleDB, and the route-forecast query all refer to the same road pieces.
   Given `toa-do-duong-hanoi.geojson` (12,431 ways, each with a unique OSM id in `@id`), when the
@@ -29,7 +30,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   3. Why: routing data, TimescaleDB, and the route-forecast query need one stable road ID, and the old mapping step dropped the OSM id.
   4. Effect: it feeds the DAG tasks and the TimescaleDB key change. On the server (2026-09-25): 35,652 pieces, every way present, worst length error 0.000000000 m, and a second load changed nothing. IDs shift if the roads file or the piece length changes.
 
-- **Story 2: Store depth rasters as tiles and read them through a spatial index.**
+- **Story 2 (US-028): Store depth rasters as tiles and read them through a spatial index.**
   As the point-depth endpoint, I want each timestep stored as tiles, so a lookup touches one tile
   instead of unpacking a 209 MB raster, and old runs are removed.
   Given the real `depth_20260924_170639.tif`, when it is loaded as tiles, then `ST_Value` at three
@@ -43,7 +44,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   3. Why: the whole-raster lookup unpacked 209 MB per request and took 80 to 280 ms on the server.
   4. Effect: deployed on 2026-09-24 (commit `6155f09`). On the server a tile lookup takes a median of 0.56 ms in the database. Retention confirmed on the server 2026-09-29: exactly 8 distinct `run_ts` values hold tiles (oldest `20260928T204500`, newest `20260929T163000`), matching `DEFAULT_KEEP_RUNS` in `raster_load.py`, raised from 3 to 8 by commit `002bdce` (2026-09-25) after this story's acceptance criteria were written; older runs are confirmed gone. The connection-per-request cost is fixed separately, see [[flood-points-connection-per-request]] (resolved).
 
-- **Story 3: Compute flood on roads from the raster into a shadow table.**
+- **Story 3 (US-029): Compute flood on roads from the raster into a shadow table.**
   As the routing backend, I want each road piece's depth per timestep computed from the raster in
   PostGIS, so routing no longer depends on the lossy GeoJSON chain.
   Given a run loaded as tiles and `road_segment` loaded, when the task runs, then a shadow table
@@ -60,7 +61,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   3. Why: the old chain sampled one pixel per 20 m cell on the server (`SAMPLE_RATE=20`), so about half of its wet slivers are dry along the road.
   4. Effect: on the server (2026-09-25), run `20260924T164803` wrote 8,444 rows into a shadow table in 18.8 s, identical to the local result in rows, wet pieces, and depth sums, while the real table stayed untouched. Routing, the extractor, and the metrics read the same `depth`. Writing in place and a full cycle remain in Story 4.
 
-- **Story 4: Switch routing to the new task and retire the GeoJSON tasks.**
+- **Story 4 (US-030): Switch routing to the new task and retire the GeoJSON tasks.**
   As a maintainer, I want tasks 4 to 8 gone and routing reading the new table, so the DAG has one
   path from depth rasters to routing data.
   Given the shadow comparison passes, when the DAG is rewritten, then tasks 4 to 8 no longer exist,
@@ -74,7 +75,7 @@ Estimate, and Sprint per the vault's sprint-delegation convention.
   3. Why: one path from the depth rasters to routing, with the raster as the source of truth.
   4. Effect: routing now reads the new rows. Graded routes detour around flooded pieces (for example 111 m becomes 6,262 m around a 2.76 m piece), and two test routes have no connection once the flood applies. The old scripts (`extract_geojson_full.py`, `mapping_geojson.py`, `merge_geojson.py`, `upload_minio.py`, and their two callers) are deleted (2026-09-29). A full cycle succeeded on the server 2026-09-29 (`scheduled__2026-09-29T09:15:00+00:00`, all 10 tasks green). Graded `POST /route` confirmed live on real current data: the same two points connect (1256.4 m) ungraded and lose connection ("Connection between locations not found") once the live `flood_road_values` custom_model applies. Still open: the frontend on a live event (the state-test DAG will provide one, see D-007), and dropping the `flood_road_values_shadow` table on the server (an operational step, not code; `flood_on_roads.py`'s `create_shadow_table` and `compare_with_old.py` stay, they're live comparison tooling).
 
-- **Story 5: Create the netcdf table in the schema task.**
+- **Story 5 (US-031): Create the netcdf table in the schema task.**
   As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is not marked
   `failed` when every other task succeeded.
   Given a database without `netcdf_files`, when `0b_ensure_schema` runs, then the table exists and

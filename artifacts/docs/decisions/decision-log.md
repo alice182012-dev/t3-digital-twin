@@ -159,6 +159,28 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   the defaults it cannot happen: `calculate_depth` skips step 0, and `SIMULATION_DURATION` (7,200 s) equals event 1's rain window.
 - **Revisit if:** the frontend gains a run picker that can show two runs at once.
 
+## D-008: The app opens in Flood mode until further notice
+
+- **Date:** 2026-09-30
+- **Status:** active. Decided by the user on 2026-09-30.
+- **Decided by:** the user, after the mockup screen check ([[mockup-screen-coverage]] Story 2) found that screen 2a opens
+  with Map on and Flood off, and the app opens in Flood mode.
+- **Decision:** The app opens in Flood mode, with the flood layer and the legend, until the user says otherwise. It does not
+  follow screen 2a's Map-first opening for now.
+- **Why:** The app is in its building phase, and Flood mode is the mode being built and shown, so it opens straight into it.
+- **Alternatives:** Follow the mockup, opening in Map mode with Flood off and no legend. Or let `defaultMapMode` choose by
+  data recency, which opens in Flood mode only when the selected step is within 45 minutes of now. Both are kept in the code
+  path and can be switched back on.
+- **Evidence:** `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` starts with `mapMode: 'flood'` and
+  `userChoseMapMode: true`, commented as a demo default. Because `userChoseMapMode` is true, the first
+  `FloodTimestepsReceived` does not recompute the mode, so `defaultMapMode` has no effect at load. On 2026-09-30 the live app
+  opened in Flood mode with data from 02:15 while the clock read about 12:30, so the mode does not depend on how fresh the data is.
+- **Affects:** [[mockup-screen-coverage]] screen 2a, which now differs from the app on purpose. With old data the map still opens in
+  Flood mode, and the legend's "As of" line shows the age of the data. [[map-shows-forecast-not-now]] covers what the map
+  shows over time.
+- **Revisit if:** the user ends the building phase or asks for the mockup's opening. To follow the mockup, start `FloodStore`
+  in Map mode. To choose by data recency, start with `userChoseMapMode: false`.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and

@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-001"]
 status: draft
 subsystem: floodmap-frontend
 sprint: 3
@@ -11,7 +12,7 @@ tags: [user-story, sprint-3]
 
 # Depth-versus-time forecast chart
 
-## User story
+## User story (US-001)
 
 As a user planning a route through a flood-prone area, I want to see how depth along my route is
 expected to change over the next couple of hours, so I can decide whether to leave now or wait.

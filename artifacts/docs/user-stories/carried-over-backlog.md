@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
+us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038"]
 status: draft
 subsystem: floodmap-frontend, floodmap-backend
 source_ideas: []
@@ -19,7 +20,7 @@ Two items from the same backlog are scheduled elsewhere. The tap-a-turn-step ite
 which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address autofill item is
 [[mockup-screen-coverage]] Story 2, already in Sprint 2.
 
-- **Story 1: Make the map toggle, legend, and route tabs usable by keyboard and screen reader.**
+- **Story 1 (US-032): Make the map toggle, legend, and route tabs usable by keyboard and screen reader.**
   As a person who uses a keyboard or a screen reader, I want the Map or Flood toggle, the flood legend, and
   the route tabs to be operable and announced, so I can read the flood map and pick a route without a mouse.
   Given the app is open with a route showing, when the user moves through the page with the Tab key, then the
@@ -30,7 +31,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `PlainButton` likely covers baseline keyboard use already. The route tabs have no ARIA precedent in the
   codebase.
 
-- **Story 2: Write a project `DESIGN.md` with real design tokens.**
+- **Story 2 (US-033): Write a project `DESIGN.md` with real design tokens.**
   As a developer building the next screen, I want one versioned file of colors, typography, and spacing, so
   new screens match the approved mockup without reading its HTML each time.
   Given the approved mockup and the shipped components, when `/design-consultation` runs, then a
@@ -39,7 +40,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   as a known divergence.
   Priority: P3. Status: Not started. Estimate: M. Sprint: 11 ([[sprint-plan-3]]; 2026-11-30 to 2026-12-06). Dependencies: None. Blocks nothing.
 
-- **Story 3: Soak the flood-road backend and compare it with the earlier backend.**
+- **Story 3 (US-034): Soak the flood-road backend and compare it with the earlier backend.**
   As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a soak period and
   to match the earlier Valhalla backend on known cases, so more load does not land on an unproven service.
   Given the regression tests in `test_flood_areas.py` and `test_server.py` already pass, when the backend
@@ -50,7 +51,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   the route set are the user's to set. The Valhalla proof of concept was deleted in commit `5d1a606`, so the
   comparison needs it restored from git history (`6394e27^`).
 
-- **Story 4: Revalidate "loading is very slow".**
+- **Story 4 (US-035): Revalidate "loading is very slow".**
   As a user opening the app, I want to know if loading is slow and why, so a real slowness gets its own
   fix and a stale note gets closed.
   Given the note dates from 2026-09-08, before the polygon tiles and the raster-first pipeline, when the
@@ -60,7 +61,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   is a pipeline speed and not a page load.
   Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None.
 
-- **Story 5: Decide what the map shows by default, and close or schedule the latency work.**
+- **Story 5 (US-036): Decide what the map shows by default, and close or schedule the latency work.**
   As the product owner, I want the map's "now" behavior accepted or changed on purpose, so the label and the
   data agree.
   Given the map shows the latest published step at or before now and captions it "As of `time`", when the
@@ -85,7 +86,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
      in the image. Earlier that day the caption read 16:45, because `flood_mapping_full` was paused. The image shows the
      accepted behavior. It does not measure the publish delay, which Story 6 covers.
 
-- **Story 6: Narrow the per-run critical path under the 15-minute cycle (option D).**
+- **Story 6 (US-037): Narrow the per-run critical path under the 15-minute cycle (option D).**
   As the pipeline owner, I want each run's step-1 tile to publish with real margin before that step
   becomes "now" again, so the 1.5 to 3 minute publish delay [[flood-mapping-full-worker-concurrency-serializes-runs]]'s
   resolution left behind goes away.
@@ -102,6 +103,16 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   real run before raising either, since depth-calc's subprocess count and tile-build's thread count are
   the two knobs, and both share the same box.
 
+- **Story 7 (US-038): Fix the documentation and config drift found by the README rewrite.**
+  As a new teammate, I want `.env.example`, the vault links, and the concept pages to match the code, so a fresh
+  checkout starts and its docs do not contradict the DAG.
+  Given the drift in [[documentation-and-config-drift-after-graphhopper]], when this is done, then `.env.example`
+  lists the variables `compose.yml` reads (with `THREEDI_API_PERSONAL_API_TOKEN`) and none it does not, no
+  `[[SW Architecture]]` link or comment is left outside `artifacts/raw/`, the 3Di orchestration concept page states
+  the cron `*/15` schedule with `max_active_runs=2` once, and `PINNED_COMMIT.md` lists only files that exist.
+  Priority: P3. Status: In progress. Estimate: S. Sprint: 3 (found 2026-09-30, fixed by a subagent under rule 11). Dependencies: None.
+  Blocker tracking: [[documentation-and-config-drift-after-graphhopper]]
+
 ## Status history
 
 - **2026-09-29, draft.** Created from the unscheduled items of `TODOS.md`. All five go in Sprint 2 at the
@@ -116,3 +127,5 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   Story 6 (the option D work) to Sprint 4.
 - **2026-09-30, draft.** Story 5 is `Done`: the user's screenshot at 01:36 shows the map captioned "As of 30/09/2026 01:30",
   saved as `map-now-caption-as-of-0130.png`.
+- **2026-09-30, draft.** Story 7 added for [[documentation-and-config-drift-after-graphhopper]]. It blocks no later build, so a subagent fixes it (rule 11).
+

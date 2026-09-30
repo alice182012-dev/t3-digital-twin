@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-018", "US-019", "US-020", "US-021"]
 status: draft
 subsystem: architecture-backend
 source_ideas: []
@@ -16,7 +17,7 @@ and the citizen and council dashboard endpoints. Rows carry Priority, Estimate, 
 vault's user-story sprint-delegation convention (see `.claude/CLAUDE.md`, "User stories and sprint
 planning").
 
-- **Story 1: Design TimescaleDB's histogram and forecast-series schema.**
+- **Story 1 (US-018): Design TimescaleDB's histogram and forecast-series schema.**
   As an engineer, I want a settled schema for institution histograms, `background_cycle` forecast
   series, and depth history, so I can populate real data instead of guessing a shape mid-build.
   Given the architecture doc's §4.9 describes the histogram split this schema must support, when the
@@ -30,7 +31,7 @@ planning").
   3. Why: no migration when `background_cycle` data arrives.
   4. Effect: Story 4 loads into these tables, and must first choose a segment key, since road segments have no stable ID.
 
-- **Story 2: Stand up the TimescaleDB service.**
+- **Story 2 (US-019): Stand up the TimescaleDB service.**
   As an engineer, I want TimescaleDB running as its own Docker service, distinct from
   `storage-postgres`, so the metric extractor and population job have somewhere to write.
   Given the schema design from Story 1, when the service is added to `compose.yml` and deployed on
@@ -44,7 +45,7 @@ planning").
   3. Why: the extractor's output needs a time-series store.
   4. Effect: `compose.yml` requires `TIMESCALE_PASSWORD`, so every compose command fails without it. The image comes from Docker Hub.
 
-- **Story 3: Build the flood metric extractor.**
+- **Story 3 (US-020): Build the flood metric extractor.**
   As a downstream consumer (internal reporting, or a future endpoint), I want time-to-peak,
   recession onset, per-vehicle passability restoration time, T+1h and T+2h forecast depth, and
   pre-closure time computed per road segment per vehicle type, so real flood-impact metrics exist
@@ -57,7 +58,7 @@ planning").
   Priority: P1. Status: Reviewed. Estimate: L. Sprint: 4 (re-cut 2026-09-29). Dependencies: None (reads `calculate_depth.py`'s output
   directly, independent of TimescaleDB).
 
-- **Story 4: Populate TimescaleDB from the extractor's output.**
+- **Story 4 (US-021): Populate TimescaleDB from the extractor's output.**
   As a downstream consumer, I want the metric extractor's output loaded into TimescaleDB's
   histogram tables, so a day's worth of `constant_cycle` and `background_cycle` data is queryable
   as a time series.

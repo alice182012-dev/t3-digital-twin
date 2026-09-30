@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-006", "US-007", "US-008", "US-009", "US-010"]
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
@@ -15,7 +16,7 @@ already-shipped fix logged for traceability. Rows carry Priority, Estimate, and 
 vault's user-story sprint-delegation convention (see `.claude/CLAUDE.md`, "User stories and sprint
 planning").
 
-- **Story 1: Add per-mode travel time under the four mode icons.**
+- **Story 1 (US-006): Add per-mode travel time under the four mode icons.**
   As a user comparing routes, I want a travel time under each of the four mode icons at once, so I
   can compare modes without selecting each one in turn.
   Given a route exists between two points, when the route result renders, then each of the four mode
@@ -32,7 +33,7 @@ planning").
   3. Why: compare modes without switching.
   4. Effect: four requests per query. Truck is missing until Sprint 4, and every mode uses the motorbike flood limit ([[flood-routing-vehicle-type-always-motorbike]]).
 
-- **Story 2: Add the "Updated `date` `time`" line to the flood legend.**
+- **Story 2 (US-007): Add the "Updated `date` `time`" line to the flood legend.**
   As a user reading the flood legend, I want to know how current the flood-depth data is, so I can
   judge whether the map reflects the latest simulation cycle.
   Given flood mode is on, when the legend renders, then it shows an "Updated" line below the color
@@ -47,7 +48,7 @@ planning").
      ([[mobile-flood-legend-covered-by-search-panel]], resolved 2026-09-28 by moving the legend to
      bottom-right on mobile).
 
-- **Story 3 (reviewed): Switch the search geocoder's default locale to `vi`.**
+- **Story 3 (US-008) (reviewed): Switch the search geocoder's default locale to `vi`.**
   As a user searching for a Vietnamese address, I want Vietnam-relevant results, so I'm not shown
   same-name places outside Vietnam mixed into the suggestion list.
   Given the search input's autofill geocoding, when a query like "Hồ Gươm" is typed, then the
@@ -67,7 +68,7 @@ planning").
   4. Effect: place search works on the live UI (locale fix) and now also ranks Vietnam results correctly
      (relevance fix). See [[photon-rejects-vi-locale]] (resolved).
 
-- **Story 4: Show no route and a clear message when the selected mode has none.**
+- **Story 4 (US-009): Show no route and a clear message when the selected mode has none.**
   As a driver whose mode has no safe route, I want the map to show no route and say why, so I am
   not shown another mode's route under my mode's icon.
   Given a start and destination where the selected mode has no connection under the current flood
@@ -90,7 +91,7 @@ planning").
   3. Why: a car driver was shown the walking route under the car icon, with an empty banner.
   4. Effect: on the live UI at 1366x768, `21.011,105.748` to `21.010,105.750` gave a 760 m walking route, then car showed no route and the banner "Connection between locations not found", then walking returned the route. The original pair (`21.014103,105.764718` to `21.014534,105.768982`) could not be reused, because its run is pruned. Whether to suggest a mode that has a route stays a product call.
 
-- **Story 5: Do not blank the app when a route description is a list.**
+- **Story 5 (US-010): Do not blank the app when a route description is a list.**
   As a user, I want a route with a description to show its tab, so the app never goes blank on a normal route.
   Given a route response whose `description` is a list of strings (for example `["Đường Hoàng Tùng"]`), when
   the route panel renders, then the tab is labeled with that text and the app stays up. A response with no

@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-022"]
 status: done
 subsystem: floodmap-frontend
 sprint: 4
@@ -11,7 +12,7 @@ tags: [user-story, frontend, sprint-4]
 
 # Show the truck routing profile in the frontend
 
-## User story
+## User story (US-022)
 
 As a truck driver planning a route through a flood-prone area, I want to choose the truck profile,
 so I get a route that respects the depth a truck can pass, not one planned for a car or a

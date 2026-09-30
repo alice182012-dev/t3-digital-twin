@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
+us_ids: ["US-046", "US-047", "US-048", "US-049", "US-050", "US-051", "US-052", "US-053", "US-054", "US-055"]
 status: draft
 subsystem: floodmap-backend, floodmap-frontend
 source_ideas: ["[[sticky-c-lite-routing]]"]
@@ -19,7 +20,7 @@ project's sprint-delegation convention allows. Sprint numbers continue from [[sp
 Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered details, recorded here and in
 `sprint-plan-2.md` or `sprint-plan-3.md`, whichever holds the story.
 
-- **Story R1: Record the routing baselines on the server.**
+- **Story R1 (US-046): Record the routing baselines on the server.**
   As the team, I want the server's latency, edge count, image revision, and step length written down, so
   every later story has a real baseline instead of a guess.
   Given the running stack on the server, when the measurements run, then the blocker page lists the p50 and
@@ -28,7 +29,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   count of one real run.
   Priority: P0. Status: Not started. Estimate: S. Sprint: 5. Dependencies: None.
 
-- **Story R2: Build the synthetic scenarios, the offline reference, and the offline checker.**
+- **Story R2 (US-047): Build the synthetic scenarios, the offline reference, and the offline checker.**
   As an engineer, I want a slow reference implementation and a route checker, so the fast engine has
   something to be compared against.
   Given a synthetic flood on a real Hanoi corridor in `marie-curie/` with a throwaway PostGIS, when the
@@ -38,7 +39,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   step.
   Priority: P0. Status: Not started. Estimate: M. Sprint: 5. Dependencies: None.
 
-- **Story R3: Show "no route" for a mode that has none.**
+- **Story R3 (US-048): Show "no route" for a mode that has none.**
   As a driver, I want the app to say that my mode has no route, so I never see another mode's route under my
   mode's icon.
   Given the reproduction in [[failed-route-shows-previous-mode-route]], when the car request fails with
@@ -46,10 +47,10 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   and the backend passes GraphHopper's error body through in a shape `Api.ts` reads.
   This is todo 13 in [[frontend-todos-and-backend-dependencies]]. The user scheduled the same fix as
   [[frontend-polish]] Story 4 in [[sprint-plan]] Sprint 3 (2026-10-05 to 2026-10-11) on 2026-09-29, so this story is
-  superseded and left out of [[sprint-plan-2]].
+  superseded by US-009 and left out of [[sprint-plan-2]].
   Priority: P1. Status: Superseded by [[frontend-polish]] Story 4. Estimate: S. Sprint: none. Dependencies: None.
 
-- **Story R4: Build the Java module skeleton, the image, and the CI job.**
+- **Story R4 (US-049): Build the Java module skeleton, the image, and the CI job.**
   As an engineer, I want a module that builds against the pinned GraphHopper version and runs in our image, so
   the engine work has a place to live and a way to be tested.
   Given the pinned version and the revision from Story R1, when CI runs, then the module builds, the image
@@ -58,7 +59,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   without LM.
   Priority: P0. Status: Not started. Estimate: L. Sprint: 6. Dependencies: Story R1.
 
-- **Story R5: Build the time-aware weighting and search for `motorbike` and `car`.**
+- **Story R5 (US-050): Build the time-aware weighting and search for `motorbike` and `car`.**
   As a traveller, I want the route to account for the time I reach each road, so I am not sent into water that
   floods before I arrive.
   Given a synthetic depth table in the format of [[edge-depth-table-stories]] Story E2, when the four
@@ -69,13 +70,13 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   Priority: P0. Status: Not started. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate: the user
   confirms the sticky-from-departure wording before this sprint.
 
-- **Story R6: Add the `truck` and `foot` time-aware profiles.**
+- **Story R6 (US-051): Add the `truck` and `foot` time-aware profiles.**
   As a truck driver or a pedestrian, I want the same timing check for my mode, so the four modes behave alike.
   Given Story R5's engine, when `truck` and `foot` requests run on the synthetic scenarios, then each uses its
   own depth limit (35 cm and 40 cm) and passes the checker.
   Priority: P1. Status: Not started. Estimate: S. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Story R5.
 
-- **Story R7: Integrate the engine into the backend with a flag and a fallback.**
+- **Story R7 (US-052): Integrate the engine into the backend with a flag and a fallback.**
   As an operator, I want a switch and a safe fallback, so a problem with the table never takes routing down
   or hides that timing was skipped.
   Given a depth table for the running graph, when the flag is on, then `_handle_route` uses the `td` profile,
@@ -86,7 +87,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   Tests cover the flag off, a departure between steps, the horizon edge, run pinning, and the hash mismatch.
   Priority: P0. Status: Not started. Estimate: M. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Stories R5, E5.
 
-- **Story R8: Build `POST /route/departures`.**
+- **Story R8 (US-053): Build `POST /route/departures`.**
   As a traveller with no route now, I want to know the earliest time a route opens, so I can decide whether to
   wait.
   Given a real depth table and a route between two points, when the endpoint runs, then it requests the
@@ -96,7 +97,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   contains now. The client sends no clock value, margin, or policy.
   Priority: P1. Status: Not started. Estimate: M. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Stories E2, E3, E4, R7.
 
-- **Story R9: Show "wait until" in the no-route alert.**
+- **Story R9 (US-054): Show "wait until" in the no-route alert.**
   As a traveller whose route is blocked, I want the alert to say when a route opens, so I have a next step
   besides staying put.
   Given a failed route request with no connection, when the client requests `POST /route/departures`, then
@@ -106,7 +107,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   existing advice to reach the safest location or stay put, and says "clear in the forecast", not "safe".
   Priority: P1. Status: Not started. Estimate: S. Sprint: 10 ([[sprint-plan-3]]). Dependencies: Story R8, and [[frontend-polish]] Story 4 in place of the superseded Story R3.
 
-- **Story R10: Prove the engine on the server and roll it out.**
+- **Story R10 (US-055): Prove the engine on the server and roll it out.**
   As the team, I want evidence on the server before the flag goes on, so the change ships with numbers and not
   hopes.
   Given the deployed image and a real run, when the four scenarios run for `motorbike` and `car`, then the

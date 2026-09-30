@@ -150,6 +150,12 @@ FROM "designs"
   are delegated to a sprint (Priority, Estimate, and Sprint per row, an extension past the shape's
   own documented fields) and cross-linked to the sprint plan that assigned them; see
   `.claude/CLAUDE.md`, "User stories and sprint planning", for the full convention.
+- Every user story has one ID in the form `US-nnn`, for example `US-014`. The ID is global across
+  the vault. It is assigned once and never reused or renumbered. A story keeps its ID when it
+  moves to another sprint, and the parts of a split story get new IDs. The ID follows the story's
+  label in its file (`Story 4 (US-014)`) and is listed in the file's `us_ids` frontmatter. The
+  `Item` column of each sprint table and each matching `TODOS.md` item carry it too. The next free
+  ID is `US-057`. Raise this number when you assign one.
 - A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of

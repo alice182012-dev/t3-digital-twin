@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-002", "US-003", "US-004", "US-005"]
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
@@ -16,7 +17,7 @@ stories can start before that endpoint exists. Rows carry Priority, Estimate, an
 vault's user-story sprint-delegation convention (see `.claude/CLAUDE.md`, "User stories and sprint
 planning").
 
-- **Story 1: Place-depth popup on map tap.**
+- **Story 1 (US-002): Place-depth popup on map tap.**
   As a user exploring the map, I want to tap a point and see its current water depth, so I can
   judge conditions at a specific location, not just along a route.
   Given the app is open with a route already showing on screen (any two points, any mode), when the
@@ -49,7 +50,7 @@ planning").
      object, so the name can be a building near the tap. See [[place-depth-popup-on-map-tap]].
 
 
-- **Story 2: Per-step depth in turn-by-turn instructions.**
+- **Story 2 (US-003): Per-step depth in turn-by-turn instructions.**
   As a user following a route, I want to see the depth at each turn alongside its distance, so I
   know what to expect before I reach it.
   Given a route exists, when each turn-by-turn step in the expanded instructions list renders, then
@@ -63,7 +64,7 @@ planning").
   3. Why: a user can see what to expect before reaching each turn.
   4. Effect: checked on a preview build on the server (port 8083) against the real backend, with the browser clock set to 2026-09-29 17:00 +07:00 because the pipeline is paused. A 5-step route from a start point that is 16 cm deep at the 16:45 step showed 16, 0, 0, 0, and 0 cm, the same as `GET /flood/points` for each start point. A 17-step route showed 0 cm on every step, also matching. A step with no reading prints nothing, so no step claims a depth it lacks. Each route costs one request per step. Deployed 2026-09-30 (`ac1ab84`). On the live frontend at 8082, with the real clock, all 17 steps of the car route from `21.0000,105.7450` to `21.0060,105.7520` show "N m · 0 cm" (`frontend-per-step-depth-live-check.png`). Tap-a-step (Story 4) can start.
 
-- **Story 3: Per-point depth badges along the route polyline.**
+- **Story 3 (US-004): Per-point depth badges along the route polyline.**
   As a user viewing a rendered route, I want to see depth badges at the points where depth changes
   along the route, so I can spot flooded segments on the map itself, not just in a list.
   Given a route exists, when the route renders on the map, then the map shows depth badges at
@@ -77,7 +78,7 @@ planning").
   3. Why: a user can spot the flooded stretches on the map itself, not only in the step list.
   4. Effect: checked on a preview build on the server with real data. A 6.4 km walking route from `21.0141,105.764` to `21.0145,105.769` at the 02:15 step showed 6 badges: 0, < 5, 30, 36, 23, and 26 cm. All 66 samples of two other routes (41 and 25 samples) matched separate `ST_Value` reads. Badges of nearby stretches overlap at wide zoom levels (23 and 36 cm sit about 100 m apart), so a later story could space them by screen distance. Deployed 2026-09-30 (`1b80cc3`). On the live site the same route shows the same 6 badges (`frontend-route-depth-badges-live-check.png`), `POST /flood/profile` returns 41 samples for the 4.5 km car route as the preview did, and switching to a mode with no route and back keeps the app up and brings the badges back.
 
-- **Story 4: Tap a turn step to highlight its segment on the map.**
+- **Story 4 (US-005): Tap a turn step to highlight its segment on the map.**
   As a user reading the turn list, I want to tap a step and see its segment on the map, so I can tell where the
   step is and where its depth applies.
   Given a route with per-step depth ([[frontend-depth-features]] Story 2), when the user clicks a step in the

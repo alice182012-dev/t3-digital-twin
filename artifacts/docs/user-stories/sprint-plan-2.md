@@ -60,12 +60,12 @@ its epic file. Update both together. A story reaches `Done` only with evidence a
 **Sprint goal:** every later story has a real baseline and a reference to compare against, the depth-table format is
 fixed, and the current backend has soaked before the engine builds on it.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P0 | Record the routing baselines on the server | S | [[time-aware-routing-engine-stories]] R1 | None | None yet | - | Not started |
-| P0 | Build the synthetic scenarios, the offline reference, and the offline checker | M | [[time-aware-routing-engine-stories]] R2 | None | None yet | - | Not started |
-| P0 | Define the table format and write the Python reader and writer | S | [[edge-depth-table-stories]] E2 | None | None yet | - | Not started |
-| P2 | Soak the flood-road backend and compare it with the earlier backend | M | [[carried-over-backlog]] Story 3 | None. Gate: the user sets the soak length and the route set before the sprint starts | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-046 | P0 | Record the routing baselines on the server | S | [[time-aware-routing-engine-stories]] R1 | None | None yet | - | Not started |
+| US-047 | P0 | Build the synthetic scenarios, the offline reference, and the offline checker | M | [[time-aware-routing-engine-stories]] R2 | None | None yet | - | Not started |
+| US-040 | P0 | Define the table format and write the Python reader and writer | S | [[edge-depth-table-stories]] E2 | None | None yet | - | Not started |
+| US-034 | P2 | Soak the flood-road backend and compare it with the earlier backend | M | [[carried-over-backlog]] Story 3 | None. Gate: the user sets the soak length and the route set before the sprint starts | None yet | - | Not started |
 
 ## Sprint 6: Java toolchain and edge export
 
@@ -74,10 +74,10 @@ fixed, and the current backend has soaked before the engine builds on it.
 **Sprint goal:** a Java module builds against the pinned GraphHopper version and runs in our image, and the
 graph's edges are exported with a hash.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P0 | Build the Java module skeleton, the image, and the CI job | L | [[time-aware-routing-engine-stories]] R4 | Story R1 | None yet | - | Not started |
-| P0 | Export the graph's edges | M | [[edge-depth-table-stories]] E1 | Story R4, same sprint | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-049 | P0 | Build the Java module skeleton, the image, and the CI job | L | [[time-aware-routing-engine-stories]] R4 | Story R1 | None yet | - | Not started |
+| US-039 | P0 | Export the graph's edges | M | [[edge-depth-table-stories]] E1 | Story R4, same sprint | None yet | - | Not started |
 
 ## Sprint 7: the depth table
 
@@ -86,11 +86,11 @@ graph's edges are exported with a hash.
 **Sprint goal:** every run produces one depth table by edge id, published without a partial read, and the
 re-import procedure is written.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P0 | Build the Airflow task that writes each run's table | L | [[edge-depth-table-stories]] E3 | Stories E1, E2 | None yet | - | Not started |
-| P0 | Publish the table atomically and keep the newest three runs | S | [[edge-depth-table-stories]] E4 | This sprint's E3 | None yet | - | Not started |
-| P1 | Document the graph re-import procedure and detect a stale table | S | [[edge-depth-table-stories]] E6 | This sprint's E3 | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-041 | P0 | Build the Airflow task that writes each run's table | L | [[edge-depth-table-stories]] E3 | Stories E1, E2 | None yet | - | Not started |
+| US-042 | P0 | Publish the table atomically and keep the newest three runs | S | [[edge-depth-table-stories]] E4 | This sprint's E3 | None yet | - | Not started |
+| US-044 | P1 | Document the graph re-import procedure and detect a stale table | S | [[edge-depth-table-stories]] E6 | This sprint's E3 | None yet | - | Not started |
 
 ## Sprint 8: the engine core and the table proof
 
@@ -99,11 +99,11 @@ re-import procedure is written.
 **Sprint goal:** the time-aware search passes the four scenarios on a synthetic table, the Java reader refuses
 a wrong table, and the real table is measured on the server.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P0 | Build the time-aware weighting and search for `motorbike` and `car` | L | [[time-aware-routing-engine-stories]] R5 | Stories R2, R4, E2. Gate: the user confirms the sticky-from-departure wording | None yet | - | Not started |
-| P0 | Build the Java reader with a hash check and reload without restart | M | [[edge-depth-table-stories]] E5 | Stories E2, R4 | None yet | - | Not started |
-| P0 | Prove the table on the server | M | [[edge-depth-table-stories]] E7 | Stories E3, E4. Gate: the user sets the build-time limit | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-050 | P0 | Build the time-aware weighting and search for `motorbike` and `car` | L | [[time-aware-routing-engine-stories]] R5 | Stories R2, R4, E2. Gate: the user confirms the sticky-from-departure wording | None yet | - | Not started |
+| US-043 | P0 | Build the Java reader with a hash check and reload without restart | M | [[edge-depth-table-stories]] E5 | Stories E2, R4 | None yet | - | Not started |
+| US-045 | P0 | Prove the table on the server | M | [[edge-depth-table-stories]] E7 | Stories E3, E4. Gate: the user sets the build-time limit | None yet | - | Not started |
 
 ## Carried to plan 3
 
@@ -139,3 +139,4 @@ limit. The soak row in Sprint 5 waits for the soak length and the route set.
   Sprints 5 to 8 stay here, dated 2026-10-19 to 2026-11-15, and Sprints 9 and 10 moved to [[sprint-plan-3]]. Story R3 left the plan because the
   same fix is [[frontend-polish]] Story 4 in [[sprint-plan]] Sprint 3, which the user scheduled. The backend soak
   from [[sprint-plan]]'s carried rows joined Sprint 5, so it runs before the engine builds on the backend.
+- **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).

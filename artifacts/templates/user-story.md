@@ -1,6 +1,7 @@
 ---
 date_drafted: <% tp.date.now("YYYY-MM-DD") %>
 type: user-story
+us_ids: []
 status: draft
 subsystem: 
 sprint: 
@@ -44,3 +45,7 @@ assigns one (see `sprint-plan-N.md` under `artifacts/docs/user-stories/`), and l
 empty for a story that is still in the backlog. An epic-shaped story spans several
 sprints, so it carries `Sprint: N` per row in its body instead of one frontmatter value;
 see [[user-story-types]].
+
+Give each story the next free `US-nnn` ID from the Conventions section of `Home.md`. Put
+the ID in `us_ids` and after the story's label, as in `## User story (US-056)`, then raise
+the next free number in `Home.md`.

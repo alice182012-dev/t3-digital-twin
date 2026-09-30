@@ -30,7 +30,7 @@ for (const line of text.split("\n")) {
 	if (sprint === null || !line.startsWith("|")) continue;
 
 	const cells = line.split(/(?<!\\)\|/).slice(1, -1).map(c => c.trim());
-	if (cells[0] === "Priority") { header = cells; continue; }
+	if (cells.includes("Priority")) { header = cells; continue; }
 	if (!header || /^-+$/.test(cells[0])) continue;
 
 	const row = Object.fromEntries(header.map((name, i) => [name, cells[i]]));
@@ -38,6 +38,7 @@ for (const line of text.split("\n")) {
 	const epicPage = epicName ? dv.page(epicName) : null;
 	stories.push({
 		sprint,
+		item: row["Item"],
 		priority: row["Priority"],
 		story: row["Story"],
 		estimate: row["Estimate"],
@@ -48,8 +49,8 @@ for (const line of text.split("\n")) {
 
 stories.sort((a, b) => a.sprint - b.sprint || a.priority.localeCompare(b.priority));
 dv.table(
-	["Sprint", "Priority", "Story", "Estimate", "Epic", "Status"],
-	stories.map(s => [s.sprint, s.priority, s.story, s.estimate, s.epic, s.status])
+	["Item", "Sprint", "Priority", "Story", "Estimate", "Epic", "Status"],
+	stories.map(s => [s.item, s.sprint, s.priority, s.story, s.estimate, s.epic, s.status])
 );
 ```
 
@@ -69,7 +70,7 @@ for (const line of text.split("\n")) {
 	if (sprint === null || !line.startsWith("|")) continue;
 
 	const cells = line.split(/(?<!\\)\|/).slice(1, -1).map(c => c.trim());
-	if (cells[0] === "Priority") { statusColumn = cells.indexOf("Status"); continue; }
+	if (cells.includes("Priority")) { statusColumn = cells.indexOf("Status"); continue; }
 	if (statusColumn < 0 || /^-+$/.test(cells[0])) continue;
 
 	const status = cells[statusColumn];
@@ -84,7 +85,7 @@ dv.table(["Status", "Stories"], Object.entries(counts).sort((a, b) => b[1] - a[1
 One row per epic or single-story file, from frontmatter.
 
 ```dataview
-TABLE status AS "File status", subsystem AS "Subsystem", sprint AS "Sprint", date_drafted AS "Drafted"
+TABLE us_ids AS "IDs", status AS "File status", subsystem AS "Subsystem", sprint AS "Sprint", date_drafted AS "Drafted"
 FROM "docs/user-stories"
 WHERE type = "user-story"
 SORT subsystem ASC, date_drafted DESC

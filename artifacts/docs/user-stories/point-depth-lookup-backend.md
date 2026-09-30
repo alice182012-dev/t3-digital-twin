@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-011", "US-012", "US-013", "US-014", "US-015", "US-016", "US-056"]
 status: draft
 subsystem: architecture-backend
 source_ideas: []
@@ -15,7 +16,7 @@ raster-backed point-depth lookup. Rows carry Priority, Estimate, and Sprint in a
 standard Epic fields, per this vault's user-story sprint-delegation convention (see
 `.claude/CLAUDE.md`, "User stories and sprint planning").
 
-- **Story 1 (done): Regression-harden `floodmap-backend` before adding new load.**
+- **Story 1 (US-011) (done): Regression-harden `floodmap-backend` before adding new load.**
   As an engineer, I want `server.py` and `flood_areas.py` covered by a regression or test pass, so
   I can add a new endpoint without debugging two unknowns (new code, an unproven backend) at once.
   Given the architecture doc's §11 flags `floodmap-backend` as untested since the
@@ -36,7 +37,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   3. Why: `GET /flood/points` would otherwise land on an unproven backend.
   4. Effect: unblocks the point-depth stories. The soak period and the Valhalla comparison stay open in `TODOS.md`.
 
-- **Story 2 (done): Load `depth.tif` into PostGIS as a raster.**
+- **Story 2 (US-012) (done): Load `depth.tif` into PostGIS as a raster.**
   As the point-depth lookup endpoint, I want each timestep's `depth.tif` available as a PostGIS
   raster, so I can answer an arbitrary-point depth query without reading the file from disk per
   request.
@@ -59,7 +60,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   3. Why: a point lookup needs the exact pixel.
   4. Effect: unblocks `GET /flood/points`. On the server, the row for run `20260924T153638` matches the source file's size and corner. The DAG task has not run there yet.
 
-- **Story 3: Build `GET /flood/points`.**
+- **Story 3 (US-013): Build `GET /flood/points`.**
   As a frontend developer, I want an endpoint that returns the exact depth at an arbitrary lat/lon
   and timestep, so I can source the place-depth popup and per-point depth figures from a single
   source of truth instead of a road-segment or banded-polygon approximation.
@@ -75,7 +76,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
   3. Why: the popup and badges need the exact pixel, not a band.
   4. Effect: unblocks the latency check and the three Sprint 3 point stories. Without `run=`, it returns 404 when the newest run has no raster. On a real `depth.tif`, it matched `gdallocationinfo` at three points.
 
-- **Story 4: Validate `GET /flood/points`'s latency under concurrent taps.**
+- **Story 4 (US-014): Validate `GET /flood/points`'s latency under concurrent taps.**
   As an engineer, I want to know whether a live `ST_Value` query holds up under concurrent popup
   taps, so I can decide before Sprint 3 whether the frontend can call this endpoint directly or
   needs a pre-computed lookup grid instead.
@@ -98,7 +99,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
      10-way concurrency. No errors at any level tested. `GET /flood/areas`'s own interactive budget
      (not separately re-measured here) is the comparison target the acceptance criteria name; the
      new sequential number is well inside any plausible interactive budget.
-- **Story 5: Handle a full connection pool in `floodmap-backend`.**
+- **Story 5 (US-015): Handle a full connection pool in `floodmap-backend`.**
   As a person checking flood depth while many others use the app, I want a burst of simultaneous
   requests to slow down instead of fail, so the depth popup still answers.
   Given the pool is at its ceiling of 10 connections (`FLOOD_DB_POOL_MAX`), when 30 concurrent
@@ -126,6 +127,37 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
      The 503 path and the dead-connection case have only unit tests, because no live run reached the
      5 second wait. The screenshot is a fresh run at 2026-09-29 17:46 UTC on host ADMIN, with the same
      result: no 400 at 30 or 60 concurrent requests.
+
+- **Story 6 (US-016): Make test_server.py's tile-edge check independent of GDAL's rounding.**
+  As a maintainer of the backend, I want `test_server.py` to end green on any GDAL version, so it stays a
+  regression pass that people trust.
+  Given the reference point of the "edge of two tiles" check lies a hair below a pixel boundary, when the
+  script runs, then it accepts the endpoint's value when it equals one of the four pixels touching that boundary, and
+  it runs to its end, including the checks after that one.
+  Priority: P3. Status: Done. Estimate: XS. Sprint: 3 (found 2026-09-30, fixed by a subagent under rule 11). Dependencies: None.
+  Blocker tracking: [[test-server-tile-edge-check-fails]]
+  Evidence: ![[test-server-tile-edge-fixed-output.png|420]]
+  Details:
+  1. What: `test_server.py` ends green and runs every check to the end.
+  2. How: `pixels_around_boundary` in `test_server.py` finds the pixel boundary nearest each edge point and reads the four pixels around it. The test requires the endpoint's float32 value to equal one of them, and the four to be distinct, so any other pixel or `no_data` still fails. Both edge points use the one rule.
+  3. Why: the reference point sits 3e-11 pixels off a boundary, and `gdallocationinfo` and PostGIS break that tie differently. The first attempt, one reference per point, passed only on this GDAL's noise, so it was replaced.
+  4. Effect: the script exits 0, and the no_data, 404, and validation checks after the tile-edge check run again. The rule is checked on GDAL 3.12.3 and PostGIS 15-3.4 only. It is a test change, so nothing is deployed.
+
+- **Story 7 (US-056): Reuse database connections in `floodmap-backend`.**
+  As a user tapping the map, I want `GET /flood/points` to answer without opening a database connection per request,
+  so many taps stay fast.
+  Given the backend pools its PostGIS connections, when requests arrive one after another and at once, then the
+  median latency falls from the per-request connection cost to the lookup cost, with no error at any level tested.
+  Priority: P1. Status: Done. Estimate: S. Sprint: 2. Dependencies: None. The tiled raster story it needed is deployed.
+  Recorded on 2026-09-30 from the Sprint 2 row and the blocker [[flood-points-connection-per-request]]. It began as a `TODOS.md` item and had no story
+  in an epic file.
+  Blocker tracking: [[flood-points-connection-per-request]]
+  Evidence: ![[connection-pooling-and-forecast-verification.png|420]]
+  Details:
+  1. What: `db.py` pools connections with `psycopg2.pool.ThreadedConnectionPool`, and every `server.py` handler borrows one through a `db.connection()` context manager.
+  2. How: deployed to the live container and measured on the server with the same method as the original blocker measurement.
+  3. Why: the raster library load (about 57 ms) now happens once per pooled connection instead of once per request.
+  4. Effect: sequential median 80.7 ms to 4.6 ms, 5 concurrent 99.4 ms to 39.6 ms, 10 concurrent 126.8 ms to 103.3 ms, with no errors. It fed [[point-depth-lookup-backend]] Story 4 (US-014), and Story 5 (US-015) fixed the failure past 10 concurrent requests.
 
 ## Status history
 
@@ -171,3 +203,7 @@ standard Epic fields, per this vault's user-story sprint-delegation convention (
 - **2026-09-30, draft.** Story 5 is `Done`: a fresh run on the server (2026-09-29 17:46 UTC) is saved as
   `pool-wait-and-503-server-check.png`. All requests returned 200 at 30 and 60 concurrent. The live 503 path stays covered by
   the unit test only.
+- **2026-09-30, draft.** Story 6 added for [[test-server-tile-edge-check-fails]]. It blocks no later build, so a subagent fixes it while the next work continues (rule 11).
+- **2026-09-30, draft.** Story 6 is `Done`. A subagent built it, I reviewed the diff and reran the script, and it landed as `03f7aa6`.
+- **2026-09-30, draft.** Story 7 (US-056) added to give the Sprint 2 row "Reuse database connections" a story. It is `Done`: the work shipped on 2026-09-29.
+

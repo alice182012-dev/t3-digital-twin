@@ -1,6 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
+us_ids: ["US-017"]
 status: draft
 subsystem: architecture-backend
 sprint: 2
@@ -11,7 +12,7 @@ tags: [user-story, backend, sprint-2]
 
 # Route-forecast query against `flood_road_values`
 
-## User story
+## User story (US-017)
 
 As a frontend developer building the depth-versus-time forecast chart, I want a query that returns
 a route's average depth in 30-minute buckets across the forecast window, so the chart has a real

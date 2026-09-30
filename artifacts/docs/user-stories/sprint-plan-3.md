@@ -48,11 +48,11 @@ Status in its epic file. Update both together. A story reaches `Done` only with 
 **Sprint goal:** all four modes route through the time-aware engine behind a flag with a safe fallback, and
 `POST /route/departures` returns the earliest clear departure.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P0 | Integrate the engine into the backend with a flag and a fallback | M | [[time-aware-routing-engine-stories]] R7 | Stories R5, E5 (both from [[sprint-plan-2]]) | None yet | - | Not started |
-| P1 | Add the `truck` and `foot` time-aware profiles | S | [[time-aware-routing-engine-stories]] R6 | Story R5 | None yet | - | Not started |
-| P1 | Build `POST /route/departures` | M | [[time-aware-routing-engine-stories]] R8 | Stories E2, E3, E4, and this sprint's R7 | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-052 | P0 | Integrate the engine into the backend with a flag and a fallback | M | [[time-aware-routing-engine-stories]] R7 | Stories R5, E5 (both from [[sprint-plan-2]]) | None yet | - | Not started |
+| US-051 | P1 | Add the `truck` and `foot` time-aware profiles | S | [[time-aware-routing-engine-stories]] R6 | Story R5 | None yet | - | Not started |
+| US-053 | P1 | Build `POST /route/departures` | M | [[time-aware-routing-engine-stories]] R8 | Stories E2, E3, E4, and this sprint's R7 | None yet | - | Not started |
 
 ## Sprint 10: the advice in the alert, and the rollout
 
@@ -61,10 +61,10 @@ Status in its epic file. Update both together. A story reaches `Done` only with 
 **Sprint goal:** the alert shows "wait until", the engine passes its checks on the server inside the latency
 factor, and the flag goes on with evidence.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P1 | Show "wait until" in the no-route alert | S | [[time-aware-routing-engine-stories]] R9 | Story R8, and [[frontend-polish]] Story 4 ([[sprint-plan]] Sprint 3) | None yet | - | Not started |
-| P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate: the user sets the latency factor | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-054 | P1 | Show "wait until" in the no-route alert | S | [[time-aware-routing-engine-stories]] R9 | Story R8, and [[frontend-polish]] Story 4 ([[sprint-plan]] Sprint 3) | None yet | - | Not started |
+| US-055 | P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate: the user sets the latency factor | None yet | - | Not started |
 
 ## Sprint 11: DESIGN.md
 
@@ -72,9 +72,9 @@ factor, and the flag goes on with evidence.
 
 **Sprint goal:** the project has one versioned file of design tokens extracted from the shipped UI.
 
-| Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | None | None yet | - | Not started |
+| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
+| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
+| US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | None | None yet | - | Not started |
 
 ## Sprint 12: spare capacity
 
@@ -118,3 +118,4 @@ file and in this plan.
 - **2026-09-29, active.** Split from the first draft of [[sprint-plan-2]], which had six sprints, so each plan covers four
   weeks. Sprints 9 and 10 moved here with the backlog and the plan-3 risks. The carried `DESIGN.md` row from [[sprint-plan]]
   is in Sprint 11, and Sprint 12 is spare.
+- **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).
