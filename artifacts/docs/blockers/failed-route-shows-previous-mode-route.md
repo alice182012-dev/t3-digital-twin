@@ -5,11 +5,11 @@ type: blocker
 status: open
 severity: P1
 subsystem: floodmap-frontend, floodmap-backend
-approaches_tried: 0
-approaches_remaining: 2
+approaches_tried: 2
+approaches_remaining: 0
 tags: [blocker, frontend, backend, routing, safety, error-handling]
 related: ["[[frontend-polish]]", "[[truck-routing-profile]]", "[[flood-routing-vehicle-type-always-motorbike]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-29
+last_updated: 2026-09-30
 ---
 
 # A failed route request leaves the previous mode's route on the map
@@ -61,7 +61,15 @@ car route exists, because the banner is empty.
 
 ## Approaches tried
 
-None yet.
+### Approach 1: pass GraphHopper's error through (2026-09-30)
+
+`route_error_payload()` in `server.py` parses GraphHopper's error text. When it is a JSON object with a `message`, the backend sends it unchanged with the original status, so `Api.ts` finds `message` and `hints`. Any other error becomes `{"message": text, "error": text}`. `test_route_error.py` covers the four cases. A local run against a stub GraphHopper returned 400 with "Connection between locations not found" and the hint. The other `/route` error, a GraphHopper that is down, previously also gave an empty banner and now shows its text.
+
+### Approach 2: clear the route on a failed request (2026-09-30)
+
+`RouteStore.ts` returns to its initial state on `RouteRequestFailed`. A new test in `RouteStore.test.ts` dispatches a success and then a failure and expects the initial state. All 208 frontend tests pass.
+
+Result: both are built and tested locally. The live check is still open.
 
 ## Candidate approaches
 
@@ -78,7 +86,7 @@ have a route (walking here)? That is a product call and not part of this blocker
 
 ## Decision and explanation
 
-Pending. Scheduled for Sprint 3 on 2026-09-29. The test scenario is in [[frontend-polish]], Story 4.
+Both approaches are built. Waiting for the server check. Scheduled for Sprint 3 on 2026-09-29. The test scenario is in [[frontend-polish]], Story 4.
 
 ## Concerns
 
@@ -98,3 +106,4 @@ fixed fixture, not the live server.
   identical. Root causes read in `RouteStore.ts`, `Api.ts`, and `server.py`, and the four-mode
   backend results measured against the live server. No fix attempted.
 - **2026-09-29, open.** Scheduled in Sprint 3 of [[sprint-plan]] at the user's request. No fix attempted yet.
+- **2026-09-30, open.** Both approaches built and tested locally, see Approaches tried. Stays `open` until the fix is deployed and the reproduction pair shows no route and the message on the live UI.

@@ -26,7 +26,7 @@ M
 
 ## Status
 
-Reviewed
+Done
 
 ## Acceptance criteria
 
@@ -36,16 +36,18 @@ the route's average depth at now, matching mockup screen 2e's "Average water dep
 from the column width. The 15-minute width replaces the 30-minute width of the first draft, see
 [[fifteen-minute-cycle-tiles-and-histogram]].
 
+## Evidence
+
+![[depth-forecast-chart-server-check.png|420]]
+
+Caption: the live frontend at `100.67.84.55:8082`, captured 2026-09-30 from a Mac browser at 1366x768, for a car route of 4.5 km from 21.0000, 105.7450 to 21.0060, 105.7520. The flood pipeline was paused, so the newest data ends at 2026-09-30 03:45. The browser clock was set to 2026-09-29 17:00 +07:00 so the "Now" column falls inside the retained runs. The backend and the data are the real ones.
+
 ## Details
 
-1. What: `DepthForecastChart` in the route panel, drawn from `POST /flood/forecast`.
-2. How: `RoutingResults.tsx` renders it when flood mode is on. `depthForecast.ts` turns the columns
-   into bars, and the "now" bar is the latest column at or before now.
-3. Why: it shows how depth along the route changes, so a user can decide whether to leave now or
-   wait.
-4. Effect: no dependency remains on [[route-forecast-query]]. The story stays `Reviewed` because
-   no screenshot of the chart is saved under `evidence/`. The 2026-09-26 server check only records
-   that the chart renders.
+1. What: `DepthForecastChart` in the route panel, drawn from `POST /flood/forecast`. The screenshot shows seven columns from 16:45 to 18:15, "Now" highlighted at 17:00, and the dashed line labeled 1 cm.
+2. How: `RoutingResults.tsx` renders it when flood mode is on. `depthForecast.ts` turns the columns into bars, and the "now" bar is the latest column at or before now.
+3. Why: it shows how depth along the route changes, so a user can decide whether to leave now or wait.
+4. Effect: no dependency remains on [[route-forecast-query]]. A hand calculation resampled the route (183 samples over 4,530 m) and read every sample's pixel with a separate `ST_Value` query. The 17:00 column gave a mean of 0.0069 m, a maximum of 0.185 m, and a wet fraction of 0.071, and the 18:15 column gave 0.0151 m, 0.344 m, and 0.087. The endpoint returned the same figures. A second route (56 samples) matched the same way.
 
 ## Status history
 
@@ -72,3 +74,4 @@ from the column width. The 15-minute width replaces the 30-minute width of the f
   `Done`. A check of the average-depth value against a hand calculation from the raster is also
   still missing, and the earlier risk of a plausible but wrong average makes that check worth
   doing.
+- **2026-09-30, draft.** Status moved from `Reviewed` to `Done`. Saved `depth-forecast-chart-server-check.png` and hand-checked two columns against `flood_depth_raster_tile`, see Details. The screenshot needed a browser clock override, because `flood_mapping_full` is paused and its newest data is older than the eight-column window.

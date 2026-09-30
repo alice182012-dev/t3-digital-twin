@@ -80,7 +80,7 @@ planning").
   `ConnectionNotFoundException` body and the walking request with a route, since the live flood
   changes and the run is pruned after 8 runs. Also check the live server while the flood blocks the
   pair. A unit test of `RouteStore` on `RouteRequestFailed` covers the store half.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 3 (scheduled by the user on 2026-09-29). Dependencies: a backend change to pass GraphHopper's error body through
   (`floodmap/graphhopper-flood-road/backend/server.py`, `_handle_route`), tracked in the blocker.
   Blocker tracking: [[failed-route-shows-previous-mode-route]]
 
@@ -129,3 +129,4 @@ planning").
 - **2026-09-29, draft.** Story 4 added: the scenario from [[failed-route-shows-previous-mode-route]], kept as the
   acceptance test for the fix. It is unscheduled until the user picks a sprint.
 - **2026-09-29, draft.** Story 4 scheduled in Sprint 3 at the user's request.
+- **2026-09-30, draft.** Story 4 built and `Reviewed`. `route_error_payload()` in `server.py` passes GraphHopper's error body through, and `RouteStore.ts` clears the route on `RouteRequestFailed`. Tests: `test_route_error.py` (4) and a new `RouteStore` test, with all 208 frontend tests passing. A local run of `server.py` against a stub GraphHopper answered 400 with `message` and `hints`. Still to do: deploy, check the pair `21.014103,105.764718` to `21.014534,105.768982` on the server, and save a screenshot.
