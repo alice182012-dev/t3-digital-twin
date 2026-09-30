@@ -11,13 +11,15 @@ interface PlaceDepthPopupProps {
     coordinate: Coordinate | null
     timestep: FloodTimestep | undefined
     onClose: () => void
+    /** Starts a route to the tapped point. `placeName` is undefined while the place lookup has no name. */
+    onRoute: (placeName: string | undefined) => void
 }
 
 /**
  * The card of the approved mockup's screen 2b: place name, address, coordinates, and the water
  * depth at the tapped point, read from the selected flood timestep.
  */
-export default function PlaceDepthPopup({ map, coordinate, timestep, onClose }: PlaceDepthPopupProps) {
+export default function PlaceDepthPopup({ map, coordinate, timestep, onClose, onRoute }: PlaceDepthPopupProps) {
     const point = coordinate && { lat: String(coordinate.lat), lon: String(coordinate.lng) }
     const depthParams = coordinate && timestep && depthQuery(coordinate, timestep)
     const depthBody = useJson('flood/points', depthParams)
@@ -42,10 +44,39 @@ export default function PlaceDepthPopup({ map, coordinate, timestep, onClose }: 
                             <button className={styles.close} onClick={onClose} aria-label="Close">
                                 ×
                             </button>
-                            <div className={styles.name}>
-                                {place === undefined ? 'Looking up place…' : (place?.name ?? 'Selected location')}
+                            <div className={styles.header}>
+                                <div className={styles.headerText}>
+                                    <div className={styles.name}>
+                                        {place === undefined
+                                            ? 'Looking up place…'
+                                            : (place?.name ?? 'Selected location')}
+                                    </div>
+                                    {place?.address && <div className={styles.address}>{place.address}</div>}
+                                </div>
+                                <button
+                                    className={styles.route}
+                                    onClick={() => onRoute(place?.name)}
+                                    aria-label="Route to this place"
+                                    title="Route to this place"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path
+                                            d="M6 20V10a4 4 0 0 1 4-4h8"
+                                            stroke="#fff"
+                                            strokeWidth="2.2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                        <path
+                                            d="M15 3l3 3-3 3"
+                                            stroke="#fff"
+                                            strokeWidth="2.2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </button>
                             </div>
-                            {place?.address && <div className={styles.address}>{place.address}</div>}
                             <div className={styles.coordinates}>{coordinatesText(coordinate)}</div>
                             <div className={styles.depth}>
                                 {depth ? depthLine(depth, timestep, Date.now()) : 'Loading water depth…'}

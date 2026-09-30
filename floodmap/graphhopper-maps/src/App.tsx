@@ -57,10 +57,12 @@ import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
 import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
+import { destinationForPlace } from '@/floodmap/routeToPlace'
 import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
 import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
 import Dispatcher from '@/stores/Dispatcher'
+import { SetPoint } from '@/actions/Actions'
 
 // the Maptoolkit logo is only shown for their map styles
 function isMaptoolkitStyle(styleOption: StyleOption) {
@@ -91,6 +93,17 @@ export default function App() {
         if (!floodMode) setPlaceCoordinate(null)
     }, [floodMode])
     const closePlacePopup = useCallback(() => setPlaceCoordinate(null), [])
+    // Lifted from LargeScreenLayout so the place popup's route button can open the panel.
+    const [showSidebar, setShowSidebar] = useState(false)
+    const routeToPlace = useCallback(
+        (placeName: string | undefined) => {
+            if (!placeCoordinate) return
+            Dispatcher.dispatch(new SetPoint(destinationForPlace(query.queryPoints, placeCoordinate, placeName), false))
+            setShowSidebar(true)
+            setPlaceCoordinate(null)
+        },
+        [placeCoordinate, query.queryPoints],
+    )
     const profileTimes = useProfileTimes(query, flood, route.routingResult.paths.length > 0)
 
     const map = getMap()
@@ -179,6 +192,7 @@ export default function App() {
                     coordinate={placeCoordinate}
                     timestep={flood.timesteps[flood.selectedIndex]}
                     onClose={closePlacePopup}
+                    onRoute={routeToPlace}
                 />
                 <RouteDepthBadges
                     map={map}
@@ -206,6 +220,8 @@ export default function App() {
                     />
                 ) : (
                     <LargeScreenLayout
+                        showSidebar={showSidebar}
+                        setShowSidebar={setShowSidebar}
                         query={query}
                         route={route}
                         map={map}
@@ -247,9 +263,10 @@ function LargeScreenLayout({
     currentLocation,
     flood,
     profileTimes,
-}: LayoutProps) {
+    showSidebar,
+    setShowSidebar,
+}: LayoutProps & { showSidebar: boolean; setShowSidebar: (show: boolean) => void }) {
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
-    const [showSidebar, setShowSidebar] = useState(false)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
     const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
     const hasRoute = route.selectedPath.points.coordinates.length > 0
