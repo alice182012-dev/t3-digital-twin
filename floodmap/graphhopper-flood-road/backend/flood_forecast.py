@@ -110,15 +110,7 @@ def floor_to_step(moment: datetime) -> datetime:
 
 def parse_forecast_body(body: object, now: datetime) -> ForecastQuery:
     """Raises ValueError, which server.py turns into a 400. `now` is aware."""
-    if not isinstance(body, dict):
-        raise ValueError("body must be a JSON object")
-
-    raw_points = body.get("points")
-    if not isinstance(raw_points, list) or not raw_points:
-        raise ValueError("points is required: a list of [lon, lat]")
-    if len(raw_points) > MAX_POINTS:
-        raise ValueError(f"points has {len(raw_points)} entries, at most {MAX_POINTS} are allowed")
-    points = tuple(_point(raw, i) for i, raw in enumerate(raw_points))
+    points = parse_points(body)
 
     raw_from = body.get("from")
     if raw_from is None:
@@ -138,6 +130,20 @@ def parse_forecast_body(body: object, now: datetime) -> ForecastQuery:
         raise ValueError(f"steps must be an integer from 1 to {MAX_STEPS}: {steps!r}")
 
     return ForecastQuery(points, start.astimezone(timezone.utc).replace(tzinfo=None), steps)
+
+
+def parse_points(body: object) -> tuple[tuple[float, float], ...]:
+    """The `points` of a request body as (lon, lat) pairs. Raises ValueError, which server.py turns
+    into a 400. Shared with flood_profile.py."""
+    if not isinstance(body, dict):
+        raise ValueError("body must be a JSON object")
+
+    raw_points = body.get("points")
+    if not isinstance(raw_points, list) or not raw_points:
+        raise ValueError("points is required: a list of [lon, lat]")
+    if len(raw_points) > MAX_POINTS:
+        raise ValueError(f"points has {len(raw_points)} entries, at most {MAX_POINTS} are allowed")
+    return tuple(_point(raw, i) for i, raw in enumerate(raw_points))
 
 
 def _point(raw: object, index: int) -> tuple[float, float]:

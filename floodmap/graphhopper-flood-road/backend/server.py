@@ -14,7 +14,8 @@ map's timestep picker, not routing, and read flood_extent_runs.py's
 flood_extent_polygon table instead. See artifacts/raw/SW Architecture.md #8.
 /flood/points reads the exact depth at one point from flood_depth_raster_tile;
 see flood_points.py. POST /flood/forecast reads depth over time along a route from the same
-table; see flood_forecast.py.
+table; see flood_forecast.py. POST /flood/profile reads the depth at samples along a route at one
+timestep; see flood_profile.py.
 """
 from __future__ import annotations
 
@@ -37,6 +38,7 @@ import db  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
 from flood_forecast import lookup_forecast, parse_forecast_body  # noqa: E402
+from flood_profile import lookup_profile, parse_profile_body  # noqa: E402
 from flood_points import FloodPointNotFound, lookup_point_depth, parse_point_query  # noqa: E402
 from place_search import (  # noqa: E402
     PlaceSearchTimeout,
@@ -218,8 +220,14 @@ class Handler(BaseHTTPRequestHandler):
                 query = parse_forecast_body(body, datetime.now(timezone.utc))
                 with db.connection() as conn:
                     self._send(200, lookup_forecast(conn, query))
+            elif path == "/flood/profile":
+                profile_query = parse_profile_body(body)
+                with db.connection() as conn:
+                    self._send(200, lookup_profile(conn, profile_query))
             else:
                 self._send(404, {"error": "not found"})
+        except FloodPointNotFound as exc:
+            self._send(404, {"error": str(exc)})
         except db.PoolTimeout:
             self._send_busy()
         except Exception as exc:
