@@ -1,4 +1,4 @@
-import { textToCoordinate, nominatimHitToItem, hitToItem, milliSecondsToText } from '@/Converters'
+import { textToCoordinate, nominatimHitToItem, hitToItem, milliSecondsToText, suggestionLine } from '@/Converters'
 
 describe('Converters', function () {
     describe('milliSecondsToText', function () {
@@ -24,6 +24,60 @@ describe('Converters', function () {
         })
         it('should return null if any of the elements is NaN', function () {
             expect(textToCoordinate('2.6534 second')).toBeNull()
+        })
+    })
+
+    describe('suggestionLine', function () {
+        it('uses the district as the right-edge text', function () {
+            expect(
+                suggestionLine({
+                    name: 'Đường Vành đai 3 C5',
+                    district: 'Quận Cầu Giấy',
+                    suburb: 'Phường Dịch Vọng',
+                    city: 'Hà Nội',
+                    country: 'Việt Nam',
+                } as any),
+            ).toEqual({ name: 'Đường Vành đai 3 C5', district: 'Quận Cầu Giấy' })
+        })
+
+        it('falls back to city_district, then suburb', function () {
+            expect(
+                suggestionLine({
+                    name: 'Ngõ 5 C5',
+                    city_district: 'Quận Nam Từ Liêm',
+                    suburb: 'Phường Mỹ Đình',
+                    city: 'Hà Nội',
+                } as any),
+            ).toEqual({ name: 'Ngõ 5 C5', district: 'Quận Nam Từ Liêm' })
+            expect(suggestionLine({ name: 'Tòa nhà C5', suburb: 'Phường Mỹ Đình', city: 'Hà Nội' } as any)).toEqual({
+                name: 'Tòa nhà C5',
+                district: 'Phường Mỹ Đình',
+            })
+        })
+
+        it('falls back to the city when no district is present', function () {
+            expect(suggestionLine({ name: 'Hồ Gươm', city: 'Hà Nội', country: 'Việt Nam' } as any)).toEqual({
+                name: 'Hồ Gươm',
+                district: 'Hà Nội',
+            })
+        })
+
+        it('returns an empty district when the hit has no area at all', function () {
+            expect(suggestionLine({ name: 'Việt Nam', country: 'Việt Nam' } as any)).toEqual({
+                name: 'Việt Nam',
+                district: '',
+            })
+        })
+
+        it('shortens the name to the street and house number like the address rows', function () {
+            expect(
+                suggestionLine({
+                    name: 'Nhà C5, Phố Trần Thái Tông',
+                    street: 'Phố Trần Thái Tông',
+                    housenumber: '12',
+                    district: 'Quận Cầu Giấy',
+                } as any),
+            ).toEqual({ name: 'Phố Trần Thái Tông 12', district: 'Quận Cầu Giấy' })
         })
     })
 

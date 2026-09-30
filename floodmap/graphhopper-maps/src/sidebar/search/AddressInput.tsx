@@ -14,7 +14,7 @@ import CurrentLocationIcon from './current-location.svg'
 import styles from './AddressInput.module.css'
 import Api, { getApi } from '@/api/Api'
 import { tr } from '@/translation/Translation'
-import { coordinateToText, hitToItem, nominatimHitToItem, textToCoordinate } from '@/Converters'
+import { coordinateToText, hitToItem, nominatimHitToItem, suggestionLine, textToCoordinate } from '@/Converters'
 import { useMediaQuery } from 'react-responsive'
 import PopUp from '@/sidebar/search/PopUp'
 import PlainButton from '@/PlainButton'
@@ -62,12 +62,14 @@ export default function AddressInput(props: AddressInputProps) {
 
             hits.forEach(hit => {
                 const obj = hitToItem(hit)
+                const { district } = suggestionLine(hit)
                 items.push(
                     new GeocodingItem(
                         obj.mainText,
                         obj.secondText,
                         hit.point,
                         hit.extent ? hit.extent : getBBoxFromCoord(hit.point),
+                        district,
                     ),
                 )
             })

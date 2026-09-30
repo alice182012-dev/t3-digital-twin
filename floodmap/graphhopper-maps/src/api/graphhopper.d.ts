@@ -149,6 +149,9 @@ export interface GeocodingHit {
     readonly name: string
     readonly country: string
     readonly city: string
+    readonly district?: string
+    readonly city_district?: string
+    readonly suburb?: string
     readonly state: string
     readonly street: string
     readonly housenumber: string

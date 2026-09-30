@@ -62,6 +62,11 @@ export function hitToItem(hit: GeocodingHit) {
     }
 }
 
+export function suggestionLine(hit: GeocodingHit) {
+    const district = hit.district || hit.city_district || hit.suburb || hit.city || ''
+    return { name: hitToItem(hit).mainText, district }
+}
+
 function toSecondText(hit: GeocodingHit, mainText: string) {
     let result =
         hit.street && mainText.indexOf(hit.street) < 0
