@@ -39,8 +39,10 @@ or citizen-facing endpoints.
   writes time-to-peak, recession onset, per-vehicle passability restoration time, T+1h and T+2h
   forecast depth, and pre-closure time per road segment per vehicle type, matching the definitions
   in the architecture doc's §4.4.
-- Stand up TimescaleDB and populate it with institution histograms, background_cycle forecast
-  series, and depth history, matching the schema the architecture doc's §4.9 describes.
+- Stand up TimescaleDB with the schema the architecture doc's §4.9 describes. Populating it is not
+  scheduled. The `background_cycle` forecast series and the 24-bar institution histogram, whose bars 7
+  to 24 need it, were dropped on 2026-10-01 (D-009 in [[decision-log]]). Depth history and
+  `constant_cycle` institution bars have no story.
 - Load each timestep's `depth.tif` into PostGIS as a raster (the `postgis_raster` extension) and
   build `GET /flood/points`, returning the exact depth at an arbitrary lat/lon and `valid_time` via
   `ST_Value`. This is scoped narrowly to point-depth lookup, not the full citizen-endpoint bundle
@@ -121,11 +123,10 @@ or citizen-facing endpoints.
   its output table returns a row per road segment per vehicle type with a non-null time-to-peak,
   pre-closure time, and T+1h forecast depth, matching the values computable by hand from the same
   run's raw depth rasters for one spot-checked segment.
-- Given TimescaleDB populated with at least one full day of `constant_cycle` and
-  `background_cycle` output for an institution, when its histogram table is queried directly for
-  that institution's 24 hourly bars, then bars 1 through 6 return `constant_cycle` data and bars 7
-  through 24 return `background_cycle` data, per the architecture doc's §4.9 split. (No serving
-  endpoint exists yet. This checks the stored data directly.)
+- Given the schema script has run on the TimescaleDB service, when the three hypertables are
+  listed, then `institution_histogram_bar`, `background_forecast_depth`, and `depth_history` exist.
+  (The earlier bullet that checked 24 hourly bars was dropped on 2026-10-01, D-009 in
+  [[decision-log]].)
 - Given a completed run with `depth.tif` loaded for at least one `valid_time`, when
   `GET /flood/points?lat=&lon=&valid_time=` is called for a point inside the flooded extent, then
   the response's depth value matches the value read directly from `depth.tif` at that pixel with
@@ -159,6 +160,7 @@ or citizen-facing endpoints.
 | 2026-09-23 | Is a schema design needed for TimescaleDB's histogram tables before implementation starts? | Yes, create one. | Confirmed by the user. |
 | 2026-09-23 | `flood_road_values` and `flood_extent_polygon` can't serve arbitrary-point depth (segment-only and band-only, respectively). What should back point-depth queries, given `depth.tif` is always the source of truth? | Load `depth.tif` into PostGIS as a raster and build `GET /flood/points` narrowly for point lookup via `ST_Value`, separate from the rest of the citizen-endpoint bundle, which stays descoped. | Confirmed by the user: depth values are always generated from `depth.tif`, and neither existing table has per-pixel precision. |
 | 2026-09-23 | Does the forecast chart's "no confirmed data source" conclusion still hold, now that `flood_road_values`'s write path is checked directly? | No. `geojson_to_pg.py`'s `build_rows` already writes a full per-segment `timeseries` (one row per segment per forecast timestep), not a single snapshot. Build a narrow route-forecast query against it instead of leaving the goal blocked or reopening `GET /flood/forecast` or `GET /flood/route/forecast`. | The earlier conclusion was reasoned from the architecture doc's one-line schema summary and `flood_areas.py`'s single-timestep query, not from the table's write path. See [[verify-table-capability-against-write-path-not-summary-or-current-query]]. |
+| 2026-10-01 | The pipeline no longer runs `background_cycle`. What happens to the goal that populates TimescaleDB with institution histograms and the `background_cycle` forecast series? | Dropped. Every story that needs `background_cycle` is dropped, and the 24-bar histogram goal with it. TimescaleDB stays stood up and empty. | Confirmed by the user. Bars 7 to 24 of the histogram come from `background_cycle`. See D-009 in [[decision-log]]. |
 
 ## Rollback
 
@@ -183,3 +185,4 @@ since nothing built under this PRD is read by the routing or map-tile paths alre
   above. `flood_road_values` already holds a full per-segment forecast time series, reversing the
   earlier "no data source" conclusion for [[flood-routing-mockup-frontend-gap]]'s forecast-chart
   goal. See [[verify-table-capability-against-write-path-not-summary-or-current-query]].
+- **2026-10-01, draft.** Dropped the `background_cycle` and 24-bar histogram population goal at the user's request (D-009 in [[decision-log]]). Goal 2 now stands up TimescaleDB only, and its Definition of done bullet checks that the tables exist.

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
 related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-29
+last_updated: 2026-10-01
 ---
 
 # Flood metric extractor
@@ -33,7 +33,8 @@ value. The writer deletes the run's earlier rows and inserts the new rows in one
 rerun replaces the earlier result.
 
 The output table lives in `storage-postgres` instead of TimescaleDB, so the extractor works
-without the TimescaleDB service. Story 4 copies from `flood_segment_metrics` into TimescaleDB.
+without the TimescaleDB service. Nothing copies `flood_segment_metrics` into TimescaleDB. The story that
+would have (`US-021`) was dropped on 2026-10-01 (D-009 in [[decision-log]]).
 
 ## Segment key
 
@@ -102,8 +103,14 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
 - The only real sample available locally, `flood_road_20260522T103000.geojson`, has two
   timesteps with equal depths on every segment. It checks the flat case, but not rising or falling
   depths. A 25-timestep `constant_cycle` run is still needed for a real check of those cases.
-- The row key changes. `segment_key` is `md5(ST_AsEWKB(geom_4326))` today. It will become the
+- The row key may change. No story drives it since `US-021` was dropped. `segment_key` is `md5(ST_AsEWKB(geom_4326))` today. It could become the
   `segment_id` of the `road_segment` table ([[raster-first-flood-pipeline]], Phase 4), so a road
   piece has one ID across routing, TimescaleDB, and the route-forecast query. Rows already in
   `flood_segment_metrics` use the old key and must be rebuilt after the change.
+- Run on real data 2026-10-01 (`US-060`): `extract_run.py 20260930T020000` ran inside
+  `airflow_new-airflow-worker-1` and wrote 23,324 rows for 5,831 segments and 4 vehicle types in
+  about 4 seconds. The segment count equals the run's distinct `geom_4326` values, and
+  `peak_depth_m` equals the largest `depth` of the segment for all 5,831. For that run,
+  `flood_road_values.segment_id` is filled on every row and maps 1 to 1 to the geometry, so the key
+  change above does not change the segment count.
 

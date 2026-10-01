@@ -181,6 +181,25 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Revisit if:** the user ends the building phase or asks for the mockup's opening. To follow the mockup, start `FloodStore`
   in Map mode. To choose by data recency, start with `userChoseMapMode: false`.
 
+## D-009: The `background_cycle` is not run, and its stories are dropped
+
+- **Date:** 2026-10-01
+- **Status:** active
+- **Decided by:** the user
+- **Decision:** The pipeline does not run a `background_cycle` forecast. Every story that needs `background_cycle`
+  output is dropped. That is `US-021` (load the extractor's output into TimescaleDB as 24 hourly bars). `US-018`
+  (the schema) was built earlier and stays `Done`.
+- **Why:** The user said so on 2026-10-01. The pipeline runs one cycle, the 15-minute `flood_mapping_full`, and
+  no DAG ever produced `background_cycle` data.
+- **Alternatives:** Build a forecast run every 3 to 6 hours with its own rain input (option C in
+  [[timescaledb-load-has-no-source-for-histogram-bars]]). Rejected by this decision.
+- **Affects:** The 24-bar institution histogram of the architecture doc (section 4.9) cannot be built as
+  specified, because bars 7 to 24 come from `background_cycle`. [[t3-digital-twin-architecture-gaps]] Goal 2 and
+  its second Definition of done bullet are removed. The `background_cycle` enum value, the
+  `background_forecast_depth` table, and the bars 7 to 24 CHECK in `create_timescale_tables.py` stay in the
+  schema and stay unused. The raw architecture doc still describes `background_cycle`, and it is read-only.
+- **Revisit if:** the user wants a forecast beyond the 2-hour window of the 15-minute cycle.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and

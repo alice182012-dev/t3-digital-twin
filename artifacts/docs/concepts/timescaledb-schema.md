@@ -4,7 +4,7 @@ type: concept
 status: draft
 tags: [timescaledb, schema, histogram, sprint-1]
 related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[sprint-plan]]"]
-last_updated: 2026-09-23
+last_updated: 2026-10-01
 ---
 
 # TimescaleDB schema for histograms, forecast series, and depth history
@@ -13,6 +13,10 @@ TimescaleDB holds three kinds of data that `storage-postgres` doesn't: instituti
 the `background_cycle` forecast series, and depth history. The architecture doc lists these three
 in its data-store table (section 5) and specifies the histogram split in section 4.9.
 `scripts/database/create_timescale_tables.py` creates the schema. No DAG runs that script yet.
+
+The pipeline does not run a `background_cycle` (D-009 in [[decision-log]], 2026-10-01). The `background_cycle`
+enum value, the `background_forecast_depth` table, and bars 7 to 24 below stay in the schema and stay
+unused. All three tables are empty, and no story loads them.
 
 The route histogram is not stored. Section 4.9 says the route controller computes it at query time
 from PostGIS per-segment forecast depths, so it has no table here.
@@ -84,11 +88,10 @@ keeps the row with the later `issued_at`.
 
 ## Open items
 
-- Road segments have no stable ID. `flood_road_values` stores `road_name` and a geometry, not a
-  segment key. `segment_id` is `TEXT` so the loader in Story 4 can choose a derived key, such as a
-  hash of the segment geometry, without a schema change. The metric extractor uses
-  `md5(ST_AsEWKB(geom_4326))` as its `segment_key` (see [[flood-metric-extractor]]). Story 4 can
-  reuse that key as `segment_id`.
+- `segment_id` is `TEXT`. Since the raster-first pipeline, `flood_road_values.segment_id` holds the
+  stable ID of the `road_segment` table, and it maps 1 to 1 to the geometry (checked on the
+  2026-09-30 02:00:00 run). The metric extractor still keys on `md5(ST_AsEWKB(geom_4326))` (see
+  [[flood-metric-extractor]]). No loader writes these tables, since `US-021` was dropped.
 - Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
   foreign key because the planned institutions table lives in `storage-postgres`, a different
   database.
