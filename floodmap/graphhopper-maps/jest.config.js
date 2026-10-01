@@ -7,5 +7,6 @@ module.exports = {
     },
     transform: {
         '\\.svg$': '<rootDir>/test/svgFileName.js',
+        '\\.css$': '<rootDir>/test/cssModuleClassNames.js',
     },
 }

@@ -1,4 +1,6 @@
+import { KeyboardEvent, useRef } from 'react'
 import { RouteTab } from '@/sidebar/routingResultsView'
+import { routeTabKeyTarget } from '@/sidebar/routeTabKeys'
 import styles from './RoutingResult.module.css'
 import PlainButton from '@/PlainButton'
 
@@ -12,15 +14,29 @@ export default function RouteTabs({
     activeIndex: number
     onSelect: (index: number) => void
 }) {
+    // One ref on the strip instead of one per tab, because PlainButton does not take a ref.
+    // Its children are the tab buttons in tab.index order.
+    const tablistRef = useRef<HTMLDivElement>(null)
+
+    function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+        const target = routeTabKeyTarget(event.key, activeIndex, tabs.length)
+        if (target === null) return
+        event.preventDefault()
+        onSelect(target)
+        ;(tablistRef.current?.children[target] as HTMLElement | undefined)?.focus()
+    }
+
     return (
-        <div className={styles.routeTabs} role="tablist">
+        <div ref={tablistRef} className={styles.routeTabs} role="tablist">
             {tabs.map(tab => (
                 <PlainButton
                     key={tab.index}
                     role="tab"
                     aria-selected={tab.index === activeIndex}
+                    tabIndex={tab.index === activeIndex ? 0 : -1}
                     className={tab.index === activeIndex ? styles.routeTabActive : styles.routeTab}
                     onClick={() => onSelect(tab.index)}
+                    onKeyDown={onKeyDown}
                 >
                     {tab.label}
                 </PlainButton>
