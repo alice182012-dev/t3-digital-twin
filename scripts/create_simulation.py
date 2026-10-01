@@ -250,13 +250,20 @@ def monitor_simulation(api, sim_id):
 
 
 def run_forecast_process(
-    state_file_path, rain_intervals=None, use_saved_state=True, slot_start=None, state_save_seconds=None
+    state_file_path,
+    rain_intervals=None,
+    use_saved_state=True,
+    slot_start=None,
+    state_save_seconds=None,
+    hotstart=True,
 ):
     """Run one 3Di forecast that starts at its clock slot and hotstarts from the state saved for that slot.
 
     The slot is `slot_start` if given, else the slot of the first rain interval, else the current slot.
     With use_saved_state, it registers one timed saved state per `state_save_seconds` (default one and
     two cycles) and records them in the state file once the run finishes. Returns (sim_id, saved states).
+    With hotstart False, the run cold-starts but still registers and records its saved states, so the
+    next run can hotstart from it.
     """
     print(f"🚀 Bắt đầu quy trình Simulation (State: {state_file_path})")
 
@@ -278,7 +285,10 @@ def run_forecast_process(
 
     api = get_client()
 
-    hotstart_state = choose_saved_state(load_saved_states(state_file_path), slot) if use_saved_state else None
+    if use_saved_state and hotstart:
+        hotstart_state = choose_saved_state(load_saved_states(state_file_path), slot)
+    else:
+        hotstart_state = None
 
     print("🚀 3. Tạo Simulation...")
     from_template_kwargs = dict(
