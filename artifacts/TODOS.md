@@ -66,7 +66,9 @@ Unfinished items carried over from Sprint 3: None
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 5, 2026-10-19 to 2026-10-25. Checked on 2026-09-30 against its rows.
+The next sprint is Sprint 5, 2026-10-19 to 2026-10-25. Checked on 2026-10-01 against its rows (`US-046`, `US-047`, `US-040`, `US-034`).
+
+Sprint 4 is not finished. `US-037` is the one open item, and no row of Sprint 5 depends on it. Sprint 5 starts when `US-037` is `Done`, or when the user moves it to the Backlog.
 
 Any blocker stops Sprint 5: None
 
