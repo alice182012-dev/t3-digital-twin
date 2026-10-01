@@ -27,9 +27,15 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   toggle has `aria-pressed` and responds to Enter and Space, the route tabs have `role="tablist"` and
   `role="tab"` with `aria-selected` and move with the arrow keys, every control has a touch target of at
   least 44 px, and the legend text has a contrast ratio of at least 4.5:1 against its background.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None. The components exist.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None. The components exist.
   `PlainButton` likely covers baseline keyboard use already. The route tabs have no ARIA precedent in the
   codebase.
+  Evidence: ![[frontend-route-tabs-keyboard-live-check.png|420]] ![[frontend-route-tabs-keyboard-preview-check.png|420]]
+  Details:
+  1. What: the route tabs move with the arrow keys, are 44 px tall, and show a focus outline. The legend band labels have an explicit color, and a test fails if legend or tab text drops under 4.5:1.
+  2. How: `routeTabKeyTarget` is a pure function. `RouteTabs.tsx` gives the selected tab `tabindex` 0 and the others -1, and moves focus with the selection. `.routeTab` has a 44 px minimum size, and `.band` has `color: #111827`. `textContrast.test.ts` reads the CSS and checks six pairs. Tests first, 7 commits (`f44f776` to `26034f1`), 279 tests pass.
+  3. Why: a person who uses a keyboard can pick a route and switch the map mode without a mouse.
+  4. Effect: on the live site (2026-10-01), a foot route from 20.9850, 105.7100 to 21.0150, 105.7900 showed 3 tabs of 44 px. ArrowRight and ArrowLeft wrapped, Home and End jumped to the ends, and Tab left the strip from the selected tab. Enter on Map and Space on Flood flipped `aria-pressed`. The legend band labels computed to rgb(17, 24, 39). The toggle's `aria-pressed` and the tabs' `role` and `aria-selected` were already in place. A preview build passed first. No screen reader was tried. `US-035` can now measure the final components.
 
 - **Story 2 (US-033): Write a project `DESIGN.md` with real design tokens.**
   As a developer building the next screen, I want one versioned file of colors, typography, and spacing, so
@@ -40,16 +46,20 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   as a known divergence.
   Priority: P3. Status: Not started. Estimate: M. Sprint: 11 ([[sprint-plan-3]]; 2026-11-30 to 2026-12-06). Dependencies: None. Blocks nothing.
 
-- **Story 3 (US-034): Soak the flood-road backend and compare it with the earlier backend.**
-  As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a soak period and
-  to match the earlier Valhalla backend on known cases, so more load does not land on an unproven service.
+- **Story 3 (US-034): Soak the flood-road backend and check it against known answers.**
+  As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a 48-hour soak and
+  to route correctly on roads with a known water depth, so more load does not land on an unproven service.
   Given the regression tests in `test_flood_areas.py` and `test_server.py` already pass, when the backend
-  serves the live app for a soak period, then the container logs show no unexplained 5xx responses in that
-  period, and a side-by-side run of a fixed set of routes and flood scenarios is recorded with the
-  differences explained.
-  Priority: P2. Status: Not started. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. Open: the soak length and
-  the route set are the user's to set. The Valhalla proof of concept was deleted in commit `5d1a606`, so the
-  comparison needs it restored from git history (`6394e27^`).
+  serves the live app for 48 hours, then the container logs show no unexplained 5xx responses in that
+  period, and for each road in a fixed set, `POST /route` blocks every vehicle whose depth limit the road's
+  depth exceeds and routes the others. The limits are in `flood_utils.py`: motorbike 20 cm, car 30 cm,
+  truck 35 cm, and foot 40 cm. The set is built from real roads in `flood_road_values` whose depth lies
+  between two limits, as the 2026-09-28 overpass did (`way/776941610#3`, 20.2 cm). The expected result of
+  each road comes from the limits, not from another backend.
+  Priority: P2. Status: Not started. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
+  length to 48 hours on 2026-10-01. The comparison with the earlier Valhalla backend is dropped (see the last
+  history entry).
+  Test points: inside the model border (`.claude/CLAUDE.md`).
 
 - **Story 4 (US-035): Revalidate "loading is very slow".**
   As a user opening the app, I want to know if loading is slow and why, so a real slowness gets its own
@@ -63,7 +73,13 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   kept its grey loading bars for more than 9 seconds before the yellow "No safe route available" box appeared
   ([[route-panel-stuck-on-loading-bars]]). Record the seconds per mode, and whether the four per-mode requests of
   [[frontend-polish]] Story 1 add to it.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None.
+  Priority: P3. Status: Done. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None.
+  Evidence: ![[us-035-loading-check-output.png|700]]
+  Details:
+  1. What: the live app's load and the wait for a no-connection pair were measured. The app does not load slowly, so the item is closed.
+  2. How: `evidence/us-035-loading-check.js` ran with `aside repl` against port 8082: 3 cold loads (cache off), 2 cold loads on emulated regular 4G (9 Mbit/s, 170 ms), and 6 loads of a pair with no motorbike or truck connection. Earlier runs the same day gave the same ranges.
+  3. Why: the note "loading is very slow" dates from 2026-09-08, before the polygon tiles and the raster-first pipeline. Its `SAMPLE_RATE=1` reading was a pipeline speed in the retired GeoJSON chain.
+  4. Effect: unthrottled, the first map shows in 0.7 to 1.5 s and the flood layer is complete in 2.0 to 3.2 s. On regular 4G the first map shows in 1.9 s and the flood layer is complete in 6.1 s. A cold load fetches a 1.6 MB bundle and 12 flood tiles of 3.2 MB in total, and a warm load takes about 0.1 to 0.3 s. The yellow "No safe route available" box appeared 1.5 to 2.6 s after page start. Each load sends 13 `/api/gh/route` requests that start within about 10 ms of each other, so they do not add up. The slowest took 0.35 to 1.54 s. The 9 to 20 s wait of 2026-09-30 did not appear in 17 loads. [[route-panel-stuck-on-loading-bars]] stays `monitoring`, and the client still has no timeout on `Api.route`. The numbers come from a Mac over the server network, not from a mobile phone.
 
 - **Story 5 (US-036): Decide what the map shows by default, and close or schedule the latency work.**
   As the product owner, I want the map's "now" behavior accepted or changed on purpose, so the label and the
@@ -141,3 +157,8 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-09-30, draft.** Story 7 (`US-038`) moved to `Reviewed`: the fix landed as `1792d37`. The acceptance check and its screenshot are still to do.
 - **2026-09-30, draft.** Story 7 (`US-038`) is `Done`: the check script passes and its output is saved as `us-038-drift-check-output.png`.
 - **2026-09-30, draft.** Story 4 (`US-035`) also measures the routing panel's wait for a no-connection pair, after the 9-second loading bars seen on the live site.
+- **2026-10-01, draft.** Story 3 (`US-034`) lost its Valhalla comparison. The user said the Valhalla model was wrong when it ran, so a match or a mismatch with it proves nothing. The story now checks GraphHopper against the vehicle depth limits, and the soak length is set to 48 hours. The title changed from "compare it with the earlier backend" to "check it against known answers". Restoring Valhalla from `6394e27^` is no longer needed. The only input the user owed, the soak length, is given, so the Sprint 5 gate is cleared.
+- **2026-10-01, draft.** Story 1 (`US-032`) is `In progress`. A check of the code found the toggle's `aria-pressed` and the tabs' `role` and `aria-selected` already in place, and the legend title contrast at 4.83:1. The gaps are arrow-key movement and roving `tabindex` on the route tabs, tab height (about 27 px against 44 px), and an explicit color on the legend band labels. Plan: [[us-032-keyboard-and-screen-reader-access]].
+- **2026-10-01, draft.** Story 1 (`US-032`) is `Reviewed`: the route tabs move with the arrow keys (`routeTabKeyTarget`, roving `tabindex`, focus follows selection), the tabs are 44 px with a focus outline, the legend band labels have an explicit color, and a CSS test fails if any legend or tab text drops under 4.5:1. Commits `f44f776` to `26034f1` (279 tests pass). No browser check yet.
+- **2026-10-01, draft.** Story 1 (`US-032`) is `Done`: deployed after the user's push and checked on the live site with screenshots (`frontend-route-tabs-keyboard-live-check.png`, `frontend-route-tabs-keyboard-preview-check.png`).
+- **2026-10-01, draft.** Story 4 (`US-035`) is `Done`: measured on the live app with Aside, no slow load found, and the 9 to 20 s no-connection wait of 2026-09-30 did not reproduce in 17 loads. Evidence: `us-035-loading-check-output.png`.

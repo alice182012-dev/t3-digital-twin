@@ -65,7 +65,7 @@ fixed, and the current backend has soaked before the engine builds on it.
 | US-046 | P0 | Record the routing baselines on the server | S | [[time-aware-routing-engine-stories]] R1 | None | None yet | - | Not started |
 | US-047 | P0 | Build the synthetic scenarios, the offline reference, and the offline checker | M | [[time-aware-routing-engine-stories]] R2 | None | None yet | - | Not started |
 | US-040 | P0 | Define the table format and write the Python reader and writer | S | [[edge-depth-table-stories]] E2 | None | None yet | - | Not started |
-| US-034 | P2 | Soak the flood-road backend and compare it with the earlier backend | M | [[carried-over-backlog]] Story 3 | None. Gate: the user sets the soak length and the route set before the sprint starts | None yet | - | Not started |
+| US-034 | P2 | Soak the flood-road backend and check it against known answers | M | [[carried-over-backlog]] Story 3 | None. The user set the soak length to 48 hours on 2026-10-01 | None yet | - | Not started |
 
 ## Sprint 6: Java toolchain and edge export
 
@@ -110,7 +110,7 @@ a wrong table, and the real table is measured on the server.
 Stories R6, R7, R8, R9, and R10 need the engine from Sprint 8 and go to [[sprint-plan-3]]. The gates on Stories R5 and E7
 stay here. If a gate is not met by the start of its sprint, the story moves to the backlog in [[sprint-plan-3]] with the
 gate as its blocking risk. Story R5 waits for the sticky-from-departure confirmation. Story E7 waits for the build-time
-limit. The soak row in Sprint 5 waits for the soak length and the route set.
+limit. The soak row in Sprint 5 has no gate, because the user set the soak length to 48 hours on 2026-10-01.
 
 ## Risks
 
@@ -122,7 +122,6 @@ limit. The soak row in Sprint 5 waits for the soak length and the route set.
 | The sticky-from-departure wording is not confirmed | The engine and the advice use a different rule than the user intends | Confirm before Sprint 8. The wording is an assumption in [[time-aware-routing-engine]]. |
 | A graph re-import happens between sprints | The table hash mismatches and routing falls back to today's model | Story E6 documents the procedure. The response flag and the alert message make the fallback visible. |
 | Latency is unmeasured | The engine may be too slow for the map | Story R1 sets the baseline in Sprint 5, and Story R10 checks against the user's factor. |
-| The soak length and route set are not set | The soak row moves out of Sprint 5 | Ask the user before Sprint 5 starts. The row then moves to the backlog with that reason. |
 
 ## Definition of done for a story
 
@@ -140,3 +139,4 @@ limit. The soak row in Sprint 5 waits for the soak length and the route set.
   same fix is [[frontend-polish]] Story 4 in [[sprint-plan]] Sprint 3, which the user scheduled. The backend soak
   from [[sprint-plan]]'s carried rows joined Sprint 5, so it runs before the engine builds on the backend.
 - **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).
+- **2026-10-01, active.** `US-034` dropped its Valhalla comparison and now checks GraphHopper against the vehicle depth limits, because the Valhalla model was wrong when it ran. The user set the soak length to 48 hours. The gate on the soak row and its risk row are removed. See [[carried-over-backlog]] Story 3.

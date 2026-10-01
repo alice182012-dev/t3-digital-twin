@@ -9,7 +9,7 @@ approaches_tried: 1
 approaches_remaining: 1
 tags: [blocker, frontend, routing, loading, cache]
 related: ["[[frontend-polish]]", "[[failed-route-shows-previous-mode-route]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-30
+last_updated: 2026-10-01
 ---
 
 # The route panel stayed on its grey loading bars
@@ -73,3 +73,4 @@ browser's Network tab first and note whether a `/route` request is still pending
 - **2026-09-30, monitoring.** The user judged it probably a cached page and asked to keep the blocker on `monitoring`.
 - **2026-09-30, monitoring.** Observed on the live site with a fresh headless browser: a no-connection pair (20.999844, 105.742304 to 21.004652, 105.752604, motorbike) kept the grey loading bars for more than 9 seconds, then showed the yellow "No safe route available" box after about 20 seconds. So the bars can be a slow no-connection answer, not only a cached page. Not a fix, only a second explanation.
 - **2026-09-30, monitoring.** The wait for a no-connection pair is now part of [[carried-over-backlog]] Story 4 (`US-035`, Sprint 4), so a measurement will confirm or rule out the slow-answer explanation.
+- **2026-10-01, monitoring.** `US-035` measured the wait with Aside against port 8082. For a pair with no motorbike or truck connection, the yellow box appeared 1.5 to 2.6 s after page start in 17 loads, and the slowest of the 13 `/route` requests took 0.35 to 1.54 s. The requests start within about 10 ms of each other, so the four per-mode requests do not add up. The 9 to 20 s wait of 2026-09-30 did not reproduce. Still `monitoring`: the cause of that wait is unknown, and `Api.route` still has no timeout (candidate approach 2).
