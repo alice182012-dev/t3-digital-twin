@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-30
+last_updated: 2026-10-01
 ---
 
 # GraphHopper flood-road backend
@@ -196,8 +196,10 @@ request's own `profile` and each vehicle gets its own limit. See
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
-  with a real PostGIS and a stub GraphHopper. Still no soak time or a side-by-side comparison
-  against the old Valhalla backend (P2 in TODOS.md).
+  with a real PostGIS and a stub GraphHopper. Still no soak time. `US-034`
+  ([[carried-over-backlog]] Story 3, Sprint 5) adds a 48-hour soak and a check of `POST /route`
+  against the vehicle depth limits. The comparison with the old Valhalla backend was dropped on
+  2026-10-01, because the Valhalla model was wrong when it ran.
 - `GET /flood/points` has no measured latency on the server since it moved to tiles, and none
   under concurrent popup taps. Story 4 of [[point-depth-lookup-backend]] covers that check.
   `backend/test_server.py` checks its depth against `gdallocationinfo` on a synthetic `depth.tif`.

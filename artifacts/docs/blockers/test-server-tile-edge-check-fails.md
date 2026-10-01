@@ -65,7 +65,7 @@ GDAL computes exactly 512.0 and so makes the check pass.
 - **Sprint 3:** blocks nothing. No Sprint 3 story depends on it. The changes to `server.py` this sprint
   (the route error shape and `POST /flood/profile`) have their own tests, `test_route_error.py`,
   `test_flood_profile.py`, and `test_flood_forecast.py`, and passed live checks.
-- **Later:** the backend soak and comparison story ([[carried-over-backlog]] Story 3, Sprint 5) wants a
+- **Later:** the backend soak story ([[carried-over-backlog]] Story 3, Sprint 5) wants a
   trustworthy regression pass, so it should be fixed before then.
 
 ## Approaches tried
