@@ -50,7 +50,7 @@
 
 Unfinished items carried over from Sprint 4:
 
-### Active - US-037 Narrow the per-run critical path under the 15-minute cycle
+### Done - US-037 Narrow the per-run critical path under the 15-minute cycle
 
 **What:** Speed up the slowest steps of a run (trigger, `3_calculate_depth`, raster load, tile build) so four consecutive real runs publish step 1 before it becomes now, with a measured margin ([[carried-over-backlog]] Story 6, option D of [[five-minute-tile-freshness]]).
 
@@ -60,9 +60,13 @@ Unfinished items carried over from Sprint 4:
 
 **Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
 
+**Result:** 2026-10-02, four consecutive on-time runs published step 1 with margins of +1.9, +4.1, +2.7, and +2.4 minutes. The margin shrinks about 0.6 minutes per run as the test storm grows.
+
 ## Blockers for the next sprint
 
-The next sprint is Sprint 6, 2026-10-26 to 2026-11-01. Checked on 2026-10-01 against its rows (`US-049`, `US-039`).
+The next sprint is Sprint 6, 2026-10-26 to 2026-11-01. 
+
+Checked on 2026-10-01 against its rows (`US-049`, `US-039`).
 
 Any blocker stops Sprint 6: None
 

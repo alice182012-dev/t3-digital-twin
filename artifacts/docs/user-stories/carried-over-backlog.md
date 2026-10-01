@@ -114,7 +114,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
   or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
   now, with a measured margin, not after.
-  Priority: P2. Status: In progress. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
+  Priority: P2. Status: Done. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
   frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
   set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
   so there may be headroom to raise it (12 logical cores available per
@@ -122,6 +122,12 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `FLOOD_EXTENT_WORKERS` is 2 threads, well under the same headroom. Measure CPU and memory use during a
   real run before raising either, since depth-calc's subprocess count and tile-build's thread count are
   the two knobs, and both share the same box.
+  Evidence: ![[us-037-margins-check-output.png|700]]
+  Details:
+  1. What: step 1 of every run is published before it becomes "now". Four consecutive on-time runs (slots 00:45, 01:00, 01:15, and 01:30 +07 on 2026-10-02) had margins of +1.9, +4.1, +2.7, and +2.4 minutes.
+  2. How: three changes. The 8 depth processes read their inputs from the container's local disk (`depth_inputs.py`, `684262b`, `3e83a7f`), which cut depth from 6.8 to 7.5 to 3.2 to 3.9 minutes. The tile dissolve runs one process per band (`4e793c0`, `1607484`), with identical areas. A run hotstarts only if the previous slot's run is success or running (`eef34aa` to `828446f`), so a restart starts from the initial water level. Each was found by measuring: the depth experiment of 2026-10-01 and a stage profile of the tile build.
+  3. Why: the map showed a tile 1.5 to 3 minutes after its time ([[map-shows-forecast-not-now]]), and under the growing test storm the tile task reached 15 to 17 minutes, longer than the 15-minute cycle.
+  4. Effect: the tile task took 4.4 to 6.1 minutes in the four runs, growing about 0.6 minutes per run as the storm grew from a cold start. At that pace the margin reaches zero in about four more runs. The pass holds for the first hour of a storm, not for a storm that has run for hours. The test storm (`FLOOD_TEST_RAIN_MM_HR=50`) is still on. The blocker [[map-shows-forecast-not-now]] stays `monitoring`.
 
 - **Story 7 (US-038): Fix the documentation and config drift found by the README rewrite.**
   As a new teammate, I want `.env.example`, the vault links, and the concept pages to match the code, so a fresh
@@ -164,3 +170,4 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-10-01, draft.** Story 4 (`US-035`) is `Done`: measured on the live app with Aside, no slow load found, and the 9 to 20 s no-connection wait of 2026-09-30 did not reproduce in 17 loads. Evidence: `us-035-loading-check-output.png`.
 - **2026-10-01, draft.** Story 6 (`US-037`) is `In progress`. The user unpaused `flood_mapping_full` at 18:19 +07 and kept the test rain. Baseline from 8 recorded runs: step 1 published 1.6 to 6.8 minutes after it became now. Measuring first, then one knob at a time. Plan: [[us-037-narrow-the-per-run-critical-path]].
 - **2026-10-01, draft.** Story 3 (`US-034`) is in Sprint 5, which started today. `US-037` is not a dependency, but the soak should start after the `US-037` knob settles, so the 48 hours run under one worker configuration. Story 6 (`US-037`) stays `In progress` in Sprint 4.
+- **2026-10-02, draft.** Story 6 (`US-037`) is `Done`: four consecutive on-time runs published step 1 with margins of +1.9, +4.1, +2.7, and +2.4 minutes. Evidence: `us-037-margins-check-output.png`.

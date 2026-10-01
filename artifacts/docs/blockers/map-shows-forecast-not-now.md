@@ -9,7 +9,7 @@ approaches_tried: 1
 approaches_remaining: 1
 tags: [blocker, frontend, forecast, routing, product-decision]
 related: ["[[frontend-polish]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[flood-routing-mockup-frontend-gap]]", "[[decision-log]]", "[[five-minute-tile-freshness]]", "[[carried-over-backlog]]"]
-last_updated: 2026-09-29
+last_updated: 2026-10-02
 ---
 
 # The map shows a forecast timestep, not the situation now
@@ -247,3 +247,4 @@ Any option that changes what the map shows also changes the "Updated" line story
   the user chose to narrow it via [[five-minute-tile-freshness]]'s option D, scheduled as Story 6 in Sprint 4.
   Stays `monitoring` until that work lands and a fresh measurement shows real margin, or the delay is
   re-accepted.
+- **2026-10-02, monitoring.** [[carried-over-backlog]] Story 6 (`US-037`) is `Done`. After the depth inputs moved to local disk, the tile dissolve ran per band, and a restart began from the initial water level, four consecutive on-time runs published step 1 with margins of +1.9 to +4.1 minutes. The margin shrinks about 0.6 minutes per run as the 50 mm/h test storm grows, so this holds for the first hour of a storm. Still `monitoring` until a longer or real-rain run shows the margin holds.
