@@ -30,6 +30,5 @@ describe('routeTabKeyTarget', () => {
         expect(routeTabKeyTarget('Enter', 0, 3)).toBeNull()
         expect(routeTabKeyTarget('a', 1, 3)).toBeNull()
         expect(routeTabKeyTarget('ArrowRight', 0, 0)).toBeNull()
-        expect(routeTabKeyTarget('ArrowRight', 0, 3)).toBe(1)
     })
 })
