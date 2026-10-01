@@ -27,7 +27,7 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   p95 of `POST /route` (flexible mode with LM) for a short, a medium, and a long Hanoi trip, the edge count of
   `hanoi-model-area.osm.pbf`, the source revision of the pinned GraphHopper image, and the step length and
   count of one real run.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 5. Dependencies: None.
+  Priority: P0. Status: In progress. Estimate: S. Sprint: 5. Dependencies: None. The latency numbers wait for the `US-037` knob.
 
 - **Story R2 (US-047): Build the synthetic scenarios, the offline reference, and the offline checker.**
   As an engineer, I want a slow reference implementation and a route checker, so the fast engine has
@@ -37,7 +37,13 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   results match the sticky column of the test table. Given any returned route, when the checker re-walks it
   with per-edge times, then it reports whether the route crosses an edge that is impassable at its arrival
   step.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 5. Dependencies: None.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 5. Dependencies: None.
+  Evidence: ![[us-047-reference-check-output.png|700]]
+  Details:
+  1. What: a slow reference search under sticky closure, a route checker, and the four scenarios of the blocker's test table ([[sticky-routing-reference]]).
+  2. How: `scripts/routing_reference/`. `StickyClosure` applies the PRD's rule: a road is closed when its depth reaches the vehicle limit at any step from the departure to the arrival plus 10 minutes. `earliest_arrival` is Dijkstra over arrival times, which is exact because closures only grow with arrival time. `find_crossings` re-walks a route with per-edge times. `corridor.py` builds a road network from `roads.geojson`, and `scenarios.py` holds the table. Tests came first (54 tests). The search matches an exhaustive search on 300 random graphs, and three deliberate changes to the rule each fail a test.
+  3. Why: the engine (`US-050`) needs an answer to compare with that does not share its code, and the server proof (`US-055`) needs a checker for the routes GraphHopper returns.
+  4. Effect: on real Hanoi roads (21.0250, 105.7550 to 21.0255, 105.7620, 15 edges, 1,488 m), all 16 runs (4 scenarios, `motorbike` and `car`, with and without a detour) match the sticky column and the returned routes have 0 crossings. The plain shortest route crosses a closed road in the 8 blocked runs, so the checker catches today's fault. Two departures from the story's wording. No throwaway PostGIS is used, because the scenarios assign depth per edge and need no spatial query. The code lives in `scripts/routing_reference/` and not in `marie-curie/`, which git does not track, so `US-050` and `US-055` can reuse it. The reference has not yet been compared with a GraphHopper response.
 
 - **Story R3 (US-048): Show "no route" for a mode that has none.**
   As a driver, I want the app to say that my mode has no route, so I never see another mode's route under my
@@ -124,3 +130,5 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
 - **2026-09-29, draft.** Written from [[time-aware-routing-engine]]. No story has started.
 - **2026-09-29, draft.** Re-cut with the plans: Stories R1 to R2, R4, and R5 stay in [[sprint-plan-2]] (Sprints 5 to 8). Stories R6 to R10
   moved to [[sprint-plan-3]] (Sprints 9 and 10). Story R3 is superseded by [[frontend-polish]] Story 4 in Sprint 3 of [[sprint-plan]].
+- **2026-10-01, draft.** Story R2 (`US-047`) is `Done`: the reference and checker pass 54 tests, and all 16 scenario runs on real Hanoi roads match the sticky column with no crossing. Output rendered as `us-047-reference-check-output.png`. See [[sticky-routing-reference]].
+- **2026-10-01, draft.** Story R1 (`US-046`) is `In progress`. The edge count (67,833), the source revision (commit `d7dc1b06`), and the step length and count (15 minutes, 8 steps) are recorded in [[routing-not-time-aware]]. The p50 and p95 wait for the `US-037` knob.

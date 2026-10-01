@@ -1,30 +1,54 @@
 # TODOS
 
-## Current sprint: Sprint 4, 2026-10-01 to 2026-10-18
+## Current sprint: Sprint 5, 2026-10-01 to 2026-10-25
 
-### Done - US-060 Run the flood metric extractor on a retained run
+### Done - US-040 Define the table format and write the Python reader and writer
 
-**What:** Run `scripts/flood_metrics/extract_run.py` on a retained run, for example 2026-09-30 02:00:00, and compare the stored rows with `flood_road_values` ([[timescaledb-and-flood-metrics]] Story 5). The segment count must equal the run's distinct `geom_4326` values, and three hand-picked `peak_depth_m` values must equal the largest `depth` of their segment.
+**What:** One documented file format for a run's depth by edge id, with a reference reader and writer, so the Java engine and the Python timeline read the same bytes ([[edge-depth-table-stories]] Story E2, format in [[edge-depth-table-format]]).
 
-**Effort:** XS
-**Priority:** P1
-**Depends on:** US-020 (built), US-019 (done).
+**Effort:** S
+**Priority:** P0
+**Depends on:** None.
 
-**Sprint:** 4, [[timescaledb-and-flood-metrics]] Story 5 (US-060), in [[sprint-plan]].
+**Sprint:** 5, [[edge-depth-table-stories]] Story E2 (US-040), in [[sprint-plan-2]].
 
-**Result:** 2026-10-01, 5,831 segments stored for the 2026-09-30 02:00:00 run, equal to its distinct `geom_4326` values, and `peak_depth_m` matches `flood_road_values` for all of them.
+**Result:** 2026-10-01, the reader and writer pass 25 tests, and a table of 2,000,000 edges and 9 steps is 36.0 MB.
 
-### Done - US-020 Build the flood metric extractor
+### Done - US-047 Build the synthetic scenarios, the offline reference, and the offline checker
 
-**What:** The extractor is built and Reviewed. It moves to Done with the evidence of US-060 ([[timescaledb-and-flood-metrics]] Story 3).
+**What:** A slow time-dependent Dijkstra reference and a route checker, run on a synthetic flood over a real Hanoi corridor (code in `scripts/routing_reference/`), so the fast engine has something to be compared against ([[time-aware-routing-engine-stories]] Story R2).
 
-**Effort:** L
-**Priority:** P1
-**Depends on:** US-060 (done).
+**Effort:** M
+**Priority:** P0
+**Depends on:** None.
 
-**Sprint:** 4, [[timescaledb-and-flood-metrics]] Story 3 (US-020), in [[sprint-plan]].
+**Sprint:** 5, [[time-aware-routing-engine-stories]] Story R2 (US-047), in [[sprint-plan-2]].
 
-**Result:** 2026-10-01, `Done` with the evidence of US-060.
+**Result:** 2026-10-01, the reference and checker pass 54 tests, and all 16 scenario runs on real Hanoi roads match the sticky column with no crossing.
+
+### Active - US-046 Record the routing baselines on the server
+
+**What:** Write down the p50 and p95 of `POST /route` (flexible mode with LM) for a short, a medium, and a long Hanoi trip, the edge count of `hanoi-model-area.osm.pbf`, the source revision of the pinned GraphHopper image, and the step length and count of one real run ([[time-aware-routing-engine-stories]] Story R1).
+
+**Effort:** S
+**Priority:** P0
+**Depends on:** None. The latency numbers wait for the `US-037` knob to settle, because the pipeline shares the server.
+
+**Sprint:** 5, [[time-aware-routing-engine-stories]] Story R1 (US-046), in [[sprint-plan-2]].
+
+### Active - US-034 Soak the flood-road backend and check it against known answers
+
+**What:** Run the GraphHopper flood-road backend for 48 hours on the live app. The container logs must show no unexplained 5xx responses, and `POST /route` must block or allow each road of a fixed set according to the vehicle depth limits ([[carried-over-backlog]] Story 3).
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** None. Start the 48-hour clock after the `US-037` knob settles, so the soak runs under one worker configuration.
+
+**Sprint:** 5, [[carried-over-backlog]] Story 3 (US-034), in [[sprint-plan-2]].
+
+## Backlog
+
+Unfinished items carried over from Sprint 4:
 
 ### Active - US-037 Narrow the per-run critical path under the 15-minute cycle
 
@@ -36,41 +60,11 @@
 
 **Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
 
-### Done - US-032 Make the map toggle, legend, and route tabs usable by keyboard and screen reader
-
-**What:** The Map or Flood toggle has `aria-pressed` and responds to Enter and Space. The route tabs have `role="tablist"` and `role="tab"` with `aria-selected` and move with the arrow keys. Every control has a touch target of at least 44 px, and the legend text has a contrast ratio of at least 4.5:1 ([[carried-over-backlog]] Story 1).
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** US-025, US-026, and US-059 (done).
-
-**Sprint:** 4, [[carried-over-backlog]] Story 1 (US-032), in [[sprint-plan]].
-
-**Result:** 2026-10-01, deployed and checked live: the route tabs move with the arrow keys and are 44 px tall, and the legend labels have an explicit color.
-
-### Done - US-035 Revalidate "loading is very slow"
-
-**What:** Measure the time to the first map and to the flood layer on the live app, and the routing panel's wait for a no-connection pair (9 seconds or more on 2026-09-30, [[route-panel-stuck-on-loading-bars]]). Close the item or open a blocker with the measured cause ([[carried-over-backlog]] Story 4).
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** US-032 (done).
-
-**Sprint:** 4, [[carried-over-backlog]] Story 4 (US-035), in [[sprint-plan]].
-
-**Result:** 2026-10-01, no slow load found: first map in 0.7 to 1.5 s and flood layer in 2.0 to 3.2 s, and the no-connection box in 1.5 to 2.6 s. The 9 to 20 s wait did not reproduce.
-
-## Backlog
-
-Unfinished items carried over from Sprint 3: None
-
 ## Blockers for the next sprint
 
-The next sprint is Sprint 5, 2026-10-19 to 2026-10-25. Checked on 2026-10-01 against its rows (`US-046`, `US-047`, `US-040`, `US-034`).
+The next sprint is Sprint 6, 2026-10-26 to 2026-11-01. Checked on 2026-10-01 against its rows (`US-049`, `US-039`).
 
-Sprint 4 is not finished. `US-037` is the one open item, and no row of Sprint 5 depends on it. Sprint 5 starts when `US-037` is `Done`, or when the user moves it to the Backlog.
-
-Any blocker stops Sprint 5: None
+Any blocker stops Sprint 6: None
 
 The unresolved blockers are:
 

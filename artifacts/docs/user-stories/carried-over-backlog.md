@@ -114,7 +114,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
   or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
   now, with a measured margin, not after.
-  Priority: P2. Status: Not started. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
+  Priority: P2. Status: In progress. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
   frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
   set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
   so there may be headroom to raise it (12 logical cores available per
@@ -162,3 +162,5 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-10-01, draft.** Story 1 (`US-032`) is `Reviewed`: the route tabs move with the arrow keys (`routeTabKeyTarget`, roving `tabindex`, focus follows selection), the tabs are 44 px with a focus outline, the legend band labels have an explicit color, and a CSS test fails if any legend or tab text drops under 4.5:1. Commits `f44f776` to `26034f1` (279 tests pass). No browser check yet.
 - **2026-10-01, draft.** Story 1 (`US-032`) is `Done`: deployed after the user's push and checked on the live site with screenshots (`frontend-route-tabs-keyboard-live-check.png`, `frontend-route-tabs-keyboard-preview-check.png`).
 - **2026-10-01, draft.** Story 4 (`US-035`) is `Done`: measured on the live app with Aside, no slow load found, and the 9 to 20 s no-connection wait of 2026-09-30 did not reproduce in 17 loads. Evidence: `us-035-loading-check-output.png`.
+- **2026-10-01, draft.** Story 6 (`US-037`) is `In progress`. The user unpaused `flood_mapping_full` at 18:19 +07 and kept the test rain. Baseline from 8 recorded runs: step 1 published 1.6 to 6.8 minutes after it became now. Measuring first, then one knob at a time. Plan: [[us-037-narrow-the-per-run-critical-path]].
+- **2026-10-01, draft.** Story 3 (`US-034`) is in Sprint 5, which started today. `US-037` is not a dependency, but the soak should start after the `US-037` knob settles, so the 48 hours run under one worker configuration. Story 6 (`US-037`) stays `In progress` in Sprint 4.

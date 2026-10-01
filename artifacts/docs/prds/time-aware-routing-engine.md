@@ -75,13 +75,15 @@ verified. The rest are not.
    details"), so the pinned build does not enable that encoded value.
 2. **Verified.** `alternative_route` accepts a `custom_model` on the server. This PRD does not depend on it.
 3. **Verified.** The repo has no Java, Maven, or Gradle files. The Java toolchain is new work.
-4. **Unverified.** The pinned image has the extension points the module needs (a `GraphHopper` subclass, a
-   custom weighting, a replaceable search algorithm, a Dropwizard application class). The source revision
-   of the pinned image is not recorded.
+4. **Partly verified, 2026-10-01.** The source revision of the pinned image is GraphHopper commit
+   `d7dc1b069d2d091c7cfdc007d99d1765c82e618d` (see "Baselines on the server" in [[routing-not-time-aware]]).
+   Whether the image has the extension points the module needs (a `GraphHopper` subclass, a custom weighting,
+   a replaceable search algorithm, a Dropwizard application class) is still unverified, and `US-049` checks it.
 5. **Unverified.** A weighting that only raises weights keeps LM's lower bounds valid. A unit test settles
    it. If it fails, the search runs without LM and latency must be measured again.
-6. **Unverified.** The 2-hour horizon holds for every run, and steps are 15 minutes. The user stated the
-   horizon on 2026-09-29. The step length comes from the tile timesteps and is checked in the baseline story.
+6. **Partly verified, 2026-10-01.** Steps are 15 minutes. A real run has 8 steps, so its last step is 105 minutes
+   after the first, not 120. The user stated a 2-hour horizon on 2026-09-29. Whether a trip that ends between
+   minute 105 and minute 120 should return `unknown` is a question for the user.
 7. **Assumed, not yet confirmed by the user.** Sticky closure is measured from the departure step, not
    from the first flooded step of the run. Without this wording a road that drained before `t0` stays closed
    and "wait until" cannot help. See Decisions.
@@ -163,3 +165,4 @@ Run each check on the server, not on a laptop.
 
 - **2026-09-29, draft.** Written from the decisions in [[sticky-c-lite-routing]] and
   [[departure-time-advice-research]]. Stories are in [[time-aware-routing-engine-stories]].
+- **2026-10-01, draft.** `US-046` verified the source revision of the pinned image and the step length. A real run has 8 steps, so the horizon between the first and last step is 105 minutes. New open question in assumption 6.

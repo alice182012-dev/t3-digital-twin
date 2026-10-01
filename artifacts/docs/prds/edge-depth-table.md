@@ -66,10 +66,11 @@ the table that gives it to them.
    This is unmeasured for edges and for the server.
 4. **Unverified.** GraphHopper has no REST endpoint that dumps edges, so the export needs Java. That makes the
    export depend on the toolchain story in [[time-aware-routing-engine]].
-5. **Unverified.** The edge count of `hanoi-model-area.osm.pbf`. An estimate of 2 million edges at 9 steps and
-   2 bytes gives about 36 MB per run. The estimate is a guess, and the baseline story replaces it.
-6. **Unverified.** The step length and count. The user stated a 2-hour horizon on 2026-09-29. The tile
-   timesteps decide the step length, and the export story checks it.
+5. **Verified, 2026-10-01.** The graph has 67,833 edges and 51,328 nodes (see "Baselines on the server" in
+   [[routing-not-time-aware]]). At 8 steps and 2 bytes, a table is about 1.1 MB per run. The earlier guess of
+   2 million edges and 36 MB was about 30 times too high.
+6. **Verified, 2026-10-01.** A real run has 8 steps, 15 minutes apart, so the last step is 105 minutes after the
+   first. The user stated a 2-hour horizon on 2026-09-29, and no step falls at 120 minutes.
 7. **Unverified.** Airflow can reach the volume or bucket that holds the table, and the routing container can
    mount it. The blocker page suggests a volume or MinIO. Choose one in the publish story.
 8. **Assumed.** Edge ids change on every graph re-import. The hash exists for that reason.
@@ -127,3 +128,4 @@ Run each check on the server.
 ## Status history
 
 - **2026-09-29, draft.** Written from [[sticky-c-lite-routing]]. Stories are in [[edge-depth-table-stories]].
+- **2026-10-01, draft.** Assumptions 5 and 6 are verified by `US-046`: 67,833 edges, and 8 steps of 15 minutes. The table is about 1.1 MB per run.

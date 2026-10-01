@@ -9,7 +9,7 @@ approaches_tried: 0
 approaches_remaining: 3
 tags: [blocker, routing, forecast, graphhopper, safety]
 related: ["[[map-shows-forecast-not-now]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[graphhopper-backend]]"]
-last_updated: 2026-09-30
+last_updated: 2026-10-01
 ---
 
 # Routing checks each road at one moment, not at the time the traveller reaches it
@@ -511,6 +511,20 @@ No budget is set yet.
    step so that "wait until" works. Details are in [[departure-time-advice-research]] and
    [[sticky-c-lite-routing]].
 
+## Baselines on the server, 2026-10-01
+
+Story R1 (`US-046`) records these numbers. The latency rows wait for the `US-037` knob to settle, because the pipeline shares the host. Every other row is independent of load and is final until the graph or the image changes.
+
+| Baseline | Value | Where it comes from |
+| -------- | ----- | ------------------- |
+| Edge count of `hanoi-model-area.osm.pbf` | 67,833 edges, 51,328 nodes | The `GraphHopper` startup line of `airflow_new-graphhopper-1`, 2026-09-24 08:39 UTC: `edges: 67,833(3MB), nodes: 51,328(1MB)`. The container has run since then, and `GET /info` gives `import_date` 2026-09-23T09:38:29Z. Edge ids run from 0 to 67,832. |
+| Table size at that edge count | About 1.1 MB per run | 67,833 edges times 8 steps times 2 bytes. The estimate in [[edge-depth-table]] was 36 MB, from a guess of 2 million edges. |
+| Image | `israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`, created 2026-06-18T05:28:33Z | `compose.yml`, and `docker image inspect` on the server. |
+| Source revision | GraphHopper commit `d7dc1b069d2d091c7cfdc007d99d1765c82e618d` on `master`, committed 2026-06-17T08:35:01Z, "fix: pin jetty version for mitigating CVE-2026-1605 (#3365)", with no local changes | `com/graphhopper/gitinfo` inside `graphhopper-web-12.0-SNAPSHOT.jar`, copied from the running container. The startup line says `version 12.0|2026-06-18T05:27:29Z`. |
+| Step length | 15 minutes | `valid_time_utc` in `flood_depth_raster_tile` for the runs `20260930T014500`, `20260930T020000`, and `20261001T183000`. |
+| Step count | 8 per run, 105 minutes from the first step to the last | The same runs. Run `20261001T183000` runs from 11:30 to 13:15 UTC. [[time-aware-routing-engine]] assumed 9 steps over 2 hours. A trip longer than 105 minutes ends after the last step. |
+| p50 and p95 of `POST /route` | Not recorded yet | Waits for the `US-037` knob. |
+
 ## Questions
 
 1. Which option, or A first and B later? Research above suggests A′ (a time-windowed worst case, not
@@ -547,3 +561,4 @@ No budget is set yet.
   scheduled in [[sprint-plan-2]] and [[sprint-plan-3]]. The blocker stays open until the rollout story has evidence.
 - **2026-09-30, open.** Checked against the sprint plans. It blocks no story of Sprint 4, and Sprint 5 (2026-10-19) has no dependency on it. The build runs in [[sprint-plan-2]] (Sprints 5 to 8) and [[sprint-plan-3]] (Sprints 9 to 12). The user still has to answer four gates: the soak length and route set for `US-034` before Sprint 5, the sticky-from-departure wording for `US-050` and the build-time limit for `US-045` before Sprint 8, and the latency factor for `US-055` before Sprint 10. The blocker closes when `US-055` has evidence.
 - **2026-10-01, open.** The `US-034` gate is cleared: the user set the soak length to 48 hours, and the route set is no longer needed because the Valhalla comparison was dropped (the Valhalla model was wrong when it ran). Three gates remain: the sticky-from-departure wording for `US-050` and the build-time limit for `US-045` before Sprint 8, and the latency factor for `US-055` before Sprint 10.
+- **2026-10-01, open.** `US-046` recorded the edge count (67,833), the image's source revision (commit `d7dc1b06`), and the step length and count (15 minutes, 8 steps) in "Baselines on the server". The latency numbers wait for the `US-037` knob. The real step count of 8 differs from the 9 steps that the PRD assumed, so the reference's scenarios now use 8.
