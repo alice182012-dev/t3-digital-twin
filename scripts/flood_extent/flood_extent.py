@@ -30,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -142,10 +143,26 @@ class Pipeline:
     def polygonize(self):
         self.run("gdal_polygonize.py", "-q", "-8", self.final_tif, "-f", "GPKG", self.poly, "poly", "DN")
 
-    def dissolve(self):
-        self.run("ogr2ogr", "-q", "-f", "GPKG", self.dissolved, self.poly, "-dialect", "SQLite",
-                 "-sql", "SELECT DN, ST_Union(geom) AS geom FROM poly WHERE DN > 0 GROUP BY DN",
+    def dissolve_band(self, code):
+        part = self.work / f"dissolved_{code}.gpkg"
+        self.run("ogr2ogr", "-q", "-f", "GPKG", part, self.poly, "-dialect", "SQLite",
+                 "-sql", f"SELECT DN, ST_Union(geom) AS geom FROM poly WHERE DN = {code} GROUP BY DN",
                  "-nln", "dissolved")
+        return part
+
+    def dissolve(self):
+        # One GROUP BY query ran single-threaded and took 440.7 s of a ~550 s build on the server
+        # (2026-10-01), so each band is unioned by its own process. It stays ST_Union, not
+        # ST_Collect, because polygonize -8 leaves overlapping polygons within a band.
+        codes = sorted(EXPECTED_CODES)
+        with ThreadPoolExecutor(max_workers=len(codes)) as pool:
+            parts = list(pool.map(self.dissolve_band, codes))
+        # An empty band's part has no SRS, so it must not be the one that creates the file.
+        filled = [part for part in parts if feature_count(part) > 0]
+        first, *rest = filled or parts
+        self.run("ogr2ogr", "-q", "-f", "GPKG", self.dissolved, first, "-nln", "dissolved")
+        for part in rest:
+            self.run("ogr2ogr", "-q", "-append", self.dissolved, part, "-nln", "dissolved")
 
     def clean(self):
         src_ds = ogr.Open(str(self.dissolved))
@@ -165,10 +182,6 @@ class Pipeline:
             cleaned.SetFrom(feature)
             cleaned.SetGeometry(geom)
             out.CreateFeature(cleaned)
-
-    def cleaned_feature_count(self):
-        dataset = ogr.Open(str(self.cleaned))  # keep the dataset alive while its layer is read
-        return dataset.GetLayer().GetFeatureCount()
 
     def cut_tiles(self):
         self.run("ogr2ogr", "-q", "-f", "MVT", self.tiles, self.cleaned,
@@ -222,7 +235,7 @@ class Pipeline:
                 ("clean", self.clean),
             ]:
                 self.timed(label, step)
-            if self.cleaned_feature_count() == 0:
+            if feature_count(self.cleaned) == 0:
                 self.say("Every flooded patch was smaller than the minimum area, so there are no tiles.")
                 remove_tiles(self.tiles_dir)
                 return FloodExtentResult(tile_count=0)
@@ -233,6 +246,11 @@ class Pipeline:
             else:
                 publish_tiles(self.tiles, self.tiles_dir)
             return result
+
+
+def feature_count(path):
+    dataset = ogr.Open(str(path))  # keep the dataset alive while its layer is read
+    return dataset.GetLayer().GetFeatureCount()
 
 
 def reprojection_to_4326(source_srs):
