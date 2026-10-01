@@ -241,12 +241,23 @@
 
 .routeTab,
 .routeTabActive {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
     padding: 0.25rem 0.7rem;
-    border-radius: 1rem;
+    border-radius: 22px;
     font-size: 0.8rem;
     line-height: 1.5;
     white-space: nowrap;
     cursor: pointer;
+}
+
+.routeTab:focus-visible,
+.routeTabActive:focus-visible {
+    outline: 2px solid #14507f;
+    outline-offset: 2px;
 }
 
 .routeTab {
