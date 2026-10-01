@@ -20,6 +20,7 @@ sys.path.append(os.path.join(SCRIPTS_PATH, "flood_extent"))
 
 try:
     import create_simulation
+    import hotstart_policy
     import download_result
     import calculate_depth
     import netcdf_input
@@ -58,6 +59,11 @@ FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
+# Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
+# states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
+# still find one of them and hotstart from a storm that kept growing. With this flag on, a run
+# hotstarts only when the run of the previous slot is success or running.
+COLD_START_AFTER_BREAK = os.getenv("FLOOD_COLD_START_AFTER_BREAK", "1").strip().lower() in ("1", "true", "yes")
 # Keeps 0_check_forecast_rain and 1_trigger_simulation off the default pool, so a new run's
 # rain check and 3Di trigger (I/O-bound: they wait on Tomorrow.io and 3Di, not local CPU) don't
 # queue behind a previous run's CPU-heavy tasks for the worker's 2 Celery slots. Airflow 3
@@ -103,10 +109,26 @@ def task_run_simulation(**kwargs):
     ti = kwargs["ti"]
     print("🚀 1. Trigger Simulation...")
     rain_intervals = ti.xcom_pull(task_ids="0_check_forecast_rain", key="rain_intervals")
+    slot = run_slot(kwargs)
+    hotstart = True
+    if COLD_START_AFTER_BREAK:
+        previous_slot = slot - timedelta(minutes=create_simulation.CYCLE_MINUTES)
+        previous_runs = ti.get_dr_count(
+            dag_id=kwargs["dag"].dag_id,
+            logical_dates=[previous_slot],
+            states=["success", "running"],
+        )
+        hotstart = hotstart_policy.should_hotstart(previous_runs)
+        verdict = "hotstart allowed" if hotstart else "cold start forced"
+        print(
+            f"🔁 Chain check: {verdict}, {previous_runs} success or running run(s) "
+            f"at previous slot {create_simulation.iso_utc(previous_slot)}"
+        )
     sim_id, _ = create_simulation.run_forecast_process(
         state_file_path=STATE_FILE,
         rain_intervals=rain_intervals,
-        slot_start=run_slot(kwargs),
+        slot_start=slot,
+        hotstart=hotstart,
     )
     if not sim_id:
         # By the time this task runs, the rain gate (0_check_forecast_rain)
