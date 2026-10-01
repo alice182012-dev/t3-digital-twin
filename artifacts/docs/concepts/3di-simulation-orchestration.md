@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-30
+last_updated: 2026-10-02
 ---
 
 # 3Di simulation orchestration
@@ -108,6 +108,20 @@ writes the new state ID to `state_file_path` after `monitor_simulation` confirms
 a crashed or timed-out run leaves the previous cycle's saved state in place for the next cycle to
 use.
 
+### Cold start after a broken chain
+
+Since 2026-10-02, `task_run_simulation` asks `ti.get_dr_count` for the DAG runs at exactly the previous
+slot (slot minus 15 minutes) in state `success` or `running`. With none, `hotstart_policy.should_hotstart`
+returns false, and the run passes `hotstart=False` to `run_forecast_process`. That run starts cold from
+the template's initial conditions but still registers its timed saved states, so the next run can
+hotstart from it. The reason is that stopping an Airflow run does not stop its 3Di simulation, whose
+timed saved states stay in the state file. `choose_saved_state`'s 30-minute window can then find one
+after a restart, and the run would hotstart from a storm that kept growing. The rule is on by default,
+and `FLOOD_COLD_START_AFTER_BREAK=0` turns it off. The trigger log prints a `Chain check` line with the
+verdict. Checked live on 2026-10-02: the first run after a restart logged `cold start forced`, and the
+four runs after it logged `hotstart allowed` and `[Hotstart, exact]`. A failed 3Di trigger also breaks
+the chain, so the next run cold-starts instead of using the two-cycle backup state.
+
 ### Status polling
 
 `monitor_simulation` polls `simulations_status_list` on a bounded loop: `POLL_TIMEOUT_SECONDS`
@@ -154,6 +168,13 @@ each output single-band; `validate_depth_raster` then rejects a corrupt or trunc
 `depth_<VN-local-date>_<VN-local-time>.tif`. `run_calculate_depth` collects every worker's result
 string and raises if any timestep failed, so a cycle with a partial depth-tif set is never reported
 as a success.
+
+Each step reads the DEM, the grid, and the results file. On the Windows bind mount, 8 steps at once took
+368.6 s, and from the container's local disk they took 148.6 s (experiment of 2026-10-01). So
+`run_calculate_depth` copies the grid and DEM into `DEPTH_LOCAL_INPUT_DIR` (default `/tmp/depth_inputs`,
+reused while size and mtime match) and the results file into a per-run temp folder, through
+`scripts/depth_inputs.py`'s `localize_input`. A failed copy falls back to the original path. On the live
+DAG the depth task fell from 6.8 to 7.5 minutes to 3.2 to 3.9 minutes.
 
 ## The manual two-event test DAG
 

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [minio, airflow, flood-tile]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-26
+last_updated: 2026-10-02
 ---
 
 # MinIO flood-extent tile pipeline
@@ -52,6 +52,19 @@ in parallel. If any timestep fails, `publish_run` raises without deleting tiles 
 published for timesteps that succeeded: a missing tile 404s and the map treats it as empty, so
 partial per-run state is safe to leave in place. Bucket pruning and local cleanup only run after
 every timestep in the run has succeeded.
+
+## Where the tile build spends its time
+
+Stage times of one timestep on a grown storm (2026-10-01, step 1 of the 20:15 run): reclassify 4.5 s,
+close bands 30.8 s, polygonize 67.1 s, dissolve 440.7 s, clean 4.8 s, cut tiles 70.2 s. The dissolve was a
+single-threaded `ST_Union` per band group. It now runs one `ogr2ogr` per band code in parallel
+(`Pipeline.dissolve_band`, `1607484`) and merges the parts. It stays `ST_Union` because
+`gdal_polygonize -8` leaves overlapping polygons within a band: `ST_Collect` gave 2 to 7 percent larger
+areas, and `ST_UnaryUnion` was not faster. On the same file the area per band and the tile count (190)
+are identical to the old query. A timestep has about 192 tiles at zoom 10 to 16, and only the first
+`FLOOD_EXTENT_TILE_STEPS` timesteps (2) of a run get tiles. The tile build grows with the flooded area:
+under a sustained 50 mm/h test storm it grew from 4.4 to 6.1 minutes over the first hour after a cold
+start.
 
 ## Filename to UTC conversion
 
