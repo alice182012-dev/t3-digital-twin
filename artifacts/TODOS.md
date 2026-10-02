@@ -24,7 +24,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 3 (US-034), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock starts with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. After that, run `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00`. `US-064` is done, so a failed read cannot pass.
+**Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock started with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. After that, run `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00`. `US-064` is done, so a failed read cannot pass.
 
 ### Active - US-063 Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak
 
@@ -36,7 +36,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 8 (US-063), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, deployed to the server at 15:20 +07 (`c3d398e`). The worker was recreated, and it reads the replay file with the start `2026-10-02T09:00:00Z` (16:00 +07). `flood_mapping_full` is still paused. Unpause it at about 15:55 +07, so the first run is the 16:00 slot. The schedule preview is built: at the server's gate, one chain of 192 runs. What is left is the run on the server.
+**Today:** 2026-10-02, running. The server got `c3d398e` at 15:20 +07, and you unpaused `flood_mapping_full` at about 15:54 +07. The 16:00 slot read the replay (`Replaying ... from 2026-10-02T09:00:00Z`, gate max 1.10 mm/h) and its simulation started. The 15:45 slot ran before that as a pre-roll. The window is one chain of 192 runs to 2026-10-04 15:45 +07. The run that reads the peak (56.48 mm/h) is the slot at about 2026-10-03 16:30 +07.
 
 ### Done - US-064 Make the soak check fail when it cannot read the server
 
