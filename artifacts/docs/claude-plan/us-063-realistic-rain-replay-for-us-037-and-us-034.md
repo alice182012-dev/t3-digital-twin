@@ -89,7 +89,7 @@ The user runs these from the repository root on the Mac. All of them only read.
    ```
    docker --context remote-server exec airflow_new-airflow-worker-1 sh -c 'grep -h -o "Rain gate: max=[0-9.]* mm/h" /opt/airflow/logs/dag_id=flood_mapping_full/run_id=scheduled__2026-10-03T09:30:00+00:00/task_id=0_check_forecast_rain/attempt=1.log'
    ```
-4. **End of the window, after 16:00 +07 on 2026-10-04.** Run check 1 with `--until "10-04 15:45"` and check 2. Both exit with 0 for `US-037` and `US-034` to reach `Done`. Then render each output as the evidence image and fill the Details.
+4. **End of the window, after 16:00 +07 on 2026-10-04.** Run check 1 with `--until "10-04 15:45"` and check 2. Both exit with 0 for `US-037` and `US-034` to reach `Done`. Then render each output as the evidence image and fill the Details. Also delete `dags/zz_cold_start_probe_dag.py` on the server, which the user approved on 2026-10-02 for after the test. It is an unscheduled probe with 0 runs, and `./dags` is mounted into the containers, so the deletion waits for the end of the window.
 
 If a run fails, read its `1_trigger_simulation` log first. An HTTP 429 means the 3Di organisation has no free session.
 
@@ -114,3 +114,4 @@ If a run fails, read its `1_trigger_simulation` log first. An HTTP 429 means the
 - **2026-10-02, active.** The schedule preview (item 1) and the margin report (item 3, `US-065`) are done and committed. Run on the real rows of the 50 mm/h storm, the report shows the margin to the end of the tile task at +2.3 minutes in the 01:00 hour, +0.5 in the 02:00 hour, and -0.7 or lower from 03:00. Items 2 (`US-064`) and 5 (local commits) are done. Item 4, the runbook, is replaced by the commands that ran on the server at 15:20 +07.
 - **2026-10-02, active.** Added the checks the user runs while the replay runs, with their commands and times. The peak command was tested on the 16:00 slot of 2026-10-02.
 - **2026-10-02, active.** The evidence scripts for the end of the test are written and dry-run (`us-034-soak-check.sh`, `us-037-replay-check.sh`, `us-063-replay-check.sh` in `artifacts/docs/user-stories/evidence/`). The user decided not to change the retry setting of the trigger task. The first run of `run_soak.sh` on the real host passed its container check and its known-answer check.
+- **2026-10-02, active.** The user approved the cleanup of the server's untracked items. The log of 2026-09-22 comes into git, the duplicate experiment folder is deleted, and the probe DAG is deleted after the window ends (step 4 above).
