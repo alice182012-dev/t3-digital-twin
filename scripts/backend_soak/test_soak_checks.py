@@ -1,15 +1,21 @@
+import contextlib
+import io
+import tempfile
 import unittest
+from pathlib import Path
 
 from soak_checks import (
     VEHICLE_LIMIT_CM,
     expected_outcome,
     far_point,
+    judge_containers,
     judge_vehicle,
     latency_table,
     next_limit_cm,
     percentile,
     point_along,
     route_passes_through,
+    run_logs,
     scan_logs,
 )
 
@@ -187,3 +193,79 @@ class LatencyTableTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+DOCKER_500 = "request returned 500 Internal Server Error for API route and version http://docker.example.com/v1.56/containers/json, check if the server supports the requested API version"
+
+
+def run_logs_on(*texts):
+    with tempfile.TemporaryDirectory() as folder:
+        paths = []
+        for index, text in enumerate(texts):
+            path = Path(folder) / f"log{index}.log"
+            path.write_text(text)
+            paths.append(str(path))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = run_logs(type("Args", (), {"files": paths})())
+    return code, out.getvalue()
+
+
+class RunLogsTest(unittest.TestCase):
+    def test_a_log_of_request_lines_passes(self):
+        code, _ = run_logs_on(NGINX_OK + "\n" + PY_OK + "\n")
+        self.assertEqual(code, 0)
+
+    def test_an_empty_log_fails_because_no_line_was_read(self):
+        code, out = run_logs_on("")
+        self.assertEqual(code, 1)
+        self.assertIn("no timestamped lines", out)
+
+    def test_a_log_that_holds_only_a_docker_error_fails_and_shows_the_error(self):
+        code, out = run_logs_on(DOCKER_500 + "\n")
+        self.assertEqual(code, 1)
+        self.assertIn("no timestamped lines", out)
+        self.assertIn(DOCKER_500[:60], out)
+
+    def test_one_unreadable_log_fails_the_run_even_when_the_others_pass(self):
+        code, _ = run_logs_on(NGINX_OK + "\n", "")
+        self.assertEqual(code, 1)
+
+    def test_a_5xx_still_fails(self):
+        code, _ = run_logs_on(NGINX_502 + "\n")
+        self.assertEqual(code, 1)
+
+
+SINCE = "2026-10-02T00:45:00+07:00"
+GH_UP = "/airflow_new-graphhopper-1 started=2026-09-24T03:10:11.123456789Z restarts=0 oomkilled=false status=running"
+BACKEND_UP = "/airflow_new-floodmap-backend-1 started=2026-09-30T08:00:00.5Z restarts=0 oomkilled=false status=running"
+
+
+class JudgeContainersTest(unittest.TestCase):
+    def test_containers_started_before_the_window_and_running_have_no_problem(self):
+        self.assertEqual(judge_containers([GH_UP, BACKEND_UP], SINCE), [])
+
+    def test_a_container_started_inside_the_window_ends_the_soak(self):
+        restarted = "/airflow_new-graphhopper-1 started=2026-10-02T09:00:00.000000000Z restarts=1 oomkilled=false status=running"
+        problems = judge_containers([restarted, BACKEND_UP], SINCE)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("airflow_new-graphhopper-1", problems[0])
+        self.assertIn("started inside the window", problems[0])
+
+    def test_start_time_is_compared_as_an_instant_not_as_text(self):
+        at_the_start = "/airflow_new-graphhopper-1 started=2026-10-01T17:45:00Z restarts=0 oomkilled=false status=running"
+        just_after = "/airflow_new-graphhopper-1 started=2026-10-01T17:45:01Z restarts=0 oomkilled=false status=running"
+        self.assertEqual(judge_containers([at_the_start], SINCE), [])
+        self.assertEqual(len(judge_containers([just_after], SINCE)), 1)
+
+    def test_an_oom_kill_and_a_stopped_container_are_problems(self):
+        oom = "/airflow_new-graphhopper-1 started=2026-09-24T03:10:11Z restarts=0 oomkilled=true status=running"
+        stopped = "/airflow_new-floodmap-backend-1 started=2026-09-30T08:00:00Z restarts=0 oomkilled=false status=exited"
+        problems = judge_containers([oom, stopped], SINCE)
+        self.assertEqual(len(problems), 2)
+
+    def test_no_lines_and_a_docker_error_are_problems_because_nothing_was_read(self):
+        self.assertEqual(len(judge_containers([], SINCE)), 1)
+        problems = judge_containers([DOCKER_500, GH_UP], SINCE)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("could not read", problems[0])

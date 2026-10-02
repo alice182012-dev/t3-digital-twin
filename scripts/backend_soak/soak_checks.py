@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Checks for the GraphHopper flood-road backend: the 48-hour soak (US-034) and the latency baselines (US-046).
 
-Three subcommands.
+Four subcommands.
 
     logs FILE...   Read `docker logs --timestamps` output and report requests by status, 5xx lines, and
-                   error lines. Runs on any machine. Exit code 1 if it finds a 5xx or an error line.
+                   error lines. Runs on any machine. Exit code 1 if it finds a 5xx or an error line, or
+                   if a file has no timestamped line, because the read then failed.
+    containers FILE
+                   Read the `docker inspect` lines that run_soak.sh prints. Exit code 1 if a container
+                   started after the soak start, was OOM killed, is not running, or could not be read.
     roads          Pick real roads from `flood_road_values` whose depth lies between two vehicle limits,
                    call `POST /route` for each vehicle, and compare with the answer the limits give.
     latency        Time `POST /route` for a short, a medium, and a long trip.
@@ -25,6 +29,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
@@ -78,6 +83,40 @@ def scan_logs(lines) -> LogReport:
         elif "bad request:" in body:
             report.bad_requests += 1
     return report
+
+
+CONTAINER_LINE = re.compile(
+    r"^/?(?P<name>\S+) started=(?P<started>\S+) restarts=(?P<restarts>\d+) oomkilled=(?P<oom>true|false) status=(?P<status>\S+)$"
+)
+
+
+def _instant(value: str) -> datetime:
+    trimmed = re.sub(r"(\.\d{6})\d+", r"\1", value.replace("Z", "+00:00"))
+    moment = datetime.fromisoformat(trimmed)
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+
+
+def judge_containers(lines, since: str) -> list[str]:
+    """Problems that end the soak, one string each. An empty list means every container held the whole window."""
+    start = _instant(since)
+    problems = []
+    seen = 0
+    for line in (l.strip() for l in lines if l.strip()):
+        match = CONTAINER_LINE.match(line)
+        if not match:
+            problems.append(f"could not read: {line[:200]}")
+            continue
+        seen += 1
+        name = match["name"]
+        if _instant(match["started"]) > start:
+            problems.append(f"{name} started inside the window, at {match['started']}")
+        if match["oom"] == "true":
+            problems.append(f"{name} was OOM killed")
+        if match["status"] != "running":
+            problems.append(f"{name} has status {match['status']}")
+    if not seen and not problems:
+        problems.append("could not read any container line")
+    return problems
 
 
 def percentile(values, p: float):
@@ -397,7 +436,13 @@ def run_latency_table(args) -> int:
 def run_logs(args) -> int:
     code = 0
     for path in args.files:
-        report = scan_logs(Path(path).read_text(errors="replace").splitlines())
+        lines = Path(path).read_text(errors="replace").splitlines()
+        report = scan_logs(lines)
+        if report.first is None:
+            first = next((l for l in lines if l.strip()), "(the file is empty)")
+            print(f"{path}: no timestamped lines, so the read failed. First line: {first[:300]}")
+            code = 1
+            continue
         print(f"{path}: {report.first} to {report.last}, {report.requests} requests, "
               f"by status {dict(sorted(report.by_status.items()))}, {report.bad_requests} bad-request lines, "
               f"{len(report.server_errors)} 5xx, {len(report.error_lines)} error lines")
@@ -407,12 +452,23 @@ def run_logs(args) -> int:
     return code
 
 
+def run_containers(args) -> int:
+    problems = judge_containers(Path(args.file).read_text(errors="replace").splitlines(), args.since)
+    for problem in problems:
+        print("  " + problem)
+    return 1 if problems else 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     logs = sub.add_parser("logs")
     logs.add_argument("files", nargs="+")
     logs.set_defaults(func=run_logs)
+    containers = sub.add_parser("containers")
+    containers.add_argument("file")
+    containers.add_argument("--since", required=True, help="the soak start, for example 2026-10-02T00:45:00+07:00")
+    containers.set_defaults(func=run_containers)
     roads = sub.add_parser("roads")
     roads.add_argument("--backend", default="http://localhost:8010")
     roads.add_argument("--run", help="run timestamp, for example '2026-10-02 02:15:00'. Default: the newest.")
