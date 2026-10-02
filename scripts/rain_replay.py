@@ -45,7 +45,7 @@ def cut_window(rows, start_utc, hours):
 
 def write_event(path, event):
     with open(path, "w", newline="") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerow(EVENT_HEADER)
         writer.writerows(event)
 
