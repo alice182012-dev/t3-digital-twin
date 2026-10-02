@@ -94,6 +94,7 @@ Nothing here has a sprint number.
 | Precompute per-run piece windows for the timeline | Build only if the request-time query proves slow. | [[departure-time-advice-research]] |
 | Saved routes and push alerts | Need accounts and an alert channel, which do not exist. | [[departure-time-advice-research]] |
 | Enable `osm_way_id` in the graph | A second route to the same key. Revisit only if edge geometry sampling proves wrong. | [[edge-depth-table]] |
+| `US-061` Show the place name faster after a map tap ([[frontend-polish]] Story 7) | Lowest priority. The user said to tackle it later. | [[place-name-slow-after-map-tap]] |
 
 Story R10 is scheduled with a gate. If the user has not set the latency factor by the start of Sprint 10, the story moves
 to this backlog with the gate as its blocking risk. The gates on Stories R5 and E7 are in [[sprint-plan-2]].
@@ -119,3 +120,4 @@ file and in this plan.
   weeks. Sprints 9 and 10 moved here with the backlog and the plan-3 risks. The carried `DESIGN.md` row from [[sprint-plan]]
   is in Sprint 11, and Sprint 12 is spare.
 - **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).
+- **2026-10-02, active.** `US-061` (show the place name faster after a map tap) is in the backlog table with no sprint, as P3. The user said to tackle it later.

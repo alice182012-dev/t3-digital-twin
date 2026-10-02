@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-23
 type: user-story
-us_ids: ["US-006", "US-007", "US-008", "US-009", "US-010", "US-057"]
+us_ids: ["US-006", "US-007", "US-008", "US-009", "US-010", "US-057", "US-061"]
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
@@ -123,6 +123,18 @@ planning").
   3. Why: the bar repeated the yellow box, as the user saw on 2026-09-30 with Vincom Center to Cổng Thiên đường Bảo Sơn.
   4. Effect: on a preview build on the server, that pair shows only the yellow box, and a pin in Hoàn Kiếm, outside the road data, still shows "Cannot find point 1: 21.0285,105.8542" in the red bar. Seven tests are new (`ErrorStore.test.ts` and two in `Api.test.ts`), and all 240 pass. Deployed 2026-09-30 (`f87ffb9`). On the live site the same pair shows only the yellow box (`frontend-no-connection-yellow-only-live-check.png`), the Hoàn Kiếm pin still shows "Cannot find point 1: 21.0285,105.8542", and a normal walking pair still routes (760 m).
 
+- **Story 7 (US-061): Show the place name faster after a map tap.**
+  As a user who taps the map, I want the place name to show quickly, so the popup does not look unfinished while it waits.
+  Given a tap at a point in the flood layer, when the popup opens, then the name or a clear "looking up the place" line shows
+  without a blank gap, and the name itself arrives in under 1 second for a point already looked up. The user reported about
+  4 seconds on 2026-10-02. On the same day the backend call took 2.1 to 2.8 seconds and Photon alone took 2.4 to 2.9 seconds,
+  so the wait is the public Photon service ([[place-name-slow-after-map-tap]]).
+  Priority: P3. Status: Not started. Estimate: S. Sprint: none, in the backlog of [[sprint-plan-3]]. Dependencies: None.
+  The user set it to the lowest priority and said to tackle it later. Options are in the blocker page: coordinates at once,
+  a cache by rounded point, a local Photon, or local road names.
+  Blocker tracking: [[place-name-slow-after-map-tap]]
+  Test points: inside the model border (`.claude/CLAUDE.md`).
+
 ## Status history
 
 - **2026-09-23, draft.** Drafted from [[flood-routing-mockup-frontend-gap]]'s Goals 2 and 6, and
@@ -176,4 +188,4 @@ planning").
 - **2026-09-30, draft.** Story 6 (`US-057`) added: with no connection, only the yellow "No safe route available" box shows. It refines Story 4 (`US-009`), whose criteria named the red bar.
 - **2026-09-30, draft.** Story 6 built and `Reviewed`. See Details.
 - **2026-09-30, draft.** Story 6 is `Done`: deployed at `f87ffb9` and checked on the live site.
-
+- **2026-10-02, draft.** Story 7 (`US-061`) added, not started, with no sprint. The user reported about 4 seconds from a map tap to the place name and set it to the lowest priority. See [[place-name-slow-after-map-tap]].
