@@ -55,7 +55,7 @@ x-airflow-common: &airflow-common
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
-    - ./data:/opt/airflow/data
+    - ${DATA_HOST_PATH:-./data}:/opt/airflow/data
     # scripts/flood_metrics/extract_run.py imports flood_utils.py for per-vehicle impassable
     # depths (FLOOD_UTILS_DIR). Mount only this folder, read-only, not all of ./floodmap: it has
     # no import dependency on the rest of that tree (checked: stdlib only).
@@ -88,8 +88,14 @@ services:
     restart: unless-stopped
 
   minio-init:
-    # See the minio service's image comment: pulled from quay.io for the same reason.
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    # Both quay.io/minio/mc and docker.io/minio/mc now deny anonymous pulls (checked
+    # 2026-10-02: quay.io's anonymous token grants no pull action, Docker Hub says the repo
+    # "does not exist"), and dl.min.io returns 410 Gone for the mc binary: MinIO archived the
+    # open-source mc/server/KES projects and stopped serving them from every official
+    # channel. The GitHub release for this same version still hosts the binary as an asset
+    # (GitHub doesn't retroactively delete release assets), so we fetch from there instead
+    # and verify against MinIO's own published sha256sum for that asset.
+    image: alpine:latest
     depends_on:
       minio:
         condition: service_started
@@ -103,6 +109,9 @@ services:
       - /bin/sh
       - -c
       - |
+        wget -qO /usr/local/bin/mc https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.linux-amd64.RELEASE.2025-08-13T08-35-41Z
+        echo "01f866e9c5f9b87c2b09116fa5d7c06695b106242d829a8bb32990c00312e891  /usr/local/bin/mc" | sha256sum -c -
+        chmod +x /usr/local/bin/mc
         until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
           echo "Waiting for MinIO..."
           sleep 2
@@ -420,7 +429,14 @@ services:
 volumes:
   graphhopper-graph-cache:
   airflow-postgres-data:
+  # Backed by a host path instead of Docker's default storage location so task logs land on
+  # AIRFLOW_LOGS_HOST_PATH (see .env.example) instead of the SSD-backed Docker data disk.
   airflow-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${AIRFLOW_LOGS_HOST_PATH:-./.docker-volumes/airflow-logs}
   minio-data:
   storage-postgres-data:
   timescaledb-data:
