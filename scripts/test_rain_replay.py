@@ -94,5 +94,61 @@ class EventFileTests(unittest.TestCase):
         self.assertEqual(max(rates(intervals)), 56.481693)
 
 
+
+# Samples every 30 minutes. Rain of 6 mm/h from minute 30 to 59 and from minute 180 to 209.
+TWO_BURSTS = [(0, 0.0), (30, 6.0), (60, 0.0), (90, 0.0), (120, 0.0), (150, 0.0), (180, 6.0), (210, 0.0)]
+
+
+def plan(threshold, event=TWO_BURSTS, hours=3):
+    return rain_replay.simulating_slots(event, T0, threshold, hours, lookahead_hours=0.5, timestep_minutes=15)
+
+
+class SimulatingSlotsTests(unittest.TestCase):
+    def test_a_slot_simulates_when_any_rate_in_its_lookahead_reaches_the_threshold(self):
+        slots = plan(5.0)
+        self.assertEqual([s.simulates for s in slots], [True] * 4 + [False] * 6 + [True] * 2)
+        self.assertEqual([s.offset_minutes for s in slots], list(range(0, 180, 15)))
+
+    def test_a_rate_equal_to_the_threshold_counts_like_the_gate_does(self):
+        self.assertEqual(sum(s.simulates for s in plan(6.0)), 6)
+        self.assertEqual(sum(s.simulates for s in plan(6.01)), 0)
+
+    def test_a_chain_starts_at_the_first_run_and_after_each_dry_gap(self):
+        starts = [s.offset_minutes for s in plan(5.0) if s.starts_chain]
+        self.assertEqual(starts, [0, 150])
+
+    def test_chain_lengths_list_each_run_of_consecutive_simulating_slots(self):
+        self.assertEqual(rain_replay.chain_lengths(plan(5.0)), [4, 2])
+
+    def test_a_run_hotstarts_after_a_gap_of_up_to_four_slots_and_cold_starts_after_a_longer_one(self):
+        def cold(flags):
+            return [s.cold_start for s in rain_replay.plan_slots(flags, timestep_minutes=15)]
+
+        self.assertEqual(cold([True, False, False, False, True]), [True, False, False, False, False])
+        self.assertEqual(cold([True, False, False, False, False, True]), [True, False, False, False, False, True])
+        self.assertEqual(cold([True, True, True]), [True, False, False])
+
+    def test_describe_names_each_chain_in_local_time_with_its_run_count_and_start_kind(self):
+        lines = rain_replay.describe(plan(5.0), T0, 5.0)
+        self.assertEqual(
+            lines,
+            [
+                "gate 5 mm/h: 6 of 12 runs simulate, 2 chains",
+                "chain 1: 2025-10-06 05:30 to 2025-10-06 06:15 +07, 4 runs, cold start",
+                "chain 2: 2025-10-06 08:00 to 2025-10-06 08:15 +07, 2 runs, cold start",
+            ],
+        )
+
+    def test_the_committed_event_gives_the_counts_of_the_pipelines_own_gate(self):
+        event = rain_replay.load_event(EVENT_FILE)
+        expected = {5.0: (104, [26, 46, 10, 10, 12]), 2.0: (156, [36, 120]), 1.0: (174, [52, 122]), 0.01: (192, [192])}
+        for threshold, (runs, chains) in expected.items():
+            with self.subTest(threshold=threshold):
+                slots = rain_replay.simulating_slots(event, T0, threshold, 48, lookahead_hours=2, timestep_minutes=15)
+                self.assertEqual(len(slots), 192)
+                self.assertEqual(sum(s.simulates for s in slots), runs)
+                self.assertEqual(rain_replay.chain_lengths(slots), chains)
+
+
 if __name__ == "__main__":
     unittest.main()
