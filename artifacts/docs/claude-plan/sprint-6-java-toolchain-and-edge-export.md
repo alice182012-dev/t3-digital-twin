@@ -29,7 +29,7 @@ Everything here was read on 2026-10-02 with no change to the server.
 
 ## Decisions the user makes
 
-1. **A JDK on the Mac.** Installing a JDK 17 and Maven (`brew install openjdk@17 maven`) gives a test loop of seconds. Without it every Java test waits for a CI run after a push. Recommended: install. This changes the Mac, so it needs the user's yes.
+1. **Where Java runs.** The user does not want a JDK or Maven on the Mac. The proposal is a toolchain in Docker on the server, which is where this project runs Docker anyway. A `Dockerfile` in the module has a `test` stage on `maven:3-eclipse-temurin-17`. `docker --context remote-server build --target test java/time-aware-routing` from the Mac sends the working tree to the server, builds there with a cached Maven repository, and runs the tests. Nothing is installed on the Mac or on the server host, and no push or pull is needed in the loop. The image that is deployed is built on the server from the pulled commit, so it matches git. GitHub Actions is the second place the tests run. The user keeps the Claude Code session on the Mac, with this `CLAUDE.md`. The server is Windows, and the personal instructions, skills, and memory live on the Mac.
 2. **Where CI runs.** GitHub Actions in this repo is the proposal. The first run needs a push, and the user approves each push.
 3. **When Sprint 6 starts.** Proposed: when `US-034`, `US-037`, and `US-063` are `Done`. The offline tasks marked "day 0" below can start earlier, which is the user's call.
 
@@ -56,15 +56,19 @@ Proposals that need no answer unless the user objects:
 3. **Run on the server.** `docker run --rm` with the new image and the `graphhopper-graph-cache` volume mounted read-only. The expected row count is 67,833, the edge count recorded by `US-046` in [[routing-not-time-aware]].
 4. **Evidence.** Rendered output of the export on the server: the row count, the first rows, the hash, and the two exports giving the same hash. Update [[edge-depth-table-format]] with the hash algorithm, and [[graphhopper-backend]] with the export.
 
+## Timing against the 48-hour test
+
+A Docker build on the server uses CPU, disk, and network, and the replay and the soak run on the same server until 16:00 +07 on 2026-10-04. A build during that time can slow the pipeline and distort the margins of `US-037`, which are measured to the minute. So no Java build runs on the server before the test ends. Day 0 reading needs no build. GitHub Actions runs on GitHub's machines and does not load the server, so the first CI run can happen earlier. The image build also adds layers to a Docker data disk that was compacted on 2026-10-02 and had little free space before that, so check `docker system df` before the first build.
+
 ## Order and what runs where
 
-| Task | Needs a JDK | Needs the server | Needs a push |
+| Task | Needs Java (never on the Mac) | Needs the server | Needs a push |
 | ---- | ----------- | ---------------- | ------------ |
 | Day 0 reading of the pinned source | No | No | No |
-| Skeleton and LM test | Yes, or CI | No | Only for CI |
+| Skeleton and LM test | A Docker build on the server, or CI | After the test ends | Only for CI |
 | CI job | No (runs on GitHub) | No | Yes |
 | Image build and stock-profile check | No | Yes | Yes, to pull the files |
-| Export tests | Yes, or CI | No | Only for CI |
+| Export tests | A Docker build on the server, or CI | After the test ends | Only for CI |
 | Export run and evidence | No | Yes | Yes |
 
 `US-039` starts after the module builds, because the export is a class in it.
@@ -86,3 +90,4 @@ Each row follows the Definition of done in [[sprint-plan-2]]: the acceptance cri
 ## Status history
 
 - **2026-10-02, active.** Planned at the user's request, with no server change. The plan found that the stock web server cannot be told to use a `GraphHopper` subclass, so step 1 of `US-049` measures the size of our own application class before anything else is built.
+- **2026-10-02, active.** The user does not want a JDK on the Mac, so decision 1 became "where Java runs": a Docker toolchain on the server, built from the Mac with the remote context, plus GitHub Actions. Added the timing note: no Java build on the server before the 48-hour test ends.
