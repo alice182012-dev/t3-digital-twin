@@ -440,7 +440,7 @@ def run_logs(args) -> int:
         report = scan_logs(lines)
         if report.first is None:
             first = next((l for l in lines if l.strip()), "(the file is empty)")
-            print(f"{path}: no timestamped lines, so the read failed. First line: {first[:300]}")
+            print(f"{path}: no timestamped lines. The read failed, or the container logged nothing since the soak start. First line: {first[:300]}")
             code = 1
             continue
         print(f"{path}: {report.first} to {report.last}, {report.requests} requests, "
