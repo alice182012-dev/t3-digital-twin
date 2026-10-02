@@ -73,6 +73,26 @@ These need no server, but they belong to Sprint 6 or later. Pulling one forward 
 - `US-049`, the Java module skeleton, the image, and the CI job. The Maven build and the LM admissibility unit test can run on the Mac. The image part needs Docker, which this project runs on the server only.
 - A sticky routing check of the real GraphHopper response against the offline checker of `US-047`. It needs a recorded response, which the server must produce.
 
+## Checks while the replay runs
+
+The user runs these from the repository root on the Mac. All of them only read.
+
+1. **Run report, every few hours.** It lists every late run and every run that should have simulated and did not. A failed run counts as missing. Read the lines "late runs" and "missing runs", and the exit code.
+   ```
+   sh scripts/pipeline_margins/run_margins.sh 250 | python3 scripts/pipeline_margins/report.py --event scripts/rain_events/hanoi_20251005_48h.csv --start 2026-10-02T09:00:00Z --threshold 0.01 --since "10-02 16:00"
+   ```
+2. **Backend soak, once a day.** Expect exit code 0. It adds a little test traffic to the soak window.
+   ```
+   sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00
+   ```
+3. **Peak, 2026-10-03 after 16:35 +07.** The slot of 16:30 +07 is offset 1470 minutes, the peak of the event. Expect `Rain gate: max=56.48 mm/h`. This is the evidence for `US-063` that the replay reaches the server's gate. The same command on the 16:00 slot of 2026-10-02 printed `max=1.10 mm/h` on 2026-10-02.
+   ```
+   docker --context remote-server exec airflow_new-airflow-worker-1 sh -c 'grep -h -o "Rain gate: max=[0-9.]* mm/h" /opt/airflow/logs/dag_id=flood_mapping_full/run_id=scheduled__2026-10-03T09:30:00+00:00/task_id=0_check_forecast_rain/attempt=1.log'
+   ```
+4. **End of the window, after 16:00 +07 on 2026-10-04.** Run check 1 with `--until "10-04 15:45"` and check 2. Both exit with 0 for `US-037` and `US-034` to reach `Done`. Then render each output as the evidence image and fill the Details.
+
+If a run fails, read its `1_trigger_simulation` log first. An HTTP 429 means the 3Di organisation has no free session.
+
 ## Checks
 
 - `US-037` passes when every simulated run in the window publishes step 1 before it becomes now, and the worst margin is recorded. The earlier pass counted four runs. This one counts all 192.
@@ -92,3 +112,4 @@ These need no server, but they belong to Sprint 6 or later. Pulling one forward 
 - **2026-10-02, active.** Docker is back, per [[2026-10-02-disk-cleanup-and-d-drive-move]]. The server steps still wait for the user's go. Added the effects of the storage move to the open items.
 - **2026-10-02, active.** Deployed. The user pushed `c3d398e` and ran the pull and the worker recreate on the server at 15:20 +07. A read-only check showed the worker with `FLOOD_TEST_RAIN_CSV`, `FLOOD_TEST_RAIN_START=2026-10-02T09:00:00Z`, an empty `FLOOD_TEST_RAIN_MM_HR`, and the gate at 0.01 mm/h. The files are in the container, the replay reads 0.65 mm/h at the 09:00Z slot, the DAG has 0 import errors, and `flood_mapping_full` is paused. The first run needs the unpause at about 15:55 +07. The gate of 0.01 mm/h, found on the server, changes the run count from 104 to 192.
 - **2026-10-02, active.** The schedule preview (item 1) and the margin report (item 3, `US-065`) are done and committed. Run on the real rows of the 50 mm/h storm, the report shows the margin to the end of the tile task at +2.3 minutes in the 01:00 hour, +0.5 in the 02:00 hour, and -0.7 or lower from 03:00. Items 2 (`US-064`) and 5 (local commits) are done. Item 4, the runbook, is replaced by the commands that ran on the server at 15:20 +07.
+- **2026-10-02, active.** Added the checks the user runs while the replay runs, with their commands and times. The peak command was tested on the 16:00 slot of 2026-10-02.

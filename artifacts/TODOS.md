@@ -24,7 +24,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 3 (US-034), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock started with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. After that, run `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00`. `US-064` is done, so a failed read cannot pass.
+**Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock started with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. Your checks: `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00` once a day (expect exit code 0), and at the end after 16:00 +07 on 2026-10-04. `US-064` is done, so a failed read cannot pass.
 
 ### Active - US-063 Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak
 
@@ -36,7 +36,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 8 (US-063), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, running. The server got `c3d398e` at 15:20 +07, and you unpaused `flood_mapping_full` at about 15:54 +07. The 16:00 slot read the replay (`Replaying ... from 2026-10-02T09:00:00Z`, gate max 1.10 mm/h) and its simulation started. The 15:45 slot ran before that as a pre-roll. The window is one chain of 192 runs to 2026-10-04 15:45 +07. The run that reads the peak (56.48 mm/h) is the slot at about 2026-10-03 16:30 +07.
+**Today:** 2026-10-02, running. The server got `c3d398e` at 15:20 +07, and you unpaused `flood_mapping_full` at about 15:54 +07. The 16:00 slot read the replay (`Replaying ... from 2026-10-02T09:00:00Z`, gate max 1.10 mm/h) and its simulation started. The 15:45 slot ran before that as a pre-roll. The window is one chain of 192 runs to 2026-10-04 15:45 +07. Your checks, with commands in the plan under "Checks while the replay runs": the peak check on 2026-10-03 after 16:35 +07 (expect `max=56.48 mm/h`), then the end of the window after 16:00 +07 on 2026-10-04.
 
 ### Done - US-064 Make the soak check fail when it cannot read the server
 
@@ -88,7 +88,7 @@ Unfinished items carried over from Sprint 4:
 
 **Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
 
-**Today:** 2026-10-02, reopened. Four runs published step 1 with margins of +1.9 to +4.1 minutes, but under a constant 50 mm/h rain that you judged unrealistic. The margin shrank about 0.6 minutes per run. The retest runs the 48-hour replay of `US-063` and is read with the report of `US-065`. The report on the old storm shows the margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00. It waits for the server.
+**Today:** 2026-10-02, reopened. Four runs published step 1 with margins of +1.9 to +4.1 minutes, but under a constant 50 mm/h rain that you judged unrealistic. The margin shrank about 0.6 minutes per run. Your checks: the run report of `US-065` every few hours (late and missing runs), and at the end with `--until "10-04 15:45"`. The retest runs the 48-hour replay of `US-063`. The report on the old storm shows the margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00. It waits for the server.
 
 ## Blockers for the next sprint
 
