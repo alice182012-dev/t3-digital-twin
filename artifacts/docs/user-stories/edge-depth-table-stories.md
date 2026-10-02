@@ -81,12 +81,13 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   numbers.
   Given a real run on the server, when the task runs, then the report gives the edge count, the file size, and
   the build time for the run, and 20 edges match `ST_Value`. The story records the numbers in
-  [[edge-depth-table]] and replaces the guessed size. If the build time exceeds the limit the user sets, the
+  [[edge-depth-table]] and replaces the guessed size. If the build time exceeds the limit above, the
   story records a blocker.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate: the user
-  sets the build-time limit before this sprint.
+  Priority: P0. Status: Not started. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
+  set the build-time limit on 2026-10-02. The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 
 ## Status history
 
 - **2026-09-29, draft.** Written from [[edge-depth-table]]. No story has started.
 - **2026-10-01, draft.** Story E2 (`US-040`) is `Done`: the Python reader and writer pass 25 tests, and a table of 2,000,000 edges and 9 steps is 36.0 MB. Output rendered as `us-040-table-check-output.png`. The format is [[edge-depth-table-format]].
+- **2026-10-02, draft.** The gate of Story E7 is cleared. The user accepted the build-time limit: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth` (see [[edge-depth-table]]).

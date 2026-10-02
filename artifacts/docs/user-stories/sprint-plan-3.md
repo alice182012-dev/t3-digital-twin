@@ -64,7 +64,7 @@ factor, and the flag goes on with evidence.
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
 | US-054 | P1 | Show "wait until" in the no-route alert | S | [[time-aware-routing-engine-stories]] R9 | Story R8, and [[frontend-polish]] Story 4 ([[sprint-plan]] Sprint 3) | None yet | - | Not started |
-| US-055 | P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate: the user sets the latency factor | None yet | - | Not started |
+| US-055 | P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate cleared 2026-10-02: the user set the latency factor to 2 | None yet | - | Not started |
 
 ## Sprint 11: DESIGN.md
 
@@ -96,8 +96,8 @@ Nothing here has a sprint number.
 | Enable `osm_way_id` in the graph | A second route to the same key. Revisit only if edge geometry sampling proves wrong. | [[edge-depth-table]] |
 | `US-061` Show the place name faster after a map tap ([[frontend-polish]] Story 7) | Lowest priority. The user said to tackle it later. | [[place-name-slow-after-map-tap]] |
 
-Story R10 is scheduled with a gate. If the user has not set the latency factor by the start of Sprint 10, the story moves
-to this backlog with the gate as its blocking risk. The gates on Stories R5 and E7 are in [[sprint-plan-2]].
+Story R10 had a gate, and the user cleared it on 2026-10-02 by setting the latency factor to 2. The gates on Stories R5
+and E7 were cleared the same day ([[sprint-plan-2]]).
 
 ## Risks
 
@@ -106,7 +106,7 @@ to this backlog with the gate as its blocking risk. The gates on Stories R5 and 
 | Plan 2 slips, so Story R5 or E5 is not `Done` when Sprint 9 starts | Sprint 9 cannot start its rows | Sprint 12 absorbs one week of slip. Beyond that, start a new plan and move rows. |
 | The fallback is today's single-step model | A fallback response can still send a traveller into rising water | The response carries a flag and the frontend says "timing check unavailable". Track how often the fallback runs. |
 | The chart and the engine show different depths | Two numbers for one route on one screen | Both sample the same tiles. Note the spacing difference in the chart's documentation. |
-| The user has not set the latency factor | Story R10 has no pass mark | Ask before Sprint 10. The row moves to the backlog if the factor is not set. |
+| The user had not set the latency factor | Closed on 2026-10-02. The factor is 2 | Story R10 passes when the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1. |
 
 ## Definition of done for a story
 
@@ -121,3 +121,4 @@ file and in this plan.
   is in Sprint 11, and Sprint 12 is spare.
 - **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).
 - **2026-10-02, active.** `US-061` (show the place name faster after a map tap) is in the backlog table with no sprint, as P3. The user said to tackle it later.
+- **2026-10-02, active.** The gate on `US-055` is cleared. The user set the latency factor to 2 times the baseline of `US-046`. No row of this plan has an open gate.

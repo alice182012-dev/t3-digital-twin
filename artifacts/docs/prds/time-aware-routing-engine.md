@@ -50,7 +50,7 @@ Each goal has one testable outcome.
    requests `POST /route/departures`. The alert shows the earliest clear departure, or says that no clear
    departure appears in the run.
 7. **Latency stays inside a factor of today's.** The p50 and p95 of `POST /route` on the server stay within a
-   factor the user sets. The baseline comes first.
+   factor of 2 of the baseline, which the user set on 2026-10-02. The baseline comes first.
 
 ## Non-goals
 
@@ -84,7 +84,7 @@ verified. The rest are not.
 6. **Partly verified, 2026-10-01.** Steps are 15 minutes. A real run has 8 steps, so its last step is 105 minutes
    after the first, not 120. The user stated a 2-hour horizon on 2026-09-29. Whether a trip that ends between
    minute 105 and minute 120 should return `unknown` is a question for the user.
-7. **Assumed, not yet confirmed by the user.** Sticky closure is measured from the departure step, not
+7. **Confirmed by the user on 2026-10-02.** Sticky closure is measured from the departure step, not
    from the first flooded step of the run. Without this wording a road that drained before `t0` stays closed
    and "wait until" cannot help. See Decisions.
 8. **Assumed.** A road outside the model reads as clear. The user said on 2026-09-29 that roads outside the
@@ -119,7 +119,7 @@ Run each check on the server, not on a laptop.
    17:00 and it fails with no connection, then the alert shows a clear departure at 18:00. Given a clear
    route, then the alert does not appear.
 7. **Latency.** The p50 and p95 of `POST /route` on the server for short, medium, and long Hanoi trips are
-   within the factor the user set, measured against the baseline story's numbers.
+   within 2 times the baseline story's numbers, the factor the user set on 2026-10-02.
 8. **Evidence.** Each story records a screenshot or rendered output, as the sprint plan requires.
 
 ## Risks and open questions
@@ -130,13 +130,11 @@ Run each check on the server, not on a laptop.
 - **The fallback reintroduces the fault.** Today's model is the fallback. The response flag and the
   frontend message are what keep this visible. This is a required part of goal 5.
 - **Latency is unmeasured.** A unidirectional search visits more nodes than a bidirectional one. Story R1
-  records the baseline, and the user sets the factor before the last sprint.
+  records the baseline, and the user set the factor of 2 on 2026-10-02.
 - **The Java toolchain is new.** No build, CI job, or test exists for it. Story R4 builds them.
 - **Two depth sources on one screen.** The depth chart reads raster tiles and the engine reads the edge
   table. Both sample the same tiles, but at different spacing. The chart's `max_depth_m` can read lower than
   the depth the router used. The stories do not change the chart. Note it in the chart's documentation.
-- **Open question.** What latency factor is acceptable? Needed before the rollout story.
-- **Open question.** Does the user confirm the sticky-from-departure wording? Needed before the engine story.
 - **Open question.** What exact text does the alert show in each of the three states (clear departure found,
   none in this run, timing check unavailable)? The draft wording is in [[departure-time-advice-research]].
 
@@ -151,7 +149,8 @@ Run each check on the server, not on a laptop.
 | 2026-09-29 | Forecast horizon? | 2 hours, and every run covers it | Stated by the user. |
 | 2026-09-29 | Roads outside the model? | Read as clear | Stated by the user. |
 | 2026-09-29 | Is the departure step ever before now? | No. The server clock decides | A traveller cannot leave in the past. |
-| 2026-09-29 | How is sticky measured? | From the departure step (assumed) | Lets the router and the advice agree. Confirm with the user. |
+| 2026-09-29 | How is sticky measured? | From the departure step | Lets the router and the advice agree. Confirmed by the user on 2026-10-02. |
+| 2026-10-02 | What latency factor is acceptable? | 2 times the baseline of `US-046`, for the p50 and the p95 of each trip and vehicle | Stated by the user. Today's p50 is 8 to 21 ms for GraphHopper alone and 153 to 1,857 ms with the flood model. |
 | 2026-09-29 | Where does the advice read depth? | The edge depth table by edge id | The user chose option C for the timeline. `osm_way_id` is not available, so no other exact key exists. |
 
 ## Rollback
@@ -166,3 +165,4 @@ Run each check on the server, not on a laptop.
 - **2026-09-29, draft.** Written from the decisions in [[sticky-c-lite-routing]] and
   [[departure-time-advice-research]]. Stories are in [[time-aware-routing-engine-stories]].
 - **2026-10-01, draft.** `US-046` verified the source revision of the pinned image and the step length. A real run has 8 steps, so the horizon between the first and last step is 105 minutes. New open question in assumption 6.
+- **2026-10-02, draft.** The user confirmed the sticky-from-departure wording and set the latency factor to 2. Assumption 7, goal 7, the latency risk, and the Decisions table follow, and the two open questions are closed. The gates on `US-050` and `US-055` are cleared.

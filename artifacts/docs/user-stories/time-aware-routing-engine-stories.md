@@ -79,8 +79,8 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   from Story R2 and the checker finds no crossing of an impassable edge. The search carries the arrival time
   in its label, applies sticky closure from the departure step with a 10-minute margin, and reads the vehicle
   limit from the profile.
-  Priority: P0. Status: Not started. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate: the user
-  confirms the sticky-from-departure wording before this sprint.
+  Priority: P0. Status: Not started. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate cleared: the user
+  confirmed the sticky-from-departure wording on 2026-10-02.
 
 - **Story R6 (US-051): Add the `truck` and `foot` time-aware profiles.**
   As a truck driver or a pedestrian, I want the same timing check for my mode, so the four modes behave alike.
@@ -128,8 +128,8 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   same pairs run against today's model and the reference, then the percentage of pairs whose route changes
   and the median detour ratio are recorded. The concept page [[graphhopper-backend]] and
   [[routing-not-time-aware]] are updated, and the blocker moves to `resolved` only with this evidence.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7. Gate:
-  the user sets the latency factor before this sprint.
+  Priority: P0. Status: Not started. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7. Gate cleared:
+  the user set the latency factor of 2 on 2026-10-02, so the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1.
 
 ## Status history
 
@@ -139,3 +139,4 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
 - **2026-10-01, draft.** Story R2 (`US-047`) is `Done`: the reference and checker pass 54 tests, and all 16 scenario runs on real Hanoi roads match the sticky column with no crossing. Output rendered as `us-047-reference-check-output.png`. See [[sticky-routing-reference]].
 - **2026-10-01, draft.** Story R1 (`US-046`) is `In progress`. The edge count (67,833), the source revision (commit `d7dc1b06`), and the step length and count (15 minutes, 8 steps) are recorded in [[routing-not-time-aware]]. The p50 and p95 wait for the `US-037` knob.
 - **2026-10-02, draft.** Story R1 (`US-046`) is `Done`: the p50 and p95 of `POST /route` are recorded after the `US-037` knob settled, next to the edge count, the image revision, and the step length and count. Evidence: `us-046-baselines-check-output.png`.
+- **2026-10-02, draft.** The gates of Stories R5 and R10 are cleared. The user confirmed the sticky-from-departure wording and set the latency factor to 2 (see [[time-aware-routing-engine]]).

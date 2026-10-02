@@ -105,16 +105,15 @@ a wrong table, and the real table is measured on the server.
 
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-050 | P0 | Build the time-aware weighting and search for `motorbike` and `car` | L | [[time-aware-routing-engine-stories]] R5 | Stories R2, R4, E2. Gate: the user confirms the sticky-from-departure wording | None yet | - | Not started |
+| US-050 | P0 | Build the time-aware weighting and search for `motorbike` and `car` | L | [[time-aware-routing-engine-stories]] R5 | Stories R2, R4, E2. Gate cleared 2026-10-02: the user confirmed the sticky-from-departure wording | None yet | - | Not started |
 | US-043 | P0 | Build the Java reader with a hash check and reload without restart | M | [[edge-depth-table-stories]] E5 | Stories E2, R4 | None yet | - | Not started |
-| US-045 | P0 | Prove the table on the server | M | [[edge-depth-table-stories]] E7 | Stories E3, E4. Gate: the user sets the build-time limit | None yet | - | Not started |
+| US-045 | P0 | Prove the table on the server | M | [[edge-depth-table-stories]] E7 | Stories E3, E4. Gate cleared 2026-10-02: the user set the build-time limit (5 minutes after `3_calculate_depth`, never delaying the tile task) | None yet | - | Not started |
 
 ## Carried to plan 3
 
 Stories R6, R7, R8, R9, and R10 need the engine from Sprint 8 and go to [[sprint-plan-3]]. The gates on Stories R5 and E7
-stay here. If a gate is not met by the start of its sprint, the story moves to the backlog in [[sprint-plan-3]] with the
-gate as its blocking risk. Story R5 waits for the sticky-from-departure confirmation. Story E7 waits for the build-time
-limit. The soak row in Sprint 5 has no gate, because the user set the soak length to 48 hours on 2026-10-01.
+were cleared on 2026-10-02: the user confirmed the sticky-from-departure wording and set the build-time limit. No story of
+this plan has an open gate. The soak row in Sprint 5 has no gate, because the user set the soak length to 48 hours on 2026-10-01.
 
 ## Risks
 
@@ -122,8 +121,8 @@ limit. The soak row in Sprint 5 has no gate, because the user set the soak lengt
 | ---- | ------ | ---------- |
 | The pinned image lacks the extension points the module needs, or its source revision cannot be found | Sprint 6 stalls and the engine work moves | Story R1 finds the revision first. If the points are missing, fall back to Tier A-prime and revise this plan. |
 | The LM admissibility test fails | The search runs without LM and latency rises | Story R4 runs the test early. Story R10 in [[sprint-plan-3]] measures the real latency against the factor. |
-| The table build takes too long on the server | Runs slow down, or the DAG blocks | Story E4 keeps the task non-blocking. Story E7 measures it. The user sets the limit. |
-| The sticky-from-departure wording is not confirmed | The engine and the advice use a different rule than the user intends | Confirm before Sprint 8. The wording is an assumption in [[time-aware-routing-engine]]. |
+| The table build takes too long on the server | Runs slow down, or the DAG blocks | Story E4 keeps the task non-blocking. Story E7 measures it against the limit the user set on 2026-10-02 (5 minutes after `3_calculate_depth`). |
+| The sticky-from-departure wording was not confirmed | Closed on 2026-10-02. The user confirmed it | Recorded in [[time-aware-routing-engine]]. |
 | A graph re-import happens between sprints | The table hash mismatches and routing falls back to today's model | Story E6 documents the procedure. The response flag and the alert message make the fallback visible. |
 | Latency is unmeasured | The engine may be too slow for the map | Story R1 sets the baseline in Sprint 5, and Story R10 checks against the user's factor. |
 
@@ -162,3 +161,4 @@ limit. The soak row in Sprint 5 has no gate, because the user set the soak lengt
 - **2026-10-02, active.** [[map-refresh-requirement-research]] (`US-062`) moved from `Reviewed` to `Done`. The user decided to keep the 15-minute refresh for now. The map-age label and a faster pipeline were not chosen. Evidence: `us-062-decision-check-output.png`. Sprint 5 has 6 `Done` rows (`US-040`, `US-046`, `US-047`, `US-062`, `US-064`, `US-065`) and 2 `In progress` (`US-034`, `US-063`).
 - **2026-10-02, active.** The replay is running on the server. The user unpaused `flood_mapping_full` at about 15:54 +07, the 16:00 slot read the replay and started, and the `US-034` soak and the `US-037` retest run until 2026-10-04 16:00 +07. A killed first attempt left a 3Di simulation running, and the retry got HTTP 429 (no sessions) once before it succeeded.
 - **2026-10-02, active.** The user decided on the open items. The trigger task keeps its one retry, with no change during the test. The loose ends (the geocoder story in [[frontend-polish]] still `Reviewed`, the `flood_road_values_shadow` table on the server, and `US-061` in the backlog of [[sprint-plan-3]]) wait until after Sprint 6, and their sprint is set then (rule 9). The end-of-test evidence scripts for `US-034`, `US-037`, and `US-063` are written and dry-run.
+- **2026-10-02, active.** The user cleared the gates. `US-050` (Story R5): the sticky-from-departure wording is confirmed. `US-045` (Story E7): the build-time limit is that the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`. The latency factor of 2, for `US-055` in [[sprint-plan-3]], is set too. No row of Sprints 5 to 8 has an open gate.

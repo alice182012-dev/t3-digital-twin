@@ -83,7 +83,7 @@ Run each check on the server.
 1. **Export.** Given the built graph, when the export command runs, then it writes one row per edge and the
    row count equals the graph's edge count.
 2. **Build.** Given a real run and the export, when the Airflow task runs, then one table appears for the run
-   with one value per edge and step, and the task reports its duration and file size.
+   with one value per edge and step, and the task reports its duration and file size. The duration is within the build-time limit: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 3. **Spot check.** Given the table, when 20 edges are read against `ST_Value` at their deepest sample, then
    every value matches.
 4. **Hash guard.** Given a table built from a different graph, when a reader opens it, then the reader
@@ -100,14 +100,13 @@ Run each check on the server.
 
 - **The export needs Java.** The first story that builds the toolchain must land before the export.
 - **Build time on the server is unmeasured.** A sampling design that takes 1.9 s per step for pieces could
-  take much longer for edges. The proof story measures it.
+  take much longer for edges. The proof story measures it. The user set the limit on 2026-10-02: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 - **Graph re-import invalidates the table.** Automatic detection exists, but a stale table means the engine
   falls back to today's model. See [[time-aware-routing-engine]], goal 5.
 - **Storage choice is open.** A volume is simpler. MinIO gives one place for all runs. Decide in the publish
   story.
 - **Open question.** Does the DAG wait for this task, or does the task run after the routing tasks without
   blocking them? The stories assume it does not block, because the engine has a fallback.
-- **Open question.** How much time may the task add to a run? The user sets the number before the proof story.
 
 ## Decisions
 
@@ -118,6 +117,7 @@ Run each check on the server.
 | 2026-09-29 | Does the table store vehicle limits? | No | Consumers apply their own limit. |
 | 2026-09-29 | Is coverage flagged? | No. No coverage reads as 0 | Stated by the user. |
 | 2026-09-29 | Who reads the table? | The Java engine and the Python departure timeline | The user chose option C for the timeline. |
+| 2026-10-02 | What build-time limit? | The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth` | The user accepted this suggestion. A run has 15 minutes, and the tile task alone took up to 11.5 minutes under the old 50 mm/h storm (`US-065`). |
 
 ## Rollback
 
@@ -129,3 +129,4 @@ Run each check on the server.
 
 - **2026-09-29, draft.** Written from [[sticky-c-lite-routing]]. Stories are in [[edge-depth-table-stories]].
 - **2026-10-01, draft.** Assumptions 5 and 6 are verified by `US-046`: 67,833 edges, and 8 steps of 15 minutes. The table is about 1.1 MB per run.
+- **2026-10-02, draft.** The user set the build-time limit. The risk, the Definition of done (item 2), and the Decisions table follow. The gate on `US-045` is cleared.

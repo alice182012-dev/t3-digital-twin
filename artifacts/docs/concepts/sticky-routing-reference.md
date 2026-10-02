@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
 related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-02
 ---
 
 # Sticky routing reference and checker
@@ -20,7 +20,7 @@ The code is in `scripts/routing_reference/`, with tests beside it. It is pure Py
 - The depth limits are in `VEHICLE_LIMIT_CM`: `motorbike` 20 cm and `car` 30 cm. A test fails if they differ from `threshold_cm` in `flood_utils.py`. A depth equal to the limit closes the road, as band `b4` does in `flood_utils.py`.
 - The margin is 600 s (`DEFAULT_MARGIN_S`), the 10 minutes of the PRD.
 - The end of the window is included. A step exactly at `arrival + margin` closes the road.
-- Steps before the departure are ignored. This is the "sticky from the departure" wording that the user has not yet confirmed for `US-050`. Water that drained before departure does not close a road.
+- Steps before the departure are ignored. This is the "sticky from the departure" wording, which the user confirmed for `US-050` on 2026-10-02. Water that drained before departure does not close a road.
 - Closures only grow as the arrival time grows. An earlier arrival is never worse, so a Dijkstra search over arrival times is exact without any waiting.
 
 ## Functions
