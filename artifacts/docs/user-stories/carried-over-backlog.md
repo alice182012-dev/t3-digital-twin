@@ -56,10 +56,14 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   truck 35 cm, and foot 40 cm. The set is built from real roads in `flood_road_values` whose depth lies
   between two limits, as the 2026-09-28 overpass did (`way/776941610#3`, 20.2 cm). The expected result of
   each road comes from the limits, not from another backend.
-  Priority: P2. Status: Not started. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
+  Priority: P2. Status: In progress. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
   length to 48 hours on 2026-10-01. The comparison with the earlier Valhalla backend is dropped (see the last
   history entry).
   Test points: inside the model border (`.claude/CLAUDE.md`).
+  Soak window: 2026-10-02 00:45 +07 to 2026-10-04 00:45 +07. The user gave the start, which is the first on-time run after the `US-037` cold start. None of the three containers (`airflow_new-graphhopper-1`, `airflow_new-floodmap-backend-1`, `airflow_new-flood-routing-frontend-1`) has restarted since 2026-10-01, so the window runs under one backend configuration.
+  Tooling: `scripts/backend_soak/` (29 tests). `run_soak.sh` is the verdict. It exits with 0 only if no container restarted, no log has a 5xx response or an error line, and no known-answer check failed. See "Soak and known-answer check" in [[graphhopper-backend]].
+  Interim, 2026-10-02 03:13 +07 (2 hours 28 minutes in): the logs since 00:45 hold 2,422 requests on `floodmap-backend` (1,981 with 200 and 441 with 400), 308 on the frontend, and 0 responses with 5xx and 0 error lines in all three containers. The known-answer check on the 03:00 run covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none, and all 40 blocked promises held.
+  To finish: after 2026-10-04 00:45 +07, run `sh scripts/backend_soak/run_soak.sh`. If it exits with 0, render its output as the evidence image and set the story to `Done`. If it does not, log the failure as a blocker.
 
 - **Story 4 (US-035): Revalidate "loading is very slow".**
   As a user opening the app, I want to know if loading is slow and why, so a real slowness gets its own
@@ -171,3 +175,4 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-10-01, draft.** Story 6 (`US-037`) is `In progress`. The user unpaused `flood_mapping_full` at 18:19 +07 and kept the test rain. Baseline from 8 recorded runs: step 1 published 1.6 to 6.8 minutes after it became now. Measuring first, then one knob at a time. Plan: [[us-037-narrow-the-per-run-critical-path]].
 - **2026-10-01, draft.** Story 3 (`US-034`) is in Sprint 5, which started today. `US-037` is not a dependency, but the soak should start after the `US-037` knob settles, so the 48 hours run under one worker configuration. Story 6 (`US-037`) stays `In progress` in Sprint 4.
 - **2026-10-02, draft.** Story 6 (`US-037`) is `Done`: four consecutive on-time runs published step 1 with margins of +1.9, +4.1, +2.7, and +2.4 minutes. Evidence: `us-037-margins-check-output.png`.
+- **2026-10-02, draft.** Story 3 (`US-034`) is `In progress`. The user gave the soak start as 2026-10-02 00:45 +07, so the 48 hours end on 2026-10-04 00:45 +07. The logs since then were retrieved from the containers, and the tooling in `scripts/backend_soak/` found no 5xx and no failed check at the 2 hour 28 minute mark. A first version of the check failed 3 of 120 pairs because of long GraphHopper edges, recorded in [[graphhopper-backend]].

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-02
 ---
 
 # GraphHopper flood-road backend
@@ -181,6 +181,32 @@ All four limits apply, because a GraphHopper `foot` profile exists to use the `f
 request's own `profile` and each vehicle gets its own limit. See
 [[flood-routing-vehicle-type-always-motorbike]] (resolved).
 
+## Soak and known-answer check
+
+`scripts/backend_soak/run_soak.sh` gives the verdict of the soak (`US-034`). It reads the state of the three containers, scans their logs since the soak start, and runs `soak_checks.py roads` inside `airflow_new-floodmap-backend-1`. It exits with 0 only if no container restarted, no log holds a 5xx response or an error line, and no check failed. `soak_checks.py` also has a `latency` command, which `US-046` used for the baselines in [[routing-not-time-aware]], and tests in `scripts/backend_soak/` (29).
+
+The `roads` check reads one run of `flood_road_values` and picks road pieces in five depth buckets: below every limit, between the motorbike and car limits, between the car and truck limits, between the truck and foot limits, and past every limit. The pick is deterministic (`md5` of the segment id). A piece is a candidate only if its two neighbours on the same way exist and are no deeper than the next limit, and no piece that would block an allowed vehicle lies within about 170 m. For each piece, each profile, and both directions, the check routes from the neighbour before the piece to the neighbour after it. It sends the request once with the flood fields and once without, the dry control. `expected_outcome` takes the promise from the bands of `DEPTH_BANDS`.
+
+| Depth against the vehicle's limit | Band | Promise | Pass when |
+| --- | --- | --- | --- |
+| At or above the limit | b4, priority 0 | Blocked | No route crosses the piece. |
+| From 0.5 times the limit up to the limit | b2 and b3, priority 0.2 and 0.05 | Costly | A route exists. |
+| Below 0.5 times the limit | none | Open | A route crosses the piece. |
+
+The check skips a pair when the dry control cannot show the promise. For a blocked or open promise the dry route must cross the piece. For a costly promise the dry route must exist. In those pairs the network (a one-way piece, a dual carriageway, a road closed to foot) and not the flood decides the result.
+
+Run on the 2026-10-02 03:00 run, the check covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none. All 40 blocked promises held.
+
+### What a stricter first version found
+
+A first version with a smaller neighbourhood (about 60 m) failed 3 of 120 pairs. The truck and the foot walker found no route across two roads whose depth (32.5 cm and 33.4 cm) lies below their limits (35 cm and 40 cm). One of them was the overpass `Cầu vượt Phú Đô` (`way/596300521#1`). The dry control found a 137 m route, and no piece of 35 cm or more lies within 136 m of it. Bisecting the 323 b4 polygons of the run found one, `b4_236` (12,485 m²), that touches neither the route nor its endpoints, yet makes the pair unroutable for the motorbike, the car, and the truck when sent alone as a priority 0 area. For the foot walker the same polygon moved the snapped endpoint about 100 m and the route grew to 1,422 m.
+
+The cause fits the way GraphHopper applies an area. It blocks a whole edge when any part of the edge meets the polygon. A GraphHopper edge can be much longer than one road piece, so an edge that holds a shallow piece can also run into a deeper zone. The 22 m buffer of `DEFAULT_BUFFER_M` widens the effect. This is inferred from the behavior, and the edge geometry was not read. The check now avoids such pairs by its neighbourhood rule, and this page records the effect as a property of the design. FYI for `US-040` and `US-043`, which store and read one depth per GraphHopper edge id.
+
+## Log volume
+
+GraphHopper writes the whole custom model of each flood-graded `/route` request on one log line. The longest line seen on 2026-10-02 was 454,252 characters. The container's `json-file` log has no size limit (`LogConfig.Config` is empty). The raw log of `airflow_new-graphhopper-1` reached at least 271 MB in 1,558 lines between 00:45 and about 03:10 +07 on 2026-10-02, nearly all of it from test traffic. The fetch of the raw log stopped at that point, because it did not finish within 280 s. A page load sends 13 route requests ([[carried-over-backlog]] Story 4), so real use can write several megabytes per load. Whether this threatens the disk of the server was not checked. `run_soak.sh` filters the log on the host with `gh_log_filter.ps1` to avoid copying it. Setting the `RouteResource` logger to `WARN` in `config.yml` would remove these lines, and it needs a GraphHopper restart.
+
 ## Open items
 
 - `floodmap/graphhopper-maps/config-local.js.example` lists all four profiles: `motorbike`, `car`,
@@ -196,10 +222,12 @@ request's own `profile` and each vehicle gets its own limit. See
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
-  with a real PostGIS and a stub GraphHopper. Still no soak time. `US-034`
-  ([[carried-over-backlog]] Story 3, Sprint 5) adds a 48-hour soak and a check of `POST /route`
-  against the vehicle depth limits. The comparison with the old Valhalla backend was dropped on
-  2026-10-01, because the Valhalla model was wrong when it ran.
+  with a real PostGIS and a stub GraphHopper. The 48-hour soak of `US-034`
+  ([[carried-over-backlog]] Story 3, Sprint 5) runs from 2026-10-02 00:45 +07 to 2026-10-04 00:45 +07.
+  "Soak and known-answer check" below describes the tooling. The comparison with the old Valhalla
+  backend was dropped on 2026-10-01, because the Valhalla model was wrong when it ran.
+- GraphHopper's log has no size limit and each flood-graded `/route` request writes one line of up to
+  about 450 KB. See "Log volume".
 - `GET /flood/points` has no measured latency on the server since it moved to tiles, and none
   under concurrent popup taps. Story 4 of [[point-depth-lookup-backend]] covers that check.
   `backend/test_server.py` checks its depth against `gdallocationinfo` on a synthetic `depth.tif`.
