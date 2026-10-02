@@ -21,6 +21,7 @@ from threedi_api_client.openapi import (
 
 import requests
 
+import rain_replay
 from threedi_client import get_client
 
 TOMORROW_API_KEY = os.getenv("TOMORROW_API_KEY")
@@ -126,7 +127,19 @@ def get_rain_forecast(start=None):
     start = start or clock_slot(datetime.now(timezone.utc))
     end_time = start + timedelta(hours=RAIN_LOOKAHEAD_HOURS)
 
+    replay_file = os.getenv("FLOOD_TEST_RAIN_CSV", "").strip()
+    replay_start = os.getenv("FLOOD_TEST_RAIN_START", "").strip()
     test_rain = os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip()
+    if bool(replay_file) != bool(replay_start) or (replay_file and test_rain):
+        raise ValueError(
+            "Set FLOOD_TEST_RAIN_CSV together with FLOOD_TEST_RAIN_START and without FLOOD_TEST_RAIN_MM_HR, "
+            "or set none of them"
+        )
+    if replay_file:
+        print(f"🧪 Replaying {replay_file} from {replay_start}")
+        return rain_replay.replay_intervals(
+            rain_replay.load_event(replay_file), parse_iso(replay_start), start, RAIN_LOOKAHEAD_HOURS, RAIN_TIMESTEP_MINUTES
+        )
     if test_rain:
         rain_mm_hr = float(test_rain)
         print(f"🧪 Using FLOOD_TEST_RAIN_MM_HR={rain_mm_hr:g} mm/h")

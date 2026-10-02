@@ -55,6 +55,37 @@ class FloodRainGateTests(unittest.TestCase):
         self.assertTrue(module.evaluate_rain_gate(intervals, 5)["should_run"])
         self.assertTrue(all(module.rain_intensity_mm_hr(item) == 6.25 for item in intervals))
 
+    def test_replay_reads_the_event_file_from_the_run_slot(self):
+        module = load_create_simulation()
+        event_file = ROOT / "scripts/rain_events/hanoi_20251005_48h.csv"
+        replay = {
+            "FLOOD_TEST_RAIN_CSV": str(event_file),
+            "FLOOD_TEST_RAIN_START": "2025-10-05T22:30:00Z",
+            "FLOOD_TEST_RAIN_MM_HR": "",
+        }
+        slot = datetime(2025, 10, 6, 21, 0, tzinfo=timezone.utc)
+
+        with patch.dict(os.environ, replay, clear=False), patch("builtins.print"):
+            intervals = module.get_rain_forecast(start=slot)
+
+        self.assertEqual(len(intervals), 9)
+        self.assertEqual(intervals[0]["startTime"], "2025-10-06T21:00:00Z")
+        self.assertEqual(max(module.rain_intensity_mm_hr(item) for item in intervals), 56.481693)
+        module.requests.get.assert_not_called()
+
+    def test_replay_settings_that_are_half_set_or_mixed_with_a_constant_raise(self):
+        module = load_create_simulation()
+        event_file = str(ROOT / "scripts/rain_events/hanoi_20251005_48h.csv")
+        for settings in (
+            {"FLOOD_TEST_RAIN_CSV": event_file, "FLOOD_TEST_RAIN_START": "", "FLOOD_TEST_RAIN_MM_HR": ""},
+            {"FLOOD_TEST_RAIN_CSV": "", "FLOOD_TEST_RAIN_START": "2025-10-05T22:30:00Z", "FLOOD_TEST_RAIN_MM_HR": ""},
+            {"FLOOD_TEST_RAIN_CSV": event_file, "FLOOD_TEST_RAIN_START": "2025-10-05T22:30:00Z", "FLOOD_TEST_RAIN_MM_HR": "6"},
+        ):
+            with self.subTest(settings=settings), patch.dict(os.environ, settings, clear=False):
+                with self.assertRaises(ValueError):
+                    module.get_rain_forecast()
+        module.requests.get.assert_not_called()
+
     def test_live_forecast_uses_exact_two_hour_fifteen_minute_query(self):
         module = load_create_simulation()
 
