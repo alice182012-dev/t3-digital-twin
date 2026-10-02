@@ -90,7 +90,7 @@ mm/h before the start and after the last row. Setting only one of the two variab
 with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
 `scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
 (246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
-rest as dry cycles, and a skipped run counts as a success for the cold start rule. See
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. See
 [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 
 ## Triggering the simulation

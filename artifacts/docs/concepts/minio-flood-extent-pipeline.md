@@ -65,7 +65,7 @@ are identical to the old query. A timestep has about 192 tiles at zoom 10 to 16,
 `FLOOD_EXTENT_TILE_STEPS` timesteps (2) of a run get tiles. The tile build grows with the flooded area:
 under a sustained 50 mm/h test storm it grew from 4.4 to 6.1 minutes over the first hour after a cold
 start. That storm is not a real event, so the user stopped it on 2026-10-02. The margin of `US-037` is
-retested under a replay of a recorded 48-hour rain (`US-063`, see [[3di-simulation-orchestration]]).
+retested under a replay of a recorded 48-hour rain (`US-063`, see [[3di-simulation-orchestration]]). The 50 runs of that storm from 2026-10-02 00:45 to 13:00 +07 show the effect in numbers: the tile task grew from 5.8 minutes in the 01:00 hour to 11.5 minutes by 09:00 and then stayed there, and the margin to the end of the tile task fell from +2.3 minutes to -3.3 minutes (`scripts/pipeline_margins/report.py`, `US-065`). The 07:00 run, with a tile task of 15.8 minutes, is not explained.
 
 ## Filename to UTC conversion
 

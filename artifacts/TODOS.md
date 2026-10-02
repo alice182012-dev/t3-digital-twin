@@ -36,7 +36,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 8 (US-063), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, deployed to the server at 15:20 +07 (`c3d398e`). The worker was recreated, and it reads the replay file with the start `2026-10-02T09:00:00Z` (16:00 +07). `flood_mapping_full` is still paused. Unpause it at about 15:55 +07, so the first run is the 16:00 slot. Still to do without the server: the schedule preview.
+**Today:** 2026-10-02, deployed to the server at 15:20 +07 (`c3d398e`). The worker was recreated, and it reads the replay file with the start `2026-10-02T09:00:00Z` (16:00 +07). `flood_mapping_full` is still paused. Unpause it at about 15:55 +07, so the first run is the 16:00 slot. The schedule preview is built: at the server's gate, one chain of 192 runs. What is left is the run on the server.
 
 ### Done - US-064 Make the soak check fail when it cannot read the server
 
@@ -50,7 +50,7 @@
 
 **Result:** 2026-10-02, `run_soak.sh` exits with 1 when a Docker call fails, a log has no timestamped line, or a container started inside the window. 42 tests pass, and a replay of the 13:53 outage exits with 1.
 
-### Active - US-065 Report the step-1 margin of every run of the replay
+### Done - US-065 Report the step-1 margin of every run of the replay
 
 **What:** One command that reads the per-run timings of the 48-hour replay and exits with 0 only if every simulated run published step 1 before it became now and none is missing ([[carried-over-backlog]] Story 10).
 
@@ -60,7 +60,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 10 (US-065), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, not started. It moves `run_margins.sh` out of the untracked `marie-curie/` into `scripts/pipeline_margins/`, with a fixture of the four runs of 2026-10-02.
+**Result:** 2026-10-02, the report passes 21 tests. Run on 50 real runs of the 50 mm/h storm it fails: the mean margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00, as the tile task grew from 5.8 to 11.5 minutes.
 
 ### Active - US-062 Find out how fast a user must react to the flood map
 
@@ -88,7 +88,7 @@ Unfinished items carried over from Sprint 4:
 
 **Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
 
-**Today:** 2026-10-02, reopened. Four runs published step 1 with margins of +1.9 to +4.1 minutes, but under a constant 50 mm/h rain that you judged unrealistic. The margin shrank about 0.6 minutes per run. The retest runs the 48-hour replay of `US-063` and is read with the report of `US-065`. It waits for the server.
+**Today:** 2026-10-02, reopened. Four runs published step 1 with margins of +1.9 to +4.1 minutes, but under a constant 50 mm/h rain that you judged unrealistic. The margin shrank about 0.6 minutes per run. The retest runs the 48-hour replay of `US-063` and is read with the report of `US-065`. The report on the old storm shows the margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00. It waits for the server.
 
 ## Blockers for the next sprint
 
