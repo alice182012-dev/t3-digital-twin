@@ -82,6 +82,17 @@ legitimate skip and an actual failure.
 An operator can force a fixed rain rate for local testing with `FLOOD_TEST_RAIN_MM_HR`, which
 bypasses the Tomorrow.io call and builds a deterministic rain series instead.
 
+An operator can also replay a recorded event. `FLOOD_TEST_RAIN_CSV` names a file of
+`offset_minutes,precipitation_mm_hr` rows, 30 minutes apart, and `FLOOD_TEST_RAIN_START` is the UTC
+time of offset 0. Each run reads its own 2-hour lookahead from the event (`scripts/rain_replay.py`,
+`replay_intervals`), and each 30-minute rate holds for both of its 15-minute intervals. The rate is 0
+mm/h before the start and after the last row. Setting only one of the two variables, or setting either
+with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
+`scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
+(246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. See
+[[us-063-realistic-rain-replay-for-us-037-and-us-034]].
+
 ## Triggering the simulation
 
 `create_simulation.run_forecast_process` builds the 3Di simulation from `TEMPLATE_ID` via the

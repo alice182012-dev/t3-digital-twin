@@ -2,7 +2,7 @@
 date: 2026-10-01
 type: plan
 branch: front-end-according-to-mock-up
-status: done
+status: active
 tags: [plan, pipeline, performance, us-037, sprint-4]
 related: ["[[carried-over-backlog]]", "[[sprint-plan]]", "[[2026-10-01]]", "[[five-minute-tile-freshness]]", "[[map-shows-forecast-not-now]]", "[[flood-mapping-full-worker-concurrency-serializes-runs]]", "[[3di-simulation-orchestration]]"]
 ---
@@ -127,3 +127,4 @@ The dissolve (`ogr2ogr -dialect SQLite`, one `ST_Union` per band group, one thre
 - **2026-10-01, active.** Trend from the runs between 20:45 and 22:45: the tile task takes 14.6 to 17.0 minutes, longer than the 15-minute cycle, so runs overlap and depth rises again to 3.7 to 6.1 minutes. The 50 mm/h test storm keeps enlarging the flooded area, so the tile build keeps growing. Margins in this period are not a fair measure of the fixes. The four runs that count start with the 23:15 slot.
 - **2026-10-01, active.** Run 1 of the check: the manual run of 23:16 (slot 23:15, due 23:30). The user had stopped the 23:00 and 23:15 scheduled runs, and I stopped the two orphaned old-code dissolves of the 23:00 run. The trigger took until 23:20:21 (the first attempt went up for retry), depth took 3.25 minutes (23:20:35 to 23:23:50), tiles took 10.8 minutes (23:23:51 to 23:34:41), and step 1 was published at 23:34:34, 4.6 minutes after it was due. This is the first run with the per-band dissolve. Between 20:45 and 22:45 the same storm size gave tile tasks of 14.6 to 17.0 minutes, so the dissolve change cut about 4 to 6 minutes. It started 2.7 minutes after its slot because of the retried trigger, so an on-time run would have been about 1.9 minutes late. Not a pass yet. The 23:30 and 23:45 scheduled runs start on their slots and nothing else runs in the worker.
 - **2026-10-02, done.** The cold start rule (`eef34aa` to `828446f`) is on the server. The DAG was unpaused after a state reset. The cold-started 00:30 slot started 11 minutes late and does not count. Four consecutive on-time runs followed: 00:45 (+1.9), 01:00 (+4.1), 01:15 (+2.7), and 01:30 (+2.4 minutes), with tile tasks of 4.4, 5.0, 5.7, and 6.1 minutes. `us-037-margins-check-output.png` shows the output. The story is `Done`. The user's 5-minute lateness target was not needed.
+- **2026-10-02, active.** Reopened. The user stopped the pipeline, because the constant 50 mm/h test rain is not a real event, and the four-run pass covers only the first hour of such a storm. The retest is in [[us-063-realistic-rain-replay-for-us-037-and-us-034]].

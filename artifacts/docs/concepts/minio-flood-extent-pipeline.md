@@ -64,7 +64,8 @@ areas, and `ST_UnaryUnion` was not faster. On the same file the area per band an
 are identical to the old query. A timestep has about 192 tiles at zoom 10 to 16, and only the first
 `FLOOD_EXTENT_TILE_STEPS` timesteps (2) of a run get tiles. The tile build grows with the flooded area:
 under a sustained 50 mm/h test storm it grew from 4.4 to 6.1 minutes over the first hour after a cold
-start.
+start. That storm is not a real event, so the user stopped it on 2026-10-02. The margin of `US-037` is
+retested under a replay of a recorded 48-hour rain (`US-063`, see [[3di-simulation-orchestration]]).
 
 ## Filename to UTC conversion
 

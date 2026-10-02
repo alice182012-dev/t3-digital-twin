@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
-us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038"]
+us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "US-063", "US-064", "US-065"]
 status: draft
 subsystem: floodmap-frontend, floodmap-backend
 source_ideas: []
@@ -60,10 +60,10 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   length to 48 hours on 2026-10-01. The comparison with the earlier Valhalla backend is dropped (see the last
   history entry).
   Test points: inside the model border (`.claude/CLAUDE.md`).
-  Soak window: 2026-10-02 00:45 +07 to 2026-10-04 00:45 +07. The user gave the start, which is the first on-time run after the `US-037` cold start. None of the three containers (`airflow_new-graphhopper-1`, `airflow_new-floodmap-backend-1`, `airflow_new-flood-routing-frontend-1`) has restarted since 2026-10-01, so the window runs under one backend configuration.
+  Soak window: 2026-10-02 16:00 +07 to 2026-10-04 16:00 +07, the 48 hours of the replay of Story 8. The first window (2026-10-02 00:45 +07 to 2026-10-04 00:45 +07) is void. The user stopped the pipeline on 2026-10-02, because the constant 50 mm/h test rain is not a real event, and the Docker daemon on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The new window is the 48 hours of the replayed rain event of [[carried-over-backlog]] Story 8 (`US-063`). It starts with the replay at 16:00 +07, which needs the DAG unpaused by about 15:55 +07.
   Tooling: `scripts/backend_soak/` (29 tests). `run_soak.sh` is the verdict. It exits with 0 only if no container restarted, no log has a 5xx response or an error line, and no known-answer check failed. See "Soak and known-answer check" in [[graphhopper-backend]].
-  Interim, 2026-10-02 03:13 +07 (2 hours 28 minutes in): the logs since 00:45 hold 2,422 requests on `floodmap-backend` (1,981 with 200 and 441 with 400), 308 on the frontend, and 0 responses with 5xx and 0 error lines in all three containers. The known-answer check on the 03:00 run covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none, and all 40 blocked promises held.
-  To finish: after 2026-10-04 00:45 +07, run `sh scripts/backend_soak/run_soak.sh`. If it exits with 0, render its output as the evidence image and set the story to `Done`. If it does not, log the failure as a blocker.
+  Interim of the void window, 2026-10-02 03:13 +07 (2 hours 28 minutes in): the logs since 00:45 hold 2,422 requests on `floodmap-backend` (1,981 with 200 and 441 with 400), 308 on the frontend, and 0 responses with 5xx and 0 error lines in all three containers. The known-answer check on the 03:00 run covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none, and all 40 blocked promises held.
+  To finish: after 2026-10-04 16:00 +07, run `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00`. If it exits with 0, render its output as the evidence image and set the story to `Done`. If it does not, log the failure as a blocker.
 
 - **Story 4 (US-035): Revalidate "loading is very slow".**
   As a user opening the app, I want to know if loading is slow and why, so a real slowness gets its own
@@ -118,7 +118,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
   or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
   now, with a measured margin, not after.
-  Priority: P2. Status: Done. Estimate: M. Sprint: 4. Dependencies: None; independent of Sprint 3's
+  Priority: P2. Status: In progress (reopened 2026-10-02). Estimate: M. Sprint: 4, carried in the `TODOS.md` Backlog. Dependencies: Story 8 (`US-063`) for the retest. Independent of Sprint 3's
   frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
   set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
   so there may be headroom to raise it (12 logical cores available per
@@ -126,8 +126,9 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `FLOOD_EXTENT_WORKERS` is 2 threads, well under the same headroom. Measure CPU and memory use during a
   real run before raising either, since depth-calc's subprocess count and tile-build's thread count are
   the two knobs, and both share the same box.
-  Evidence: ![[us-037-margins-check-output.png|700]]
-  Details:
+  Retest: every simulated run of the 48-hour replay of Story 8 publishes step 1 before it becomes now, and the worst margin is recorded. The run count is 192 of 192 at the server's gate of 0.01 mm/h, and 104 at 5 mm/h. The first measurement below used a constant 50 mm/h rain, which the user judged unrealistic.
+  Evidence of the first measurement: ![[us-037-margins-check-output.png|700]]
+  Details of the first measurement:
   1. What: step 1 of every run is published before it becomes "now". Four consecutive on-time runs (slots 00:45, 01:00, 01:15, and 01:30 +07 on 2026-10-02) had margins of +1.9, +4.1, +2.7, and +2.4 minutes.
   2. How: three changes. The 8 depth processes read their inputs from the container's local disk (`depth_inputs.py`, `684262b`, `3e83a7f`), which cut depth from 6.8 to 7.5 to 3.2 to 3.9 minutes. The tile dissolve runs one process per band (`4e793c0`, `1607484`), with identical areas. A run hotstarts only if the previous slot's run is success or running (`eef34aa` to `828446f`), so a restart starts from the initial water level. Each was found by measuring: the depth experiment of 2026-10-01 and a stage profile of the tile build.
   3. Why: the map showed a tile 1.5 to 3 minutes after its time ([[map-shows-forecast-not-now]]), and under the growing test storm the tile task reached 15 to 17 minutes, longer than the 15-minute cycle.
@@ -148,6 +149,34 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   2. How: a subagent fixed them in `1792d37` under rule 11. The script `evidence/us-038-drift-check.sh` then compared `.env.example` with the variables `compose.yml` reads, searched the main tree for `[[SW Architecture]]`, counted `*/15` and `max_active_runs=2` on the orchestration page, and looked up every file `PINNED_COMMIT.md` names.
   3. Why: a fresh checkout should start from `.env.example`, and the docs should not contradict the DAG.
   4. Effect: all four checks pass, run on the Mac at 2026-09-30 16:16 (`gods-macbook.local`). The criterion "lists the variables `compose.yml` reads" is read as: every required variable (`${NAME:?...}`) is listed, and variables with a default in `compose.yml` may be left out. Sixteen optional variables are left out on purpose. The search skips `.claude/worktrees`, which hold stale copies of older branches.
+
+- **Story 8 (US-063): Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak.**
+  As the pipeline owner, I want the pipeline to run a recorded rain event instead of a constant 50 mm/h, so the per-run timing and the 48-hour soak are measured under a load that happens in practice.
+  Given the hyetograph of the Hanoi rain of 2025-10-05 to 2025-10-08, when the pipeline replays its 48-hour window (2025-10-05T22:30Z to 2025-10-07T22:30Z, 246.8 mm, peak 56.48 mm/h) through `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_START`, then each run reads the 2-hour lookahead of its own slot from the event, the rain gate skips the dry runs, and the other runs simulate until the window ends. At the 5 mm/h gate, 104 of the 192 runs simulate.
+  Priority: P2. Status: In progress. Estimate: S. Sprint: 5 ([[sprint-plan-2]]). Dependencies: None. The server steps wait for the user's go. Docker works again ([[2026-10-02-disk-cleanup-and-d-drive-move]]).
+  Plan: [[us-063-realistic-rain-replay-for-us-037-and-us-034]]
+  Offline checks still to do: a pure function `simulating_slots` in `rain_replay.py` that lists, for the 192 slots of the window, which ones pass the rain gate and which ones start a new chain after a dry gap. A test pins the counts the pipeline's own gate gives: 104, 156, and 174 simulating runs at 5, 2, and 1 mm/h, and chains of 26, 46, 10, 10, and 12 runs at 5 mm/h. The report of Story 10 reads this list, and the user reads it to choose the replay start.
+  Built on 2026-10-02: `scripts/rain_replay.py`, the event file `scripts/rain_events/hanoi_20251005_48h.csv`, and the two variables in `compose.yml` and `.env.example`. Tests first (9 in `scripts/test_rain_replay.py`, 2 in `test/test_flood_rain_gate.py`).
+  Evidence: None yet. It needs a run on the server, in the log line `Replaying` and in a run that reads the peak rate.
+
+- **Story 9 (US-064): Make the soak check fail when it cannot read the server.**
+  As the engineer who owns routing, I want `run_soak.sh` to exit with 1 when a Docker call or a log read fails, so a Docker outage cannot look like a passing soak.
+  Given Docker on `remote-server` answers every call with HTTP 500, as it did on 2026-10-02 at 13:53 +07, when `run_soak.sh` runs, then it exits with 1 and names the call that failed. Given a log file with no request lines or no timestamps, when `soak_checks.py logs` reads it, then it exits with 1. Added during the work, because the script and [[graphhopper-backend]] already promised it: when a container started after the soak start, was OOM killed, or is not running, then it exits with 1.
+  Found: on 2026-10-02 at 13:53 +07 the script printed "0 requests, 0 5xx, 0 error lines" for all three logs and ended with "logs exit 0", because `run_logs` fails only on a 5xx or an error line, and `run_soak.sh` writes SSH errors into the log files. The `roads` check did exit with 1.
+  Priority: P1. Status: Done. Estimate: S. Sprint: 5 ([[sprint-plan-2]]). Dependencies: None. It needs no server, because the tests use empty files and a fake `docker` on the path.
+  Evidence: ![[us-064-soak-check-output.png|700]]
+  Details:
+  1. What: `run_soak.sh` exits with 1 when a Docker call fails, when a log has no timestamped line, and when a container started inside the soak window, was OOM killed, or is not running.
+  2. How: tests first (13 new, 42 in `scripts/backend_soak/`). `soak_checks.py logs` now fails a file with no timestamped line and prints its first line. A new `containers` command (`judge_containers`) compares each container's start time with the soak start as an instant. `run_soak.sh` counts failed `docker inspect` and `docker logs` calls and names each one. The tests run the script with a fake `docker` and `ssh` on the path.
+  3. Why: on 2026-10-02 at 13:53 +07 the old script printed "0 requests, 0 5xx, 0 error lines" and "logs exit 0" while Docker answered HTTP 500 on every call. The old script also never checked the container start times, although its header and [[graphhopper-backend]] said it did.
+  4. Effect: a replayed outage exits with 1 and lists five failed calls, and a healthy fake server exits with 0. `US-034` can no longer pass on an unreadable server. The real host is not tested. The exit status of the `ssh` and PowerShell filter is not checked, so a failed `ssh` shows up as a log with no timestamped line. The first run on the real server shows whether a healthy host passes.
+
+
+- **Story 10 (US-065): Report the step-1 margin of every run of the replay.**
+  As the pipeline owner, I want one command that reads the per-run timings of the 48-hour replay and says whether every simulated run published step 1 before it became now, so `US-037` is judged on every simulated run by a number and not by eye.
+  Given the rows that `run_margins.sh` prints (slot, trigger, depth, raster, tiles, margin) and the simulating slots from Story 8, when the report runs, then it prints the run count, the worst, median, and best margin, the runs with a negative margin, the slots that should have simulated and have no row, and the slope of the margin per run inside each chain. It exits with 0 only if no run is late and none is missing.
+  Priority: P2. Status: Not started. Estimate: M. Sprint: 5 ([[sprint-plan-2]]). Dependencies: Story 8, for the schedule function. `run_margins.sh` moves from `marie-curie/us-037/`, which git does not track, to `scripts/pipeline_margins/`. Tests use the four runs of 2026-10-02 as a fixture (margins +1.9, +4.1, +2.7, +2.4). It needs no server to build, and a server only to run it on real rows.
+  Evidence: None yet.
 
 ## Status history
 
@@ -176,3 +205,11 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
 - **2026-10-01, draft.** Story 3 (`US-034`) is in Sprint 5, which started today. `US-037` is not a dependency, but the soak should start after the `US-037` knob settles, so the 48 hours run under one worker configuration. Story 6 (`US-037`) stays `In progress` in Sprint 4.
 - **2026-10-02, draft.** Story 6 (`US-037`) is `Done`: four consecutive on-time runs published step 1 with margins of +1.9, +4.1, +2.7, and +2.4 minutes. Evidence: `us-037-margins-check-output.png`.
 - **2026-10-02, draft.** Story 3 (`US-034`) is `In progress`. The user gave the soak start as 2026-10-02 00:45 +07, so the 48 hours end on 2026-10-04 00:45 +07. The logs since then were retrieved from the containers, and the tooling in `scripts/backend_soak/` found no 5xx and no failed check at the 2 hour 28 minute mark. A first version of the check failed 3 of 120 pairs because of long GraphHopper edges, recorded in [[graphhopper-backend]].
+- **2026-10-02, draft.** Story 6 (`US-037`) moved from `Done` back to `In progress`. The user stopped the pipeline, because a constant 50 mm/h rain that never stops is not a real event, and the margins shrank about 0.6 minutes per run under it. The four-run pass stays recorded as the first measurement. The retest runs under Story 8.
+- **2026-10-02, draft.** Story 3 (`US-034`) lost its soak window. The user stopped the pipeline, and Docker on the server returned HTTP 500. The soak restarts under the replay of Story 8 and ends 48 hours after the replay starts.
+- **2026-10-02, draft.** Story 8 (`US-063`) added, in Sprint 5, at the user's request. The user named the event file. The unit in the file the user first named was unclear, so the source hyetograph settled it: the values are mm per 30 minutes, and the pipeline takes `precipitation_mm_hr`, which is twice as large.
+- **2026-10-02, draft.** Story 8 (`US-063`): the pipeline's own gate gives 104 simulating runs of 192 at 5 mm/h, not the 98 first written. The first count used a different lookahead alignment. The counts at 2 and 1 mm/h are 156 and 174.
+- **2026-10-02, draft.** Stories 9 (`US-064`) and 10 (`US-065`) added to Sprint 5 at the user's request, to plan the work that needs no server. Story 9 came from the false pass of `run_soak.sh` during the Docker outage.
+- **2026-10-02, draft.** Story 9 (`US-064`) is `Done`: `run_soak.sh` exits with 1 when a Docker call fails, a log has no timestamped line, or a container started inside the window. 42 tests pass in `scripts/backend_soak/`. Evidence: `us-064-soak-check-output.png`, rendered from a replay of the 13:53 outage on the Mac.
+- **2026-10-02, draft.** Docker on the server works again after a disk cleanup, a restart of `com.docker.service`, and a move of `./data` and the `airflow-logs` volume to `D:` ([[2026-10-02-disk-cleanup-and-d-drive-move]]). Stories 3, 6, and 8 wait for the user's go on the server, not for Docker.
+- **2026-10-02, draft.** Story 8 (`US-063`) is deployed. The server pulled `c3d398e` at 15:20 +07, and the recreated worker reads `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_START=2026-10-02T09:00:00Z`, with `FLOOD_TEST_RAIN_MM_HR` empty. The server's `.env` sets the rain gate to 0.01 mm/h, not the compose default of 5, so all 192 runs of the window simulate. `flood_mapping_full` was paused until the user unpauses it. Story 3 (`US-034`) now has its window, 2026-10-02 16:00 +07 to 2026-10-04 16:00 +07.
