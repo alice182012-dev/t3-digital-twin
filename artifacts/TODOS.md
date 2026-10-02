@@ -62,17 +62,17 @@
 
 **Result:** 2026-10-02, the report passes 21 tests. Run on 50 real runs of the 50 mm/h storm it fails: the mean margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00, as the tile task grew from 5.8 to 11.5 minutes.
 
-### Active - US-062 Find out how fast a user must react to the flood map
+### Done - US-062 Find out how fast a user must react to the flood map
 
-**What:** Research the shortest time in which a person must act on what the map shows, for each kind of user, and decide whether the 15-minute refresh is enough ([[map-refresh-requirement-research]], plan in [[map-refresh-requirement-research-plan]]). The research is done ([[flood-map-reaction-time-findings]]). It waits for your decision on the refresh interval.
+**What:** Research the shortest time in which a person must act on what the map shows, for each kind of user, and decide whether the 15-minute refresh is enough ([[map-refresh-requirement-research]], plan in [[map-refresh-requirement-research-plan]]). The research is done ([[flood-map-reaction-time-findings]]), and you decided to keep 15 minutes.
 
 **Effort:** M
 **Priority:** P2
-**Depends on:** Your decision on the refresh interval.
+**Depends on:** None.
 
 **Sprint:** 5, [[map-refresh-requirement-research]] (US-062), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, your decision on the refresh interval. The research recommends keeping 15 minutes and showing the age of the map.
+**Result:** 2026-10-02, you decided to keep the 15-minute refresh for now. The map-age label and a faster pipeline were not chosen.
 
 ## Backlog
 

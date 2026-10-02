@@ -70,6 +70,11 @@ The user decides. The evidence supports this order:
 3. **Do not build a 5-minute pipeline now.** Revisit it if the rain input becomes radar or gauge data every 5 minutes. The cost is in [[five-minute-tile-freshness]] and `marie-curie/idea-24h-five-minute-preview-run.md`.
 4. **Next research, if wanted:** find a measured depth series for a Hanoi street during a burst (a water level sensor or a time-lapse report), and check how well the rain forecast we use (Tomorrow.io) predicts a 30-minute burst. Both need data we do not have yet.
 
+## Decision for US-062
+
+On 2026-10-02 the user decided to keep the 15-minute refresh for now. The decision does not include the map-age label (item 2 above) or a 5-minute pipeline (item 3), and no story is opened for either. The recommendation to revisit a faster refresh, if the rain input becomes radar or gauge data every 5 minutes, stands as written.
+
 ## Status history
 
 - **2026-10-02, active.** Written after the search. Twelve sources read, and the leads that failed or were only snippets are listed above.
+- **2026-10-02, active.** The user decided to keep the 15-minute refresh for now. `US-062` is `Done`.
