@@ -30,6 +30,7 @@ try:
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
     import database.create_road_segment_table
+    import database.create_timescale_tables
     import flood_extent
     import publish
     import raster_load
@@ -161,6 +162,7 @@ def task_ensure_schema(**kwargs):
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()
     database.create_netcdf_tables.create_tables()
+    database.create_timescale_tables.main()
 
 
 def task_upload_netcdf_postgres(**kwargs):

@@ -27,14 +27,28 @@ and /browse are available. Use /browse for all web browsing (Aside first, the bu
 Use the resolved install path above for gstack file paths
 (default: ~/.claude/skills/gstack).
 
-## Docker always runs on the remote server, never locally
+## Docker: check which machine you're on before touching it
 
-Every `docker` and `docker compose` command in this workspace targets the
-remote Docker host, not the machine Claude is running on. A `docker
-context ls` already shows a `remote-server` context pointing at
-`ssh://tecotec@100.67.84.55`.
+This project's Docker host is the Windows machine at `100.67.84.55`
+(user `TECOTEC`). A Claude Code session on this project runs in one of two
+places, and the right `docker`/`docker compose` invocation is different in
+each:
 
-Before running any `docker`/`docker compose` command:
+- **On the Mac**, the Docker host is remote. A `docker context ls` there
+  shows a `remote-server` context pointing at `ssh://tecotec@100.67.84.55`.
+- **Directly on the `TECOTEC` Windows machine itself** (`100.67.84.55`), the
+  Docker host is the local machine. There is no SSH hop, and no
+  `remote-server` context exists at all — `docker context ls` there shows
+  only `default` and `desktop-linux`.
+
+**Check which case you're in before running any docker command.** The
+cheapest check is `docker context ls`: if a `remote-server` context exists,
+you're on the Mac and need it; if it doesn't exist, you're already running
+on the server, so there is nothing remote to reach. (`hostname` and the
+machine's IP confirm the same thing: `ADMIN`/`100.67.84.55` is the server
+itself.)
+
+**Case 1 — running on the Mac:**
 
 1. Check the active context: `docker context ls` (the current one is
    marked `*`). If it isn't `remote-server`, scope the command with
@@ -61,9 +75,16 @@ Before running any `docker`/`docker compose` command:
    `docker --context remote-server compose up -d` or
    `docker --context remote-server compose logs -f`.
 
-Never assume a local `docker compose up` reflects what's actually
-running; the local Docker daemon on this machine is not the one this
-project's containers run on.
+Never assume a local `docker compose up` on the Mac reflects what's actually
+running; the local Docker daemon on the Mac is not the one this project's
+containers run on.
+
+**Case 2 — running directly on the `TECOTEC` Windows server:** the working
+directory already is the live one, so skip all of the above. Run
+`docker`/`docker compose` commands directly, with no `--context
+remote-server` flag (that context doesn't exist here and the flag would just
+error) and no SSH or `git pull` step. Whatever branch is checked out in this
+working directory is what the containers will build and mount.
 
 ## Test points stay inside the model border
 

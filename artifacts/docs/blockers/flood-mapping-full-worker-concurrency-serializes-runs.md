@@ -8,7 +8,7 @@ subsystem: airflow-pipeline
 approaches_tried: 2
 approaches_remaining: 0
 tags: [blocker, airflow, celery, concurrency, fifteen-minute-cycle]
-related: ["[[map-shows-forecast-not-now]]", "[[fifteen-minute-cycle-tiles-and-histogram]]", "[[hotstart-state-saved-at-end-of-run]]", "[[five-minute-tile-freshness]]"]
+related: ["[[map-shows-forecast-not-now]]", "[[fifteen-minute-cycle-tiles-and-histogram]]", "[[hotstart-state-saved-at-end-of-run]]", "[[five-minute-tile-freshness]]", "[[us-037-narrow-the-per-run-critical-path]]"]
 last_updated: 2026-09-28
 ---
 
@@ -213,3 +213,14 @@ default pool.
   minutes after its target moment instead of the design's intended margin before it. Tracked
   separately in [[five-minute-tile-freshness]] (candidate D, and the streaming depth-calc/tile-cut
   idea discussed the same day), since it's no longer about runs serializing against each other.
+- **2026-10-05, resolved.** A later retest (the `US-063` 48-hour real-rain replay, 2026-10-02 to
+  2026-10-04, analyzed in [[us-037-narrow-the-per-run-critical-path]]) measured the same critical
+  path this blocker's baseline covers, this time against real Hanoi rain instead of a constant
+  50 mm/h stress case. Confirmed no overlap between consecutive runs' `9_build_flood_tiles` tasks
+  anywhere in the window, meaning this blocker's fix held under a multi-day real test, not just the
+  four-run check it closed on. The new numbers aren't directly comparable to this page's baseline
+  (lighter real rain against a constant storm, less flooded area, less compute per stage), but they
+  confirm the fix itself didn't regress. The residual latency question this page handed off still
+  isn't settled: `9_build_flood_tiles` grew 4.8x over the 48 hours (90.9 s to 439.4 s) with no
+  cross-run overlap to explain it, so something else is driving it. See
+  [[us-037-narrow-the-per-run-critical-path]] for the full numbers and the open follow-up.

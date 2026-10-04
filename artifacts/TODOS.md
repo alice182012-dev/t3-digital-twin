@@ -74,6 +74,18 @@
 
 **Result:** 2026-10-02, you decided to keep the 15-minute refresh for now. The map-age label and a faster pipeline were not chosen.
 
+### Active - US-066 Narrow and compress netcdf_values onto TimescaleDB
+
+**What:** Redesign `netcdf_values` into a narrow, compressed, retention-managed TimescaleDB hypertable, so the mesh-simulation ingest pipeline stops refilling C: every time a long soak test runs ([[netcdf-values-storage-redesign]], plan in [[netcdf-values-timescale-migration]]).
+
+**Effort:** L
+**Priority:** P1
+**Depends on:** None.
+
+**Sprint:** 5, [[netcdf-values-storage-redesign]] (US-066), in [[sprint-plan-2]].
+
+**Today:** 2026-10-05, reviewed. Implemented and merged on branch `us-066-netcdf-values-timescale`, verified on a real production run: `flood_mapping_full`'s `3b_upload_netcdf_postgres` wrote `file_id` 245 (1,302,146 rows, simulation 449585) through the new hypertable with the compression and retention policies both active. The old 56 GB table on `storage-postgres` stays untouched for now. Not yet `Done`: no screenshot evidence captured, see [[netcdf-values-storage-redesign]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 4:
@@ -88,7 +100,7 @@ Unfinished items carried over from Sprint 4:
 
 **Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
 
-**Today:** 2026-10-02, reopened. Four runs published step 1 with margins of +1.9 to +4.1 minutes, but under a constant 50 mm/h rain that you judged unrealistic. The margin shrank about 0.6 minutes per run. Your checks: the run report of `US-065` every few hours (late and missing runs), and at the end with `--until "10-04 15:45"`. The retest runs the 48-hour replay of `US-063`. The report on the old storm shows the margin was +2.3 minutes in the 01:00 hour and -0.7 or lower from 03:00. It waits for the server.
+**Today:** 2026-10-05, still open. The `US-063` replay stopped early at 137 of the intended 192 runs (last one 2026-10-03 19:00 UTC, an unrelated stale run ended during today's disk incident), and nobody has run `scripts/pipeline_margins/report.py`, this story's own pass check, against the window yet. A critical-path analysis of the 136 completed runs stayed under the 15-minute budget throughout, but `9_build_flood_tiles` alone grew 4.8x over the 48 hours with no cross-run overlap to explain it; an unverified lead points at `flood_extent_polygon`'s unbounded growth over the same window. Not closing until the official report runs and that lead is checked. Details in [[us-037-narrow-the-per-run-critical-path]].
 
 ## Blockers for the next sprint
 
