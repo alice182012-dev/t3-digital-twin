@@ -1,12 +1,15 @@
 import os
 import json
+from datetime import timezone
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 import psycopg2
 from psycopg2.extras import execute_values
 
-from db_config import DB_CONFIG
+from db_config import DB_CONFIG, TIMESCALE_DB_CONFIG
+from netcdf_variables import VARIABLE_MAPPING
 
 
 # =========================
@@ -17,75 +20,15 @@ FILE_PATH = "data/results/results_3di.nc"
 
 
 # =========================
-# VARIABLE MAPPING
-# =========================
-
-VARIABLE_MAPPING = {
-    "Mesh2D_s1": {
-        "mesh_type": "2D",
-        "element_type": "node",
-        "id_var": "Mesh2DNode_id",
-        "x_var": "Mesh2DFace_xcc",
-        "y_var": "Mesh2DFace_ycc",
-    },
-    "Mesh2D_vol": {
-        "mesh_type": "2D",
-        "element_type": "node",
-        "id_var": "Mesh2DNode_id",
-        "x_var": "Mesh2DFace_xcc",
-        "y_var": "Mesh2DFace_ycc",
-    },
-    "Mesh2D_rain": {
-        "mesh_type": "2D",
-        "element_type": "node",
-        "id_var": "Mesh2DNode_id",
-        "x_var": "Mesh2DFace_xcc",
-        "y_var": "Mesh2DFace_ycc",
-    },
-    "Mesh2D_ucx": {
-        "mesh_type": "2D",
-        "element_type": "node",
-        "id_var": "Mesh2DNode_id",
-        "x_var": "Mesh2DFace_xcc",
-        "y_var": "Mesh2DFace_ycc",
-    },
-    "Mesh2D_ucy": {
-        "mesh_type": "2D",
-        "element_type": "node",
-        "id_var": "Mesh2DNode_id",
-        "x_var": "Mesh2DFace_xcc",
-        "y_var": "Mesh2DFace_ycc",
-    },
-    "Mesh2D_q": {
-        "mesh_type": "2D",
-        "element_type": "line",
-        "id_var": "Mesh2DLine_id",
-        "x_var": "Mesh2DLine_xcc",
-        "y_var": "Mesh2DLine_ycc",
-    },
-    "Mesh1D_s1": {
-        "mesh_type": "1D",
-        "element_type": "node",
-        "id_var": "Mesh1DNode_id",
-        "x_var": "Mesh1DNode_xcc",
-        "y_var": "Mesh1DNode_ycc",
-    },
-    "Mesh1D_q": {
-        "mesh_type": "1D",
-        "element_type": "line",
-        "id_var": "Mesh1DLine_id",
-        "x_var": "Mesh1DLine_xcc",
-        "y_var": "Mesh1DLine_ycc",
-    },
-}
-
-
-# =========================
 # DATABASE
 # =========================
 
 def get_connection():
     return psycopg2.connect(**DB_CONFIG)
+
+
+def get_timescale_connection():
+    return psycopg2.connect(**TIMESCALE_DB_CONFIG)
 
 
 # =========================
@@ -321,8 +264,11 @@ def insert_variables(ds, file_id, simulation_id, model_id):
 # DELETE OLD VALUES
 # =========================
 
+# insert_netcdf_file upserts on (simulation_id, filename) and hands back the
+# same file_id for a reprocessed file, and the hypertable has no unique
+# constraint, so without this a reprocessed file doubles its own rows.
 def delete_old_values(file_id):
-    conn = get_connection()
+    conn = get_timescale_connection()
     cur = conn.cursor()
 
     cur.execute(
@@ -339,27 +285,50 @@ def delete_old_values(file_id):
 # INSERT VALUES
 # =========================
 
-def insert_values(ds, file_id, simulation_id, model_id, batch_size=50000):
-    conn = get_connection()
+MESH_ELEMENT_SQL = """
+INSERT INTO mesh_elements (
+    model_id,
+    mesh_type,
+    element_type,
+    element_id,
+    x,
+    y
+)
+VALUES %s
+ON CONFLICT (model_id, mesh_type, element_type, element_id) DO NOTHING;
+"""
+
+VALUE_SQL = """
+INSERT INTO netcdf_values (
+    file_id,
+    element_id,
+    variable_id,
+    timestamp,
+    value
+)
+VALUES %s;
+"""
+
+
+def read_variable_catalog(cur):
+    cur.execute("SELECT id, variable_name FROM netcdf_variable_catalog;")
+    catalog = {variable_name: variable_id for variable_id, variable_name in cur.fetchall()}
+
+    missing = [name for name in VARIABLE_MAPPING if name not in catalog]
+    if missing:
+        raise RuntimeError(
+            f"netcdf_variable_catalog has no row for {', '.join(missing)}. "
+            "Run scripts/database/create_timescale_tables.py to seed it."
+        )
+
+    return catalog
+
+
+def insert_values(ds, file_id, model_id, batch_size=50000):
+    conn = get_timescale_connection()
     cur = conn.cursor()
 
-    sql = """
-    INSERT INTO netcdf_values (
-        file_id,
-        simulation_id,
-        model_id,
-        date,
-        timestamp,
-        variable_name,
-        mesh_type,
-        element_type,
-        element_id,
-        x,
-        y,
-        value
-    )
-    VALUES %s;
-    """
+    catalog = read_variable_catalog(cur)
 
     times = pd.to_datetime(ds["time"].values)
 
@@ -370,17 +339,43 @@ def insert_values(ds, file_id, simulation_id, model_id, batch_size=50000):
 
         print(f"Processing variable: {variable_name}")
 
+        variable_id = catalog[variable_name]
+
         id_values = ds[mapping["id_var"]].values.astype(np.int64)
         x_values = ds[mapping["x_var"]].values.astype(float)
         y_values = ds[mapping["y_var"]].values.astype(float)
+
+        # An element's geometry exists whether or not a timestep has a value for
+        # it, so this reads the full id array rather than the non-NaN values.
+        mesh_rows = []
+
+        for i in range(len(id_values)):
+            mesh_rows.append(
+                (
+                    model_id,
+                    mapping["mesh_type"],
+                    mapping["element_type"],
+                    int(id_values[i]),
+                    float(x_values[i]),
+                    float(y_values[i]),
+                )
+            )
+
+            if len(mesh_rows) >= batch_size:
+                execute_values(cur, MESH_ELEMENT_SQL, mesh_rows)
+                conn.commit()
+                mesh_rows = []
+
+        if mesh_rows:
+            execute_values(cur, MESH_ELEMENT_SQL, mesh_rows)
+            conn.commit()
 
         data_array = ds[variable_name].values
 
         rows = []
 
         for time_idx, ts in enumerate(times):
-            timestamp = ts.to_pydatetime()
-            date = timestamp.date()
+            timestamp = ts.to_pydatetime().replace(tzinfo=timezone.utc)
 
             values = data_array[time_idx]
 
@@ -393,27 +388,20 @@ def insert_values(ds, file_id, simulation_id, model_id, batch_size=50000):
                 rows.append(
                     (
                         file_id,
-                        simulation_id,
-                        model_id,
-                        date,
-                        timestamp,
-                        variable_name,
-                        mapping["mesh_type"],
-                        mapping["element_type"],
                         int(id_values[i]),
-                        float(x_values[i]),
-                        float(y_values[i]),
+                        variable_id,
+                        timestamp,
                         float(value),
                     )
                 )
 
                 if len(rows) >= batch_size:
-                    execute_values(cur, sql, rows)
+                    execute_values(cur, VALUE_SQL, rows)
                     conn.commit()
                     rows = []
 
         if rows:
-            execute_values(cur, sql, rows)
+            execute_values(cur, VALUE_SQL, rows)
             conn.commit()
 
         print(f"Done variable: {variable_name}")
@@ -454,7 +442,6 @@ def upload_netcdf_to_database(file_path):
         insert_values(
             ds=ds,
             file_id=file_id,
-            simulation_id=simulation_id,
             model_id=model_id,
         )
 
