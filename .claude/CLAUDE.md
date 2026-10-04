@@ -86,6 +86,21 @@ remote-server` flag (that context doesn't exist here and the flag would just
 error) and no SSH or `git pull` step. Whatever branch is checked out in this
 working directory is what the containers will build and mount.
 
+## Push to the `alice` remote, never `origin`
+
+`git remote -v` lists two remotes: `origin` (`github.com/3plus1wheels/airflow_new.git`) and
+`alice` (`github.com/alice182012-dev/t3-digital-twin.git`). `origin` is a different repository
+that the authenticated git user has no access to; pushing there fails with a 403 and does not
+land the work anywhere. `alice` is this project's actual GitHub repo, `t3-digital-twin`, and
+matches the authenticated git user (`alice`, per the session's own `git config user.name` /
+commit author).
+
+Push and pull with `alice`, for example `git push alice <branch>` and `git fetch alice <branch>`,
+not `git push`/`git pull` with no remote named (which defaults to `origin`) and not `origin`
+explicitly. Before the first push or pull in a session, confirm `alice` is still the remote that
+resolves correctly (`git remote -v`); do not assume `origin` is safe to ignore forever if a repo
+migration or a fresh clone changes the remote list later.
+
 ## Test points stay inside the model border
 
 The 3Di flood model covers a rectangle of Hanoi. Every test that uses a
