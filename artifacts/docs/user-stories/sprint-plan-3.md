@@ -24,7 +24,7 @@ Calendar, from `start_date` in the frontmatter:
 
 | Sprint | Start | End | Actual start | Actual end |
 | ------ | ----- | --- | ------------ | ---------- |
-| 9 | 2026-11-16 | 2026-11-22 |  |  |
+| 9 | 2026-11-16 | 2026-11-22 | 2026-10-05 |  |
 | 10 | 2026-11-23 | 2026-11-29 |  |  |
 | 11 | 2026-11-30 | 2026-12-06 |  |  |
 | 12 | 2026-12-07 | 2026-12-13 |  |  |
@@ -122,3 +122,4 @@ file and in this plan.
 - **2026-09-30, active.** Every row in the sprint tables now starts with an `Item` column that holds the story's ID (`US-nnn`).
 - **2026-10-02, active.** `US-061` (show the place name faster after a map tap) is in the backlog table with no sprint, as P3. The user said to tackle it later.
 - **2026-10-02, active.** The gate on `US-055` is cleared. The user set the latency factor to 2 times the baseline of `US-046`. No row of this plan has an open gate.
+- **2026-10-05, active.** Sprint 9 started on 2026-10-05, 42 days before its planned start of 2026-11-16, at the user's request. Its rows are `US-052`, `US-051`, and `US-053`. The dependencies from [[sprint-plan-2]] are met: `US-050` (the engine) and `US-043` (the Java reader) are `Done`. The user wants every row of this plan built and tested before the engine goes to the server once, with no builds on the server until the 48-hour replay ends. Sprint 10 (`US-054`, `US-055`) keeps its place and starts when `US-053` is built, so its rows enter `TODOS.md` then (rule 9). No blocker stops Sprint 10, checked on 2026-10-05.

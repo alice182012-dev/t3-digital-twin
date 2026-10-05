@@ -1,6 +1,6 @@
 # TODOS
 
-## Current sprint: Sprint 8, 2026-10-05 to 2026-11-15
+## Current sprint: Sprint 9, 2026-10-05 to 2026-11-22
 
 ### Done - US-046 Record the routing baselines on the server
 
@@ -182,6 +182,40 @@
 
 **Result:** 2026-10-05, on the server all 16 runs (4 scenarios, motorbike and car, with and without a detour) match the sticky column with 0 crossings, and the plain route crosses the closed road in all 8 blocked runs.
 
+### Active - US-052 Integrate the engine into the backend with a flag and a fallback
+
+**What:** The backend routes through the time-aware engine behind a flag. With the flag on, `_handle_route` uses the table, takes `t0` as the later of `valid_time` and the server clock rounded to the containing step, pins one run for the request, and returns `unknown` for a trip that ends after the last step. With the flag off the body equals today's. A missing, stale, or mismatched table falls back to today's model and the response carries a fallback flag ([[time-aware-routing-engine-stories]] Story R7).
+
+**Effort:** M
+**Priority:** P0
+**Depends on:** `US-050` (the engine) and `US-043` (the Java reader), both done.
+
+**Sprint:** 9, [[time-aware-routing-engine-stories]] Story R7 (US-052), in [[sprint-plan-3]].
+
+### Active - US-051 Add the `truck` and `foot` time-aware profiles
+
+**What:** `truck` and `foot` requests use their own depth limits (35 cm and 40 cm) in the time-aware engine and pass the checker on the synthetic scenarios ([[time-aware-routing-engine-stories]] Story R6).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** `US-050`, done. The `foot` profile was rejected by the pinned image once ([[graphhopper-vehicle-profile-rejection]]), so the first step is to check what the image accepts now.
+
+**Sprint:** 9, [[time-aware-routing-engine-stories]] Story R6 (US-051), in [[sprint-plan-3]].
+
+### Active - US-053 Build `POST /route/departures`
+
+**What:** An endpoint that returns each candidate departure as `clear`, `blocked`, or `unknown`, the earliest clear departure, the run, and the run's age, from the flood-free route's `edge_id` and `time` details and the depth table, with sticky closure from each candidate and a 10-minute margin. The client sends no clock value, margin, or policy ([[time-aware-routing-engine-stories]] Story R8).
+
+**Effort:** M
+**Priority:** P1
+**Depends on:** `US-040`, `US-041`, and `US-042` (the table, published and kept), done, and `US-052` in the same sprint.
+
+**Sprint:** 9, [[time-aware-routing-engine-stories]] Story R8 (US-053), in [[sprint-plan-3]].
+
+## Backlog
+
+Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
+
 ### Active - US-045 Prove the table on the server
 
 **What:** Measure the build time, the file size, and the edge count of the table task on a real run on the server, check 20 edges against `ST_Value`, and record the numbers in [[edge-depth-table]], replacing the guessed size. If the build time exceeds the limit, log a blocker ([[edge-depth-table-stories]] Story E7).
@@ -190,7 +224,7 @@
 **Priority:** P0
 **Depends on:** `US-041` and `US-042`, both done. The limit is 5 minutes after the end of `3_calculate_depth`, never delaying the tile task, so it needs a live DAG run of task `9c`, which means the DAG unpaused. The unloaded numbers so far are 42.0 s, 1,085,487 bytes, and 160 of 160 values equal.
 
-**Sprint:** 8, [[edge-depth-table-stories]] Story E7 (US-045), in [[sprint-plan-2]].
+**Sprint:** 8, carried to the Backlog on 2026-10-05 because it needs the DAG unpaused for the 48-hour window. [[edge-depth-table-stories]] Story E7 (US-045), in [[sprint-plan-2]].
 
 **Status note:** the timing report is built (`scripts/edge_depth/table_timing.ps1`, plan [[edge-depth-table-server-proof]]). It runs after the first runs of the window and again at the 24-hour and 48-hour readings.
 
@@ -202,15 +236,12 @@
 **Priority:** P1
 **Depends on:** the DAG unpaused for 48 hours ([[carried-over-backlog]] Story 8, `US-063`). You parked it on 2026-10-05 and said to continue after Sprint 7. It can share the DAG run that `US-045` needs.
 
-**Sprint:** 8, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
+**Sprint:** 8, carried to the Backlog on 2026-10-05 because it needs the DAG unpaused for 48 hours. [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
 
 **Window:** the replay is set to start at `2026-10-05T15:15:00Z` (22:15 +07). Readings at 0 hours (22:15 +07 on 2026-10-05, before the unpause), 24 hours (22:15 +07 on 2026-10-06), and 48 hours (22:15 +07 on 2026-10-07). The DAG is still paused until you unpause it.
 
 **0-hour reading (21:32 +07, 2026-10-05):** C: free 153.6 GiB, `docker_data.vhdx` 107.48 GiB, `minio_custom` 14 GB, `flood_extent_polygon` 5,146 MB (112 rows, 8 runs), `netcdf_values` 320 MB (compressed 376 to 38 MB), `storage-postgres-data` 15.82 GB. No image builds on the server during the window.
 
-## Backlog
-
-Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.
 
 ### Done - US-037 Narrow the per-run critical path under the 15-minute cycle
 
@@ -238,15 +269,15 @@ Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Spri
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 9, 2026-11-16 to 2026-11-22, in [[sprint-plan-3]].
+The next sprint is Sprint 10, 2026-11-23 to 2026-11-29, in [[sprint-plan-3]].
 
-Checked on 2026-10-05 against its rows (`US-052`, `US-051`, `US-053`).
+Checked on 2026-10-05 against its rows (`US-054`, `US-055`).
 
-Any blocker stops Sprint 9: None
+Any blocker stops Sprint 10: None
 
 The unresolved blockers are:
 
-1. [[route-panel-stuck-on-loading-bars]]
-2. [[map-shows-forecast-not-now]]
-3. [[routing-not-time-aware]]
+1. [[route-panel-stuck-on-loading-bars]], monitoring. It touches the panel that will show the alert of `US-054`, and blocks no build.
+2. [[map-shows-forecast-not-now]], monitoring.
+3. [[routing-not-time-aware]], which `US-055` resolves.
 4. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
