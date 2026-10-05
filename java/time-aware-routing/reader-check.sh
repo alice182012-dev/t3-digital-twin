@@ -23,7 +23,7 @@ tool() {
     local flags=()
     while [ "$1" != "--" ]; do flags+=("$1"); shift; done
     shift
-    d run --rm "${flags[@]}" --entrypoint sh \
+    d run --rm ${flags[@]+"${flags[@]}"} --entrypoint sh \
         --mount "type=volume,source=$TABLE_VOLUME,target=/tables,readonly" \
         --mount "type=volume,source=$CACHE_VOLUME,target=/data/graph-cache,readonly" \
         "$IMAGE" -c '
