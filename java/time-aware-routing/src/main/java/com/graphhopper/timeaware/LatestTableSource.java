@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
  * pointer whose file is gone is refused and logged at ERROR, and the valid current table stays. A caller that holds a
  * table keeps it, so a request in flight finishes on the table it began with.
  */
-public final class LatestTableSource implements AutoCloseable {
+public final class LatestTableSource implements TableProvider, AutoCloseable {
 
     public static final Duration DEFAULT_INTERVAL = Duration.ofSeconds(5);
     public static final Duration MAX_INTERVAL = Duration.ofSeconds(30);
@@ -51,6 +51,7 @@ public final class LatestTableSource implements AutoCloseable {
         refresh();
     }
 
+    @Override
     public Optional<EdgeDepthTable> current() {
         return Optional.ofNullable(current);
     }
@@ -62,6 +63,14 @@ public final class LatestTableSource implements AutoCloseable {
 
     public Duration interval() {
         return interval;
+    }
+
+    /** Why there is no table: the reason the pointer was refused, or that nothing is published. Empty while a table is loaded. */
+    @Override
+    public Optional<String> problem() {
+        if (current != null) return Optional.empty();
+        String refusal = lastRefusal;
+        return Optional.of(refusal != null ? refusal : "no table has been published in " + directory);
     }
 
     /** The reason the newest pointer was refused, if the last refresh refused one. */

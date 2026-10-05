@@ -8,10 +8,15 @@ graphhopper:
   # _custom suffix (motorbike.json isn't reserved since there's no built-in
   # "motorbike" profile, only "motorcycle").
   profiles:
+    # td_limit_cm is the depth, in cm, at which the vehicle cannot pass. The time-aware engine (java/time-aware-routing,
+    # US-052) reads it from the profile. Keep it equal to threshold_cm in scripts/flood_utils.py. truck and foot get
+    # theirs in US-051, and until then a time-aware request for them falls back to today's model.
     - name: motorbike
       custom_model_files: [motorbike.json]
+      td_limit_cm: 20
     - name: car
       custom_model_files: [car_custom.json]
+      td_limit_cm: 30
     - name: truck
       custom_model_files: [truck_custom.json]
     - name: foot
@@ -34,6 +39,11 @@ graphhopper:
     foot_access, foot_average_speed, foot_road_access
 
   prepare.min_network_size: 200
+
+  # The folder of edge depth tables (US-052), the Docker volume edge-depth-tables mounted read-only. The engine hashes the
+  # loaded graph and follows this folder's `latest` pointer. A request is time-aware only when the backend sends a
+  # departure, which it does only with TIME_AWARE_ROUTING on.
+  time_aware.table_dir: /tables
 
 server:
   application_connectors:

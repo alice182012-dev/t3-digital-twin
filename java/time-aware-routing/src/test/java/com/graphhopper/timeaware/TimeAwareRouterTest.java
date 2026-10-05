@@ -18,8 +18,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.IntBinaryOperator;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -40,6 +42,25 @@ class TimeAwareRouterTest {
     static int detourEdge;
     static EdgeDepthTable current;
 
+    /** Hands the router the table of the test, counts the calls, and says why there is none when there is none. */
+    static final class FakeProvider implements TableProvider {
+        int calls;
+        String problem = "no table has been published";
+
+        @Override
+        public Optional<EdgeDepthTable> current() {
+            calls++;
+            return Optional.ofNullable(current);
+        }
+
+        @Override
+        public Optional<String> problem() {
+            return current == null ? Optional.of(problem) : Optional.empty();
+        }
+    }
+
+    static final FakeProvider provider = new FakeProvider();
+
     @BeforeAll
     static void importGraph(@TempDir Path tmp) throws Exception {
         CustomModel model = new CustomModel()
@@ -59,10 +80,17 @@ class TimeAwareRouterTest {
         hopper = new TimeAwareGraphHopper();
         hopper.init(config);
         hopper.importOrLoad();
-        hopper.setTableSupplier(() -> current);
+        hopper.setTableProvider(provider);
         corridorEdge = edgeNear(21.0001, 105.7530);
         leadEdge = edgeNear(21.0000, 105.7510);
         detourEdge = edgeNear(21.0015, 105.7515);
+    }
+
+    @BeforeEach
+    void resetProvider() {
+        provider.calls = 0;
+        provider.problem = "no table has been published";
+        current = null;
     }
 
     static int edgeNear(double lat, double lon) {
@@ -182,5 +210,164 @@ class TimeAwareRouterTest {
         flood(dir, corridorEdge, 0, 0);
         GHResponse dry = hopper.route(request("car", true, middleOfLead, DESTINATION));
         assertFalse(dry.hasErrors(), dry.getErrors().toString());
+    }
+
+    // The decision, the hints, and the departure step (US-052).
+
+    static String hint(GHResponse r, String key) {
+        return r.getHints().getString(key, null);
+    }
+
+    static long hintLong(GHResponse r, String key) {
+        return r.getHints().getLong(key, -1);
+    }
+
+    @Test
+    void aRequestWithoutADepartureCarriesNoTimeAwareHints(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+
+        GHResponse r = hopper.route(request("car", false, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertFalse(r.getHints().has("td.status"));
+        assertFalse(r.getHints().has("td.run"));
+        assertEquals(0, provider.calls, "the table is not read for a request that is not time-aware");
+    }
+
+    @Test
+    void anAppliedRequestNamesTheRunAndTheLastStep(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertEquals("applied", hint(r, "td.status"));
+        assertEquals("20261005T000000", hint(r, "td.run"));
+        assertEquals(T0.getEpochSecond() + 7 * 900, hintLong(r, "td.last_step"));
+        assertEquals(T0.getEpochSecond(), hintLong(r, "td.departure"));
+    }
+
+    @Test
+    void withNoTableTheResponseSaysFallbackAndWhy() {
+        provider.problem = "no table has been published in /tables";
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals("fallback", hint(r, "td.status"));
+        assertTrue(hint(r, "td.reason").contains("no table has been published in /tables"), hint(r, "td.reason"));
+        assertFalse(r.getHints().has("td.run"));
+    }
+
+    @Test
+    void aTableForAnotherGraphIsAFallbackThatNamesBothHashes() {
+        provider.problem = "stale edge depth table: run X was built for graph hash AAA, but the loaded graph has hash BBB";
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertEquals("fallback", hint(r, "td.status"));
+        assertTrue(hint(r, "td.reason").contains("AAA") && hint(r, "td.reason").contains("BBB"), hint(r, "td.reason"));
+    }
+
+    @Test
+    void aProfileWithNoDepthLimitIsAFallbackEvenWithATable(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+
+        GHResponse r = hopper.route(request("plain", true, ORIGIN, DESTINATION));
+
+        assertEquals("fallback", hint(r, "td.status"));
+        assertTrue(hint(r, "td.reason").contains(TimeAwareRouter.LIMIT_HINT), hint(r, "td.reason"));
+        assertTrue(edgeIds(r).contains(corridorEdge), "the stock search ignores the table");
+    }
+
+    @Test
+    void aDepartureBetweenStepsCountsTheStepThatContainsIt(@TempDir Path dir) throws Exception {
+        // The road is wet at the first step only. A departure 7 minutes in lies between the steps at 0 and 15 minutes,
+        // and the step at 0 describes the road now, so it must close the road.
+        IntBinaryOperator depth = (e, s) -> e == corridorEdge && s == 0 ? 50 : 0;
+        current = TestTables.table(dir, "t.bin", hopper.getBaseGraph().getEdges(), TestTables.quarterHours(T0, 8), depth);
+        GHRequest request = request("car", true, ORIGIN, DESTINATION);
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, T0.getEpochSecond() + 7 * 60);
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertFalse(edgeIds(r).contains(corridorEdge));
+        assertEquals(T0.getEpochSecond(), hintLong(r, "td.departure"), "floored to the step that contains it");
+    }
+
+    @Test
+    void aTripThatEndsAfterTheLastStepIsUnknown(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 0, 0);
+        GHRequest request = request("car", true, ORIGIN, DESTINATION);
+        long lastStep = T0.getEpochSecond() + 7 * 900;
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, lastStep - 5);
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals("unknown", hint(r, "td.status"));
+        assertEquals("20261005T000000", hint(r, "td.run"));
+    }
+
+    @Test
+    void aTripThatEndsBeforeTheLastStepIsApplied(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 0, 0);
+        GHRequest request = request("car", true, ORIGIN, DESTINATION);
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, T0.getEpochSecond() + 3600);
+
+        assertEquals("applied", hint(hopper.route(request), "td.status"));
+    }
+
+    @Test
+    void theHorizonEdgeIsKnown() {
+        long last = 1_000_000L;
+        assertFalse(TimeAwareRouter.endsAfterLastStep(last - 60_000, 60_000, last), "arrival exactly at the last step is known");
+        assertTrue(TimeAwareRouter.endsAfterLastStep(last - 60_000, 60_001, last));
+        assertFalse(TimeAwareRouter.endsAfterLastStep(0, 0, last));
+    }
+
+    @Test
+    void oneRunIsPinnedForAWholeViaRequest(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+        GHRequest request = new GHRequest(List.of(
+                new com.graphhopper.util.shapes.GHPoint(ORIGIN[0], ORIGIN[1]),
+                new com.graphhopper.util.shapes.GHPoint(21.0030, 105.7530),
+                new com.graphhopper.util.shapes.GHPoint(DESTINATION[0], DESTINATION[1]))).setProfile("car");
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, T0.getEpochSecond());
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(1, provider.calls, "one read of the table per request, for every leg");
+    }
+
+    @Test
+    void theDepthLimitHintIsReadFromTheProfileInTheYamlConfig() throws Exception {
+        Path config = Path.of("../../floodmap/graphhopper-flood-road/graphhopper/config.yml");
+        org.junit.jupiter.api.Assumptions.assumeTrue(java.nio.file.Files.exists(config), "the repo's config.yml is not in this build context");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper(new com.fasterxml.jackson.dataformat.yaml.YAMLFactory());
+        var profiles = mapper.readTree(config.toFile()).get("graphhopper").get("profiles");
+        java.util.Map<String, Integer> limits = new java.util.HashMap<>();
+        for (var node : profiles) {
+            Profile profile = mapper.treeToValue(node, Profile.class);
+            if (profile.getHints().has(TimeAwareRouter.LIMIT_HINT)) {
+                limits.put(profile.getName(), profile.getHints().getInt(TimeAwareRouter.LIMIT_HINT, -1));
+            }
+        }
+        assertEquals(java.util.Map.of("motorbike", 20, "car", 30), limits);
+    }
+
+    @Test
+    void theDepartureFieldOfAJsonBodyArrivesAsAHint(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+        String body = "{\"points\": [[105.7500, 21.0000], [105.7560, 21.0000]], \"profile\": \"car\", "
+                + "\"points_encoded\": false, \"td_departure\": " + T0.getEpochSecond() + "}";
+        GHRequest request = com.graphhopper.jackson.Jackson.newObjectMapper().readValue(body, GHRequest.class);
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals("applied", hint(r, "td.status"));
+        assertTrue(r.getBest().getDistance() > 800, "the detour is about 910 m, got " + r.getBest().getDistance());
     }
 }

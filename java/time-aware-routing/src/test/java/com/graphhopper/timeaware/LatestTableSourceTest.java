@@ -174,4 +174,29 @@ class LatestTableSourceTest {
                 () -> new LatestTableSource(dir, goldenHash, Duration.ofSeconds(31)));
         assertThrows(IllegalArgumentException.class, () -> new LatestTableSource(dir, goldenHash, Duration.ZERO));
     }
+
+    @Test
+    void theProviderSaysNothingIsWrongWhileATableIsLoaded(@TempDir Path dir) throws Exception {
+        publish(dir, "20261001T000000.bin", withRunMark('1'));
+
+        assertEquals(Optional.empty(), new LatestTableSource(dir, goldenHash, FAST).problem());
+    }
+
+    @Test
+    void theProviderSaysWhyThereIsNoTable(@TempDir Path dir) throws Exception {
+        String empty = new LatestTableSource(dir, goldenHash, FAST).problem().orElseThrow();
+        assertTrue(empty.contains("no table has been published"), empty);
+        assertTrue(empty.contains(dir.toString()), empty);
+
+        publish(dir, "20261001T000000.bin", forOtherGraph());
+        String stale = new LatestTableSource(dir, goldenHash, FAST).problem().orElseThrow();
+        assertTrue(stale.contains(goldenHash), stale);
+        assertTrue(stale.contains("stale"), stale);
+    }
+
+    @Test
+    void aSourceIsATableProvider(@TempDir Path dir) {
+        TableProvider provider = new LatestTableSource(dir, goldenHash, FAST);
+        assertEquals(Optional.empty(), provider.current());
+    }
 }
