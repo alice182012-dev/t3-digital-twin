@@ -268,7 +268,7 @@ Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done it
 
 **Sprint:** 8, carried to the Backlog on 2026-10-05 because it needs the DAG unpaused for 48 hours. [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
 
-**Window:** the replay is set to start at `2026-10-05T15:15:00Z` (22:15 +07). Readings at 0 hours (22:15 +07 on 2026-10-05, before the unpause), 24 hours (22:15 +07 on 2026-10-06), and 48 hours (22:15 +07 on 2026-10-07). The DAG is still paused until you unpause it.
+**Window:** the replay is set to start at `2026-10-05T17:00:00Z` (00:00 +07 on 2026-10-06). It was moved from 22:15 +07 because that slot passed before the unpause. Readings at 0 hours (before the unpause), 24 hours (00:00 +07 on 2026-10-07), and 48 hours (00:00 +07 on 2026-10-08). The DAG is still paused until you unpause it.
 
 **0-hour reading (21:32 +07, 2026-10-05):** C: free 153.6 GiB, `docker_data.vhdx` 107.48 GiB, `minio_custom` 14 GB, `flood_extent_polygon` 5,146 MB (112 rows, 8 runs), `netcdf_values` 320 MB (compressed 376 to 38 MB), `storage-postgres-data` 15.82 GB. No image builds on the server during the window.
 
