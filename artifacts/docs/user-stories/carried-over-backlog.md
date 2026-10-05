@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
-us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "US-063", "US-064", "US-065", "US-068"]
+us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "US-063", "US-064", "US-065", "US-068", "US-069"]
 status: draft
 subsystem: floodmap-frontend, floodmap-backend
 source_ideas: []
@@ -198,6 +198,13 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
   Why it is a separate story. Today `1_trigger_simulation` pushes only `sim_id` (`dags/flood_mapping_dag.py`). The XCom `rain_intervals` sits on `0_check_forecast_rain` and holds the forecast as the gate saw it, in mm/h. What 3Di receives is the result of `build_rain_values(intervals, start=slot)` in `scripts/create_simulation.py`, in m/s and offset from the slot, and nothing records it. A run that ingests no rain, or a replay slice that is shifted, looks the same in the UI as a correct one.
   Open details for the build. `get_rain_forecast` returns only the intervals, so the source label needs a small change to say which branch produced them. The total is computed from the sent list with the trapezoid rule, because the series is sent with `interpolate=True`. Tests first, with a pure summary function over the `[offset, m/s]` list, so no server is needed.
 
+- **Story 12 (US-069): Check the storage after the 48-hour replay to see if the retention fixes work.**
+  As the pipeline owner, I want the storage numbers of the server read at the start, the middle, and the end of the 48-hour replay, so I know whether `US-066` and `US-067` stop the growth that filled C: on 2026-10-04.
+  Given the replay of `US-063` running on the server for 48 hours, when the numbers are read at the start, at 24 hours, and at 48 hours, then each reading holds the free space on C:, the size of `docker_data.vhdx`, the size of the `storage-postgres-data` volume, the size of `minio_custom`, the size of the `netcdf_values` hypertable (compressed and not), and the size and row count of `flood_extent_polygon`. The check passes if the sizes of the three database objects stop growing between the 24-hour and the 48-hour reading, `flood_extent_polygon` holds rows for no more than the newest `keep_runs` runs, and no container was auto-paused for lack of space.
+  Priority: P1. Status: Not started. Estimate: S. Sprint: 5 ([[sprint-plan-2]]). Dependencies: the replay of Story 8 (`US-063`) running, and the user's read-only access to the server. The replay's start time is still to be given. The 24-hour and 48-hour readings follow from it.
+  Proposed pass mark, not yet confirmed by the user: growth of 10 percent or less in each of the three database objects between hour 24 and hour 48. The starting values are the ones in [[2026-10-05]] (C: 163.4 GB free, `storage-postgres-data` 16.01 GB, `minio_custom` 14 GB, `flood_extent_polygon` 5.1 GB).
+  The readings are read-only. The same run is the retest for `US-034` and `US-037`, so this story adds no load.
+
 ## Status history
 
 - **2026-09-29, draft.** Created from the unscheduled items of `TODOS.md`. All five go in Sprint 2 at the
@@ -239,3 +246,4 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
 - **2026-10-02, draft.** Story 9 (`US-064`), first run on the real host at 16:11 +07: the container check passed, the known-answer check passed (14 roads, 56 checks), and the logs check exited with 1 for an empty GraphHopper log, because no request had come in since 16:00. The message wrongly said the read failed, and it now names both causes (`e07c4ea`). The story stays `Done`.
 - **2026-10-05, draft.** Story 6 (`US-037`) stays `In progress`. The Story 8 replay stopped early at 137 of the intended 192 runs (last one 2026-10-03 19:00 UTC, a stale run ended during an unrelated disk incident), so the window is incomplete, and nobody has run `scripts/pipeline_margins/report.py` (this story's own pass check) against it yet. A separate cut of the same data, each run's critical path end to end over the 136 completed runs, stayed under the 15-minute budget throughout (max 14.9 min), unlike the stress-test baseline, but `9_build_flood_tiles` alone grew 4.8x over the window (90.9 s to 439.4 s) with no cross-run overlap to explain it. An unverified lead: `flood_extent_polygon` had no retention and grew unbounded for the entire window before a same-day manual fix, and if `9_build_flood_tiles` reads that table, its growth is a plausible cause. Full numbers and the open follow-up in [[us-037-narrow-the-per-run-critical-path]].
 - **2026-10-05, draft.** Story 11 (`US-068`) added to Sprint 5 at the user's request: the XCom of `1_trigger_simulation` should show the rain ingested into the simulation. The user chose Sprint 5 and a summary (not the full series) in the XCom.
+- **2026-10-05, draft.** The user said the replay is running again and will be checked after 48 hours. Story 12 (`US-069`) added to Sprint 5 at the user's request, to check the storage after the 48 hours. `US-034`, `US-037`, and this story all read the same window.

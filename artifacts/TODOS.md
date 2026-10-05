@@ -108,6 +108,16 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 11 (US-068), in [[sprint-plan-2]].
 
+### Active - US-069 Check the storage after the 48-hour replay to see if the retention fixes work
+
+**What:** Read the free space on C:, the size of `docker_data.vhdx`, the three database sizes (`storage-postgres-data`, `minio_custom`, `netcdf_values`), and the `flood_extent_polygon` rows at the start, at 24 hours, and at 48 hours of the replay. The check passes if the database sizes stop growing between hour 24 and hour 48 ([[carried-over-backlog]] Story 12).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), the replay running again. The start time is still to be given.
+
+**Sprint:** 5, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 4:

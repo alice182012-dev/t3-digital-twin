@@ -22,21 +22,24 @@ Sprint 5 started on 2026-10-01. Nine of its eleven rows are `Done`. The open one
 
 ## Order of work
 
-Items 1 to 3 need no server and can start now. Item 4 needs the user.
+Items 1 to 3 need no server and can start now. Item 4 waits for the replay.
 
 1. **Build `US-068`.** Tests first, with a pure summary function over the `[offset_seconds, m/s]` list that `build_rain_values` returns. Then add the push to `task_run_simulation` in `dags/flood_mapping_dag.py`, and the source label in `get_rain_forecast`. Done when the tests pass and the story has a screenshot of a real XCom (needs one run on the server, so the story stays `Reviewed` until then).
 2. **Check the `US-037` lead from code.** Read `task_build_flood_tiles` and the tile query it calls. If it reads `flood_extent_polygon`, the 4.8 times growth is explained, and the retest after `US-067` is the check. If it does not, the lead is dead and the growth needs another cause. Record the answer in [[us-037-narrow-the-per-run-critical-path]].
 3. **Start `US-049` on the Mac.** Write the Java module files, the `Dockerfile`, and `.github/workflows/java-module.yml` with no build, as [[sprint-6-java-toolchain-and-edge-export]] describes for the days before Sprint 6 starts. The first CI run needs the user's approval to push.
-4. **Ask the user to choose how to close `US-034` and `US-037`.** The choice is below.
+4. **Wait for the replay.** Read the storage at the start, at 24 hours, and at 48 hours (`US-069`), then run `run_soak.sh` and `report.py` over the window.
 
-## Decision for the user
+## Decision made
 
-The 137-run window is not the 192 runs the stories were written against. Pick one.
+The user chose the re-run. The replay is running again on the server, and the user will check back after 48 hours. `US-034`, `US-037`, and the new `US-069` all read that one window. The start time is still to be recorded, since the 24-hour and 48-hour readings follow from it.
 
-- **Re-run the replay.** Unpause `flood_mapping_full` with the retention fixes in place, run the full 48 hours, then run `run_soak.sh` and `report.py`. This costs two more days and keeps both stories honest. Sprint 6 then starts about 2026-10-08.
-- **Accept 137 runs.** Run `report.py` and the end check over the window that exists, and close both stories with the shortfall written into their Details. Sprint 6 starts as soon as the checks pass. `US-063` was already closed this way, as a flagged judgment call.
+## Rule for the next 48 hours
 
-My recommendation is to re-run, because `US-037` is judged on a growth trend (the tile task over time), and a window cut short by an incident cannot show whether the trend was the missing retention or something else. A re-run also exercises `US-066` and `US-067` under real load, which nothing has done yet.
+Nothing is deployed to the server while the replay runs, because a rebuild or a DAG change can shift the margins `US-037` measures to the minute ([[sprint-6-java-toolchain-and-edge-export]] sets the same rule for Java builds). That holds the server steps of `US-068` (the real XCom check) and `US-049` (the image build) until the window ends. Code, tests, and CI on GitHub need no server and go on.
+
+## Added today
+
+`US-069`, the storage check, in Sprint 5 ([[carried-over-backlog]] Story 12). Readings at the start, at 24 hours, and at 48 hours. The pass mark of 10 percent growth between hour 24 and hour 48 is my proposal, not yet the user's.
 
 ## Not today
 
@@ -45,4 +48,5 @@ My recommendation is to re-run, because `US-037` is judged on a growth trend (th
 
 ## Status history
 
-- **2026-10-05, active.** Written after `/refresh-artifacts`. Waiting on the user's choice between a re-run and accepting the 137-run window.
+- **2026-10-05, active.** Written after `/refresh-artifacts`.
+- **2026-10-05, active.** The user chose the re-run and asked for a storage check after 48 hours. Added `US-069`. No server deploys until the window ends.
