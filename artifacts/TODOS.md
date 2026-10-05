@@ -240,6 +240,8 @@
 
 **Sprint:** 10, [[time-aware-routing-engine-stories]] Story R10 (US-055), in [[sprint-plan-3]].
 
+**Status note:** `In progress`. The tooling is built (`scripts/routing_proof/`, plan [[engine-server-proof-and-rollout]]). The evidence is one run of `rollout.ps1` on the server after the replay ends.
+
 ## Backlog
 
 Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
