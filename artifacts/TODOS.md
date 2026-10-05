@@ -192,6 +192,8 @@
 
 **Sprint:** 8, [[edge-depth-table-stories]] Story E7 (US-045), in [[sprint-plan-2]].
 
+**Status note:** the timing report is built (`scripts/edge_depth/table_timing.ps1`, plan [[edge-depth-table-server-proof]]). It runs after the first runs of the window and again at the 24-hour and 48-hour readings.
+
 ### Active - US-069 Check the storage after the 48-hour replay to see if the retention fixes work
 
 **What:** Read the free space on C:, the size of `docker_data.vhdx`, the three database sizes (`storage-postgres-data`, `minio_custom`, `netcdf_values`), and the `flood_extent_polygon` rows at the start, at 24 hours, and at 48 hours of the replay. The check passes if the database sizes stop growing between hour 24 and hour 48 ([[carried-over-backlog]] Story 12).
