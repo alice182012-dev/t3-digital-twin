@@ -202,6 +202,8 @@
 
 **Sprint:** 8, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
 
+**Window:** the replay is set to start at `2026-10-05T15:15:00Z` (22:15 +07). Readings at 0 hours (22:15 +07 on 2026-10-05, before the unpause), 24 hours (22:15 +07 on 2026-10-06), and 48 hours (22:15 +07 on 2026-10-07). The DAG is still paused until you unpause it.
+
 ## Backlog
 
 Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.
