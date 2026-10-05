@@ -98,6 +98,16 @@
 
 **Result:** 2026-10-05, 21 tests pass against a throwaway PostGIS container. `flood_extent_polygon` had no retention policy and reached 13 GB by 2026-10-04 ([[docker-data-vhdx-fills-c-drive-again]]); it now gets the same automated per-publish prune `flood_extent_step` and the MinIO bucket already had.
 
+### Active - US-068 Show the rain ingested into the simulation in the XCom of `1_trigger_simulation`
+
+**What:** `1_trigger_simulation` pushes a `rain_ingested` XCom next to `sim_id`: the slot, the rain source, the interval count, the first and last offset, the maximum mm/h, and the total mm of the series sent to 3Di ([[carried-over-backlog]] Story 11).
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** None. It needs no server to build.
+
+**Sprint:** 5, [[carried-over-backlog]] Story 11 (US-068), in [[sprint-plan-2]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 4:

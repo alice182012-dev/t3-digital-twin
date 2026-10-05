@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
-us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "US-063", "US-064", "US-065"]
+us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "US-063", "US-064", "US-065", "US-068"]
 status: draft
 subsystem: floodmap-frontend, floodmap-backend
 source_ideas: []
@@ -191,6 +191,13 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
   3. Why: `US-037` is judged on every simulated run of the 48-hour replay, by a number and not by eye.
   4. Effect: on the 50 mm/h storm of 2026-10-02 (50 real runs, 00:45 to 13:00 +07) the report fails. The mean margin was +2.3 minutes in the 01:00 hour, +0.5 in the 02:00 hour, and -0.7 or lower from the 03:00 hour, while the tile task grew from 5.8 to 11.5 minutes. That confirms the reopening of `US-037`. The margin is measured to the end of the tile task, which is 1 to 1.3 minutes after step 1 is published, so a run that is slightly late here can still have published step 1 on time. The 07:00 run (-19.2 minutes) is not explained.
 
+- **Story 11 (US-068): Show the rain ingested into the simulation in the XCom of `1_trigger_simulation`.**
+  As the pipeline owner, I want the XCom of the task `1_trigger_simulation` to show how much rain was sent to 3Di, so I can read a run's rain input in the Airflow UI without opening the log or the 3Di run.
+  Given a run of `flood_mapping_full` that took the simulate branch, when `1_trigger_simulation` succeeds, then its XCom holds a key `rain_ingested` next to `sim_id`, with the run's slot, the source of the rain (Tomorrow.io, the replay file of `US-063`, or the fixed test rain), the interval count, the first and last offset in seconds, the maximum intensity in mm/h, and the total rain in mm. The numbers come from the same `[offset_seconds, m/s]` list that `run_forecast_process` sends to `simulations_events_rain_timeseries_create`, not from the forecast the rain gate saw. Given a run that fails before the rain is sent, then no `rain_ingested` is pushed.
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 5 ([[sprint-plan-2]]). Dependencies: None. It needs no server to build, and a server only to read it on a real run.
+  Why this is its own story: today `1_trigger_simulation` pushes only `sim_id` (`dags/flood_mapping_dag.py`). The XCom `rain_intervals` sits on `0_check_forecast_rain` and holds the forecast as the gate saw it, in mm/h. What 3Di receives is `build_rain_values(intervals, start=slot)` in `scripts/create_simulation.py`, in m/s and offset from the slot, and nothing records it. A run that ingests no rain, or a replay slice that is shifted, looks the same in the UI as a correct one.
+  Open details for the build: `get_rain_forecast` returns only the intervals, so the source label needs a small change to say which branch produced them. The total is computed from the sent list with the trapezoid rule, because the series is sent with `interpolate=True`. Tests first, with a pure summary function over the `[offset, m/s]` list, so no server is needed.
+
 ## Status history
 
 - **2026-09-29, draft.** Created from the unscheduled items of `TODOS.md`. All five go in Sprint 2 at the
@@ -231,3 +238,4 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
 - **2026-10-02, draft.** Story 6 (`US-037`) stays `In progress` by the user's decision. It is tested on every run of the 48-hour replay (Story 8), and it is `Done` only when `scripts/pipeline_margins/report.py` passes over the whole window. The default pass mark applies (no margin below 0 minutes at the end of the tile task) until the user sets another.
 - **2026-10-02, draft.** Story 9 (`US-064`), first run on the real host at 16:11 +07: the container check passed, the known-answer check passed (14 roads, 56 checks), and the logs check exited with 1 for an empty GraphHopper log, because no request had come in since 16:00. The message wrongly said the read failed, and it now names both causes (`e07c4ea`). The story stays `Done`.
 - **2026-10-05, draft.** Story 6 (`US-037`) stays `In progress`. The Story 8 replay stopped early at 137 of the intended 192 runs (last one 2026-10-03 19:00 UTC, a stale run ended during an unrelated disk incident), so the window is incomplete, and nobody has run `scripts/pipeline_margins/report.py` (this story's own pass check) against it yet. A separate cut of the same data, each run's critical path end to end over the 136 completed runs, stayed under the 15-minute budget throughout (max 14.9 min), unlike the stress-test baseline, but `9_build_flood_tiles` alone grew 4.8x over the window (90.9 s to 439.4 s) with no cross-run overlap to explain it. An unverified lead: `flood_extent_polygon` had no retention and grew unbounded for the entire window before a same-day manual fix, and if `9_build_flood_tiles` reads that table, its growth is a plausible cause. Full numbers and the open follow-up in [[us-037-narrow-the-per-run-critical-path]].
+- **2026-10-05, draft.** Story 11 (`US-068`) added to Sprint 5 at the user's request: the XCom of `1_trigger_simulation` should show the rain ingested into the simulation. The user chose Sprint 5 and a summary (not the full series) in the XCom.
