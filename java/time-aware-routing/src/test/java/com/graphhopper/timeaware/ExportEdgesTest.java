@@ -66,6 +66,17 @@ class ExportEdgesTest {
         assertEquals(result.edgeCount(), rows(tmp.resolve("out/edges.csv")).size());
     }
 
+    /** Measured before GraphHash was extracted. A change here breaks every table already built (edge-depth-table-format). */
+    @Test
+    void theHashOfTheTinyGraphIsPinned(@TempDir Path tmp) throws Exception {
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
+
+        assertEquals("3b4739134e8d9085da891153f88d9be5851a95c6896d9579241cd638f6afded1",
+                ExportEdges.export(graph, tmp.resolve("out")).graphHash());
+        assertEquals("3b4739134e8d9085da891153f88d9be5851a95c6896d9579241cd638f6afded1",
+                GraphHash.of(graph));
+    }
+
     @Test
     void rowsRunFromEdgeIdZeroUpInOrder(@TempDir Path tmp) throws Exception {
         Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));

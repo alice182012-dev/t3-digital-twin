@@ -12,19 +12,13 @@ import com.graphhopper.routing.util.AllEdgesIterator;
 import com.graphhopper.util.FetchMode;
 import com.graphhopper.util.PointList;
 import java.io.BufferedWriter;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.DigestOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 
 /**
  * Exports every edge of a built GraphHopper graph with its id and geometry, plus a hash of the graph (US-039).
@@ -46,7 +40,7 @@ public final class ExportEdges {
     /** Bump when the columns, the geometry format, or the hash input change. */
     static final int FORMAT_VERSION = 1;
 
-    private static final double SCALE = 1e7;
+    static final double SCALE = 1e7;
 
     public record Result(int edgeCount, int nodeCount, String graphHash) {
     }
@@ -88,7 +82,7 @@ public final class ExportEdges {
      * also needs a working routing profile, and the export needs only the edges. The flood graph has no elevation,
      * so it is opened as 2D.
      */
-    private static BaseGraph openReadOnly(Path graphLocation) {
+    static BaseGraph openReadOnly(Path graphLocation) {
         // Check first: GHDirectory creates a missing folder, and a read-only mount must not be written to.
         if (!Files.isDirectory(graphLocation)) {
             throw new IllegalStateException("No graph folder at " + graphLocation + ". Import the OSM file first.");
@@ -109,33 +103,22 @@ public final class ExportEdges {
     }
 
     private static Result write(BaseGraph graph, Path outputDir) throws IOException {
-        MessageDigest sha256 = sha256();
         int edgeCount = graph.getEdges();
         int nodeCount = graph.getNodes();
-        try (BufferedWriter csv = Files.newBufferedWriter(outputDir.resolve("edges.csv"), StandardCharsets.UTF_8);
-             DataOutputStream hashInput = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), sha256))) {
+        try (BufferedWriter csv = Files.newBufferedWriter(outputDir.resolve("edges.csv"), StandardCharsets.UTF_8)) {
             csv.write("edge_id,wkt\n");
-            hashInput.writeInt(nodeCount);
-            hashInput.writeInt(edgeCount);
             AllEdgesIterator edges = graph.getAllEdges();
             int rows = 0;
             while (edges.next()) {
                 PointList points = edges.fetchWayGeometry(FetchMode.ALL);
                 csv.write(edges.getEdge() + ",\"" + lineString(points) + "\"\n");
-                hashInput.writeInt(edges.getBaseNode());
-                hashInput.writeInt(edges.getAdjNode());
-                hashInput.writeInt(points.size());
-                for (int i = 0; i < points.size(); i++) {
-                    hashInput.writeLong(Math.round(points.getLat(i) * SCALE));
-                    hashInput.writeLong(Math.round(points.getLon(i) * SCALE));
-                }
                 rows++;
             }
             if (rows != edgeCount) {
                 throw new IllegalStateException("The graph reports " + edgeCount + " edges but " + rows + " were read");
             }
         }
-        String hash = HexFormat.of().formatHex(sha256.digest());
+        String hash = GraphHash.compute(graph);
 
         ObjectNode json = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).createObjectNode();
         json.put("format_version", FORMAT_VERSION);
@@ -159,14 +142,6 @@ public final class ExportEdges {
     /** Degrees to 7 decimals with no trailing zeros, so the text does not depend on the platform's formatting. */
     private static String degrees(double value) {
         return BigDecimal.valueOf(Math.round(value * SCALE)).movePointLeft(7).stripTrailingZeros().toPlainString();
-    }
-
-    private static MessageDigest sha256() {
-        try {
-            return MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /** The commit comes from the pom property graphhopper.commit, through resource filtering. */
