@@ -108,7 +108,7 @@
 
 **Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested on the Mac side (9 tests pass, LM stays valid for a raise-only weighting). Left: your approval to push, which runs the first CI job, then `docker --context remote-server build --target test java/time-aware-routing` and an image start on the server. The server is free, since you paused the DAG.
+**Today:** 2026-10-05, built and tested on the Mac side (9 tests pass, LM stays valid for a raise-only weighting). CI run 1 passed on 2026-10-05 (commit `ef5ef4c`, [run](https://github.com/alice182012-dev/t3-digital-twin/actions/runs/37267377140)). Left: `docker --context remote-server build --target test java/time-aware-routing` and an image start on the server, then a screenshot of both. The server is free, since you paused the DAG.
 
 ### Active - US-039 Export the graph's edges
 
