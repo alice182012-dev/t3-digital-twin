@@ -242,6 +242,20 @@
 
 **Status note:** `In progress`. The tooling is built (`scripts/routing_proof/`, plan [[engine-server-proof-and-rollout]]). The evidence is one run of `rollout.ps1` on the server after the replay ends.
 
+### Active - US-070 Stop a slow sampling step from holding the database
+
+**What:** Task `9c` ran over 770 s in one sampling step during the replay. It now analyzes `flood_depth_raster_tile` first and cancels a step past 120 s ([[edge-depth-table-stories]] Story E8).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** `US-041`, done.
+
+**Sprint:** 10, [[edge-depth-table-stories]] Story E8 (US-070), in [[sprint-plan-3]].
+
+**Blocker tracking:** [[9c-sampling-step-runs-over-770-seconds]].
+
+**Status note:** built and pushed as `5e358bf`, 133 tests pass. It waits for `git pull alice front-end-according-to-mock-up` on the server and the next 9c log.
+
 ## Backlog
 
 Unfinished items carried over from Sprint 8 and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
@@ -310,4 +324,5 @@ The unresolved blockers are:
 1. [[route-panel-stuck-on-loading-bars]], monitoring.
 2. [[map-shows-forecast-not-now]], monitoring.
 3. [[routing-not-time-aware]], which `US-055` resolves.
-4. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
+4. [[9c-sampling-step-runs-over-770-seconds]], open, fixed in code by `US-070`, waiting for the server. It blocks no build.
+5. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.

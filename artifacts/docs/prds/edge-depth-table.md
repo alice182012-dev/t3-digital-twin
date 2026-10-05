@@ -130,3 +130,4 @@ Run each check on the server.
 - **2026-09-29, draft.** Written from [[sticky-c-lite-routing]]. Stories are in [[edge-depth-table-stories]].
 - **2026-10-01, draft.** Assumptions 5 and 6 are verified by `US-046`: 67,833 edges, and 8 steps of 15 minutes. The table is about 1.1 MB per run.
 - **2026-10-02, draft.** The user set the build-time limit. The risk, the Definition of done (item 2), and the Decisions table follow. The gate on `US-045` is cleared.
+- **2026-10-05.** Task 9c ran over 770 s in one sampling step under the replay. Blocker [[9c-sampling-step-runs-over-770-seconds]], fix `US-070` (`ANALYZE` first, 120 s step limit). The 5-minute limit stays unproven under load until `US-045` reads the next 9c logs.

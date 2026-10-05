@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
-us_ids: ["US-039", "US-040", "US-041", "US-042", "US-043", "US-044", "US-045"]
+us_ids: ["US-039", "US-040", "US-041", "US-042", "US-043", "US-044", "US-045", "US-070"]
 status: draft
 subsystem: airflow-pipeline, floodmap-backend
 source_ideas: ["[[sticky-c-lite-routing]]"]
@@ -123,6 +123,13 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   Priority: P0. Status: Not started. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
   set the build-time limit on 2026-10-02. The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 
+- **Story E8 (US-070): Stop a slow sampling step from holding the database.**
+  As the operator, I want task 9c to analyze the run's tiles first and cancel a step that runs past its limit, so
+  one slow query cannot starve the runs behind it (blocker [[9c-sampling-step-runs-over-770-seconds]]).
+  Given a step that runs past 120 s, when 9c samples it, then the build fails naming the step, no table is written,
+  and the previous table stays published. Given a normal run, the table is the same as before.
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 10. Dependencies: Story E3.
+
 ## Status history
 
 - **2026-09-29, draft.** Written from [[edge-depth-table]]. No story has started.
@@ -137,3 +144,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-10-05, draft.** Story E6 (`US-044`) is `Reviewed`. Built: the page [[graph-reimport-procedure]], `StaleTableError`, `require_graph_hash` and `read_latest_table_for_graph` (Python guard, logs both hashes), and `scripts/edge_depth/check_tables.py` (compares the export folder, `graph_edge`, the `latest` table, the older tables, and the live graph's hash). 99 tests in `scripts/edge_depth/` pass. Not done: the run on the server (`server_check.sh` now shows a fresh and a stale case), and the Java refusal at request time, which is `US-043`. Plan: [[graph-reimport-procedure-and-stale-table-check]].
 - **2026-10-05, draft.** Story E6 (`US-044`): the server check passed. With the export, `graph_edge`, and the `latest` table on hash `8c13d884...` the check says `FRESH`, and against another hash it says `STALE`, names both hashes, and exits 1. Evidence: `us-044-stale-table-check-server-output.png`. The status stays `Reviewed` until the user confirms the split with `US-043`.
 - **2026-10-05, draft.** Story E6 (`US-044`) is `Done`. The user confirmed the split with `US-043`: the page, the Python guard, and the operator check are closed here, and the refusal at request time in the Java reader is `US-043`'s acceptance. Evidence: `us-044-stale-table-check-server-output.png`.
+- **2026-10-05, draft.** Story E8 (`US-070`) is `Reviewed`. Built after task 9c ran over 770 s in one step during the replay. `ANALYZE` before sampling and a 120 s step limit, tests first (133 tests in `scripts/edge_depth/`, two mutations caught), pushed as `5e358bf`. Not done: the pull on the server and the next 9c log. It stays `Reviewed` until then.
