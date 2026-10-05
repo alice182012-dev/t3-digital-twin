@@ -180,6 +180,8 @@
 
 **Sprint:** 8, [[time-aware-routing-engine-stories]] Story R5 (US-050), in [[sprint-plan-2]].
 
+**Status note:** `Reviewed`. Code and 98 module tests are pushed. Left: `java/time-aware-routing/scenario-check.sh` from the Mac, for the evidence.
+
 ### Active - US-045 Prove the table on the server
 
 **What:** Measure the build time, the file size, and the edge count of the table task on a real run on the server, check 20 edges against `ST_Value`, and record the numbers in [[edge-depth-table]], replacing the guessed size. If the build time exceeds the limit, log a blocker ([[edge-depth-table-stories]] Story E7).

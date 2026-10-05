@@ -220,6 +220,18 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 
 Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. On the server (2026-10-05) the image started beside the live service with the `TimeAwareGraphHopper active` log line, and 12 routes (4 profiles, 3 pairs inside the model border) matched the live service. `java/time-aware-routing/smoke-test.sh` repeats the check. The image and its test container stay a separate service until a later story switches `compose.yml` to it.
 
+## The time-aware search (US-050)
+
+`TimeAwareGraphHopper.doCreateRouter` returns a `TimeAwareRouter`. Read from the pinned source (commit `d7dc1b06`): `Weighting.calcEdgeWeight` has no time argument, so a weighting alone cannot know the arrival time, and the search has to carry it. `Router.createSolver` and `createFlexSolver` are protected, so a subclass can run its own `RoutingAlgorithmFactory` without changing the shadowed `GraphHopperManaged`.
+
+- A request with the hint `td_departure` (epoch seconds), on a profile with the hint `td_limit_cm` (the vehicle's limit in cm), is routed by `TimeAwareDijkstra` through a flexible solver. Landmarks and contraction hierarchies are skipped, because their bounds and shortcuts do not know the time. Every other request goes the stock way.
+- The depth table comes from `TimeAwareGraphHopper.setTableSupplier`. Nothing connects it to `LatestTableSource` yet, so no server request is time-aware until `US-052`. With no table the request is routed as before.
+- A label holds the weight and the time spent. A node can hold several labels, and a label is dropped only when another one at that node is no heavier and no later. A test fails without that rule (a light but slow way hides a heavier way that arrives before the road closes).
+- A snap in the middle of a road gives virtual edges with ids past the graph's. `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to read `getOriginalEdgeKey()`. A test fails without that mapping.
+- In the tests, `SpeedWeighting` takes millis as distance over speed times 1000 and weighs a minute as 600, so test roads get their length from that.
+
+Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. The server run is `java/time-aware-routing/scenario-check.sh`. Not measured yet: latency (`US-053`, `US-055`), and the search on real Hanoi roads (`US-055`).
+
 ## Open items
 
 - `floodmap/graphhopper-maps/config-local.js.example` lists all four profiles: `motorbike`, `car`,

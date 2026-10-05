@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
 related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-02
+last_updated: 2026-10-05
 ---
 
 # Sticky routing reference and checker
@@ -57,6 +57,6 @@ On 2026-10-01 the pair above gives a route of 15 edges and 1,488 m on `roads.geo
 ## Open items
 
 - The scenarios use a synthetic depth per edge. They do not read a real depth table. `US-045` proves the real table on the server.
-- The reference has not been compared with a GraphHopper response. That comparison starts when the engine exists (`US-050`).
+- The Java engine of `US-050` passes the same four scenarios on a hand-built corridor (`ScenarioReport`, and its random-graph test against an exhaustive search), but the reference and the engine have not yet been compared on real Hanoi roads. That is `US-055`.
 - The wording "sticky from the departure" waits for the user's confirmation before Sprint 8.
 - The story named a throwaway PostGIS database. The scenarios need no spatial query, so none is used.

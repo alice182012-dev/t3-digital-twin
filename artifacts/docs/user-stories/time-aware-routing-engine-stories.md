@@ -86,8 +86,9 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   from Story R2 and the checker finds no crossing of an impassable edge. The search carries the arrival time
   in its label, applies sticky closure from the departure step with a 10-minute margin, and reads the vehicle
   limit from the profile.
-  Priority: P0. Status: Not started. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate cleared: the user
+  Priority: P0. Status: Reviewed. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate cleared: the user
   confirmed the sticky-from-departure wording on 2026-10-02.
+  Built on 2026-10-05, tests first, in `java/time-aware-routing/` (98 module tests): `StickyClosure`, `TimeAwareDijkstra`, `StickyChecker`, `TimeAwareRouter`, `ScenarioReport`, and `scenario-check.sh`. The 16 runs and the checker pass in unit tests. Not yet seen: the run on the server (`scenario-check.sh`), which is the evidence for `Done`. Plan: [[time-aware-weighting-and-search]].
 
 - **Story R6 (US-051): Add the `truck` and `foot` time-aware profiles.**
   As a truck driver or a pedestrian, I want the same timing check for my mode, so the four modes behave alike.

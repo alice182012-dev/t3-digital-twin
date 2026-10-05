@@ -51,3 +51,4 @@ Tests first at every step.
 ## Status history
 
 - **2026-10-05, active.** Plan written after reading the pinned source.
+- **2026-10-05, active.** Steps 1 to 4 built and pushed, tests first, 98 module tests. The search is `TimeAwareDijkstra`, hooked in through `TimeAwareGraphHopper.doCreateRouter` and `TimeAwareRouter`. Two facts found on the way: `SpeedWeighting` weighs a minute as 600 and takes millis as distance over speed times 1000 (so tests choose lengths from that), and `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to find the road behind a mid-edge snap (a test fails without it). Five mutations are caught. Added `ScenarioReport` and `scenario-check.sh` for the server evidence. Left: the server run.

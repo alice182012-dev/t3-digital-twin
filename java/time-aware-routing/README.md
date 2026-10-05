@@ -36,6 +36,14 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 - `GraphHash.compute(graph)` is the hash that `ExportEdges` writes to `graph.json`.
 - `EdgeDepthTableTool <table-folder> [--graph-hash H | --graph-folder DIR] [--watch SECONDS]` reads the table from the command line. `reader-check.sh` runs it in a second container on the server (run from the Mac in the repo root).
 
+## Time-aware search (US-050)
+
+- `StickyClosure` is the closure rule. A road is closed for an arrival when a step in `[departure, arrival + 10 min]` has a depth at or above the vehicle limit. Steps before the departure are ignored.
+- `TimeAwareDijkstra` is a Dijkstra search whose labels carry the weight and the time spent. A label is dropped only when another label at the node is no heavier and no later, which keeps it exact when weight and time differ.
+- `TimeAwareRouter` (built by `TimeAwareGraphHopper.doCreateRouter`) uses it for a request with the hint `td_departure` (epoch seconds) on a profile with the hint `td_limit_cm`. Any other request is routed as before. A time-aware request skips LM and CH. The table comes from `TimeAwareGraphHopper.setTableSupplier`, which `US-052` connects to `LatestTableSource`.
+- `StickyChecker` re-walks a route and lists every road entered while closed.
+- `scenario-check.sh` runs `ScenarioReport` on the server: the four scenarios of the blocker's test table, for the motorbike and the car, with and without a detour.
+
 ## Export the graph's edges
 
 `ExportEdges <graph-cache-folder> <output-folder>` opens the graph cache read-only and writes two files.
