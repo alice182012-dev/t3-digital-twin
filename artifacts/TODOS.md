@@ -1,6 +1,6 @@
 # TODOS
 
-## Current sprint: Sprint 9, 2026-10-05 to 2026-11-22
+## Current sprint: Sprint 10, 2026-10-05 to 2026-11-29
 
 ### Done - US-046 Record the routing baselines on the server
 
@@ -218,6 +218,26 @@
 
 **Status note:** `Reviewed`. The endpoint is built and tested (plan [[route-departures-endpoint]]). The check on a real route is part of `US-055`.
 
+### Active - US-054 Show "wait until" in the no-route alert
+
+**What:** When a route request fails with no connection, the client asks `POST /route/departures` and the alert shows a loading line, then "The usual route is clear from HH:MM (forecast run HH:MM)", or "No safe route in the next 2 hours. Check again after the next forecast run." A clear route shows no advice. A table that is unavailable shows "timing check unavailable". The alert keeps its advice to reach the safest location or stay put, and says "clear in the forecast", not "safe" ([[time-aware-routing-engine-stories]] Story R9).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** `US-053` (the endpoint, `Reviewed`) and [[frontend-polish]] Story 4 (the no-route state, `Done`).
+
+**Sprint:** 10, [[time-aware-routing-engine-stories]] Story R9 (US-054), in [[sprint-plan-3]].
+
+### Active - US-055 Prove the engine on the server and roll it out
+
+**What:** Evidence on the server before the flag goes on. The four scenarios for the four vehicles pass the checker on the deployed image and a real run. The p50 and p95 of `POST /route` stay within 2 times the baseline of `US-046`. A fixed set of pairs run against today's model and the reference gives the share of routes that change and the median detour ratio. The tooling is built first, so the server needs one deploy and one run ([[time-aware-routing-engine-stories]] Story R10).
+
+**Effort:** M
+**Priority:** P0
+**Depends on:** `US-051`, `US-052`, `US-053`, `US-054` and `US-045`. The latency factor of 2 was set on 2026-10-02. The server run waits for the end of the 48-hour replay, because no image is built on the server until then.
+
+**Sprint:** 10, [[time-aware-routing-engine-stories]] Story R10 (US-055), in [[sprint-plan-3]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
@@ -275,15 +295,15 @@ Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done it
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 10, 2026-11-23 to 2026-11-29, in [[sprint-plan-3]].
+The next sprint is Sprint 11, 2026-11-30 to 2026-12-06, in [[sprint-plan-3]].
 
-Checked on 2026-10-05 against its rows (`US-054`, `US-055`).
+Checked on 2026-10-05 against its row (`US-033`).
 
-Any blocker stops Sprint 10: None
+Any blocker stops Sprint 11: None
 
 The unresolved blockers are:
 
-1. [[route-panel-stuck-on-loading-bars]], monitoring. It touches the panel that will show the alert of `US-054`, and blocks no build.
+1. [[route-panel-stuck-on-loading-bars]], monitoring.
 2. [[map-shows-forecast-not-now]], monitoring.
 3. [[routing-not-time-aware]], which `US-055` resolves.
 4. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.

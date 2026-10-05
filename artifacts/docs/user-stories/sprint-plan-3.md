@@ -25,7 +25,7 @@ Calendar, from `start_date` in the frontmatter:
 | Sprint | Start | End | Actual start | Actual end |
 | ------ | ----- | --- | ------------ | ---------- |
 | 9 | 2026-11-16 | 2026-11-22 | 2026-10-05 |  |
-| 10 | 2026-11-23 | 2026-11-29 |  |  |
+| 10 | 2026-11-23 | 2026-11-29 | 2026-10-05 |  |
 | 11 | 2026-11-30 | 2026-12-06 |  |  |
 | 12 | 2026-12-07 | 2026-12-13 |  |  |
 
@@ -126,3 +126,4 @@ file and in this plan.
 - **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R7 (`US-052`) moved from `Not started` to `Reviewed`. Built tests first (118 Java module tests and 27 Python tests, and the flag-on path in `test_server.py`). It stays `Reviewed` until the deployed image runs on the server in `US-055`. Plan: [[time-aware-backend-integration]].
 - **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R6 (`US-051`) moved from `Not started` to `Reviewed`. `truck` (35 cm) and `foot` (40 cm) have `td_limit_cm` in `config.yml`, and `ScenarioReport` runs 32 scenarios for the four vehicles. 119 Java module tests and 27 Python tests pass. It stays `Reviewed` until the server run in `US-055`.
 - **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R8 (`US-053`) moved from `Not started` to `Reviewed`. All three Sprint 9 rows are built and tested (Java 123 module tests, Python 30 + 21 + 27 tests, and `test_server.py` for the flag and the endpoint). They stay `Reviewed` until the server run in `US-055`. Sprint 10 starts next (`US-054`, `US-055`).
+- **2026-10-05, active.** Sprint 10 started on 2026-10-05, 49 days before its planned start of 2026-11-23, because its dependency `US-053` is built (`Reviewed`) and the user wants everything built before the one test on the server. Its rows are `US-054` and `US-055`. `US-055` needs the 48-hour replay to end before its server run, since no image builds on the server until then. Sprints 9 and 10 stay open until the server proof. No blocker stops Sprint 11 (`US-033`), checked on 2026-10-05.
