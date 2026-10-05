@@ -2,7 +2,7 @@
 date: 2026-10-05
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-8, java, routing, graphhopper, us-050, sticky-c-lite]
 related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[sticky-routing-reference]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[routing-not-time-aware]]", "[[sprint-plan-2]]", "[[edge-depth-table-java-reader]]"]
 ---
@@ -52,3 +52,4 @@ Tests first at every step.
 
 - **2026-10-05, active.** Plan written after reading the pinned source.
 - **2026-10-05, active.** Steps 1 to 4 built and pushed, tests first, 98 module tests. The search is `TimeAwareDijkstra`, hooked in through `TimeAwareGraphHopper.doCreateRouter` and `TimeAwareRouter`. Two facts found on the way: `SpeedWeighting` weighs a minute as 600 and takes millis as distance over speed times 1000 (so tests choose lengths from that), and `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to find the road behind a mid-edge snap (a test fails without it). Five mutations are caught. Added `ScenarioReport` and `scenario-check.sh` for the server evidence. Left: the server run.
+- **2026-10-05, done.** `scenario-check.sh` passed on the server (16 of 16, 0 crossings). `US-050` is `Done`.

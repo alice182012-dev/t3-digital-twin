@@ -170,7 +170,7 @@
 
 **Result:** 2026-10-05, on the server a second container read the real table (67,833 edges, 8 steps) against the live graph hash `8c13d884...`, refused another hash naming both and exiting 1, and loaded a new `latest` 8 s after the worker published it, with no restart.
 
-### Active - US-050 Build the time-aware weighting and search for `motorbike` and `car`
+### Done - US-050 Build the time-aware weighting and search for `motorbike` and `car`
 
 **What:** A weighting and a search that carry the arrival time in the label, apply sticky closure from the departure step with a 10-minute margin, and read the vehicle limit from the profile. On a synthetic depth table the four scenarios, with and without a detour, must match the reference of `US-047`, and the checker must find no crossing of an impassable edge ([[time-aware-routing-engine-stories]] Story R5).
 
@@ -180,7 +180,7 @@
 
 **Sprint:** 8, [[time-aware-routing-engine-stories]] Story R5 (US-050), in [[sprint-plan-2]].
 
-**Status note:** `Reviewed`. Code and 98 module tests are pushed. Left: `java/time-aware-routing/scenario-check.sh` from the Mac, for the evidence.
+**Result:** 2026-10-05, on the server all 16 runs (4 scenarios, motorbike and car, with and without a detour) match the sticky column with 0 crossings, and the plain route crosses the closed road in all 8 blocked runs.
 
 ### Active - US-045 Prove the table on the server
 
