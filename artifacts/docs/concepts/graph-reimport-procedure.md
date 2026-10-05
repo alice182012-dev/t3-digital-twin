@@ -104,7 +104,7 @@ To roll back, restore the old OSM file and `config.yml`, and repeat the procedur
 
 ## What is built, and what is not
 
-Built and verified on the server on 2026-10-05: the export and its hash (`US-039`), the table and the hash tag (`US-041`), atomic publish (`US-042`), `StaleTableError`, `read_latest_table_for_graph`, and `check_tables.py` (`US-044`).
+Built and verified on the server on 2026-10-05: the export and its hash (`US-039`), the table and the hash tag (`US-041`), atomic publish (`US-042`), and `check_tables.py` (`US-044`), which says `FRESH` on the real export, `graph_edge` and `latest` table (hash `8c13d884...`) and `STALE`, naming both hashes, against another hash. `StaleTableError` and `read_latest_table_for_graph` are tested, and not yet used by any reader.
 
 Not built yet: the refusal in the Java reader at request time. It is the acceptance of `US-043` (a table for another graph hash is refused and both hashes are named), and the engine that uses the reader comes with `US-050` and `US-052`. A full re-import of the live graph has not been rehearsed, because it takes routing down. The steps above come from the commands that exist and from the earlier wipe-and-recreate of the cache.
 

@@ -156,7 +156,7 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E6 (US-044), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested (99 tests in `scripts/edge_depth/`): the page [[graph-reimport-procedure]], the Python stale-table guard, and `scripts/edge_depth/check_tables.py`. Left: the run on the server (`scripts/edge_depth/server_check.sh` shows a fresh and a stale case), and your decision on one point. The refusal at request time sits in the Java reader, which is `US-043` (Sprint 8). Close this story on the page, the Python guard, and the check, and leave that half to `US-043`? Plan: [[graph-reimport-procedure-and-stale-table-check]].
+**Today:** 2026-10-05, built, tested, and checked on the server: the check says `FRESH` on the real export, `graph_edge` and `latest` table, and `STALE` against another hash, naming both. Left: your decision on one point. The refusal at request time sits in the Java reader, which is `US-043` (Sprint 8). Close this story on the page, the Python guard, and the check, and leave that half to `US-043`? Plan: [[graph-reimport-procedure-and-stale-table-check]].
 
 ## Backlog
 
