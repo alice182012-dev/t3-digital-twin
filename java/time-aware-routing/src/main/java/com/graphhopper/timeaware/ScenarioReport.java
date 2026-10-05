@@ -17,19 +17,30 @@ import java.nio.file.Files;
 import java.time.Instant;
 
 /**
- * Runs the four synthetic flood scenarios of routing-not-time-aware.md through the time-aware search (US-050), for the
- * motorbike (limit 20 cm) and the car (30 cm), with and without a detour, and prints one line per run. The rows are the
+ * Runs the four synthetic flood scenarios of routing-not-time-aware.md through the time-aware search (US-050, US-051), for
+ * the motorbike (limit 20 cm), the car (30), the truck (35), and the foot profile (40), with and without a detour, and prints
+ * one line per run. The limits are the td_limit_cm of config.yml, which a test keeps equal to flood_utils.py. The rows are the
  * ones in scripts/routing_reference/scenarios.py, and the expected column is the "C-lite, sticky" column of that table.
  * <p>
  * Each scenario floods one road, the corridor road, and sets how long the traveller takes to reach it. A road takes
  * whole minutes: SpeedWeighting divides the length by the speed, so a speed of 90 and a length of 5,400 m is one minute.
- * Exit code 0 means all 16 runs matched and no route crossed a closed road.
+ * Exit code 0 means all 32 runs matched and no route crossed a closed road.
  */
 public final class ScenarioReport {
 
     static final Instant T0 = Instant.parse("2026-10-05T10:00:00Z");
     private static final double METRES_PER_MINUTE = 5400;
     private static final int FLOOD_CM = 50;
+
+    /** The depth, in cm, at which each vehicle cannot pass. Equal to td_limit_cm in config.yml. */
+    static final java.util.Map<String, Integer> VEHICLE_LIMITS_CM = new java.util.LinkedHashMap<>();
+
+    static {
+        VEHICLE_LIMITS_CM.put("motorbike", 20);
+        VEHICLE_LIMITS_CM.put("car", 30);
+        VEHICLE_LIMITS_CM.put("truck", 35);
+        VEHICLE_LIMITS_CM.put("foot", 40);
+    }
 
     record Scenario(String name, int arrivalMin, int firstWetMin, int lastWetMin, boolean blocked) {
     }
@@ -60,11 +71,11 @@ public final class ScenarioReport {
         int bad = 0;
         int runs = 0;
         for (Scenario s : SCENARIOS) {
-            for (String vehicle : new String[] {"motorbike", "car"}) {
-                int limit = vehicle.equals("motorbike") ? 20 : 30;
+            for (var vehicle : VEHICLE_LIMITS_CM.entrySet()) {
+                int limit = vehicle.getValue();
                 for (boolean detour : new boolean[] {true, false}) {
                     Outcome o = outcome(s, limit, detour);
-                    out.printf("%-26s %-9s %-10s %-9s %-9s %-9d %-9d %.1f%s%n", s.name(), vehicle, detour ? "with" : "without",
+                    out.printf("%-26s %-9s %-10s %-9s %-9s %-9d %-9d %.1f%s%n", s.name(), vehicle.getKey(), detour ? "with" : "without",
                             o.expected(), o.observed(), o.crossings(), o.plainRouteCrossings(), o.routeMinutes(),
                             o.matches() ? "" : "   <-- MISMATCH");
                     runs++;

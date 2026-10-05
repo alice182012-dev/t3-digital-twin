@@ -100,7 +100,8 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   As a truck driver or a pedestrian, I want the same timing check for my mode, so the four modes behave alike.
   Given Story R5's engine, when `truck` and `foot` requests run on the synthetic scenarios, then each uses its
   own depth limit (35 cm and 40 cm) and passes the checker.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Story R5.
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Story R5.
+  Built on 2026-10-05, tests first. `td_limit_cm` 35 for `truck` and 40 for `foot` in `config.yml`. The engine needed no change, because it reads the limit from the profile. Tests: each of the four vehicles at depths 15, 25, 32, 37, and 45 cm through `route()` and through the search, a depth equal to the limit closes the road, `ScenarioReport` now runs 32 runs (4 scenarios, 4 vehicles, with and without a detour) and passes, and a test in each language keeps `config.yml` equal to the report's limits and to `flood_utils.py`. The blocker that stopped a `foot` profile (`graphhopper-vehicle-profile-rejection`) was `resolved` on 2026-09-23 and the profile is in `config.yml`. Not yet seen: the server run (`scenario-check.sh`, in the rollout of `US-055`).
 
 - **Story R7 (US-052): Integrate the engine into the backend with a flag and a fallback.**
   As an operator, I want a switch and a safe fallback, so a problem with the table never takes routing down

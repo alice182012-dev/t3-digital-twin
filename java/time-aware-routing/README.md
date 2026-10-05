@@ -42,7 +42,7 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 - `TimeAwareDijkstra` is a Dijkstra search whose labels carry the weight and the time spent. A label is dropped only when another label at the node is no heavier and no later, which keeps it exact when weight and time differ.
 - `TimeAwareRouter` (built by `TimeAwareGraphHopper.doCreateRouter`) uses it for a request with the hint `td_departure` (epoch seconds) on a profile with the hint `td_limit_cm`. Any other request is routed as before. A time-aware request skips LM and CH. The table comes from `TimeAwareGraphHopper.setTableSupplier`, which `US-052` connects to `LatestTableSource`.
 - `StickyChecker` re-walks a route and lists every road entered while closed.
-- `scenario-check.sh` runs `ScenarioReport` on the server: the four scenarios of the blocker's test table, for the motorbike and the car, with and without a detour.
+- `scenario-check.sh` runs `ScenarioReport` on the server: the four scenarios of the blocker's test table, for the motorbike, car, truck, and foot profile, with and without a detour (32 runs).
 
 ## Export the graph's edges
 

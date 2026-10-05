@@ -17,7 +17,7 @@ cd "$(dirname "$0")" || exit 1
 echo "== 1. Build the image (runs the module tests in the test stage)"
 d build -t "$IMAGE" . || { echo "BUILD FAILED"; exit 1; }
 
-echo "== 2. The four scenarios for motorbike and car, with and without a detour"
+echo "== 2. The four scenarios for motorbike, car, truck, and foot, with and without a detour"
 d run --rm --entrypoint sh "$IMAGE" -c '
     CP="/opt/time-aware/time-aware-routing.jar:$(ls /graphhopper/graphhopper-web*.jar | head -n 1)"
     exec java -cp "$CP" com.graphhopper.timeaware.ScenarioReport

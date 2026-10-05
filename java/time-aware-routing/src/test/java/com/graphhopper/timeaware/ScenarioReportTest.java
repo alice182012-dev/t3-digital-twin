@@ -8,19 +8,19 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
-/** The report that scenario-check.sh runs on the server prints one line per run and passes when all 16 match. */
+/** The report that scenario-check.sh runs on the server prints one line per run and passes when all 32 match (4 scenarios, 4 vehicles, with and without a detour). */
 class ScenarioReportTest {
 
     @Test
-    void allSixteenRunsMatchTheStickyColumn() throws Exception {
+    void allThirtyTwoRunsMatchTheStickyColumn() throws Exception {
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         int code = ScenarioReport.run(new PrintStream(buffer, true, StandardCharsets.UTF_8));
 
         String out = buffer.toString(StandardCharsets.UTF_8);
         assertEquals(0, code, out);
-        assertTrue(out.contains("PASS: 16 of 16"), out);
-        assertEquals(1 + 16 + 1, out.strip().split("\n").length, out);
+        assertTrue(out.contains("PASS: 32 of 32"), out);
+        assertEquals(1 + 32 + 1, out.strip().split("\n").length, out);
     }
 
     @Test

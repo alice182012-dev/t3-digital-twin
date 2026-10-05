@@ -76,6 +76,8 @@ class TimeAwareRouterTest {
                 .setProfiles(List.of(
                         new Profile("motorbike").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 20),
                         new Profile("car").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 30),
+                        new Profile("truck").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 35),
+                        new Profile("foot").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 40),
                         new Profile("plain").setCustomModel(model)));
         hopper = new TimeAwareGraphHopper();
         hopper.init(config);
@@ -354,7 +356,8 @@ class TimeAwareRouterTest {
                 limits.put(profile.getName(), profile.getHints().getInt(TimeAwareRouter.LIMIT_HINT, -1));
             }
         }
-        assertEquals(java.util.Map.of("motorbike", 20, "car", 30), limits);
+        assertEquals(java.util.Map.of("motorbike", 20, "car", 30, "truck", 35, "foot", 40), limits);
+        assertEquals(limits, ScenarioReport.VEHICLE_LIMITS_CM, "the server report must use the limits of config.yml");
     }
 
     @Test
@@ -369,5 +372,25 @@ class TimeAwareRouterTest {
         assertFalse(r.hasErrors(), r.getErrors().toString());
         assertEquals("applied", hint(r, "td.status"));
         assertTrue(r.getBest().getDistance() > 800, "the detour is about 910 m, got " + r.getBest().getDistance());
+    }
+
+    @Test
+    void eachOfTheFourVehiclesUsesItsOwnLimit(@TempDir Path dir) throws Exception {
+        java.util.Map<String, Integer> limits = java.util.Map.of("motorbike", 20, "car", 30, "truck", 35, "foot", 40);
+        int checked = 0;
+        for (int depth : new int[] {15, 25, 32, 37, 45}) {
+            flood(dir, corridorEdge, depth, 0);
+            for (var vehicle : limits.entrySet()) {
+                GHResponse r = hopper.route(request(vehicle.getKey(), true, ORIGIN, DESTINATION));
+
+                assertFalse(r.hasErrors(), r.getErrors().toString());
+                assertEquals("applied", hint(r, "td.status"), vehicle.getKey());
+                boolean blocked = depth >= vehicle.getValue();
+                assertEquals(!blocked, edgeIds(r).contains(corridorEdge),
+                        vehicle.getKey() + " at " + depth + " cm, limit " + vehicle.getValue());
+                checked++;
+            }
+        }
+        assertEquals(20, checked);
     }
 }

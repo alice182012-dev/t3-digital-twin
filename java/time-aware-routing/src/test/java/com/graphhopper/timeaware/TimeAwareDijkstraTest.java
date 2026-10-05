@@ -142,9 +142,15 @@ class TimeAwareDijkstraTest {
     @Test
     void theLimitDecidesWhichVehicleIsBlocked(@TempDir Path dir) throws Exception {
         Scenario rises = SCENARIOS[0];
-        // 25 cm is over the motorbike limit (20) and under the car limit (30).
-        assertFalse(usesCorridor(runScenario(dir, rises, 20, 25, true)), "motorbike goes round");
-        assertTrue(usesCorridor(runScenario(dir, rises, 30, 25, true)), "car passes");
+        // motorbike 20, car 30, truck 35, foot 40. A depth equal to the limit closes the road.
+        int[] limits = {20, 30, 35, 40};
+        for (int depth : new int[] {15, 25, 32, 37, 45}) {
+            for (int limit : limits) {
+                boolean blocked = depth >= limit;
+                assertEquals(!blocked, usesCorridor(runScenario(dir, rises, limit, depth, true)),
+                        "limit " + limit + " at " + depth + " cm");
+            }
+        }
     }
 
     @Test

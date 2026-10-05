@@ -36,10 +36,8 @@ VEHICLE_PROFILES = {
         "label_vi": "Xe tải",
         "label_en": "Truck",
     },
-    # No corresponding GraphHopper profile exists yet: this pinned GraphHopper build rejects
-    # any newly-declared vehicle encoded value at startup (reproduced for both foot_access and
-    # bike_access — see graphhopper/config.yml's comment and artifacts/TODOS.md). Once that's resolved and
-    # a "foot" profile is wired up, this is the only change needed on the backend side.
+    # The foot profile exists in graphhopper/config.yml (the startup rejection was fixed by -o /data/graph-cache,
+    # see artifacts/docs/blockers/graphhopper-vehicle-profile-rejection.md). Keep threshold_cm equal to td_limit_cm there.
     "foot": {
         "costing": "foot",
         "threshold_cm": 40,

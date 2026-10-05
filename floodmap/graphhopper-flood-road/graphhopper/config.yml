@@ -9,8 +9,8 @@ graphhopper:
   # "motorbike" profile, only "motorcycle").
   profiles:
     # td_limit_cm is the depth, in cm, at which the vehicle cannot pass. The time-aware engine (java/time-aware-routing,
-    # US-052) reads it from the profile. Keep it equal to threshold_cm in scripts/flood_utils.py. truck and foot get
-    # theirs in US-051, and until then a time-aware request for them falls back to today's model.
+    # US-052) reads it from the profile. Keep it equal to threshold_cm in scripts/flood_utils.py (a test checks it). A
+    # profile without it is not time-aware, and a time-aware request for it falls back to today's model.
     - name: motorbike
       custom_model_files: [motorbike.json]
       td_limit_cm: 20
@@ -19,8 +19,10 @@ graphhopper:
       td_limit_cm: 30
     - name: truck
       custom_model_files: [truck_custom.json]
+      td_limit_cm: 35
     - name: foot
       custom_model_files: [foot_custom.json]
+      td_limit_cm: 40
 
   # Every flood request supplies its own custom_model with ch.disable in the
   # body, so every query runs in flexible mode anyway — landmarks (LM) keep

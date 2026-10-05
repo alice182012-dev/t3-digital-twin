@@ -284,8 +284,8 @@ class ProfileLimitsTest(unittest.TestCase):
         for profile, limit in limits.items():
             self.assertEqual(limit, flood_utils.vehicle_threshold_cm(profile), profile)
 
-    def test_motorbike_and_car_have_a_limit_and_the_others_wait_for_us_051(self):
-        self.assertEqual(set(self.limits_in_config()), {"motorbike", "car"})
+    def test_all_four_vehicles_have_a_limit(self):
+        self.assertEqual(self.limits_in_config(), {"motorbike": 20, "car": 30, "truck": 35, "foot": 40})
 
 
 if __name__ == "__main__":

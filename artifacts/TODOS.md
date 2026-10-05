@@ -204,6 +204,8 @@
 
 **Sprint:** 9, [[time-aware-routing-engine-stories]] Story R6 (US-051), in [[sprint-plan-3]].
 
+**Status note:** `Reviewed`. `truck` (35 cm) and `foot` (40 cm) are in `config.yml`, and the scenario report runs 32 cases. The server run is part of `US-055`.
+
 ### Active - US-053 Build `POST /route/departures`
 
 **What:** An endpoint that returns each candidate departure as `clear`, `blocked`, or `unknown`, the earliest clear departure, the run, and the run's age, from the flood-free route's `edge_id` and `time` details and the depth table, with sticky closure from each candidate and a 10-minute margin. The client sends no clock value, margin, or policy ([[time-aware-routing-engine-stories]] Story R8).
