@@ -315,6 +315,46 @@ class BuildEdgeDepthTests(unittest.TestCase):
 
         self.assertIn("hash", str(caught.exception))
 
+    def test_a_step_that_runs_past_its_time_limit_fails_the_build_and_names_the_step(self):
+        self.standard_run()
+        write_export(self.export_dir, edges=STANDARD_EDGES, graph_hash="a" * 64)
+        slow = build_edge_depth._SAMPLE_SQL.replace("SELECT s.edge_id, max(w.depth)", "SELECT s.edge_id, max(w.depth) + (SELECT 0 FROM pg_sleep(1))", 1)
+        self.assertNotEqual(slow, build_edge_depth._SAMPLE_SQL)
+        original = build_edge_depth._SAMPLE_SQL
+        build_edge_depth._SAMPLE_SQL = slow
+        self.addCleanup(setattr, build_edge_depth, "_SAMPLE_SQL", original)
+
+        with self.assertRaises(EdgeDepthBuildError) as caught:
+            build_edge_depth.build_table(self.conn, RUN, self.export_dir, self.out_dir, step_timeout_s=0.2)
+
+        self.assertIn("step 1 of 2", str(caught.exception))
+        self.assertFalse((self.out_dir / f"{RUN}.bin").exists())
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT 1")  # the connection is usable after the cancel
+
+    def test_the_time_limit_does_not_leak_to_the_rest_of_the_connection(self):
+        self.standard_run()
+
+        self.build()
+
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SHOW statement_timeout")
+            self.assertEqual(cur.fetchone()[0], "0")
+
+    def test_the_tiles_are_analyzed_before_sampling(self):
+        self.standard_run()
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT last_analyze FROM pg_stat_user_tables WHERE relname = 'flood_depth_raster_tile' AND schemaname = %s", (SCHEMA,))
+            before = cur.fetchone()[0]
+
+        self.build()
+
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT last_analyze FROM pg_stat_user_tables WHERE relname = 'flood_depth_raster_tile' AND schemaname = %s", (SCHEMA,))
+            after = cur.fetchone()[0]
+        self.assertIsNotNone(after)
+        self.assertTrue(before is None or after > before)
+
 
 if __name__ == "__main__":
     unittest.main()

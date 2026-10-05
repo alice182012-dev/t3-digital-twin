@@ -35,6 +35,11 @@ import graph_edges
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 
 SAMPLE_STEP_M = 1.0
+# One sampling step takes about 5 s on an idle database. A step that runs past this is a bad plan or a
+# starved database, and it is cancelled so it cannot hold the database for the runs behind it (on 2026-10-05
+# one step ran over 770 s). The build fails, the run stays green (edge_table_done is all_done), and the
+# previous table stays published.
+DEFAULT_STEP_TIMEOUT_S = 120.0
 _MAX_CM = 0xFFFF
 
 
@@ -108,7 +113,7 @@ GROUP BY s.edge_id
 """
 
 
-def build_table(conn, run_ts: str, export_dir, out_dir) -> BuildResult:
+def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = DEFAULT_STEP_TIMEOUT_S) -> BuildResult:
     """Builds <out_dir>/<run_ts>.bin from the run's raster tiles and the export in export_dir.
 
     Raises GraphExportError when the export is missing or inconsistent, and EdgeDepthBuildError when the
@@ -123,20 +128,31 @@ def build_table(conn, run_ts: str, export_dir, out_dir) -> BuildResult:
 
     graph_loaded = graph_edges.load_graph_edges(conn, export)
 
+    # The tiles of a run are loaded minutes before this task. Autovacuum has not seen them yet, and a plan
+    # made on stale statistics can pick a nested loop over the unpacked pixels.
+    with conn, conn.cursor() as cur:
+        cur.execute("ANALYZE flood_depth_raster_tile")
+
     steps = len(valid_times)
     depths = array("H", bytes(2 * export.edge_count * steps))
     wet_edges = []
     sample_seconds = []
     for step, valid_time in enumerate(valid_times):
         step_started = time.monotonic()
-        with conn, conn.cursor() as cur:
-            cur.execute(_SAMPLE_SQL, {"run_ts": run_ts, "valid_time_utc": valid_time, "step": SAMPLE_STEP_M})
-            wet = 0
-            for edge_id, depth in cur.fetchall():
-                cm = depth_cm(depth)
-                if cm > 0:
-                    depths[edge_id * steps + step] = cm
-                    wet += 1
+        wet = 0
+        try:
+            with conn, conn.cursor() as cur:
+                cur.execute("SELECT set_config('statement_timeout', %s, true)", (f"{max(1, int(step_timeout_s * 1000))}ms",))
+                cur.execute(_SAMPLE_SQL, {"run_ts": run_ts, "valid_time_utc": valid_time, "step": SAMPLE_STEP_M})
+                for edge_id, depth in cur.fetchall():
+                    cm = depth_cm(depth)
+                    if cm > 0:
+                        depths[edge_id * steps + step] = cm
+                        wet += 1
+        except psycopg2.errors.QueryCanceled as e:
+            raise EdgeDepthBuildError(
+                f"step {step + 1} of {steps} ({valid_time}) ran past {step_timeout_s:g} s and was cancelled"
+            ) from e
         wet_edges.append(wet)
         sample_seconds.append(time.monotonic() - step_started)
 
