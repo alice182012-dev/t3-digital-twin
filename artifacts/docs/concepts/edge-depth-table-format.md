@@ -53,7 +53,7 @@ A reader refuses the file, and names the cause, in these cases.
 - The file size differs from the size the header's counts give, which covers a truncated body and extra bytes after it.
 - `graphHash` or `runName` is not valid UTF-8, or the step times do not increase.
 
-The graph hash guard (refuse a table whose `graphHash` differs from the loaded graph's) is not part of the format. It belongs to each reader's caller. The Python guard is built (`US-044`): `require_graph_hash` and `read_latest_table_for_graph` raise `StaleTableError`, naming both hashes, and log it at ERROR. The Java guard is `US-043`. What to do after a graph re-import is in [[graph-reimport-procedure]], and `scripts/edge_depth/check_tables.py` shows whether the export, `graph_edge`, the tables, and the live graph agree on one hash.
+The graph hash guard (refuse a table whose `graphHash` differs from the loaded graph's) is not part of the format. It belongs to each reader's caller. The Python guard is built (`US-044`): `require_graph_hash` and `read_latest_table_for_graph` raise `StaleTableError`, naming both hashes, and log it at ERROR. The Java guard is built (`US-043`): `EdgeDepthTable.requireGraphHash` throws `StaleTableException` with the same wording, and `LatestTableSource` refuses such a table, logs it at ERROR, and keeps the valid current one. What to do after a graph re-import is in [[graph-reimport-procedure]], and `scripts/edge_depth/check_tables.py` shows whether the export, `graph_edge`, the tables, and the live graph agree on one hash.
 
 ## The `latest` pointer
 
@@ -96,4 +96,4 @@ Verified on 2026-10-05 in the cloud session: 83 tests in `scripts/edge_depth/`, 
 
 - The file extension is not fixed. The Airflow task story (`US-041`) decides the file name.
 - The hash algorithm is fixed by the export (`US-039`, built 2026-10-05). It is a SHA-256, written as 64 lowercase hex characters, over the node count, the edge count, and for each edge in id order its base node, adjacent node, point count, and points in 1e-7 degrees. `ExportEdges` writes it to `graph.json` as `graph_hash`, and the table's `graphHash` header holds the same text. See `java/time-aware-routing/README.md`. Run on the server graph on 2026-10-05: 67,833 edges, 51,328 nodes, hash `8c13d8841f8335a39207a38bb833bfc70d8e7d0709d46953076e4e5142c716ce` for the graph of that day.
-- The Java reader (`US-043`) must pass the same bytes. The literal-bytes test is the fixture it starts from.
+- The Java reader (`US-043`) passes the same bytes. `scripts/edge_depth/golden_fixture.py` writes one fixture (3,000 edges, 9 steps, edge-case values) to `java/time-aware-routing/src/test/resources/edge-depth/`, and both readers are tested against it.

@@ -168,6 +168,8 @@
 
 **Sprint:** 8, [[edge-depth-table-stories]] Story E5 (US-043), in [[sprint-plan-2]].
 
+**Status note:** `Reviewed`. Code and tests are pushed. Left: `java/time-aware-routing/reader-check.sh` from the Mac, for the second-container evidence.
+
 ### Active - US-050 Build the time-aware weighting and search for `motorbike` and `car`
 
 **What:** A weighting and a search that carry the arrival time in the label, apply sticky closure from the departure step with a 10-minute margin, and read the vehicle limit from the profile. On a synthetic depth table the four scenarios, with and without a detour, must match the reference of `US-047`, and the checker must find no crossing of an impassable edge ([[time-aware-routing-engine-stories]] Story R5).

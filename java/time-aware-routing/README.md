@@ -29,6 +29,13 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 
 `smoke-test.sh` builds the image on the server, starts it on port 8990 with its own graph cache, and compares routes with the live service on port 8989. Run it from the Mac in the repo root, and run `smoke-test.sh cleanup` after. The paths of the server's repo and OSM file are variables at the top of the script.
 
+## Read the edge depth table
+
+- `EdgeDepthTable.open(path)` memory-maps one table read-only and checks it as the Python reader does. `depthCm(edge, step)` returns 0 to 65535. A damaged file throws `TableFormatException`, and `requireGraphHash` throws `StaleTableException` naming both hashes.
+- `LatestTableSource(folder, graphHash)` follows the `latest` pointer. `current()` is the table to serve. The poll started by `start()` runs every 5 s (never over 30 s). A damaged or stale new table is logged at ERROR and the valid current one stays. A caller that holds a table keeps it, so a request in flight finishes on its own table.
+- `GraphHash.compute(graph)` is the hash that `ExportEdges` writes to `graph.json`.
+- `EdgeDepthTableTool <table-folder> [--graph-hash H | --graph-folder DIR] [--watch SECONDS]` reads the table from the command line. `reader-check.sh` runs it in a second container on the server (run from the Mac in the repo root).
+
 ## Export the graph's edges
 
 `ExportEdges <graph-cache-folder> <output-folder>` opens the graph cache read-only and writes two files.

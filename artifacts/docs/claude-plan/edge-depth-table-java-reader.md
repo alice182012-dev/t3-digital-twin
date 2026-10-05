@@ -56,3 +56,4 @@ Tests first at every step.
 ## Status history
 
 - **2026-10-05, active.** Plan written at the start of `US-043`.
+- **2026-10-05, active.** Steps 1 to 5 built and pushed, tests first. 57 module tests pass. The tiny-graph hash is pinned before the `GraphHash` extraction and did not change. A mutation that skips `requireGraphHash` in `LatestTableSource` fails 2 tests. Left: `reader-check.sh` on the server.

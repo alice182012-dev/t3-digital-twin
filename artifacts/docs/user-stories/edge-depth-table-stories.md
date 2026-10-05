@@ -87,7 +87,8 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   reader for every edge and step. Given a table for a different graph hash, then the reader refuses it and
   names both hashes. Given a new `latest` pointer, then the engine memory-maps the new table within 30
   seconds, and a request in flight finishes on the old table.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 8. Dependencies: Stories E2, R4.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 8. Dependencies: Stories E2, R4.
+  Built on 2026-10-05, tests first: `EdgeDepthTable`, `LatestTableSource`, `GraphHash`, `EdgeDepthTableTool`, and `reader-check.sh` in `java/time-aware-routing/` (57 module tests, 38 of them new here). Acceptance 1 and 2 pass in unit tests (every one of 27,000 values of the shared fixture equals the Python reader's, and a table for another hash is refused with both hashes named). Acceptance 3 passes in a unit test with a 40 ms poll. Not yet seen: the reader in a second container on the server (`reader-check.sh`), which is the evidence for `Done`.
 
 - **Story E6 (US-044): Document the graph re-import procedure and detect a stale table.**
   As an operator, I want a page that says what to do after a graph re-import, so the table and the graph never
