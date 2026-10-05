@@ -99,18 +99,22 @@ public final class ScenarioReport {
             road(g, speed, 0, 4, s.arrivalMin() + 6);
             road(g, speed, 4, 3, s.arrivalMin() + 6);
         }
-        EdgeDepthTable table = table(g.getEdges(), s);
-        SpeedWeighting weighting = new SpeedWeighting(speed);
-        StickyClosure closure = new StickyClosure(table, limitCm, T0.toEpochMilli(), StickyClosure.DEFAULT_MARGIN_MS);
+        try {
+            EdgeDepthTable table = table(g.getEdges(), s);
+            SpeedWeighting weighting = new SpeedWeighting(speed);
+            StickyClosure closure = new StickyClosure(table, limitCm, T0.toEpochMilli(), StickyClosure.DEFAULT_MARGIN_MS);
 
-        Path route = new TimeAwareDijkstra(g, weighting, TraversalMode.NODE_BASED, closure).calcPath(0, 3);
-        Path plain = new Dijkstra(g, weighting, TraversalMode.NODE_BASED).calcPath(0, 3);
+            Path route = new TimeAwareDijkstra(g, weighting, TraversalMode.NODE_BASED, closure).calcPath(0, 3);
+            Path plain = new Dijkstra(g, weighting, TraversalMode.NODE_BASED).calcPath(0, 3);
 
-        String observed = !route.isFound() ? "none" : route.calcEdges().stream().anyMatch(e -> e.getEdge() == 1) ? "corridor" : "detour";
-        String expected = !s.blocked() ? "corridor" : detour ? "detour" : "none";
-        int crossings = route.isFound() ? StickyChecker.findCrossings(route, weighting, closure).size() : 0;
-        int plainCrossings = StickyChecker.findCrossings(plain, weighting, closure).size();
-        return new Outcome(observed, expected, crossings, plainCrossings, route.isFound() ? route.getTime() / 60000.0 : 0);
+            String observed = !route.isFound() ? "none" : route.calcEdges().stream().anyMatch(e -> e.getEdge() == 1) ? "corridor" : "detour";
+            String expected = !s.blocked() ? "corridor" : detour ? "detour" : "none";
+            int crossings = route.isFound() ? StickyChecker.findCrossings(route, weighting, closure).size() : 0;
+            int plainCrossings = StickyChecker.findCrossings(plain, weighting, closure).size();
+            return new Outcome(observed, expected, crossings, plainCrossings, route.isFound() ? route.getTime() / 60000.0 : 0);
+        } finally {
+            g.close();
+        }
     }
 
     private static void road(BaseGraph g, DecimalEncodedValue speed, int a, int b, double minutes) {

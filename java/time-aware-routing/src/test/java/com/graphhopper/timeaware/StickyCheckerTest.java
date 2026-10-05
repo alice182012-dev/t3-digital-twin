@@ -15,6 +15,11 @@ import org.junit.jupiter.api.io.TempDir;
 /** The independent re-walk of a route (US-050). It mirrors find_crossings in scripts/routing_reference/sticky_reference.py. */
 class StickyCheckerTest {
 
+    @org.junit.jupiter.api.AfterEach
+    void closeGraphs() {
+        TimeAwareDijkstraTest.closeAll();
+    }
+
     private static final long T0 = TimeAwareDijkstraTest.T0.toEpochMilli();
     private static final long MIN = 60_000L;
 

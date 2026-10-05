@@ -32,11 +32,31 @@ class TimeAwareDijkstraTest {
 
     private static final java.util.Map<BaseGraph, DecimalEncodedValue> SPEEDS = new java.util.IdentityHashMap<>();
 
+    /**
+     * A new in-memory graph. GraphHopper allocates its memory in megabyte segments and does not free it until the graph is
+     * closed, so a test that builds hundreds of graphs runs a small CI runner out of heap (the failure of java-module run 13
+     * on). Every graph made here is closed after the test by {@link #closeGraphs()}, and a loop closes its own with
+     * {@link #close(BaseGraph)}.
+     */
     static BaseGraph newGraph() {
         DecimalEncodedValue speed = new DecimalEncodedValueImpl("speed", 5, 5, true);
         BaseGraph g = new BaseGraph.Builder(new EncodingManager.Builder().add(speed).build()).create();
         SPEEDS.put(g, speed);
         return g;
+    }
+
+    static void close(BaseGraph g) {
+        if (SPEEDS.remove(g) != null) g.close();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void closeGraphs() {
+        closeAll();
+    }
+
+    /** Closes every graph still open. The other test classes that use newGraph() call it from their own @AfterEach. */
+    static void closeAll() {
+        for (BaseGraph g : new java.util.ArrayList<>(SPEEDS.keySet())) close(g);
     }
 
     static DecimalEncodedValue speed(BaseGraph g) {
@@ -287,6 +307,7 @@ class TimeAwareDijkstraTest {
             } else {
                 withoutRoute++;
             }
+            close(g);
         }
         assertTrue(withRoute > 60 && withoutRoute > 5, "the random graphs must cover both outcomes: " + withRoute + "/" + withoutRoute);
     }
