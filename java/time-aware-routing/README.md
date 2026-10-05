@@ -23,3 +23,7 @@ docker build -t graphhopper-time-aware java/time-aware-routing
 ```
 
 The image starts from the stock image's digest and starts GraphHopper with `run-time-aware.sh`, which takes the same `-c` and `-o` options as the stock `graphhopper.sh`. On start the log has the line `TimeAwareGraphHopper active`. If that line is missing, the stock class loaded.
+
+## Start the image beside the live service
+
+`smoke-test.sh` builds the image on the server, starts it on port 8990 with its own graph cache, and compares routes with the live service on port 8989. Run it from the Mac in the repo root, and run `smoke-test.sh cleanup` after. The paths of the server's repo and OSM file are variables at the top of the script.
