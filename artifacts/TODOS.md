@@ -108,7 +108,7 @@
 
 **Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, first of the sprint. Write the module files, the `Dockerfile`, and `.github/workflows/java-module.yml` on the Mac, with no build. Then your approval to push starts the first CI run. After that, `docker --context remote-server build --target test` runs the tests on the server, which is free since you paused the DAG.
+**Today:** 2026-10-05, built and tested on the Mac side (9 tests pass, LM stays valid for a raise-only weighting). Left: your approval to push, which runs the first CI job, then `docker --context remote-server build --target test java/time-aware-routing` and an image start on the server. The server is free, since you paused the DAG.
 
 ### Active - US-039 Export the graph's edges
 

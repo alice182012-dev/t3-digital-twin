@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-02
+last_updated: 2026-10-05
 ---
 
 # GraphHopper flood-road backend
@@ -206,6 +206,18 @@ The cause fits the way GraphHopper applies an area. It blocks a whole edge when 
 ## Log volume
 
 GraphHopper writes the whole custom model of each flood-graded `/route` request on one log line. The longest line seen on 2026-10-02 was 454,252 characters. The container's `json-file` log has no size limit (`LogConfig.Config` is empty). The raw log of `airflow_new-graphhopper-1` reached at least 271 MB in 1,558 lines between 00:45 and about 03:10 +07 on 2026-10-02, nearly all of it from test traffic. The fetch of the raw log stopped at that point, because it did not finish within 280 s. A page load sends 13 route requests ([[carried-over-backlog]] Story 4), so real use can write several megabytes per load. Whether this threatens the disk of the server was not checked. `run_soak.sh` filters the log on the host with `gh_log_filter.ps1` to avoid copying it. Setting the `RouteResource` logger to `WARN` in `config.yml` would remove these lines, and it needs a GraphHopper restart.
+
+## The time-aware module (US-049, skeleton)
+
+`java/time-aware-routing/` is a Maven module built against GraphHopper commit `d7dc1b06` (`12.0-SNAPSHOT`), the commit the stock image's jar came from. It changes no behavior yet.
+
+- `TimeAwareGraphHopper` extends `GraphHopper` and returns a `TimeAwareWeightingFactory`, which today returns the stock weighting.
+- `com.graphhopper.http.GraphHopperManaged` is a shadow copy of the stock class. `GraphHopperBundle` calls `new GraphHopperManaged(...)`, and the web server has no setting to pick another class. The image puts the module's jar before `graphhopper-web.jar`, so the JVM loads the copy. The log line `TimeAwareGraphHopper active` proves which class loaded. The copy drops the GTFS branch.
+- The stock `graphhopper.sh` runs `java -jar`, which ignores the classpath. The image's entrypoint is `run-time-aware.sh`, which takes the same `-c` and `-o` options and starts `GraphHopperApplication` from a classpath.
+- A weighting that only raises weights keeps the LM lower bounds valid ([[routing-not-time-aware]], 2026-10-05).
+- 12.0-SNAPSHOT is not on Maven Central. CI and the `Dockerfile` both build the pinned commit first. CI is `.github/workflows/java-module.yml`.
+
+Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. The image on the server is not tested yet.
 
 ## Open items
 

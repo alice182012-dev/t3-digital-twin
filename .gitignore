@@ -72,3 +72,6 @@ artifacts/.obsidian/
 !/marie-curie/README.md
 # Story evidence screenshots stay local, only files already committed remain tracked
 artifacts/docs/user-stories/evidence/
+
+# Java
+java/**/target/

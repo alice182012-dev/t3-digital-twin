@@ -83,7 +83,7 @@ graph's edges are exported with a hash.
 
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-049 | P0 | Build the Java module skeleton, the image, and the CI job | L | [[time-aware-routing-engine-stories]] R4 | Story R1 | None yet | - | Not started |
+| US-049 | P0 | Build the Java module skeleton, the image, and the CI job | L | [[time-aware-routing-engine-stories]] R4 | Story R1 | None yet | - | Reviewed |
 | US-039 | P0 | Export the graph's edges | M | [[edge-depth-table-stories]] E1 | Story R4, same sprint | None yet | - | Not started |
 
 ## Sprint 7: the depth table
@@ -179,3 +179,4 @@ this plan has an open gate. The soak row in Sprint 5 has no gate, because the us
 - **2026-10-05, active.** The user paused `flood_mapping_full`, so the replay stopped and the server is free. The Sprint 6 server steps no longer wait. `US-069` (storage check) has no 24-hour or 48-hour window to read until the DAG is unpaused, and stays `Not started` in the Backlog.
 - **2026-10-05, active.** `US-069` (storage check) moved from Sprint 5 to Sprint 8 at the user's request: not testing now, continue after Sprint 7. It needs the DAG unpaused for 48 hours. Sprint 8 already holds `US-050`, `US-043`, and `US-045`, so move a row if the sprint is too full (rule 10).
 - **2026-10-05, active.** `US-068` is `Reviewed`: `rain_ingested` is pushed from `1_trigger_simulation` (6 new tests, 22 pass in `test/test_create_simulation_cycle.py`). The acceptance check on a real run and its screenshot wait for the DAG to be unpaused.
+- **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R4 (`US-049`) moved from `Not started` to `Reviewed`. The module, image files, and CI workflow are written, and 9 tests pass locally. Result for the LM question: LM stays valid for a raise-only weighting. Waiting on the first CI run (needs the user's approval to push) and the image build on the server.
