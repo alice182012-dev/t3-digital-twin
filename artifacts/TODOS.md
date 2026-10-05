@@ -158,7 +158,7 @@
 
 **Result:** 2026-10-05, on the server the check says `FRESH` when the export, `graph_edge`, and the `latest` table share hash `8c13d884...`, and `STALE` against another hash, naming both and exiting 1. The page [[graph-reimport-procedure]] and a Python guard are in. You confirmed that the refusal at request time is `US-043`'s.
 
-### Active - US-043 Build the Java reader with a hash check and reload without restart
+### Done - US-043 Build the Java reader with a hash check and reload without restart
 
 **What:** A Java reader of the edge depth table, in `java/time-aware-routing/`. It returns the same values as the Python reader for every edge and step on the shared fixture, refuses a table for a different graph hash and names both hashes, and memory-maps a new `latest` within 30 seconds while a request in flight finishes on the old table ([[edge-depth-table-stories]] Story E5). This is where the request-time refusal that `US-044` handed over is built.
 
@@ -168,7 +168,7 @@
 
 **Sprint:** 8, [[edge-depth-table-stories]] Story E5 (US-043), in [[sprint-plan-2]].
 
-**Status note:** `Reviewed`. Code and tests are pushed. Left: `java/time-aware-routing/reader-check.sh` from the Mac, for the second-container evidence.
+**Result:** 2026-10-05, on the server a second container read the real table (67,833 edges, 8 steps) against the live graph hash `8c13d884...`, refused another hash naming both and exiting 1, and loaded a new `latest` 8 s after the worker published it, with no restart.
 
 ### Active - US-050 Build the time-aware weighting and search for `motorbike` and `car`
 

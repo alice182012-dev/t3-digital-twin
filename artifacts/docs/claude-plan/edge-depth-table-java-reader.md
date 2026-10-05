@@ -2,7 +2,7 @@
 date: 2026-10-05
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-8, java, edge-depth-table, us-043, hash-check, reload]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graph-reimport-procedure]]", "[[graphhopper-backend]]", "[[sprint-plan-2]]"]
 ---
@@ -57,3 +57,4 @@ Tests first at every step.
 
 - **2026-10-05, active.** Plan written at the start of `US-043`.
 - **2026-10-05, active.** Steps 1 to 5 built and pushed, tests first. 57 module tests pass. The tiny-graph hash is pinned before the `GraphHash` extraction and did not change. A mutation that skips `requireGraphHash` in `LatestTableSource` fails 2 tests. Left: `reader-check.sh` on the server.
+- **2026-10-05, done.** `reader-check.sh` passed on the server. `US-043` is `Done`.
