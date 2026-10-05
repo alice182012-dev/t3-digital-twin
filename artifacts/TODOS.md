@@ -244,7 +244,7 @@
 
 ## Backlog
 
-Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
+Unfinished items carried over from Sprint 8 and Sprint 4. The Done items of Sprints 5 and 8 stay until the next rollover. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
 
 ### Active - US-045 Prove the table on the server
 
@@ -285,7 +285,7 @@ Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done it
 
 **Result:** 2026-10-05, closed again on the 137 runs, at your decision. The 136 completed runs stayed under the 15-minute budget (maximum 14.9 minutes), but `report.py` was not run and `9_build_flood_tiles` grew 4.8 times over the window. The `flood_extent_polygon` lead (now pruned by `US-067`) is not verified. Details in [[us-037-narrow-the-per-run-critical-path]].
 
-### Active - US-068 Show the rain ingested into the simulation in the XCom of `1_trigger_simulation`
+### Done - US-068 Show the rain ingested into the simulation in the XCom of `1_trigger_simulation`
 
 **What:** `1_trigger_simulation` pushes a `rain_ingested` XCom next to `sim_id`: the slot, the rain source, the interval count, the first and last offset, the maximum mm/h, and the total mm of the series sent to 3Di ([[carried-over-backlog]] Story 11).
 
@@ -295,7 +295,7 @@ Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done it
 
 **Sprint:** 5, [[carried-over-backlog]] Story 11 (US-068), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested: `rain_ingested` is pushed from `1_trigger_simulation` (22 tests pass). The real XCom check needs one DAG run, so it waits for you to unpause the DAG and pull the commit on the server.
+**Result:** 2026-10-05, on the server the first run of the replay (slot `2026-10-05T17:00Z`) pushed `rain_ingested`: source `replay:hanoi_20251005_48h.csv`, 9 points from 0 to 7200 s, 1.096 mm/h at most, 0.881 mm in total. The same numbers come out of the event file.
 
 ## Blockers for the next sprint
 
