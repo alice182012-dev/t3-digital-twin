@@ -57,6 +57,11 @@ class TimeAwareRouterTest {
         public Optional<String> problem() {
             return current == null ? Optional.of(problem) : Optional.empty();
         }
+
+        @Override
+        public Optional<String> graphHash() {
+            return Optional.of(TestTables.HASH);
+        }
     }
 
     static final FakeProvider provider = new FakeProvider();
@@ -392,5 +397,39 @@ class TimeAwareRouterTest {
             }
         }
         assertEquals(20, checked);
+    }
+
+    @Test
+    void aTdInfoRequestCarriesTheGraphHashAndTheRunAndDoesNotChangeTheRoute(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+        GHRequest request = request("car", false, ORIGIN, DESTINATION);
+        request.getHints().putObject(TimeAwareRouter.INFO_HINT, true);
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(TestTables.HASH, hint(r, "td.graph_hash"));
+        assertEquals("20261005T000000", hint(r, "td.run"));
+        assertFalse(r.getHints().has("td.status"), "no search ran");
+        assertTrue(edgeIds(r).contains(corridorEdge), "the route is the stock route, which ignores the table");
+    }
+
+    @Test
+    void aTdInfoRequestWithNoTableStillCarriesTheGraphHash() {
+        provider.problem = "no table has been published";
+        GHRequest request = request("car", false, ORIGIN, DESTINATION);
+        request.getHints().putObject(TimeAwareRouter.INFO_HINT, true);
+
+        GHResponse r = hopper.route(request);
+
+        assertEquals(TestTables.HASH, hint(r, "td.graph_hash"));
+        assertFalse(r.getHints().has("td.run"));
+    }
+
+    @Test
+    void aRequestWithoutTdInfoCarriesNoGraphHash(@TempDir Path dir) throws Exception {
+        flood(dir, corridorEdge, 50, 0);
+
+        assertFalse(hopper.route(request("car", true, ORIGIN, DESTINATION)).getHints().has("td.graph_hash"));
     }
 }

@@ -199,4 +199,9 @@ class LatestTableSourceTest {
         TableProvider provider = new LatestTableSource(dir, goldenHash, FAST);
         assertEquals(Optional.empty(), provider.current());
     }
+
+    @Test
+    void theProviderKnowsTheGraphHashItWasGiven(@TempDir Path dir) {
+        assertEquals(Optional.of(goldenHash), new LatestTableSource(dir, goldenHash, FAST).graphHash());
+    }
 }

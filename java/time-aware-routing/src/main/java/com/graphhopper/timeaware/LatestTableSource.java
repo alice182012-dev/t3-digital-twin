@@ -73,6 +73,11 @@ public final class LatestTableSource implements TableProvider, AutoCloseable {
         return Optional.of(refusal != null ? refusal : "no table has been published in " + directory);
     }
 
+    @Override
+    public Optional<String> graphHash() {
+        return Optional.of(loadedGraphHash);
+    }
+
     /** The reason the newest pointer was refused, if the last refresh refused one. */
     public Optional<String> lastRefusal() {
         return Optional.ofNullable(lastRefusal);

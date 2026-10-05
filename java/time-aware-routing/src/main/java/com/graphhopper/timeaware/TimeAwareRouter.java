@@ -32,7 +32,7 @@ import java.util.Optional;
  * GraphHopper makes a new router for every request, so the decision is made once and held in a field. That pins one
  * table for all the legs of the request. The response hints are {@value #STATUS_HINT} (`applied`, `unknown`, or
  * `fallback`), {@value #RUN_HINT}, {@value #DEPARTURE_RESPONSE_HINT}, {@value #LAST_STEP_HINT} (epoch seconds), and
- * {@value #REASON_HINT} for a fallback. A time-aware search cannot use landmarks or contraction hierarchies, because
+ * {@value #REASON_HINT} for a fallback. A request with {@value #INFO_HINT} also gets {@value #GRAPH_HASH_HINT} and the run. A time-aware search cannot use landmarks or contraction hierarchies, because
  * their bounds and shortcuts do not know the time, so it always uses the flexible solver.
  */
 public class TimeAwareRouter extends Router {
@@ -44,6 +44,9 @@ public class TimeAwareRouter extends Router {
     public static final String DEPARTURE_RESPONSE_HINT = "td.departure";
     public static final String LAST_STEP_HINT = "td.last_step";
     public static final String REASON_HINT = "td.reason";
+    /** A request with this hint gets the graph hash and the run in its response and is otherwise routed as before. */
+    public static final String INFO_HINT = "td_info";
+    public static final String GRAPH_HASH_HINT = "td.graph_hash";
 
     private final TableProvider tables;
     private Decision decision = Decision.NOT_REQUESTED;
@@ -110,7 +113,17 @@ public class TimeAwareRouter extends Router {
         decision = decide(request);
         GHResponse response = super.route(request);
         if (decision.requested()) annotate(response);
+        if (request.getHints().has(INFO_HINT)) annotateInfo(response);
         return response;
+    }
+
+    /**
+     * The graph hash and the run, for a client that reads the depth table itself (the departures endpoint of US-053). The
+     * client compares the hash with the table's, so a stale table is refused. No search runs for this.
+     */
+    private void annotateInfo(GHResponse response) {
+        tables.graphHash().ifPresent(hash -> response.getHints().putObject(GRAPH_HASH_HINT, hash));
+        tables.current().ifPresent(table -> response.getHints().putObject(RUN_HINT, table.runName()));
     }
 
     private void annotate(GHResponse response) {
