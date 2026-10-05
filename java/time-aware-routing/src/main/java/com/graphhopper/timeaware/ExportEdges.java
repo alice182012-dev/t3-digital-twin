@@ -76,6 +76,14 @@ public final class ExportEdges {
     }
 
     /**
+     * Memory-mapped, read-only, and not "storing". GraphHopper's DAType.MMAP_RO is storing, and at this commit
+     * BaseGraph then opens the geometry file for writing whatever the type says
+     * (BaseGraph: {@code dir.getDefaultType().isStoring() ? DAType.MMAP : dir.getDefaultType()}), which fails on a
+     * read-only mount. This type makes BaseGraph use it for the geometry file too.
+     */
+    private static final DAType READ_ONLY_MMAP = new DAType(DAType.MemRef.MMAP, false, false, false);
+
+    /**
      * Opens the graph store with memory-mapped, read-only files. GraphHopper's own load() is not used, because it
      * also needs a working routing profile, and the export needs only the edges. The flood graph has no elevation,
      * so it is opened as 2D.
@@ -85,7 +93,7 @@ public final class ExportEdges {
         if (!Files.isDirectory(graphLocation)) {
             throw new IllegalStateException("No graph folder at " + graphLocation + ". Import the OSM file first.");
         }
-        GHDirectory directory = new GHDirectory(graphLocation.toString(), DAType.MMAP_RO);
+        GHDirectory directory = new GHDirectory(graphLocation.toString(), READ_ONLY_MMAP);
         StorableProperties properties = new StorableProperties(directory);
         if (!properties.loadExisting()) {
             throw new IllegalStateException("No graph in " + graphLocation + ". Import the OSM file first.");

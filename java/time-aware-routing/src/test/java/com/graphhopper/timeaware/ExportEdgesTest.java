@@ -163,6 +163,53 @@ class ExportEdgesTest {
         assertNotEquals(before.graphHash(), after.graphHash());
     }
 
+    /** Every file of the folder with its size, last-modified time, and bytes, so any write shows up. */
+    private static List<String> fingerprint(Path dir) throws IOException {
+        try (var files = Files.walk(dir)) {
+            return files.filter(Files::isRegularFile).sorted().map(file -> {
+                try {
+                    return dir.relativize(file) + " " + Files.size(file) + " " + Files.getLastModifiedTime(file).toMillis()
+                            + " " + Arrays.hashCode(Files.readAllBytes(file));
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            }).toList();
+        }
+    }
+
+    @Test
+    void theGraphFolderIsNotChanged(@TempDir Path tmp) throws Exception {
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
+        List<String> before = fingerprint(graph);
+
+        ExportEdges.export(graph, tmp.resolve("out"));
+
+        assertEquals(before, fingerprint(graph));
+    }
+
+    /**
+     * The server mounts the live graph cache read-only. A root user can write to files marked read-only, so this test
+     * only means something for a normal user, as on CI, and it is skipped for root (as in the Docker build).
+     */
+    @Test
+    void worksOnAFolderThatCannotBeWritten(@TempDir Path tmp) throws Exception {
+        org.junit.jupiter.api.Assumptions.assumeFalse("root".equals(System.getProperty("user.name")),
+                "root can write to read-only files");
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
+        try (var files = Files.walk(graph)) {
+            files.forEach(file -> file.toFile().setWritable(false));
+        }
+        try {
+            ExportEdges.Result result = ExportEdges.export(graph, tmp.resolve("out"));
+
+            assertEquals(4, result.edgeCount());
+        } finally {
+            try (var files = Files.walk(graph)) {
+                files.forEach(file -> file.toFile().setWritable(true));
+            }
+        }
+    }
+
     @Test
     void anEmptyFolderIsAnErrorAndWritesNothing(@TempDir Path tmp) {
         Path missing = Paths.get(tmp.toString(), "no-graph");
