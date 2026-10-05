@@ -55,6 +55,11 @@ public final class LatestTableSource implements AutoCloseable {
         return Optional.ofNullable(current);
     }
 
+    /** The file name of the current table, as the pointer named it. */
+    public Optional<String> currentName() {
+        return Optional.ofNullable(currentName);
+    }
+
     public Duration interval() {
         return interval;
     }

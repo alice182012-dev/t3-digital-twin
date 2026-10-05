@@ -70,6 +70,7 @@ class LatestTableSourceTest {
         EdgeDepthTable table = source.current().orElseThrow();
         assertEquals('1', table.runName().charAt(14));
         assertEquals(goldenHash, table.graphHash());
+        assertEquals(Optional.of("20261001T000000.bin"), source.currentName());
     }
 
     @Test
