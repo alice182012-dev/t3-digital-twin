@@ -33,6 +33,7 @@ flowchart TB
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
     ROADLOAD["load_road_segments.py<br/>(task load_road_segments)"]:::built
     ROUTEEXT["flood_on_roads.py<br/>(task flood_on_roads)"]:::built
+    EDGETABLE["build_edge_depth.py<br/>(task 9c_build_edge_depth_table, US-041)"]:::designed
     TILEEXT["flood_extent.py + publish.py<br/>(GRASS raster→polygon,<br/>prune_polygon_rows every publish)"]:::built
   end
 
@@ -67,6 +68,8 @@ flowchart TB
   PG -->|tiles, road pieces| ROUTEEXT
   DEPTH --> TILEEXT
   ROUTEEXT -->|flood_road_values| PG
+  PG -->|tiles, graph_edge| EDGETABLE
+  EDGETABLE -->|"run.bin, edge depth table"| EDGEFILES["edge_depth folder<br/>(read by US-043)"]:::designed
   TILEEXT -->|flood_extent_polygon| PG
   TILEEXT -->|.pbf tiles| MINIO
   PG --> BACKEND

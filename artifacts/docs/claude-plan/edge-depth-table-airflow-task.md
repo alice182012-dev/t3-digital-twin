@@ -65,3 +65,4 @@ Tests first at every step, and each step ends in a state I can run.
 ## Status history
 
 - **2026-10-05, active.** Plan written at the start of Sprint 7. Design points 1 to 7 and the step order are fixed. A throwaway PostGIS is available in the cloud session for the tests.
+- **2026-10-05, active.** Steps 1 to 6 built and tested: `graph_edges.py`, `create_graph_edge_table.py`, `build_edge_depth.py`, `spot_check.py`, the DAG task and its `all_done` leaf, and the docs. 59 tests in `scripts/edge_depth/`, and a mutation check showed the sampling test catches a shallowest-instead-of-deepest change. Added `server_check.sh` and `EXPORT_DEST` in `export-edges.sh` for the server run. Waiting for that run: the 20-edge spot check, and the duration against the 5-minute limit.

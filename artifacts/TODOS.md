@@ -132,6 +132,8 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E3 (US-041), in [[sprint-plan-2]].
 
+**Today:** 2026-10-05, built and tested (59 tests in `scripts/edge_depth/`, 16 in the DAG graph test, against a throwaway PostGIS). Left, on the server: pull the branch, write the export with `EXPORT_DEST=... java/time-aware-routing/export-edges.sh`, then run `scripts/edge_depth/server_check.sh`. It builds a retained run's table, runs the 20-edge spot check, and shows the duration. Plan: [[edge-depth-table-airflow-task]].
+
 ### Active - US-042 Publish the table atomically and keep the newest three runs
 
 **What:** A new table appears in one step, so a reader never sees a half-written file. The fourth run's publish removes the oldest, and a failed task leaves the previous `latest` in place. The story also picks the storage, a volume or MinIO, and records why ([[edge-depth-table-stories]] Story E4).

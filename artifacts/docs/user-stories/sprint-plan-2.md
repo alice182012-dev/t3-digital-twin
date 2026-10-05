@@ -95,7 +95,7 @@ re-import procedure is written.
 
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-041 | P0 | Build the Airflow task that writes each run's table | L | [[edge-depth-table-stories]] E3 | Stories E1, E2 | None yet | - | Not started |
+| US-041 | P0 | Build the Airflow task that writes each run's table | L | [[edge-depth-table-stories]] E3 | Stories E1, E2 | None yet | - | Reviewed |
 | US-042 | P0 | Publish the table atomically and keep the newest three runs | S | [[edge-depth-table-stories]] E4 | This sprint's E3 | None yet | - | Not started |
 | US-044 | P1 | Document the graph re-import procedure and detect a stale table | S | [[edge-depth-table-stories]] E6 | This sprint's E3 | None yet | - | Not started |
 
@@ -186,3 +186,4 @@ this plan has an open gate. The soak row in Sprint 5 has no gate, because the us
 - **2026-10-05, active.** [[edge-depth-table-stories]] Story E1 (`US-039`) moved from `Reviewed` to `Done`. The export ran on the live graph on the server, read-only: 67,833 rows for 67,833 edges, identical on two runs, one hash. Evidence: `us-039-edge-export-server-output.png`, rendered from output the user pasted. Both Sprint 6 rows (`US-049`, `US-039`) are `Done`.
 - **2026-10-05, active.** Timeline set to the real dates. Sprint 5 ran 2026-10-01 to 2026-10-05, and Sprint 6 started and ended on 2026-10-05 (27 days before its planned end of 2026-11-01), because both of its rows, `US-049` and `US-039`, were `Done` the same day. Sprint 7 started on 2026-10-05, 28 days before its planned start of 2026-11-02. An earlier line here said Sprint 5 ended 14 days early. The right number is 20.
 - **2026-10-05, active.** Sprint 7 starts with `US-041` (the Airflow task that writes the table), which needs the export of `US-039` and the format of `US-040`, both done. `US-042` and `US-044` need `US-041`. No blocker stops Sprint 8 (`US-050`, `US-043`, `US-045`, `US-069`), checked on 2026-10-05 against the unresolved blockers.
+- **2026-10-05, active.** [[edge-depth-table-stories]] Story E3 (`US-041`) moved from `Not started` to `Reviewed`. The task, the export loader, the sampler, and the spot check are built and tested against a throwaway PostGIS. Not done: the run on the server graph, the 20-edge spot check, and the duration against the 5-minute limit. Plan: [[edge-depth-table-airflow-task]].

@@ -55,7 +55,7 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   samples the raster tiles along each edge, stores the deepest 1 m sample in centimetres, tags the file with
   the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct
   `ST_Value` reading. An edge outside the model reads 0.
-  Priority: P0. Status: Not started. Estimate: L. Sprint: 7. Dependencies: Stories E1, E2.
+  Priority: P0. Status: Reviewed. Estimate: L. Sprint: 7. Dependencies: Stories E1, E2 (both done).
 
 - **Story E4 (US-042): Publish the table atomically and keep the newest three runs.**
   As a reader, I want a new table to appear in one step, so I never read a half-written file.
@@ -100,3 +100,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-10-02, draft.** The gate of Story E7 is cleared. The user accepted the build-time limit: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth` (see [[edge-depth-table]]).
 - **2026-10-05, draft.** Story E1 (`US-039`) is `Reviewed`. `ExportEdges` in `java/time-aware-routing/` writes `edges.csv` and `graph.json` from a read-only graph cache. 18 tests pass in the module (9 new). On an Andorra import with the repo's four profiles and LM it wrote 2,820 rows for 2,820 edges, with identical output on two runs. Not done: the run on the server graph (expect 67,833 rows) and its screenshot. The hash algorithm is fixed now, see [[edge-depth-table-format]].
 - **2026-10-05, draft.** Story E1 (`US-039`) is `Done`: on the live graph on the server (mounted read-only) the export wrote 67,833 rows for 67,833 edges, identical on two runs. Evidence: `us-039-edge-export-server-output.png`.
+- **2026-10-05, draft.** Story E3 (`US-041`) is `Reviewed`. Task `9c_build_edge_depth_table` and its code in `scripts/edge_depth/` are built, tests first, against a throwaway PostGIS: 59 tests in `scripts/edge_depth/` and 16 in the DAG graph test. Sampling is the method of `flood_on_roads`, and a failed table task does not fail the run (a no-op `all_done` leaf). Not done: the run on the server graph, the spot check of 20 edges against `ST_Value`, and the duration against the 5-minute limit. Plan: [[edge-depth-table-airflow-task]]. Server steps: `export-edges.sh` with `EXPORT_DEST`, then `scripts/edge_depth/server_check.sh`.

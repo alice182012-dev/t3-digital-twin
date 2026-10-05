@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-02
+last_updated: 2026-10-05
 ---
 
 # 3Di simulation orchestration
@@ -46,6 +46,8 @@ column.
 `flood_on_roads` waits for `9b_load_depth_raster`, `load_road_segments`, and `0b_ensure_schema`. It
 samples the run's tiles along each road piece and writes `flood_road_values`, the table the routing
 backend reads. See [[flood-on-roads]].
+
+`9c_build_edge_depth_table` waits for `9b_load_depth_raster`. It samples the run's tiles along every GraphHopper edge and writes `<run>.bin`, the edge depth table, into `EDGE_TABLE_DIR`. It reads the export of the graph's edges from `EDGE_EXPORT_DIR`. Nothing reads the table yet, and the routing engine falls back to today's model without it, so the task must not fail the DAG run: `edge_table_done`, a no-op with `trigger_rule="all_done"`, is the leaf after it. A failure shows red on `9c` and the run stays green, which keeps the next slot allowed to hotstart. See [[edge-depth-table-format]], "Build task".
 
 Tasks `9_build_flood_tiles`, `9b_load_depth_raster`, and `flood_on_roads` name the run with
 `flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
