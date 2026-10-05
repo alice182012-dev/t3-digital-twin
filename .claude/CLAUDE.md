@@ -86,20 +86,17 @@ remote-server` flag (that context doesn't exist here and the flag would just
 error) and no SSH or `git pull` step. Whatever branch is checked out in this
 working directory is what the containers will build and mount.
 
-## Push to the `alice` remote, never `origin`
+## Push to the remote that points at `alice182012-dev/t3-digital-twin`
 
-`git remote -v` lists two remotes: `origin` (`github.com/3plus1wheels/airflow_new.git`) and
-`alice` (`github.com/alice182012-dev/t3-digital-twin.git`). `origin` is a different repository
-that the authenticated git user has no access to; pushing there fails with a 403 and does not
-land the work anywhere. `alice` is this project's actual GitHub repo, `t3-digital-twin`, and
-matches the authenticated git user (`alice`, per the session's own `git config user.name` /
-commit author).
+This project's GitHub repo is `github.com/alice182012-dev/t3-digital-twin`. Run
+`git remote -v` before the first push or pull in a session and use the remote whose URL is that
+repo. As of 2026-10-05 it is `origin`, on the Mac checkout and in the cloud session. An older
+checkout may still have `origin` pointing at `github.com/3plus1wheels/airflow_new.git`, which the
+authenticated git user cannot push to (a 403 that lands the work nowhere), with the real repo as a
+second remote named `alice`. In that case use `alice`, for example `git push alice <branch>`.
 
-Push and pull with `alice`, for example `git push alice <branch>` and `git fetch alice <branch>`,
-not `git push`/`git pull` with no remote named (which defaults to `origin`) and not `origin`
-explicitly. Before the first push or pull in a session, confirm `alice` is still the remote that
-resolves correctly (`git remote -v`); do not assume `origin` is safe to ignore forever if a repo
-migration or a fresh clone changes the remote list later.
+Name the remote in every command (`git push origin <branch>`, `git fetch origin <branch>`) so a
+changed remote list cannot send the push somewhere else.
 
 ## Test points stay inside the model border
 
