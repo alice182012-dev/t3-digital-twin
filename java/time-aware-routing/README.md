@@ -6,6 +6,7 @@ What is here now (US-049, a skeleton):
 
 - `TimeAwareGraphHopper` is a `GraphHopper` with its own `WeightingFactory`. Today it returns the stock weighting, so the stock profiles route as before.
 - `com.graphhopper.http.GraphHopperManaged` is a shadow copy of GraphHopper's class of the same name. `GraphHopperBundle` calls `new GraphHopperManaged(...)`, and the web server has no setting to pick another class. The image puts this module's jar before `graphhopper-web.jar`, so the JVM loads this copy.
+- `ExportEdges` writes every edge of a built graph with its id and geometry, plus a hash of the graph (US-039). See below.
 - `LandmarkLowerBoundTest` answers whether a weighting that only raises weights keeps the landmark (LM) lower bounds valid.
 
 ## Test
@@ -27,3 +28,15 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 ## Start the image beside the live service
 
 `smoke-test.sh` builds the image on the server, starts it on port 8990 with its own graph cache, and compares routes with the live service on port 8989. Run it from the Mac in the repo root, and run `smoke-test.sh cleanup` after. The paths of the server's repo and OSM file are variables at the top of the script.
+
+## Export the graph's edges
+
+`ExportEdges <graph-cache-folder> <output-folder>` opens the graph cache read-only and writes two files.
+
+- `edges.csv` has the header `edge_id,wkt` and one row per edge, in edge-id order. `wkt` is a quoted LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node.
+- `graph.json` has `format_version`, `graph_hash`, `edge_count`, `node_count`, and `graphhopper_commit`.
+
+The hash is a SHA-256 over the node count, the edge count, and for each edge in id order its base node, adjacent node, point count, and points in 1e-7 degrees. It reads no file timestamps, so two exports of one graph, and two imports of one OSM file, give one hash. Any change to a node, an edge, or a geometry changes it.
+
+`export-edges.sh` runs it on the server against the live service's graph cache, mounted read-only, and checks the row count. Run it from the Mac in the repo root.
+

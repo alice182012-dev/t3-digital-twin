@@ -15,6 +15,8 @@
         <maven.compiler.release>17</maven.compiler.release>
         <!-- The pinned commit builds as 12.0-SNAPSHOT. CI installs it into ~/.m2 first, see .github/workflows/java-module.yml. -->
         <graphhopper.version>12.0-SNAPSHOT</graphhopper.version>
+        <!-- The commit of the GraphHopper source that the module builds against. graph.json records it. -->
+        <graphhopper.commit>d7dc1b069d2d091c7cfdc007d99d1765c82e618d</graphhopper.commit>
         <junit.version>5.11.4</junit.version>
     </properties>
 
@@ -43,6 +45,12 @@
 
     <build>
         <finalName>time-aware-routing</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
