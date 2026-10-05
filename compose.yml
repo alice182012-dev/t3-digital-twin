@@ -417,11 +417,15 @@ services:
       # US-052. On: POST /route goes to the time-aware engine first and falls back to today's request when the engine
       # cannot run (missing, stale, or mismatched table), and the response says so. Off: today's behavior exactly.
       TIME_AWARE_ROUTING: ${TIME_AWARE_ROUTING:-false}
+      # US-053. POST /route/departures reads the newest depth table from this folder, the volume below, read-only.
+      EDGE_TABLE_DIR: /tables
     depends_on:
       graphhopper:
         condition: service_healthy
       storage-postgres:
         condition: service_healthy
+    volumes:
+      - edge-depth-tables:/tables:ro
     ports:
       - "${FLOODMAP_BACKEND_PORT:-8010}:8010"
     restart: unless-stopped

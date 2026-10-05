@@ -244,6 +244,15 @@ Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `f
 - **All four vehicles (US-051):** `td_limit_cm` is 20 for `motorbike`, 30 for `car`, 35 for `truck`, and 40 for `foot` in `config.yml`. A test in Java and one in Python keep them equal to `threshold_cm` in `flood_utils.py` and to the limits of `ScenarioReport`. The report runs 32 cases for the four vehicles.
 - **Not seen yet:** the deployed image on the server, and the hash of the live graph equal to the table's. The tests show it on a small graph. `US-055` shows it on the real one.
 
+## The departures endpoint (US-053)
+
+Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and `profile` and returns when the usual route first clears. The client sends no clock, margin, or limit, and the server drops them.
+
+- **The usual route** is requested with no flood model and no time-aware search, with the `edge_id` and `time` details and the hint `td_info`. The two details must line up one to one. If they do not, the endpoint answers with an error and does not guess.
+- **The table** is read by the backend's own reader (`edge_depth_reader.py`) from `EDGE_TABLE_DIR` (`/tables`, the volume `edge-depth-tables`, read-only). The table's graph hash must equal `td.graph_hash` from GraphHopper. A table that is missing, damaged, or for another graph gives `status: unavailable` and a `reason`, with HTTP 200, so the client can show "timing check unavailable".
+- **The rule** is the closure rule of `US-050`, with the margin of 600 s and the limit of the profile from `flood_utils.py`. A candidate is `blocked`, `unknown` (the trip ends after the last step), or `clear`. Candidates run from the step that contains now to the last step. The answer holds `run`, `run_age_s` (now minus the first step of the table), `candidates` (each with `departure`, `leave_at`, `arrival`, `status`), and `earliest_clear`.
+- **Not seen yet:** a real route on the server (`US-055`).
+
 ## Open items
 
 - `floodmap/graphhopper-maps/config-local.js.example` lists all four profiles: `motorbike`, `car`,

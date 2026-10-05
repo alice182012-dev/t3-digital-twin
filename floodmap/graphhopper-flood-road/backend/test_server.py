@@ -169,6 +169,7 @@ class StubGraphHopper(BaseHTTPRequestHandler):
     instead of trusting server.py's own claim about what it forwarded."""
 
     received_bodies: list[dict] = []
+    response_override: dict | None = None  # when set, /route answers with this instead of GRAPHHOPPER_RESPONSE
 
     def log_message(self, *args) -> None:  # quiet the default stderr access log
         pass
@@ -184,7 +185,7 @@ class StubGraphHopper(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
         if urlparse(self.path).path == "/route":
             type(self).received_bodies.append(body)
-            self._send(200, GRAPHHOPPER_RESPONSE)
+            self._send(200, type(self).response_override or GRAPHHOPPER_RESPONSE)
         else:
             self._send(404, {"error": "not found"})
 
@@ -324,6 +325,69 @@ def main() -> int:
         assert fallback_body["ch.disable"] is True and "custom_model" in fallback_body, fallback_body
         assert payload["paths"] == GRAPHHOPPER_RESPONSE["paths"], payload
         assert payload["hints"]["td.status"] == "fallback", payload
+
+        # POST /route/departures (US-053): the usual route with its edge_id and time details, the depth table from the
+        # EDGE_TABLE_DIR volume, and the sticky rule. Edge 1 is wet at the first three steps, and now lies in the second step.
+        import struct
+        from datetime import datetime, timedelta, timezone
+
+        now = datetime.now(timezone.utc)
+        first_step = now.replace(minute=now.minute - now.minute % 15, second=0, microsecond=0) - timedelta(minutes=15)
+        graph_hash, run = "c" * 64, "20261005T170000"
+        packed = bytearray(struct.pack("<4sHHIHH", b"EDGD", 1, 8, 2, len(graph_hash), len(run)) + graph_hash.encode() + run.encode())
+        for i in range(8):
+            packed += struct.pack("<q", int((first_step + timedelta(minutes=15 * i)).timestamp()))
+        for edge in range(2):
+            for step in range(8):
+                packed += struct.pack("<H", 50 if edge == 1 and step <= 2 else 0)
+        with TemporaryDirectory() as tables:
+            Path(tables, "20261005T170000.bin").write_bytes(bytes(packed))
+            Path(tables, "latest").write_text("20261005T170000.bin\n", encoding="utf-8")
+            os.environ["EDGE_TABLE_DIR"] = tables
+            StubGraphHopper.response_override = {
+                "paths": [{"distance": 600.0, "time": 120000, "details": {
+                    "edge_id": [[0, 1, 0], [1, 2, 1]], "time": [[0, 1, 60000], [1, 2, 60000]]}}],
+                "hints": {"td.graph_hash": graph_hash, "td.run": run},
+            }
+            try:
+                StubGraphHopper.received_bodies.clear()
+                status, payload = request(
+                    f"{base}/route/departures",
+                    method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car", "now": "2030-01-01T00:00:00Z", "margin_s": 0},
+                )
+                assert status == 200, (status, payload)
+                assert payload["status"] == "ok", payload
+                assert payload["run"] == run and payload["margin_s"] == 600 and payload["limit_cm"] == 30, payload
+                assert abs(payload["run_age_s"] - (now - first_step).total_seconds()) < 5, payload
+                assert [c["status"] for c in payload["candidates"][:3]] == ["blocked", "blocked", "clear"], payload["candidates"]
+                assert payload["earliest_clear"]["departure"] == (first_step + timedelta(minutes=45)).isoformat(), payload
+                sent = StubGraphHopper.received_bodies[0]
+                assert sent["details"] == ["edge_id", "time"] and sent["td_info"] is True, sent
+                assert "custom_model" not in sent and "td_departure" not in sent, sent
+
+                # The table was built for another graph: unavailable, not an error, and both hashes are named.
+                StubGraphHopper.response_override["hints"]["td.graph_hash"] = "d" * 64
+                status, payload = request(
+                    f"{base}/route/departures", method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car"},
+                )
+                assert status == 200 and payload["status"] == "unavailable", (status, payload)
+                assert "c" * 64 in payload["reason"] and "d" * 64 in payload["reason"], payload
+
+                # No pointer in the folder.
+                Path(tables, "latest").unlink()
+                status, payload = request(
+                    f"{base}/route/departures", method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car"},
+                )
+                assert status == 200 and payload["status"] == "unavailable", (status, payload)
+
+                status, payload = request(f"{base}/route/departures", method="POST", body={"profile": "car"})
+                assert status == 400, (status, payload)
+            finally:
+                StubGraphHopper.response_override = None
+                del os.environ["EDGE_TABLE_DIR"]
 
         wet_lon, wet_lat = pixel_centre_lonlat(*WET_PIXEL)
         expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)

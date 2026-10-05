@@ -35,7 +35,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import db  # noqa: E402
+import departures  # noqa: E402
+import edge_depth_reader  # noqa: E402
 import time_aware_route  # noqa: E402
+from flood_utils import vehicle_threshold_cm  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
 from flood_forecast import lookup_forecast, parse_forecast_body  # noqa: E402
@@ -217,6 +220,8 @@ class Handler(BaseHTTPRequestHandler):
             path = urlparse(self.path).path
             if path == "/route":
                 self._handle_route(body)
+            elif path == "/route/departures":
+                self._handle_departures(body)
             elif path == "/flood/forecast":
                 query = parse_forecast_body(body, datetime.now(timezone.utc))
                 with db.connection() as conn:
@@ -277,6 +282,22 @@ class Handler(BaseHTTPRequestHandler):
             enabled=time_aware_route.flag_enabled(os.environ),
             now=datetime.now(timezone.utc),
             defaults=(DEFAULT_BUFFER_M, DEFAULT_SIMPLIFY_M, DEFAULT_MIN_AREA_M2),
+        )
+        if outcome.ok:
+            self._send(outcome.status, outcome.data)
+        else:
+            self._send(outcome.status, route_error_payload(outcome.data))
+
+
+    def _handle_departures(self, body: dict) -> None:
+        """The earliest clear departure of the usual route (US-053, departures.py). The client sends only points and
+        profile. The clock, the margin, and the depth limit are the server's."""
+        outcome = departures.departures_request(
+            body,
+            post=post_graphhopper_route,
+            load_table=lambda: edge_depth_reader.read_latest(Path(os.environ.get("EDGE_TABLE_DIR", "/tables"))),
+            limit_for=lambda profile: int(vehicle_threshold_cm(profile)),
+            now=datetime.now(timezone.utc),
         )
         if outcome.ok:
             self._send(outcome.status, outcome.data)

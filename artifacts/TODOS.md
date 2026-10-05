@@ -216,6 +216,8 @@
 
 **Sprint:** 9, [[time-aware-routing-engine-stories]] Story R8 (US-053), in [[sprint-plan-3]].
 
+**Status note:** `Reviewed`. The endpoint is built and tested (plan [[route-departures-endpoint]]). The check on a real route is part of `US-055`.
+
 ## Backlog
 
 Unfinished items carried over from Sprint 8, Sprint 5, and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
