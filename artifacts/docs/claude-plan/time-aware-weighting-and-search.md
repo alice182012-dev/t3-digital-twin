@@ -38,14 +38,14 @@ Tests first at every step.
 2. `TimeAwareDijkstra` on an in-memory graph with fixed speeds, so times are exact. The four scenarios of `scenarios.py`, for limits 20 (motorbike) and 30 (car), with and without a detour. A heavier-but-earlier case that only the dominance rule gets right. A differential test against an exhaustive simple-path search on random graphs.
 3. `StickyChecker`, and a check that every returned route has no crossing and that the plain shortest route crosses in the blocked scenarios.
 4. The wiring, tested through `hopper.route(request)` on the tiny OSM graph with a table written by a test helper, including a snap in the middle of an edge.
-5. Latency of the engine on the server is `US-053`. This story prints the visited-node count per request.
+5. Latency of the engine on the server is `US-055`. This story prints the visited-node count per request.
 6. Docs: [[graphhopper-backend]], [[sticky-routing-reference]], the story files, `TODOS.md`.
 
 ## Risks
 
-- **Exactness against speed.** The label set per node can grow. On a flood graph weight is close to time, so the sets stay small, and `US-053` measures it.
+- **Exactness against speed.** The label set per node can grow. On a flood graph weight is close to time, so the sets stay small, and `US-055` measures it.
 - **Virtual edges.** A wrong mapping would read the depth of the wrong edge. The mid-edge test covers it.
-- **No LM.** The search is a plain Dijkstra, so it visits more nodes than today's LM search. That is the factor-2 budget of `US-053`.
+- **No LM.** The search is a plain Dijkstra, so it visits more nodes than today's LM search. That is the factor-2 budget of `US-055`.
 - **The scenarios run on a synthetic graph, not on real Hanoi roads.** The reference ran on real roads. The Java scenarios copy the reference's four rows on a hand-built corridor. The real-run proof is `US-055`.
 
 ## Status history

@@ -230,7 +230,7 @@ Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on 
 - A snap in the middle of a road gives virtual edges with ids past the graph's. `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to read `getOriginalEdgeKey()`. A test fails without that mapping.
 - In the tests, `SpeedWeighting` takes millis as distance over speed times 1000 and weighs a minute as 600, so test roads get their length from that.
 
-Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. Not measured yet: latency (`US-053`, `US-055`), and the search on real Hanoi roads (`US-055`).
+Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. Not measured yet: latency (`US-055`), and the search on real Hanoi roads (`US-055`).
 
 ## Open items
 
