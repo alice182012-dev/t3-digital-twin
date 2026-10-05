@@ -1,6 +1,6 @@
 # TODOS
 
-## Current sprint: Sprint 6, 2026-10-05 to 2026-11-01
+## Current sprint: Sprint 7, 2026-10-05 to 2026-11-08
 
 ### Done - US-046 Record the routing baselines on the server
 
@@ -122,9 +122,39 @@
 
 **Result:** 2026-10-05, the export ran on the live graph on the server, read-only: 67,833 rows for 67,833 edges, identical on two runs, one hash (`8c13d884...c716ce`). A first run failed on the read-only mount and was fixed.
 
+### Active - US-041 Build the Airflow task that writes each run's table
+
+**What:** An Airflow task after `9b_load_depth_raster` samples the raster tiles along each edge of the export, stores the deepest 1 m sample in centimetres, tags the file with the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct `ST_Value` reading, and an edge outside the model reads 0 ([[edge-depth-table-stories]] Story E3).
+
+**Effort:** L
+**Priority:** P0
+**Depends on:** `US-039` (the export) and `US-040` (the format), both done. The table task must run beside the tile task and end within 5 minutes of `3_calculate_depth`, never delaying the tile task.
+
+**Sprint:** 7, [[edge-depth-table-stories]] Story E3 (US-041), in [[sprint-plan-2]].
+
+### Active - US-042 Publish the table atomically and keep the newest three runs
+
+**What:** A new table appears in one step, so a reader never sees a half-written file. The fourth run's publish removes the oldest, and a failed task leaves the previous `latest` in place. The story also picks the storage, a volume or MinIO, and records why ([[edge-depth-table-stories]] Story E4).
+
+**Effort:** S
+**Priority:** P0
+**Depends on:** `US-041`, same sprint.
+
+**Sprint:** 7, [[edge-depth-table-stories]] Story E4 (US-042), in [[sprint-plan-2]].
+
+### Active - US-044 Document the graph re-import procedure and detect a stale table
+
+**What:** A concept page that says what to do after a graph re-import, so the export, the table, and the hash are regenerated together. A reader refuses a table whose hash differs from the graph's, and the log names the mismatch ([[edge-depth-table-stories]] Story E6).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** `US-041`, same sprint.
+
+**Sprint:** 7, [[edge-depth-table-stories]] Story E6 (US-044), in [[sprint-plan-2]].
+
 ## Backlog
 
-Unfinished items carried over from Sprint 5 and Sprint 4:
+Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.
 
 ### Done - US-037 Narrow the per-run critical path under the 15-minute cycle
 
@@ -152,11 +182,11 @@ Unfinished items carried over from Sprint 5 and Sprint 4:
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 7, 2026-11-02 to 2026-11-08.
+The next sprint is Sprint 8, 2026-11-09 to 2026-11-15.
 
-Checked on 2026-10-05 against its rows (`US-041`, `US-042`, `US-044`).
+Checked on 2026-10-05 against its rows (`US-050`, `US-043`, `US-045`, `US-069`).
 
-Any blocker stops Sprint 7: None
+Any blocker stops Sprint 8: None
 
 The unresolved blockers are:
 

@@ -2,7 +2,7 @@
 date: 2026-10-01
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-5, routing, edge-depth-table, us-040, us-046, us-047, us-034]
 related: ["[[sprint-plan-2]]", "[[sprint-plan]]", "[[2026-10-01]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[carried-over-backlog]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[edge-depth-table]]", "[[edge-depth-table-format]]"]
 ---
@@ -58,3 +58,4 @@ The module is `scripts/edge_depth/table.py`, next to `scripts/flood_metrics/`, w
 - **2026-10-01, active.** `US-046` is `In progress`: edge count, source revision, and step length and count are recorded. The graph has 67,833 edges and a run has 8 steps, so two PRD assumptions were corrected and the reference's scenarios use 8 steps. The latency numbers and the `US-034` clock wait for the `US-037` knob.
 - **2026-10-02, active.** `US-037` is `Done`, so both held rows moved. `US-046` is `Done`: the p50 and p95 of `POST /route` are in [[routing-not-time-aware]], measured on the server after the knob settled. `US-034` is `In progress`. The user gave the soak start as 2026-10-02 00:45 +07, which is the first on-time run after the cold start, so the 48 hours end on 2026-10-04 00:45 +07. `scripts/backend_soak/` holds the tooling and `run_soak.sh` gives the verdict. Next is that verdict after the window ends.
 - **2026-10-02, active.** The user stopped the pipeline, because the 50 mm/h test rain is not a real event. The `US-034` window of 2026-10-02 00:45 +07 is void, and `US-037` is `In progress` again. `US-063` was added to run both under a replay of a recorded 48-hour rain. Plan: [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
+- **2026-10-05, done.** Sprint 5 ended on 2026-10-05, with `US-034` and `US-037` closed on 137 runs at the user's decision and `US-068` carried to the Backlog. The plan is closed.

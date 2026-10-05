@@ -2,7 +2,7 @@
 date: 2026-10-02
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-6, java, graphhopper, routing, us-049, us-039]
 related: ["[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[routing-not-time-aware]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]"]
 ---
@@ -126,3 +126,4 @@ Each row follows the Definition of done in [[sprint-plan-2]]: the acceptance cri
 - **2026-10-05, active.** `US-049` is `Done`. CI run 1 passed, and the image started on the server with the shadow class active and 12 of 12 routes equal to the live service. `US-039` is next, and its server run can start now that the DAG is paused.
 - **2026-10-05, active.** `US-039` built: `ExportEdges` (read-only `BaseGraph` load, no routing profile needed, because GraphHopper's own `load()` insists on one), tests first (9), and `export-edges.sh` for the server run. Checked on an Andorra import with the repo's profiles and LM. Waiting for the run on the server graph.
 - **2026-10-05, active.** `US-039` is `Done`. The first server run failed on the read-only mount (GraphHopper's `BaseGraph` opens `geometry` for writing when the default type is storing). Reproduced as a non-root user, fixed with a non-storing read-only type, and the second run passed: 67,833 rows for 67,833 edges, identical on two runs. Both Sprint 6 rows are `Done`. Sprint 7 starts from the table format, the hash, and the module.
+- **2026-10-05, done.** Sprint 6 ended on 2026-10-05. Both rows are `Done`, and the plan is closed. Sprint 7 started the same day.
