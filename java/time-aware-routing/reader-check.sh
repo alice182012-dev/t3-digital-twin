@@ -47,7 +47,7 @@ tool -- /tables --graph-hash 000000000000000000000000000000000000000000000000000
 [ $? -eq 1 ] || { echo "FAIL: the stale case did not exit with 1"; exit 1; }
 
 echo "== 4. A new latest, published by the worker while the reader runs, is loaded without a restart"
-d exec "$WORKER" python - <<PY || { echo "SETUP FAILED"; exit 1; }
+d exec -i "$WORKER" python - <<PY || { echo "SETUP FAILED"; exit 1; }
 import shutil, sys
 from pathlib import Path
 sys.path.insert(0, "/opt/airflow/scripts/edge_depth")
@@ -62,7 +62,7 @@ print("scratch folder ready, latest -> 20990101T000000.bin")
 PY
 (
     sleep 8
-    d exec "$WORKER" python - <<PY
+    d exec -i "$WORKER" python - <<PY
 import shutil, sys
 from pathlib import Path
 sys.path.insert(0, "/opt/airflow/scripts/edge_depth")
