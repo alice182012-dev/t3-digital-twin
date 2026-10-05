@@ -110,7 +110,7 @@
 
 **Result:** 2026-10-05, CI run 1 passed, and the image started on the server beside the live GraphHopper with `TimeAwareGraphHopper active` in its log. 12 of 12 routes matched the live service. LM stays valid for a raise-only weighting. The test container is still running on port 8990 until you run `java/time-aware-routing/smoke-test.sh cleanup`.
 
-### Active - US-039 Export the graph's edges
+### Done - US-039 Export the graph's edges
 
 **What:** Export every edge of the GraphHopper graph with its id and geometry, plus the graph's hash, as `edges.csv` and `graph.json` ([[edge-depth-table-stories]] Story E1, plan in [[sprint-6-java-toolchain-and-edge-export]]).
 
@@ -120,7 +120,7 @@
 
 **Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested (18 tests pass, checked on an Andorra graph: 2,820 rows for 2,820 edges, identical on two runs). Left: run `java/time-aware-routing/export-edges.sh` from the Mac on the server graph, expecting 67,833 rows, and a screenshot of its output.
+**Result:** 2026-10-05, the export ran on the live graph on the server, read-only: 67,833 rows for 67,833 edges, identical on two runs, one hash (`8c13d884...c716ce`). A first run failed on the read-only mount and was fixed.
 
 ## Backlog
 

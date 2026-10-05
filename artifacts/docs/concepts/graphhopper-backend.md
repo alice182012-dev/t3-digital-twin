@@ -214,6 +214,7 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 - `TimeAwareGraphHopper` extends `GraphHopper` and returns a `TimeAwareWeightingFactory`, which today returns the stock weighting.
 - `com.graphhopper.http.GraphHopperManaged` is a shadow copy of the stock class. `GraphHopperBundle` calls `new GraphHopperManaged(...)`, and the web server has no setting to pick another class. The image puts the module's jar before `graphhopper-web.jar`, so the JVM loads the copy. The log line `TimeAwareGraphHopper active` proves which class loaded. The copy drops the GTFS branch.
 - The stock `graphhopper.sh` runs `java -jar`, which ignores the classpath. The image's entrypoint is `run-time-aware.sh`, which takes the same `-c` and `-o` options and starts `GraphHopperApplication` from a classpath.
+- `ExportEdges` writes `edges.csv` and `graph.json` (the graph hash) from the graph cache, opened read-only. At this GraphHopper commit `BaseGraph` opens the `geometry` file for writing when the default `DAType` is a storing one, `DAType.MMAP_RO` included, so the export uses its own non-storing read-only type. Run on the server graph on 2026-10-05: 67,833 edges. `java/time-aware-routing/export-edges.sh` repeats it.
 - A weighting that only raises weights keeps the LM lower bounds valid ([[routing-not-time-aware]], 2026-10-05).
 - 12.0-SNAPSHOT is not on Maven Central. CI and the `Dockerfile` both build the pinned commit first. CI is `.github/workflows/java-module.yml`.
 
