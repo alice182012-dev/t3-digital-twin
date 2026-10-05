@@ -1,13 +1,13 @@
 # One deploy and one proof run of the time-aware engine on the server (US-055).
 #
 # Run it in PowerShell on the server, in the repo folder, AFTER the 48-hour replay has ended and flood_mapping_full is
-# paused. It builds two images (the only builds), recreates two services, and runs every check once.
+# paused. It builds three images (the only builds), recreates three services, and runs every check once.
 #
 #   .\scripts\routing_proof\rollout.ps1                 # leaves TIME_AWARE_ROUTING off at the end
 #   .\scripts\routing_proof\rollout.ps1 -LeaveOn        # leaves it on, when every check passed
 #   .\scripts\routing_proof\rollout.ps1 -SkipBuild      # reuse the images of an earlier run
 #
-# It reads and writes only: the two images, the services graphhopper and floodmap-backend, and result files in
+# It reads and writes only: the three images, the services graphhopper, floodmap-backend, and flood-routing-frontend, and result files in
 # <data>\routing_proof. It never touches the depth tables, the DAG, or the databases. The log is appended to
 # C:\Users\TECOTEC\rollout-proof.log. The scenario check on the deployed image runs from the Mac:
 #   java/time-aware-routing/scenario-check.sh
@@ -64,14 +64,14 @@ function Wait-GraphHopper {
     git log --oneline -1
 
     if (-not $SkipBuild) {
-        Section "2. Build the two images (the only builds). The graphhopper build runs every module test."
-        docker compose build graphhopper floodmap-backend
+        Section "2. Build the three images (the only builds). The graphhopper build runs every module test, and the frontend build compiles the alert of US-054."
+        docker compose build graphhopper floodmap-backend flood-routing-frontend
         if ($LASTEXITCODE -ne 0) { Fail "docker compose build"; return }
     }
 
-    Section "3. Recreate graphhopper and floodmap-backend with TIME_AWARE_ROUTING off"
+    Section "3. Recreate graphhopper, floodmap-backend, and the frontend with TIME_AWARE_ROUTING off"
     Remove-Item Env:TIME_AWARE_ROUTING -ErrorAction SilentlyContinue
-    docker compose up -d --no-deps graphhopper floodmap-backend
+    docker compose up -d --no-deps graphhopper floodmap-backend flood-routing-frontend
     if ($LASTEXITCODE -ne 0) { Fail "docker compose up"; return }
     if (-not (Wait-GraphHopper)) { Fail "graphhopper did not become healthy in 5 minutes"; docker logs --tail 60 $ghContainer; return }
     if (-not (Wait-Backend)) { Fail "floodmap-backend did not answer in 3 minutes"; return }

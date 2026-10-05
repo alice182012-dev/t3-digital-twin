@@ -20,8 +20,8 @@ The user wants everything built first, then one test on the server, and then not
 One script, `scripts/routing_proof/rollout.ps1`, in PowerShell on the server:
 
 1. Check the DAG is paused (no builds during the replay), and list the table folder.
-2. `git pull`, then build the two images, `graphhopper` (its Docker build runs every module test) and `floodmap-backend`. These are the only builds.
-3. Recreate both services with the flag off. Read the engine's start log: the module is active, it follows `/tables`, and it loaded a table (a table for another graph would be refused and logged).
+2. `git pull`, then build the three images: `graphhopper` (its Docker build runs every module test), `floodmap-backend`, and `flood-routing-frontend` (it carries the alert of `US-054`). These are the only builds.
+3. Recreate the three services with the flag off. Read the engine's start log: the module is active, it follows `/tables`, and it loaded a table (a table for another graph would be refused and logged).
 4. Route the fixed pairs through the backend with the flag off (today's model).
 5. Turn the flag on for the backend only, and route the same pairs.
 6. `compare`: the share of routes that change and the median detour ratio.
