@@ -146,7 +146,7 @@
 
 **Result:** 2026-10-05, on the server a reader in its own process made 11,878 reads while 41 tables published into a scratch folder on the new volume `edge-depth-tables`: none failed, and 3 tables were left. The real table for run `20261005T120000` is published and `latest` names it.
 
-### Active - US-044 Document the graph re-import procedure and detect a stale table
+### Done - US-044 Document the graph re-import procedure and detect a stale table
 
 **What:** A concept page that says what to do after a graph re-import, so the export, the table, and the hash are regenerated together. A reader refuses a table whose hash differs from the graph's, and the log names the mismatch ([[edge-depth-table-stories]] Story E6).
 
@@ -156,7 +156,7 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E6 (US-044), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built, tested, and checked on the server: the check says `FRESH` on the real export, `graph_edge` and `latest` table, and `STALE` against another hash, naming both. Left: your decision on one point. The refusal at request time sits in the Java reader, which is `US-043` (Sprint 8). Close this story on the page, the Python guard, and the check, and leave that half to `US-043`? Plan: [[graph-reimport-procedure-and-stale-table-check]].
+**Result:** 2026-10-05, on the server the check says `FRESH` when the export, `graph_edge`, and the `latest` table share hash `8c13d884...`, and `STALE` against another hash, naming both and exiting 1. The page [[graph-reimport-procedure]] and a Python guard are in. You confirmed that the refusal at request time is `US-043`'s.
 
 ## Backlog
 

@@ -2,7 +2,7 @@
 date: 2026-10-05
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-7, edge-depth-table, us-044, graph-hash, reimport]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graphhopper-backend]]", "[[sprint-plan-2]]"]
 ---
@@ -46,3 +46,4 @@ Tests first at every step.
 
 - **2026-10-05, active.** Plan written at the start of `US-044`. The Java half of the acceptance belongs to `US-043`, so this story builds the page, the Python guard and the operator check.
 - **2026-10-05, active.** Steps 1 to 5 built and tested: the guard in `edge_depth_table.py`, `check_tables.py` with 10 tests, the page, and `server_check.sh` step 6 (a fresh case and a stale case). 99 tests pass. Left: the server run, and the user's confirmation of the split with `US-043`.
+- **2026-10-05, done.** The server check passed (`FRESH`, then `STALE` naming both hashes). The user confirmed the split with `US-043`. `US-044` is `Done`, and Sprint 7 is complete.
