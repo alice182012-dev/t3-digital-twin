@@ -108,6 +108,8 @@
 
 **Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
 
+**Today:** 2026-10-05, first of the sprint. Write the module files, the `Dockerfile`, and `.github/workflows/java-module.yml` on the Mac, with no build. Then your approval to push starts the first CI run. After that, `docker --context remote-server build --target test` runs the tests on the server, which is free since you paused the DAG.
+
 ### Active - US-039 Export the graph's edges
 
 **What:** Export every edge of the GraphHopper graph with its id and geometry, plus the graph's hash, as `edges.csv` and `graph.json` ([[edge-depth-table-stories]] Story E1, plan in [[sprint-6-java-toolchain-and-edge-export]]).
@@ -117,6 +119,8 @@
 **Depends on:** `US-049`, same sprint.
 
 **Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
+
+**Today:** 2026-10-05, not started. It waits for the module of `US-049`. Tests on a tiny OSM file come first, then the run on the server with the graph cache read-only (expect 67,833 rows).
 
 ## Backlog
 
@@ -144,6 +148,8 @@ Unfinished items carried over from Sprint 5 and Sprint 4:
 
 **Sprint:** 5, [[carried-over-backlog]] Story 11 (US-068), in [[sprint-plan-2]].
 
+**Today:** 2026-10-05, in the Backlog and not blocking Sprint 6. It can go after the `US-049` files. Tests first, then the push in `task_run_simulation`. The real XCom check needs one DAG run, so it waits for you to unpause the DAG.
+
 ### Active - US-069 Check the storage after the 48-hour replay to see if the retention fixes work
 
 **What:** Read the free space on C:, the size of `docker_data.vhdx`, the three database sizes (`storage-postgres-data`, `minio_custom`, `netcdf_values`), and the `flood_extent_polygon` rows at the start, at 24 hours, and at 48 hours of the replay. The check passes if the database sizes stop growing between hour 24 and hour 48 ([[carried-over-backlog]] Story 12).
@@ -153,6 +159,8 @@ Unfinished items carried over from Sprint 5 and Sprint 4:
 **Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), the replay running. You paused the DAG on 2026-10-05, so the 24-hour and 48-hour readings do not exist yet. Waiting for your decision on when to read them.
 
 **Sprint:** 5, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
+
+**Today:** 2026-10-05, in the Backlog. You paused the DAG, so there is no 48-hour window to read. Waiting for your choice between a baseline reading now and waiting for the DAG to be unpaused.
 
 ## Blockers for the next sprint
 
