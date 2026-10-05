@@ -98,7 +98,7 @@
 
 **Result:** 2026-10-05, 21 tests pass against a throwaway PostGIS container. `flood_extent_polygon` had no retention policy and reached 13 GB by 2026-10-04 ([[docker-data-vhdx-fills-c-drive-again]]); it now gets the same automated per-publish prune `flood_extent_step` and the MinIO bucket already had.
 
-### Active - US-049 Build the Java module skeleton, the image, and the CI job
+### Done - US-049 Build the Java module skeleton, the image, and the CI job
 
 **What:** A Java module built against the pinned GraphHopper version (commit `d7dc1b06`), an image that runs it in place of the stock class, and a GitHub Actions job that builds and tests it ([[time-aware-routing-engine-stories]] Story R4, plan in [[sprint-6-java-toolchain-and-edge-export]]).
 
@@ -108,7 +108,7 @@
 
 **Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested on the Mac side (9 tests pass, LM stays valid for a raise-only weighting). CI run 1 passed on 2026-10-05 (commit `ef5ef4c`, [run](https://github.com/alice182012-dev/t3-digital-twin/actions/runs/37267377140)). Left: `docker --context remote-server build --target test java/time-aware-routing` and an image start on the server, then a screenshot of both. The server is free, since you paused the DAG.
+**Result:** 2026-10-05, CI run 1 passed, and the image started on the server beside the live GraphHopper with `TimeAwareGraphHopper active` in its log. 12 of 12 routes matched the live service. LM stays valid for a raise-only weighting. The test container is still running on port 8990 until you run `java/time-aware-routing/smoke-test.sh cleanup`.
 
 ### Active - US-039 Export the graph's edges
 
@@ -120,7 +120,7 @@
 
 **Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, not started. It waits for the module of `US-049`. Tests on a tiny OSM file come first, then the run on the server with the graph cache read-only (expect 67,833 rows).
+**Today:** 2026-10-05, ready to start: `US-049` is done. Tests on a tiny OSM file come first, then the run on the server with the graph cache read-only (expect 67,833 rows).
 
 ## Backlog
 

@@ -217,7 +217,7 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 - A weighting that only raises weights keeps the LM lower bounds valid ([[routing-not-time-aware]], 2026-10-05).
 - 12.0-SNAPSHOT is not on Maven Central. CI and the `Dockerfile` both build the pinned commit first. CI is `.github/workflows/java-module.yml`.
 
-Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. The image on the server is not tested yet.
+Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. On the server (2026-10-05) the image started beside the live service with the `TimeAwareGraphHopper active` log line, and 12 routes (4 profiles, 3 pairs inside the model border) matched the live service. `java/time-aware-routing/smoke-test.sh` repeats the check. The image and its test container stay a separate service until a later story switches `compose.yml` to it.
 
 ## Open items
 
