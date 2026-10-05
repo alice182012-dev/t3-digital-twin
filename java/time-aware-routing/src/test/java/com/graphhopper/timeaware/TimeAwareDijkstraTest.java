@@ -97,7 +97,7 @@ class TimeAwareDijkstraTest {
     };
 
     /** O -lead- A -corridor- B -rest- D, and with a detour O -- X -- D that is longer. Edge 1 is the corridor road. */
-    private static com.graphhopper.routing.Path runScenario(Path dir, Scenario s, int limit, int depthCm, boolean detour)
+    static com.graphhopper.routing.Path runScenario(Path dir, Scenario s, int limit, int depthCm, boolean detour)
             throws Exception {
         BaseGraph g = newGraph();
         double lead = s.arrivalMin();
@@ -113,7 +113,7 @@ class TimeAwareDijkstraTest {
         return search(g, plain(g), table, limit, 0, 3);
     }
 
-    private static boolean usesCorridor(com.graphhopper.routing.Path p) {
+    static boolean usesCorridor(com.graphhopper.routing.Path p) {
         return p.calcEdges().stream().anyMatch(e -> e.getEdge() == 1);
     }
 
