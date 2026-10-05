@@ -244,7 +244,7 @@
 
 ## Backlog
 
-Unfinished items carried over from Sprint 8 and Sprint 4. The Done items of Sprints 5 and 8 stay until the next rollover. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
+Unfinished items carried over from Sprint 8 and Sprint 4. The Done items of Sprints 5 to 8 above stay until the next rollover, then they are deleted.
 
 ### Active - US-045 Prove the table on the server
 
