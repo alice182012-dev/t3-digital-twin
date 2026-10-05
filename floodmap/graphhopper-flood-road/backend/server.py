@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import db  # noqa: E402
+import time_aware_route  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
 from flood_extent_runs import list_runs, list_timesteps  # noqa: E402
 from flood_forecast import lookup_forecast, parse_forecast_body  # noqa: E402
@@ -261,25 +262,26 @@ class Handler(BaseHTTPRequestHandler):
         those here, derive the graded custom_model server-side from PostGIS,
         and forward the rest of the request unchanged. GraphHopper's own
         response, success or error, is returned as-is so Api.ts needs no changes to parse it.
+
+        With TIME_AWARE_ROUTING on, the request goes to the time-aware engine first and falls back to today's request
+        when the engine cannot run (time_aware_route.py, US-052).
         """
-        valid_time = body.pop("valid_time", None)
-        run = body.pop("run", "latest")
-        vehicle_type = body.pop("vehicle_type", None) or body.get("profile", "motorbike")
-        buffer_m = float(body.pop("buffer", DEFAULT_BUFFER_M))
-        simplify_m = float(body.pop("simplify", DEFAULT_SIMPLIFY_M))
-        min_area_m2 = float(body.pop("min_area", DEFAULT_MIN_AREA_M2))
-
-        if valid_time:
+        def flood_custom_model(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2):
             areas_fc = cached_areas(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2)
-            if areas_fc["features"]:
-                body["ch.disable"] = True
-                body["custom_model"] = build_custom_model(areas_fc)
+            return build_custom_model(areas_fc) if areas_fc["features"] else None
 
-        response = post_graphhopper_route(body)
-        if response.get("ok"):
-            self._send(response.get("status") or 200, response["json"])
+        outcome = time_aware_route.route_request(
+            body,
+            post=post_graphhopper_route,
+            custom_model=flood_custom_model,
+            enabled=time_aware_route.flag_enabled(os.environ),
+            now=datetime.now(timezone.utc),
+            defaults=(DEFAULT_BUFFER_M, DEFAULT_SIMPLIFY_M, DEFAULT_MIN_AREA_M2),
+        )
+        if outcome.ok:
+            self._send(outcome.status, outcome.data)
         else:
-            self._send(response.get("status") or 400, route_error_payload(response.get("error")))
+            self._send(outcome.status, route_error_payload(outcome.data))
 
 
 def main() -> int:

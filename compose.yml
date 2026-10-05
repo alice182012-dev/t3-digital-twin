@@ -359,14 +359,23 @@ services:
     restart: "no"
 
   graphhopper:
-    # Pinned by digest, not :latest — this is a 12.0-SNAPSHOT build and the
-    # `ch.disable`-in-body behaviour Workstream B depends on is undocumented
-    # and could silently change. Re-pull the digest deliberately if upstream
-    # publishes a fix, and re-run the ch.disable smoke test before trusting it.
-    image: israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32
+    # The time-aware image (java/time-aware-routing, US-049 and US-052): the stock image below, pinned by digest in that
+    # folder's Dockerfile (ARG STOCK_IMAGE, keep the digest the same), with the module's jar first on the classpath. This
+    # is a 12.0-SNAPSHOT build and the `ch.disable`-in-body behaviour Workstream B depends on is undocumented and
+    # could silently change. Re-pull the digest deliberately if upstream publishes a fix, and re-run the ch.disable
+    # smoke test before trusting it. Build it on the host that runs it: `docker compose build graphhopper` from the
+    # repo folder on the server (bind mounts and build contexts resolve on the client).
+    # Roll back to the stock image by replacing `build` and `image` with
+    #   image: israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32
+    # and restoring the entrypoint line below, and set TIME_AWARE_ROUTING=false.
+    build:
+      context: ./java/time-aware-routing
+    image: graphhopper-time-aware:local
     volumes:
       - ../grasshopper-routing/osm/hanoi-model-area.osm.pbf:/data/hanoi-model-area.osm.pbf:ro
       - graphhopper-graph-cache:/data/graph-cache
+      # The edge depth tables, read-only. The engine follows `latest` here (time_aware.table_dir in config.yml).
+      - edge-depth-tables:/tables:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/config.yml:/graphhopper/config.yml:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/motorbike.json:/graphhopper/motorbike.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/car_custom.json:/graphhopper/car_custom.json:ro
@@ -379,7 +388,8 @@ services:
     # whatever graph is baked into the image instead of importing the mounted
     # OSM extract into the graphhopper-graph-cache volume. See
     # artifacts/docs/blockers/graphhopper-vehicle-profile-rejection.md.
-    entrypoint: ["./graphhopper.sh", "-c", "config.yml", "-o", "/data/graph-cache"]
+    # The image's entrypoint (run-time-aware.sh) takes the same -c and -o options as graphhopper.sh.
+    command: ["-c", "config.yml", "-o", "/data/graph-cache"]
     ports:
       - "${GRAPHHOPPER_PORT:-8989}:8989"
     healthcheck:
@@ -404,6 +414,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-minio_custom}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PHOTON_BASE_URL: ${PHOTON_BASE_URL:-https://photon.komoot.io}
+      # US-052. On: POST /route goes to the time-aware engine first and falls back to today's request when the engine
+      # cannot run (missing, stale, or mismatched table), and the response says so. Off: today's behavior exactly.
+      TIME_AWARE_ROUTING: ${TIME_AWARE_ROUTING:-false}
     depends_on:
       graphhopper:
         condition: service_healthy

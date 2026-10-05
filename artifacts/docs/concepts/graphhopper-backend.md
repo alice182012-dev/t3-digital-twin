@@ -232,6 +232,17 @@ Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on 
 
 Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. Not measured yet: latency (`US-055`), and the search on real Hanoi roads (`US-055`).
 
+## The engine in the backend (US-052)
+
+Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `floodmap-backend` (default `false`).
+
+- **Flag off:** `POST /route` is today's request. The client's `td_*` fields are removed either way.
+- **Flag on:** the backend sends `td_departure`, the later of `valid_time` and the server clock, and no flood `custom_model`. GraphHopper answers with `td.status` (`applied`, `unknown`, or `fallback`), `td.run`, `td.departure`, `td.last_step`, and `td.reason` for a fallback. On `fallback`, or on an answer with no `td.status` (a GraphHopper without the module), the backend sends today's request with the flood custom_model and keeps `td.status: fallback` and the reason in the response. An error passes through, so a route closed by the table gives "Connection between locations not found".
+- **In the engine:** `TimeAwareRouter` decides once per request, so one table serves every leg. The departure is floored to the forecast step that contains it, because the step that describes the roads now must count in the closure rule. A trip is `unknown` when it ends after the last step. A profile with no `td_limit_cm` (`truck` and `foot`, until `US-051`) is a fallback.
+- **Table folder:** `time_aware.table_dir` in `config.yml` (the volume `edge-depth-tables`, read-only at `/tables`). `TimeAwareGraphHopper` hashes the loaded graph after the import and follows `latest`. A table for another graph is refused, and the response names both hashes.
+- **Compose:** the `graphhopper` service builds from `java/time-aware-routing` (`graphhopper-time-aware:local`) and starts through `run-time-aware.sh`. Roll back by restoring the stock image line (kept as a comment) and setting the flag to `false`.
+- **Not seen yet:** the deployed image on the server, and the hash of the live graph equal to the table's. The tests show it on a small graph. `US-055` shows it on the real one.
+
 ## Open items
 
 - `floodmap/graphhopper-maps/config-local.js.example` lists all four profiles: `motorbike`, `car`,

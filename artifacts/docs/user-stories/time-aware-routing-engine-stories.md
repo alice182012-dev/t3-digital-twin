@@ -111,7 +111,8 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   then the response body equals today's. Given a missing, stale, or mismatched table, then the backend routes
   with today's model and the response carries a fallback flag.
   Tests cover the flag off, a departure between steps, the horizon edge, run pinning, and the hash mismatch.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Stories R5, E5.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 9 ([[sprint-plan-3]]). Dependencies: Stories R5, E5.
+  Built on 2026-10-05, tests first: in Java `TableProvider`, the once-per-request decision, the response hints, the departure floored to its step, and the table folder loaded after the graph (`TimeAwareRouter`, `TimeAwareGraphHopper`; 118 module tests); in Python `time_aware_route.py` (27 tests) and `server.py`; `td_limit_cm` for `motorbike` and `car` in `config.yml`; the compose `graphhopper` service on the time-aware image with the table volume mounted read-only, and `TIME_AWARE_ROUTING` (default off) on the backend. The flag-on path through the real handler passes `test_server.py` against a PostGIS and a stub GraphHopper. Not yet seen: the deployed image on the server (`US-055`). Plan: [[time-aware-backend-integration]].
 
 - **Story R8 (US-053): Build `POST /route/departures`.**
   As a traveller with no route now, I want to know the earliest time a route opens, so I can decide whether to

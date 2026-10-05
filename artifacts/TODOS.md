@@ -192,6 +192,8 @@
 
 **Sprint:** 9, [[time-aware-routing-engine-stories]] Story R7 (US-052), in [[sprint-plan-3]].
 
+**Status note:** `Reviewed`. Built and tested (plan [[time-aware-backend-integration]]). The flag is off by default and nothing is deployed. The proof on the server is `US-055`, after the 48-hour window.
+
 ### Active - US-051 Add the `truck` and `foot` time-aware profiles
 
 **What:** `truck` and `foot` requests use their own depth limits (35 cm and 40 cm) in the time-aware engine and pass the checker on the synthetic scenarios ([[time-aware-routing-engine-stories]] Story R6).

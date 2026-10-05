@@ -297,6 +297,34 @@ def main() -> int:
         assert "ch.disable" not in plain_body, plain_body
         assert "custom_model" not in plain_body, plain_body
 
+        # TIME_AWARE_ROUTING on (US-052), against a GraphHopper that does not run the engine: the first request carries
+        # td_departure and no flood grading, the answer has no td.status, so the backend sends today's graded request and
+        # marks the response as a fallback.
+        os.environ["TIME_AWARE_ROUTING"] = "true"
+        try:
+            StubGraphHopper.received_bodies.clear()
+            status, payload = request(
+                f"{base}/route",
+                method="POST",
+                body={
+                    "points": [[105.7610, 21.0214], [105.7625, 21.0220]],
+                    "profile": "motorbike",
+                    "valid_time": VALID_TIME,
+                    "run": RUN,
+                },
+            )
+        finally:
+            del os.environ["TIME_AWARE_ROUTING"]
+        assert status == 200, (status, payload)
+        assert len(StubGraphHopper.received_bodies) == 2, StubGraphHopper.received_bodies
+        engine_body, fallback_body = StubGraphHopper.received_bodies
+        assert isinstance(engine_body["td_departure"], int), engine_body
+        assert "custom_model" not in engine_body and "ch.disable" not in engine_body, engine_body
+        assert "td_departure" not in fallback_body, fallback_body
+        assert fallback_body["ch.disable"] is True and "custom_model" in fallback_body, fallback_body
+        assert payload["paths"] == GRAPHHOPPER_RESPONSE["paths"], payload
+        assert payload["hints"]["td.status"] == "fallback", payload
+
         wet_lon, wet_lat = pixel_centre_lonlat(*WET_PIXEL)
         expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
         status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME))
