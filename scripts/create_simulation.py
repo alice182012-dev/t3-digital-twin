@@ -212,6 +212,37 @@ def build_rain_values(intervals, start=None):
     return values
 
 
+def rain_source():
+    """Name the branch of get_rain_forecast that supplies the rain: a replay file, a fixed test rain, or Tomorrow.io."""
+    replay_file = os.getenv("FLOOD_TEST_RAIN_CSV", "").strip()
+    if replay_file:
+        return f"replay:{os.path.basename(replay_file)}"
+    if os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip():
+        return "fixed_test_rain"
+    return "tomorrow.io"
+
+
+def summarize_rain_values(rain_values, slot, source):
+    """Summarize the [offset_seconds, m/s] series that is sent to 3Di as the run's rain input.
+
+    The total integrates the series with the trapezoid rule, because it is sent with interpolate=True.
+    """
+    mm_hr = [m_s * 1000 * 3600 for _, m_s in rain_values]
+    total_mm = sum(
+        (m_s_a + m_s_b) / 2 * (t_b - t_a) * 1000
+        for (t_a, m_s_a), (t_b, m_s_b) in zip(rain_values, rain_values[1:])
+    )
+    return {
+        "slot": iso_utc(slot),
+        "source": source,
+        "interval_count": len(rain_values),
+        "first_offset_s": rain_values[0][0] if rain_values else None,
+        "last_offset_s": rain_values[-1][0] if rain_values else None,
+        "max_mm_hr": round(max(mm_hr, default=0.0), 3),
+        "total_mm": round(total_mm, 3),
+    }
+
+
 def _log_if_auth_expired(e, context):
     """Fire a distinct, non-self-resolving alert for a 401/403 from the 3Di API.
 

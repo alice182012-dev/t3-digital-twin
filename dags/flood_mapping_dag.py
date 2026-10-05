@@ -141,6 +141,15 @@ def task_run_simulation(**kwargs):
         # dry-cycle skip (both green) in the Airflow UI.
         raise AirflowException("❌ Simulation failed to trigger (see create_simulation logs for cause)")
     ti.xcom_push(key="sim_id", value=sim_id)
+    # The same series run_forecast_process sent to 3Di, rebuilt from the same intervals and slot.
+    rain_ingested = create_simulation.summarize_rain_values(
+        create_simulation.build_rain_values(rain_intervals, start=slot), slot, create_simulation.rain_source()
+    )
+    ti.xcom_push(key="rain_ingested", value=rain_ingested)
+    print(
+        f"🌧️ Rain ingested: {rain_ingested['total_mm']:.2f} mm over {rain_ingested['interval_count']} points, "
+        f"max {rain_ingested['max_mm_hr']:.2f} mm/h, source {rain_ingested['source']}"
+    )
 
 
 def task_download_result(**kwargs):
