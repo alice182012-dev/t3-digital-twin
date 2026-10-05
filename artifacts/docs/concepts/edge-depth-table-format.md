@@ -90,7 +90,7 @@ Verified on 2026-10-05 against a throwaway PostGIS in the cloud session (59 test
 - **A failure keeps the previous table.** The pointer moves only inside `publish_table`, after the checks. The no-op `all_done` leaf keeps the DAG run green.
 - **Check on the server.** `scripts/edge_depth/publish_check.py` runs a reader in its own process while 41 tables of the real size publish into a scratch folder on the same volume. `server_check.sh` runs it.
 
-Verified on 2026-10-05 in the cloud session: 83 tests in `scripts/edge_depth/`, three mutations caught (no lock, a pointer that can move back, and retention that can remove the pointer's table), and `publish_check.py` on a local folder (4,715 polling reads, none failed). Not yet run on the server volume.
+Verified on 2026-10-05 in the cloud session: 83 tests in `scripts/edge_depth/`, three mutations caught (no lock, a pointer that can move back, and retention that can remove the pointer's table), and `publish_check.py` on a local folder (4,715 polling reads, none failed). On the server (2026-10-05, volume `edge-depth-tables`): `publish_check.py` published 41 tables of 1,085,487 bytes in 2.2 s while a reader in its own process made 11,878 reads, none failed, and it saw all 41 pointer moves. 3 tables were left, and the real `latest` was untouched. The reader ran in the same container as the writer, as a separate process. The real table of run `20261005T120000` is published there.
 
 ## Open items
 

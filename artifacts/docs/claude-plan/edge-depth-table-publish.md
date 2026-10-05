@@ -2,7 +2,7 @@
 date: 2026-10-05
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-7, edge-depth-table, us-042, atomic-publish, retention, storage]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-airflow-task]]", "[[sprint-plan-2]]", "[[graphhopper-backend]]"]
 ---
@@ -59,3 +59,4 @@ Tests first at every step.
 
 - **2026-10-05, active.** Plan written at the start of `US-042`. Decisions 1 to 6 fixed. The storage choice is mine to record, and the user can overrule it.
 - **2026-10-05, active.** Steps 1 to 6 built and tested. Step 1 reproduced the bug first: a reader thread read an empty pointer from the old `write_latest`. 83 tests in `scripts/edge_depth/`. Three mutations are caught: no folder lock, a pointer that can move back, and retention that removes the pointer's table. `publish_check.py` passes on a local folder (4,715 polling reads, none failed). `docker compose config` accepts the volume. Left: the server. Steps for the user: `git -C <repo> pull alice front-end-according-to-mock-up` over SSH, then in the repo folder `docker compose up -d --no-deps airflow-worker` (it creates the volume and mounts it), then `scripts/edge_depth/server_check.sh` from the Mac, which also makes the volume writable for the Airflow user.
+- **2026-10-05, done.** On the server: the worker was recreated with the volume, `server_check.sh` made it writable for the Airflow user, built and published run `20261005T120000` (39.6 s), and `publish_check.py` passed (11,878 reads, none failed, 3 tables left). `US-042` is `Done`.

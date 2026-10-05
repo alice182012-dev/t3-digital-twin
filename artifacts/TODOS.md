@@ -134,7 +134,7 @@
 
 **Result:** 2026-10-05, on the server the table for run `20261005T120000` has 67,833 edges by 8 steps (1,085,487 bytes), built in 42.0 s with no other load, and all 160 values of a 20-edge spot check equal a direct `ST_Value` reading. Built through the Airflow worker, not a DAG run, because the DAG is paused.
 
-### Active - US-042 Publish the table atomically and keep the newest three runs
+### Done - US-042 Publish the table atomically and keep the newest three runs
 
 **What:** A new table appears in one step, so a reader never sees a half-written file. The fourth run's publish removes the oldest, and a failed task leaves the previous `latest` in place. The story also picks the storage, a volume or MinIO, and records why ([[edge-depth-table-stories]] Story E4).
 
@@ -144,7 +144,7 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E4 (US-042), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested (83 tests in `scripts/edge_depth/`, 18 in the DAG graph test). Storage: the Docker volume `edge-depth-tables`. Left, on the server: pull the branch, recreate the worker over SSH so it mounts the volume, then run `scripts/edge_depth/server_check.sh`. It builds and publishes a run's table, and runs `publish_check.py`, where a reader in its own process polls while 41 tables publish. Plan: [[edge-depth-table-publish]].
+**Result:** 2026-10-05, on the server a reader in its own process made 11,878 reads while 41 tables published into a scratch folder on the new volume `edge-depth-tables`: none failed, and 3 tables were left. The real table for run `20261005T120000` is published and `latest` names it.
 
 ### Active - US-044 Document the graph re-import procedure and detect a stale table
 
