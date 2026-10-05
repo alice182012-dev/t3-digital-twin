@@ -228,6 +228,8 @@
 
 **Sprint:** 10, [[time-aware-routing-engine-stories]] Story R9 (US-054), in [[sprint-plan-3]].
 
+**Status note:** `Reviewed`. Built and tested (plan [[wait-until-alert]]). The check in a browser against the real backend is part of `US-055`.
+
 ### Active - US-055 Prove the engine on the server and roll it out
 
 **What:** Evidence on the server before the flag goes on. The four scenarios for the four vehicles pass the checker on the deployed image and a real run. The p50 and p95 of `POST /route` stay within 2 times the baseline of `US-046`. A fixed set of pairs run against today's model and the reference gives the share of routes that change and the median detour ratio. The tooling is built first, so the server needs one deploy and one run ([[time-aware-routing-engine-stories]] Story R10).

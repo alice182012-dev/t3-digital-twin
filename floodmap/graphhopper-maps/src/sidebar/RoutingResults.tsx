@@ -35,6 +35,8 @@ import { SettingsContext } from '@/contexts/SettingsContext'
 import { Settings } from '@/stores/SettingsStore'
 import DepthForecastChart from '@/floodmap/DepthForecastChart'
 import { FloodTimestep } from '@/floodmap/FloodStore'
+import NoSafeRouteMessage from '@/sidebar/NoSafeRouteMessage'
+import { noConnectionTarget } from '@/floodmap/departureAdvice'
 
 let persistedElevationMounted = false
 
@@ -60,7 +62,7 @@ export default function RoutingResults(props: RoutingResultsProps) {
                 </ul>
             )
         case 'empty':
-            return <NoSafeRouteMessage />
+            return <NoSafeRouteMessage target={noConnectionTarget(props.currentRequest.subRequests)} />
         case 'routes': {
             const active = view.tabs[view.activeIndex]
             return (
@@ -88,15 +90,6 @@ export default function RoutingResults(props: RoutingResultsProps) {
             )
         }
     }
-}
-
-/** Terminal state, deliberately not an ErrorMessage: nothing failed, there is just no safe way. */
-function NoSafeRouteMessage() {
-    return (
-        <div className={styles.noSafeRoute}>
-            No safe route available. Please consider getting to the safest location or stay where you are.
-        </div>
-    )
 }
 
 function RoutingResult({

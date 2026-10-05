@@ -289,3 +289,9 @@
     font-size: 0.9rem;
     line-height: 1.45;
 }
+
+/* The "wait until" line of the no-route box (US-054). */
+.noSafeRouteAdvice {
+    margin: 0.5rem 0 0;
+    font-weight: 600;
+}

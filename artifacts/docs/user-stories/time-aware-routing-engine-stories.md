@@ -134,7 +134,8 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   route in the next 2 hours. Check again after the next forecast run." Given a clear route, then no advice
   appears. Given the fallback flag, then the alert shows "timing check unavailable". The alert keeps the
   existing advice to reach the safest location or stay put, and says "clear in the forecast", not "safe".
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 10 ([[sprint-plan-3]]). Dependencies: Story R8, and [[frontend-polish]] Story 4 in place of the superseded Story R3.
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 10 ([[sprint-plan-3]]). Dependencies: Story R8, and [[frontend-polish]] Story 4 in place of the superseded Story R3.
+  Built on 2026-10-05, tests first, in `floodmap/graphhopper-maps`. `NoSafeRouteMessage` asks `POST /route/departures` only when the failure was a missing connection (`SubRequest.noConnection`), and shows the loading line, then "The usual route is clear from HH:MM (forecast run HH:MM)", or "No safe route in the next 2 hours. Check again after the next forecast run.", or "Timing check unavailable" (the table is unavailable, the request fails, or no step could be judged). The base message and its advice stay. 25 new tests, 304 in all pass, `tsc` is clean, and the production build compiles. Not yet seen: the alert in a browser against the real backend (`US-055`). Plan: [[wait-until-alert]].
 
 - **Story R10 (US-055): Prove the engine on the server and roll it out.**
   As the team, I want evidence on the server before the flag goes on, so the change ships with numbers and not
