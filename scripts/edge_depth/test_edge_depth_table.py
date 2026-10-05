@@ -1,3 +1,4 @@
+import logging
 import struct
 import tempfile
 import threading
@@ -6,10 +7,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from edge_depth_table import (
+    StaleTableError,
     TableFormatError,
     TableHeader,
     read_latest,
+    read_latest_table_for_graph,
     read_table,
+    require_graph_hash,
     write_latest,
     write_table,
 )
@@ -260,6 +264,60 @@ class LatestPointerTest(unittest.TestCase):
 
         self.assertEqual(read_latest(self.dir), self.dir / "a.bin")
         self.assertEqual(sorted(p.name for p in self.dir.iterdir()), ["latest"])
+
+
+class GraphHashGuardTest(unittest.TestCase):
+    """A table is only for the graph it was built from. Edge ids change on every re-import, so a table of the old
+    graph would put depth on the wrong roads of the new one."""
+
+    def setUp(self):
+        self._dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._dir.cleanup)
+        self.dir = Path(self._dir.name)
+        self.name = "20260930T020000.bin"
+        header = TableHeader("a" * 64, "20260930T020000", GOLDEN_HEADER.step_times, GOLDEN_HEADER.edge_count)
+        write_table(self.dir / self.name, header, GOLDEN_ROWS)
+        write_latest(self.dir, self.name)
+
+    def test_a_table_for_the_loaded_graph_passes(self):
+        table = read_table(self.dir / self.name)
+
+        self.assertIs(require_graph_hash(table, "a" * 64), table)
+
+    def test_a_table_for_another_graph_is_refused_and_both_hashes_are_named(self):
+        table = read_table(self.dir / self.name)
+
+        with self.assertRaises(StaleTableError) as caught:
+            require_graph_hash(table, "b" * 64)
+
+        message = str(caught.exception)
+        self.assertIn("a" * 64, message)
+        self.assertIn("b" * 64, message)
+        self.assertIn("20260930T020000", message)
+        self.assertIn("graph-reimport-procedure", message)
+
+    def test_the_refusal_is_not_a_format_error(self):
+        """A reader tells a damaged file from an old one: the first is a bug, the second is a re-import."""
+        self.assertFalse(issubclass(StaleTableError, TableFormatError))
+        self.assertTrue(issubclass(StaleTableError, ValueError))
+
+    def test_reading_latest_for_a_graph_returns_the_table_when_the_hash_matches(self):
+        table = read_latest_table_for_graph(self.dir, "a" * 64)
+
+        self.assertEqual(table.header.run_name, "20260930T020000")
+
+    def test_reading_latest_for_another_graph_logs_the_mismatch_and_refuses(self):
+        with self.assertLogs("edge_depth", level=logging.ERROR) as logged, self.assertRaises(StaleTableError):
+            read_latest_table_for_graph(self.dir, "b" * 64)
+
+        self.assertIn("a" * 64, logged.output[0])
+        self.assertIn("b" * 64, logged.output[0])
+
+    def test_a_missing_pointer_is_not_called_stale(self):
+        (self.dir / "latest").unlink()
+
+        with self.assertRaises(FileNotFoundError):
+            read_latest_table_for_graph(self.dir, "a" * 64)
 
 
 if __name__ == "__main__":

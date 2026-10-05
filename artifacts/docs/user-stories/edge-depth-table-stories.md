@@ -96,7 +96,8 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   regenerated together. Given the old table, when a request arrives, then the reader refuses it before a
   route is served, and the log names the mismatch. The page is a concept page under
   `artifacts/docs/concepts/`.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 7. Dependencies: Story E3.
+  Priority: P1. Status: Reviewed. Estimate: S. Sprint: 7. Dependencies: Story E3 (done).
+  Split of the acceptance: the page, the Python guard, and the operator check are built here. The refusal at request time is in the Java reader, which is Story E5 (`US-043`, Sprint 8), whose acceptance already says "a table for a different graph hash is refused and both hashes are named", and the engine that serves requests comes with `US-050` and `US-052`. That half cannot be shown in Sprint 7, and the user is asked to confirm the split.
 
 - **Story E7 (US-045): Prove the table on the server.**
   As the team, I want measured build time, size, and spot checks on the server, so the estimates become
@@ -119,3 +120,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-10-05, draft.** Story E3 (`US-041`) is `Done`. On the server, for run `20261005T120000`: 67,833 edges by 8 steps, built in 42.0 s, and all 160 values of the 20-edge spot check equal a direct `ST_Value` reading. Evidence: `us-041-edge-depth-table-server-output.png`.
 - **2026-10-05, draft.** Story E4 (`US-042`) is `Reviewed`. `write_latest` now replaces the pointer in one step (a reader test reproduced the empty pointer on the old code first). `publish_edge_depth.py` checks the file, moves `latest` only forward under a folder lock, keeps the newest three, and removes stale temporary files. Task 9c publishes. `compose.yml` adds the volume `edge-depth-tables`. 83 tests in `scripts/edge_depth/` and 18 in the DAG graph test pass, and three mutations are caught. Not done: the volume on the server, and `publish_check.py` there (a polling reader in its own process). Storage chosen: a Docker named volume. Plan: [[edge-depth-table-publish]].
 - **2026-10-05, draft.** Story E4 (`US-042`) is `Done`. On the server a reader in its own process made 11,878 reads while 41 tables published, none failed, and 3 tables were left. Evidence: `us-042-atomic-publish-server-output.png`.
+- **2026-10-05, draft.** Story E6 (`US-044`) is `Reviewed`. Built: the page [[graph-reimport-procedure]], `StaleTableError`, `require_graph_hash` and `read_latest_table_for_graph` (Python guard, logs both hashes), and `scripts/edge_depth/check_tables.py` (compares the export folder, `graph_edge`, the `latest` table, the older tables, and the live graph's hash). 99 tests in `scripts/edge_depth/` pass. Not done: the run on the server (`server_check.sh` now shows a fresh and a stale case), and the Java refusal at request time, which is `US-043`. Plan: [[graph-reimport-procedure-and-stale-table-check]].

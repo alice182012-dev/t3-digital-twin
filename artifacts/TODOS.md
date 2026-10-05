@@ -156,6 +156,8 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E6 (US-044), in [[sprint-plan-2]].
 
+**Today:** 2026-10-05, built and tested (99 tests in `scripts/edge_depth/`): the page [[graph-reimport-procedure]], the Python stale-table guard, and `scripts/edge_depth/check_tables.py`. Left: the run on the server (`scripts/edge_depth/server_check.sh` shows a fresh and a stale case), and your decision on one point. The refusal at request time sits in the Java reader, which is `US-043` (Sprint 8). Close this story on the page, the Python guard, and the check, and leave that half to `US-043`? Plan: [[graph-reimport-procedure-and-stale-table-check]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.

@@ -3,7 +3,7 @@ date: 2026-10-01
 type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
-related: ["[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
+related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
 last_updated: 2026-10-05
 ---
 
@@ -53,7 +53,7 @@ A reader refuses the file, and names the cause, in these cases.
 - The file size differs from the size the header's counts give, which covers a truncated body and extra bytes after it.
 - `graphHash` or `runName` is not valid UTF-8, or the step times do not increase.
 
-The graph hash guard (refuse a table whose `graphHash` differs from the loaded graph's) is not part of the format. It belongs to each reader's caller, and `US-043` and `US-044` build it.
+The graph hash guard (refuse a table whose `graphHash` differs from the loaded graph's) is not part of the format. It belongs to each reader's caller. The Python guard is built (`US-044`): `require_graph_hash` and `read_latest_table_for_graph` raise `StaleTableError`, naming both hashes, and log it at ERROR. The Java guard is `US-043`. What to do after a graph re-import is in [[graph-reimport-procedure]], and `scripts/edge_depth/check_tables.py` shows whether the export, `graph_edge`, the tables, and the live graph agree on one hash.
 
 ## The `latest` pointer
 

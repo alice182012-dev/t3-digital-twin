@@ -63,6 +63,13 @@ d exec "$WORKER" sh -c "ls -l $TABLE_DIR && echo '--- latest:' && cat $TABLE_DIR
 echo "== 5. Spot check $COUNT edges against a direct ST_Value reading"
 d exec "$WORKER" python /opt/airflow/scripts/edge_depth/spot_check.py "$TABLE_DIR/$RUN_TS.bin" --count "$COUNT"
 
-echo "== 6. Atomic publish and retention on this volume: a reader in its own process polls while 41 tables publish"
+echo "== 6. Freshness: do the export, graph_edge, and the latest table agree on one graph hash? (US-044)"
+d exec "$WORKER" python /opt/airflow/scripts/edge_depth/check_tables.py --table-dir "$TABLE_DIR" --export-dir "$EXPORT_DIR" || exit 1
+echo "-- the same check against a graph hash that is not the live one (it must say STALE and name both hashes):"
+d exec "$WORKER" python /opt/airflow/scripts/edge_depth/check_tables.py --table-dir "$TABLE_DIR" --export-dir "$EXPORT_DIR" \
+    --no-db --graph-hash 0000000000000000000000000000000000000000000000000000000000000000
+[ $? -eq 1 ] || { echo "The stale case did not exit with 1."; exit 1; }
+
+echo "== 7. Atomic publish and retention on this volume: a reader in its own process polls while 41 tables publish"
 d exec "$WORKER" python /opt/airflow/scripts/edge_depth/publish_check.py --table-dir "$TABLE_DIR" || exit 1
 d exec "$WORKER" sh -c "ls -la $TABLE_DIR"

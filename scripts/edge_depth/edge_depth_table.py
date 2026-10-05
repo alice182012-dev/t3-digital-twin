@@ -11,6 +11,7 @@ Edge ids are dense integers from 0, so the edge id is the row index and the file
 
 from __future__ import annotations
 
+import logging
 import os
 import struct
 import threading
@@ -30,8 +31,17 @@ _MAX_TEXT_BYTES = 0xFFFF
 _DEPTH_BYTES = 2
 
 
+logger = logging.getLogger("edge_depth")
+
+
 class TableFormatError(ValueError):
     """The file is not a version 1 edge depth table, or it is damaged."""
+
+
+class StaleTableError(ValueError):
+    """The table is whole, but it was built for another graph than the one the reader has loaded. Edge ids change
+    on every graph re-import, so its depths would land on the wrong roads. Not a TableFormatError: a damaged file
+    is a bug, and a stale one is a re-import that is not finished."""
 
 
 @dataclass(frozen=True)
@@ -169,6 +179,29 @@ def read_latest(directory: Path) -> Path:
     name = (Path(directory) / LATEST_NAME).read_text(encoding="utf-8").strip()
     _check_pointer_target(name)
     return Path(directory) / name
+
+
+def require_graph_hash(table: EdgeDepthTable, graph_hash: str) -> EdgeDepthTable:
+    """Returns the table when it was built for graph_hash, and raises StaleTableError, naming both hashes, when
+    not. A reader calls this with the hash of the graph it has loaded, before it serves a request."""
+    if table.header.graph_hash != graph_hash:
+        raise StaleTableError(
+            f"stale edge depth table: run {table.header.run_name} was built for graph hash "
+            f"{table.header.graph_hash}, but the loaded graph has hash {graph_hash}. "
+            "Write a new export and build a new table (artifacts/docs/concepts/graph-reimport-procedure.md)."
+        )
+    return table
+
+
+def read_latest_table_for_graph(directory: Path, graph_hash: str, retries: int = 1) -> EdgeDepthTable:
+    """The table `latest` names, if it was built for graph_hash. A mismatch is logged at ERROR, with both hashes,
+    and raised as StaleTableError."""
+    table = read_latest_table(directory, retries)
+    try:
+        return require_graph_hash(table, graph_hash)
+    except StaleTableError as e:
+        logger.error("%s", e)
+        raise
 
 
 def read_latest_table(directory: Path, retries: int = 1, _read_pointer=None) -> EdgeDepthTable:
