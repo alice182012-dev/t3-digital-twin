@@ -74,7 +74,7 @@ Task `9c_build_edge_depth_table` of `flood_mapping_full` writes `<EDGE_TABLE_DIR
 - **Report.** The task prints and pushes to XCom (`edge_depth_table`) the edge and step counts, the wet edges per step, the sampling seconds, the file size, and the total seconds.
 - **Check.** `scripts/edge_depth/spot_check.py` compares the table with a direct `ST_Value` reading at the same sample points. `scripts/edge_depth/server_check.sh` builds a retained run's table in the Airflow worker on the server and runs the check.
 
-Verified on 2026-10-05 against a throwaway PostGIS in the cloud session (59 tests in `scripts/edge_depth/`). Not yet run on the server graph.
+Verified on 2026-10-05 against a throwaway PostGIS in the cloud session (59 tests in `scripts/edge_depth/`), and on the server: for run `20261005T120000` the table has 67,833 edges by 8 steps, 1,085,487 bytes, built in 42.0 s with no other load (about 5 s per step), and a 20-edge spot check matched `ST_Value` for all 160 values. That build ran `build_edge_depth.py` in the Airflow worker, not a DAG run, because the DAG was paused. About 1,000 edges are wet at each step of that run.
 
 ## Open items
 

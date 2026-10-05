@@ -122,7 +122,7 @@
 
 **Result:** 2026-10-05, the export ran on the live graph on the server, read-only: 67,833 rows for 67,833 edges, identical on two runs, one hash (`8c13d884...c716ce`). A first run failed on the read-only mount and was fixed.
 
-### Active - US-041 Build the Airflow task that writes each run's table
+### Done - US-041 Build the Airflow task that writes each run's table
 
 **What:** An Airflow task after `9b_load_depth_raster` samples the raster tiles along each edge of the export, stores the deepest 1 m sample in centimetres, tags the file with the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct `ST_Value` reading, and an edge outside the model reads 0 ([[edge-depth-table-stories]] Story E3).
 
@@ -132,7 +132,7 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E3 (US-041), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, built and tested (59 tests in `scripts/edge_depth/`, 16 in the DAG graph test, against a throwaway PostGIS). Left, on the server: pull the branch, write the export with `EXPORT_DEST=... java/time-aware-routing/export-edges.sh`, then run `scripts/edge_depth/server_check.sh`. It builds a retained run's table, runs the 20-edge spot check, and shows the duration. Plan: [[edge-depth-table-airflow-task]].
+**Result:** 2026-10-05, on the server the table for run `20261005T120000` has 67,833 edges by 8 steps (1,085,487 bytes), built in 42.0 s with no other load, and all 160 values of a 20-edge spot check equal a direct `ST_Value` reading. Built through the Airflow worker, not a DAG run, because the DAG is paused.
 
 ### Active - US-042 Publish the table atomically and keep the newest three runs
 

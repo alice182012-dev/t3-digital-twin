@@ -2,7 +2,7 @@
 date: 2026-10-05
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: done
 tags: [plan, sprint-7, airflow, edge-depth-table, us-041, postgis, raster]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[flood-on-roads]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[routing-not-time-aware]]"]
 ---
@@ -66,3 +66,4 @@ Tests first at every step, and each step ends in a state I can run.
 
 - **2026-10-05, active.** Plan written at the start of Sprint 7. Design points 1 to 7 and the step order are fixed. A throwaway PostGIS is available in the cloud session for the tests.
 - **2026-10-05, active.** Steps 1 to 6 built and tested: `graph_edges.py`, `create_graph_edge_table.py`, `build_edge_depth.py`, `spot_check.py`, the DAG task and its `all_done` leaf, and the docs. 59 tests in `scripts/edge_depth/`, and a mutation check showed the sampling test catches a shallowest-instead-of-deepest change. Added `server_check.sh` and `EXPORT_DEST` in `export-edges.sh` for the server run. Waiting for that run: the 20-edge spot check, and the duration against the 5-minute limit.
+- **2026-10-05, done.** Ran on the server through the Airflow worker (the DAG is paused): export written to `D:/airflow_new_data/data/mapping/graph_export`, table built for run `20261005T120000` in 42.0 s, 160 of 160 spot-check values equal. `US-041` is `Done`. The first run through a real DAG run is still to see, and `US-045` measures the 5-minute limit under load.
