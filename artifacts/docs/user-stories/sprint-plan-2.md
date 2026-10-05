@@ -36,7 +36,7 @@ Calendar, from `start_date` in the frontmatter:
 | 5 | 2026-10-19 | 2026-10-25 | 2026-10-01 | 2026-10-05 |
 | 6 | 2026-10-26 | 2026-11-01 | 2026-10-05 | 2026-10-05 |
 | 7 | 2026-11-02 | 2026-11-08 | 2026-10-05 | 2026-10-05 |
-| 8 | 2026-11-09 | 2026-11-15 |  |  |
+| 8 | 2026-11-09 | 2026-11-15 | 2026-10-05 |  |
 
 - **Sprint 5** has no dependencies. It records baselines, builds the reference and checker, defines the table
   format, and soaks the current backend before the engine builds on it.
@@ -193,3 +193,4 @@ this plan has an open gate. The soak row in Sprint 5 has no gate, because the us
 - **2026-10-05, active.** [[edge-depth-table-stories]] Story E6 (`US-044`) moved from `Not started` to `Reviewed`. Built: the page [[graph-reimport-procedure]], the Python stale-table guard, and `check_tables.py` (99 tests pass). Not done: the run on the server, and the Java refusal at request time, which is the acceptance of `US-043` in Sprint 8. The user is asked to confirm that split. Plan: [[graph-reimport-procedure-and-stale-table-check]].
 - **2026-10-05, active.** [[edge-depth-table-stories]] Story E6 (`US-044`): the server check passed. With the export, `graph_edge`, and the `latest` table on hash `8c13d884...` the check says `FRESH`, and against another hash it says `STALE`, names both hashes, and exits 1. Evidence: `us-044-stale-table-check-server-output.png`, rendered from output the user pasted. The status stays `Reviewed` until the user confirms the split with `US-043` (the request-time refusal is the Java reader's), and then it moves to `Done`.
 - **2026-10-05, active.** [[edge-depth-table-stories]] Story E6 (`US-044`) moved from `Reviewed` to `Done`. The user confirmed the split: the page, the Python guard, and the operator check are closed here, and the refusal at request time in the Java reader is the acceptance of `US-043` (Sprint 8). Evidence: `us-044-stale-table-check-server-output.png`. All three Sprint 7 rows (`US-041`, `US-042`, `US-044`) are `Done`, so Sprint 7 ended on 2026-10-05, 34 days before its planned end of 2026-11-08. `US-068` is still `Reviewed` in the Backlog, and `US-069` is in Sprint 8.
+- **2026-10-05, active.** Sprint 8 started on 2026-10-05, 35 days before its planned start of 2026-11-09, at the user's request. Its rows are `US-050` (the time-aware weighting and search), `US-043` (the Java reader with the hash check), `US-045` (prove the table on the server), and `US-069` (the storage check, which needs the DAG unpaused for 48 hours). `US-045` also needs a live DAG run of the new tasks to measure the table task against the 5-minute limit, so it needs the DAG unpaused too. No blocker stops Sprint 9 (`US-052`, `US-051`, `US-053` in [[sprint-plan-3]]), checked on 2026-10-05.

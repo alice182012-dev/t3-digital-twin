@@ -1,6 +1,6 @@
 # TODOS
 
-## Current sprint: Sprint 7, 2026-10-05 to 2026-11-08
+## Current sprint: Sprint 8, 2026-10-05 to 2026-11-15
 
 ### Done - US-046 Record the routing baselines on the server
 
@@ -158,6 +158,46 @@
 
 **Result:** 2026-10-05, on the server the check says `FRESH` when the export, `graph_edge`, and the `latest` table share hash `8c13d884...`, and `STALE` against another hash, naming both and exiting 1. The page [[graph-reimport-procedure]] and a Python guard are in. You confirmed that the refusal at request time is `US-043`'s.
 
+### Active - US-043 Build the Java reader with a hash check and reload without restart
+
+**What:** A Java reader of the edge depth table, in `java/time-aware-routing/`. It returns the same values as the Python reader for every edge and step on the shared fixture, refuses a table for a different graph hash and names both hashes, and memory-maps a new `latest` within 30 seconds while a request in flight finishes on the old table ([[edge-depth-table-stories]] Story E5). This is where the request-time refusal that `US-044` handed over is built.
+
+**Effort:** M
+**Priority:** P0
+**Depends on:** `US-040` (the format) and `US-049` (the module), both done. The tables are on the volume `edge-depth-tables`, and the Python guard in `edge_depth_table.py` gives the wording of the refusal.
+
+**Sprint:** 8, [[edge-depth-table-stories]] Story E5 (US-043), in [[sprint-plan-2]].
+
+### Active - US-050 Build the time-aware weighting and search for `motorbike` and `car`
+
+**What:** A weighting and a search that carry the arrival time in the label, apply sticky closure from the departure step with a 10-minute margin, and read the vehicle limit from the profile. On a synthetic depth table the four scenarios, with and without a detour, must match the reference of `US-047`, and the checker must find no crossing of an impassable edge ([[time-aware-routing-engine-stories]] Story R5).
+
+**Effort:** L
+**Priority:** P0
+**Depends on:** `US-047` (the reference), `US-049` (the module, and the answer that landmarks stay valid for a raise-only weighting), and `US-040` (the format), all done. The sticky-from-departure wording was confirmed on 2026-10-02.
+
+**Sprint:** 8, [[time-aware-routing-engine-stories]] Story R5 (US-050), in [[sprint-plan-2]].
+
+### Active - US-045 Prove the table on the server
+
+**What:** Measure the build time, the file size, and the edge count of the table task on a real run on the server, check 20 edges against `ST_Value`, and record the numbers in [[edge-depth-table]], replacing the guessed size. If the build time exceeds the limit, log a blocker ([[edge-depth-table-stories]] Story E7).
+
+**Effort:** M
+**Priority:** P0
+**Depends on:** `US-041` and `US-042`, both done. The limit is 5 minutes after the end of `3_calculate_depth`, never delaying the tile task, so it needs a live DAG run of task `9c`, which means the DAG unpaused. The unloaded numbers so far are 42.0 s, 1,085,487 bytes, and 160 of 160 values equal.
+
+**Sprint:** 8, [[edge-depth-table-stories]] Story E7 (US-045), in [[sprint-plan-2]].
+
+### Active - US-069 Check the storage after the 48-hour replay to see if the retention fixes work
+
+**What:** Read the free space on C:, the size of `docker_data.vhdx`, the three database sizes (`storage-postgres-data`, `minio_custom`, `netcdf_values`), and the `flood_extent_polygon` rows at the start, at 24 hours, and at 48 hours of the replay. The check passes if the database sizes stop growing between hour 24 and hour 48 ([[carried-over-backlog]] Story 12).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** the DAG unpaused for 48 hours ([[carried-over-backlog]] Story 8, `US-063`). You parked it on 2026-10-05 and said to continue after Sprint 7. It can share the DAG run that `US-045` needs.
+
+**Sprint:** 8, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
+
 ## Backlog
 
 Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.
@@ -188,11 +228,11 @@ Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Spri
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 8, 2026-11-09 to 2026-11-15.
+The next sprint is Sprint 9, 2026-11-16 to 2026-11-22, in [[sprint-plan-3]].
 
-Checked on 2026-10-05 against its rows (`US-050`, `US-043`, `US-045`, `US-069`).
+Checked on 2026-10-05 against its rows (`US-052`, `US-051`, `US-053`).
 
-Any blocker stops Sprint 8: None
+Any blocker stops Sprint 9: None
 
 The unresolved blockers are:
 
