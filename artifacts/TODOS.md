@@ -204,6 +204,8 @@
 
 **Window:** the replay is set to start at `2026-10-05T15:15:00Z` (22:15 +07). Readings at 0 hours (22:15 +07 on 2026-10-05, before the unpause), 24 hours (22:15 +07 on 2026-10-06), and 48 hours (22:15 +07 on 2026-10-07). The DAG is still paused until you unpause it.
 
+**0-hour reading (21:32 +07, 2026-10-05):** C: free 153.6 GiB, `docker_data.vhdx` 107.48 GiB, `minio_custom` 14 GB, `flood_extent_polygon` 5,146 MB (112 rows, 8 runs), `netcdf_values` 320 MB (compressed 376 to 38 MB), `storage-postgres-data` 15.82 GB. No image builds on the server during the window.
+
 ## Backlog
 
 Unfinished items carried over from Sprint 5 and Sprint 4. The Done items of Sprints 5 and 6 above stay until the next rollover, then they are deleted.
