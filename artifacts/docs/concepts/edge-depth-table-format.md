@@ -3,7 +3,7 @@ date: 2026-10-01
 type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
-related: ["[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
+related: ["[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
 last_updated: 2026-10-05
 ---
 
@@ -75,6 +75,22 @@ Task `9c_build_edge_depth_table` of `flood_mapping_full` writes `<EDGE_TABLE_DIR
 - **Check.** `scripts/edge_depth/spot_check.py` compares the table with a direct `ST_Value` reading at the same sample points. `scripts/edge_depth/server_check.sh` builds a retained run's table in the Airflow worker on the server and runs the check.
 
 Verified on 2026-10-05 against a throwaway PostGIS in the cloud session (59 tests in `scripts/edge_depth/`), and on the server: for run `20261005T120000` the table has 67,833 edges by 8 steps, 1,085,487 bytes, built in 42.0 s with no other load (about 5 s per step), and a 20-edge spot check matched `ST_Value` for all 160 values. That build ran `build_edge_depth.py` in the Airflow worker, not a DAG run, because the DAG was paused. About 1,000 edges are wet at each step of that run.
+
+## Publish, retention, and storage (US-042)
+
+`scripts/edge_depth/publish_edge_depth.py` publishes a table that `build_edge_depth.py` wrote into the table folder. The design and the reasons are in [[edge-depth-table-publish]].
+
+- **Storage.** The Docker named volume `edge-depth-tables`, mounted at `/opt/airflow/edge_depth_tables` in the Airflow containers. The worker is the only writer, and the routing readers mount it read-only. It is not MinIO (the readers would need an S3 client and credentials) and not a folder under `DATA_HOST_PATH` (on the D: drive, behind Windows file sharing, where replacing an open file can behave differently from Linux).
+- **One pointer, many tables.** A reader reads `latest`, then the file it names. Each publish writes a new file name, so a file a reader has opened is never rewritten.
+- **The pointer moves in one step.** `write_latest` writes a temporary file in the same folder, flushes it, and renames it over `latest`. A reader sees the old name or the new one, never an empty file. A test reproduced the empty pointer on the old code (a write in place) before the fix.
+- **The pointer only moves forward.** Table names are run timestamps and sort in time order. Two runs can overlap, and the older one can finish last. Its table stays on disk until retention removes it, and `latest` is not moved back. A lock on the folder makes the read of the pointer and the write of it one step, so two publishes cannot interleave.
+- **Publish checks the file first.** The table is read back whole. A file that does not read, or whose header names another run, is removed, `latest` stays, and the task fails.
+- **Retention.** The newest `EDGE_TABLE_KEEP_RUNS` (default 3) files named `YYYYMMDDTHHMMSS.bin` stay, plus the one `latest` names. Temporary files older than one hour are removed. Other files are left alone.
+- **A reader reads the pointer again** if the named file has just been removed (`read_latest_table`, one retry).
+- **A failure keeps the previous table.** The pointer moves only inside `publish_table`, after the checks. The no-op `all_done` leaf keeps the DAG run green.
+- **Check on the server.** `scripts/edge_depth/publish_check.py` runs a reader in its own process while 41 tables of the real size publish into a scratch folder on the same volume. `server_check.sh` runs it.
+
+Verified on 2026-10-05 in the cloud session: 83 tests in `scripts/edge_depth/`, three mutations caught (no lock, a pointer that can move back, and retention that can remove the pointer's table), and `publish_check.py` on a local folder (4,715 polling reads, none failed). Not yet run on the server volume.
 
 ## Open items
 

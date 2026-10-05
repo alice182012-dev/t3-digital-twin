@@ -144,6 +144,8 @@
 
 **Sprint:** 7, [[edge-depth-table-stories]] Story E4 (US-042), in [[sprint-plan-2]].
 
+**Today:** 2026-10-05, built and tested (83 tests in `scripts/edge_depth/`, 18 in the DAG graph test). Storage: the Docker volume `edge-depth-tables`. Left, on the server: pull the branch, recreate the worker over SSH so it mounts the volume, then run `scripts/edge_depth/server_check.sh`. It builds and publishes a run's table, and runs `publish_check.py`, where a reader in its own process polls while 41 tables publish. Plan: [[edge-depth-table-publish]].
+
 ### Active - US-044 Document the graph re-import procedure and detect a stale table
 
 **What:** A concept page that says what to do after a graph re-import, so the export, the table, and the hash are regenerated together. A reader refuses a table whose hash differs from the graph's, and the log names the mismatch ([[edge-depth-table-stories]] Story E6).

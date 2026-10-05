@@ -70,7 +70,8 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   the new one and never a partial file. Given four runs, when the fourth publishes, then the oldest is
   removed. A failed task leaves the previous `latest` in place and does not block the DAG.
   The story also picks the storage, a volume or MinIO, and records why.
-  Priority: P0. Status: Not started. Estimate: S. Sprint: 7. Dependencies: Story E3.
+  Priority: P0. Status: Reviewed. Estimate: S. Sprint: 7. Dependencies: Story E3 (done).
+  Storage decision: the Docker named volume `edge-depth-tables`, not MinIO and not a folder under `DATA_HOST_PATH`. The reasons are in [[edge-depth-table-publish]], decision 1.
 
 - **Story E5 (US-043): Build the Java reader with a hash check and reload without restart.**
   As the routing engine, I want to read the newest table and refuse a wrong one, so a graph change never
@@ -109,3 +110,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-10-05, draft.** Story E1 (`US-039`) is `Done`: on the live graph on the server (mounted read-only) the export wrote 67,833 rows for 67,833 edges, identical on two runs. Evidence: `us-039-edge-export-server-output.png`.
 - **2026-10-05, draft.** Story E3 (`US-041`) is `Reviewed`. Task `9c_build_edge_depth_table` and its code in `scripts/edge_depth/` are built, tests first, against a throwaway PostGIS: 59 tests in `scripts/edge_depth/` and 16 in the DAG graph test. Sampling is the method of `flood_on_roads`, and a failed table task does not fail the run (a no-op `all_done` leaf). Not done: the run on the server graph, the spot check of 20 edges against `ST_Value`, and the duration against the 5-minute limit. Plan: [[edge-depth-table-airflow-task]]. Server steps: `export-edges.sh` with `EXPORT_DEST`, then `scripts/edge_depth/server_check.sh`.
 - **2026-10-05, draft.** Story E3 (`US-041`) is `Done`. On the server, for run `20261005T120000`: 67,833 edges by 8 steps, built in 42.0 s, and all 160 values of the 20-edge spot check equal a direct `ST_Value` reading. Evidence: `us-041-edge-depth-table-server-output.png`.
+- **2026-10-05, draft.** Story E4 (`US-042`) is `Reviewed`. `write_latest` now replaces the pointer in one step (a reader test reproduced the empty pointer on the old code first). `publish_edge_depth.py` checks the file, moves `latest` only forward under a folder lock, keeps the newest three, and removes stale temporary files. Task 9c publishes. `compose.yml` adds the volume `edge-depth-tables`. 83 tests in `scripts/edge_depth/` and 18 in the DAG graph test pass, and three mutations are caught. Not done: the volume on the server, and `publish_check.py` there (a polling reader in its own process). Storage chosen: a Docker named volume. Plan: [[edge-depth-table-publish]].
