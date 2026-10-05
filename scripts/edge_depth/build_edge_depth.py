@@ -180,6 +180,8 @@ def main(argv: list[str] | None = None) -> BuildResult:
     parser.add_argument("run_ts")
     parser.add_argument("--export-dir", required=True)
     parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--publish", action="store_true", help="also point `latest` at the table and apply retention")
+    parser.add_argument("--keep", type=int, default=3)
     args = parser.parse_args(argv)
 
     sys.path.insert(0, str(SCRIPTS_DIR / "database"))
@@ -190,6 +192,15 @@ def main(argv: list[str] | None = None) -> BuildResult:
         result = build_table(conn, args.run_ts, args.export_dir, args.out_dir)
     finally:
         conn.close()
+
+    if args.publish:
+        import publish_edge_depth
+
+        published = publish_edge_depth.publish_table(args.out_dir, result.path.name, keep=args.keep)
+        print(
+            f"latest -> {published.latest}" + ("" if published.moved else " (unchanged)")
+            + (f", removed {list(published.removed)}" if published.removed else "")
+        )
 
     for index, (wet, seconds) in enumerate(zip(result.wet_edges, result.sample_seconds)):
         print(f"step {index}: {wet} wet edges, sampled in {seconds:.1f} s")

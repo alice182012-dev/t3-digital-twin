@@ -2,15 +2,18 @@
 
 Story E2 (US-040) of artifacts/docs/user-stories/edge-depth-table-stories.md. The byte layout is
 specified in artifacts/docs/concepts/edge-depth-table-format.md, and the Java reader must read the
-same bytes. Pure: no database, no GraphHopper. Atomic publish and retention belong to the Airflow
-task (US-042), so write_table writes straight to its path and write_latest only writes the pointer.
+same bytes. Pure: no database, no GraphHopper. write_table writes straight to its path, because the build
+(build_edge_depth.py) writes under a temporary name and renames. write_latest replaces the pointer in one
+step. Publishing and retention are in publish_edge_depth.py (US-042).
 
 Edge ids are dense integers from 0, so the edge id is the row index and the file stores no id column.
 """
 
 from __future__ import annotations
 
+import os
 import struct
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -146,14 +149,41 @@ def read_table(path: Path) -> EdgeDepthTable:
 
 
 def write_latest(directory: Path, table_name: str) -> None:
+    """Point `latest` at table_name in one step. The new pointer is written to a temporary file in the same
+    folder and renamed over the old one, so a reader that polls sees the old name or the new one, never an
+    empty file. A rename inside one folder is atomic on the volume the tables live on."""
     _check_pointer_target(table_name)
-    (Path(directory) / LATEST_NAME).write_text(f"{table_name}\n", encoding="utf-8")
+    directory = Path(directory)
+    temporary = directory / f".{LATEST_NAME}.{os.getpid()}.{threading.get_ident()}.tmp"
+    try:
+        with open(temporary, "w", encoding="utf-8") as f:
+            f.write(f"{table_name}\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary, directory / LATEST_NAME)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def read_latest(directory: Path) -> Path:
     name = (Path(directory) / LATEST_NAME).read_text(encoding="utf-8").strip()
     _check_pointer_target(name)
     return Path(directory) / name
+
+
+def read_latest_table(directory: Path, retries: int = 1, _read_pointer=None) -> EdgeDepthTable:
+    """The table `latest` names. The pointer and the table are two files, so a publish that removes the table
+    between the two reads would fail the read. The pointer already names a newer table by then, so the read
+    starts again from the pointer, `retries` times."""
+    read_pointer = _read_pointer or read_latest
+    for attempt in range(retries + 1):
+        path = read_pointer(directory)
+        try:
+            return read_table(path)
+        except FileNotFoundError:
+            if attempt == retries:
+                raise
+    raise AssertionError("unreachable")
 
 
 def _check_pointer_target(name: str) -> None:

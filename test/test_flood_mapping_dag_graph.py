@@ -263,6 +263,11 @@ class DepthRunTests(unittest.TestCase):
             seconds=12.5,
         )
         self.dag_module.build_edge_depth = build_edge_depth
+        publish = self.dag_module.publish_edge_depth = MagicMock()
+        publish.publish_table.return_value = MagicMock(
+            latest="20260924T170639.bin", previous="20260924T165639.bin", moved=True, removed=("20260924T150639.bin",),
+            kept=("20260924T170639.bin",),
+        )
         self.dag_module.DB_CONFIG = {}
 
         with patch("builtins.print"):
@@ -271,19 +276,29 @@ class DepthRunTests(unittest.TestCase):
         args = build_edge_depth.build_table.call_args.args
         self.assertEqual(args[1], "20260924T170639")
         self.assertEqual(str(args[2]), "/opt/airflow/data/mapping/graph_export")
-        self.assertEqual(str(args[3]), "/opt/airflow/data/mapping/edge_depth")
+        self.assertEqual(str(args[3]), "/opt/airflow/edge_depth_tables")
         self.assertEqual(result["run_ts"], "20260924T170639")
         self.assertEqual((result["edge_count"], result["steps"], result["bytes"]), (67833, 8, 1085368))
         self.assertEqual(result["wet_edges"], [10, 20, 30, 0, 0, 0, 0, 0])
         self.assertEqual(result["seconds"], 12.5)
+        self.assertEqual(
+            result["published"],
+            {"latest": "20260924T170639.bin", "previous": "20260924T165639.bin", "moved": True,
+             "removed": ["20260924T150639.bin"]},
+        )
         self.ti.xcom_push.assert_called_once_with(key="edge_depth_table", value=result)
+        publish.publish_table.assert_called_once_with(
+            "/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=3
+        )
 
     def test_the_edge_table_folders_can_be_set_by_environment(self):
-        env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables"}
+        env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5"}
         with patch.dict(os.environ, env):
             dag_module = load_dag_module()
         dag_module.flood_extent = self.dag_module.flood_extent
         dag_module.build_edge_depth = MagicMock()
+        dag_module.publish_edge_depth = MagicMock()
+        dag_module.publish_edge_depth.publish_table.return_value = MagicMock(removed=())
         dag_module.build_edge_depth.build_table.return_value = MagicMock(
             path=Path("/tables/x.bin"), graph_hash="a" * 64, graph_loaded=False, edge_count=1, step_count=1,
             wet_edges=(0,), sample_seconds=(0.1,), size_bytes=40, seconds=1.0,
@@ -295,6 +310,34 @@ class DepthRunTests(unittest.TestCase):
 
         args = dag_module.build_edge_depth.build_table.call_args.args
         self.assertEqual((str(args[2]), str(args[3])), ("/exports", "/tables"))
+        self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5})
+
+    def test_a_failed_build_publishes_nothing_so_latest_stays(self):
+        self.dag_module.build_edge_depth = MagicMock()
+        self.dag_module.build_edge_depth.build_table.side_effect = RuntimeError("no export")
+        self.dag_module.publish_edge_depth = MagicMock()
+        self.dag_module.DB_CONFIG = {}
+
+        with patch("builtins.print"), self.assertRaises(RuntimeError):
+            self.dag_module.task_build_edge_depth_table(ti=self.ti)
+
+        self.dag_module.publish_edge_depth.publish_table.assert_not_called()
+        self.ti.xcom_push.assert_not_called()
+
+    def test_a_failed_publish_fails_the_task_and_reports_nothing(self):
+        self.dag_module.build_edge_depth = MagicMock()
+        self.dag_module.build_edge_depth.build_table.return_value = MagicMock(
+            path=Path("/tables/x.bin"), graph_hash="a" * 64, graph_loaded=False, edge_count=1, step_count=1,
+            wet_edges=(0,), sample_seconds=(0.1,), size_bytes=40, seconds=1.0,
+        )
+        self.dag_module.publish_edge_depth = MagicMock()
+        self.dag_module.publish_edge_depth.publish_table.side_effect = ValueError("not a valid table")
+        self.dag_module.DB_CONFIG = {}
+
+        with patch("builtins.print"), self.assertRaises(ValueError):
+            self.dag_module.task_build_edge_depth_table(ti=self.ti)
+
+        self.ti.xcom_push.assert_not_called()
 
     def test_a_missing_depth_folder_fails_the_task(self):
         self.ti.xcom_pull.side_effect = lambda task_ids, key=None: None

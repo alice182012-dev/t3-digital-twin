@@ -38,6 +38,7 @@ try:
     import publish
     import raster_load
     import build_edge_depth
+    import publish_edge_depth
     from db_config import DB_CONFIG
     from roads import load_road_segments
     from flood_roads import flood_on_roads
@@ -64,9 +65,12 @@ FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 # 9c_build_edge_depth_table reads the export of the graph's edges (graph.json and edges.csv, written by
-# java/time-aware-routing/export-edges.sh) from the first folder and writes <run>.bin into the second.
+# java/time-aware-routing/export-edges.sh) from the first folder, writes <run>.bin into the second, then
+# publishes it: `latest` points at it, and the newest EDGE_TABLE_KEEP_RUNS tables stay. The second folder is the
+# Docker volume edge-depth-tables (compose.yml), which the routing readers mount read-only.
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
-EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(DATA_PATH, "edge_depth"))
+EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
+EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "3"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
 # states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
@@ -285,8 +289,9 @@ def task_load_depth_raster(**kwargs):
 
 def task_build_edge_depth_table(**kwargs):
     """Writes this run's edge depth table: the deepest flood sample along every GraphHopper edge, in
-    centimetres, at every step, tagged with the graph hash (US-041). It reads the tiles task 9b loaded
-    under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
+    centimetres, at every step, tagged with the graph hash (US-041), and publishes it (US-042): `latest`
+    points at it, only forward, and the newest EDGE_TABLE_KEEP_RUNS tables stay. It reads the tiles task 9b
+    loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
 
     Nothing reads the table yet, and the engine falls back to today's model without it, so a failure here
     must not fail the DAG run. edge_table_done is the leaf that keeps the run green (hotstart_policy lets
@@ -300,6 +305,8 @@ def task_build_edge_depth_table(**kwargs):
         built = build_edge_depth.build_table(conn, run_ts, EDGE_EXPORT_DIR, EDGE_TABLE_DIR)
     finally:
         conn.close()
+    # A failure above or here leaves `latest` on the previous table: the pointer moves only inside publish_table.
+    published = publish_edge_depth.publish_table(EDGE_TABLE_DIR, built.path.name, keep=EDGE_TABLE_KEEP_RUNS)
     report = {
         "run_ts": run_ts,
         "path": str(built.path),
@@ -311,12 +318,23 @@ def task_build_edge_depth_table(**kwargs):
         "sample_seconds": [round(seconds, 2) for seconds in built.sample_seconds],
         "bytes": built.size_bytes,
         "seconds": round(built.seconds, 2),
+        "published": {
+            "latest": published.latest,
+            "previous": published.previous,
+            "moved": published.moved,
+            "removed": list(published.removed),
+        },
     }
     ti.xcom_push(key="edge_depth_table", value=report)
     print(
         f"✅ Edge depth table: {built.edge_count} edges, {built.step_count} steps, {built.size_bytes} bytes, "
         f"wet edges per step {list(built.wet_edges)}, {built.seconds:.1f} s"
         + (", graph edges reloaded" if built.graph_loaded else "")
+    )
+    print(
+        f"📌 latest -> {published.latest}"
+        + ("" if published.moved else f" (unchanged: {built.path.name} is not newer)")
+        + (f", removed {list(published.removed)}" if published.removed else "")
     )
     return report
 

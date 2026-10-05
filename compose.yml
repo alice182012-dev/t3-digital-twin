@@ -34,6 +34,7 @@ x-airflow-common: &airflow-common
     KEEP_LOCAL_GEOJSON: ${KEEP_LOCAL_GEOJSON:-false}
     FLOOD_EXTENT_WORKERS: ${FLOOD_EXTENT_WORKERS:-2}
     FLOOD_EXTENT_KEEP_RUNS: ${FLOOD_EXTENT_KEEP_RUNS:-8}
+    EDGE_TABLE_KEEP_RUNS: ${EDGE_TABLE_KEEP_RUNS:-3}
     FLOOD_EXTENT_TILE_STEPS: ${FLOOD_EXTENT_TILE_STEPS:-2}
     FLOOD_COLD_START_AFTER_BREAK: ${FLOOD_COLD_START_AFTER_BREAK:-1}
     FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}
@@ -58,6 +59,11 @@ x-airflow-common: &airflow-common
     - ./plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
     - ${DATA_HOST_PATH:-./data}:/opt/airflow/data
+    # The edge depth tables (US-041, US-042). The worker writes, and the routing readers mount this volume read-only.
+    # A named volume, not a folder under DATA_HOST_PATH: replacing the `latest` pointer is a rename, and the rename
+    # semantics of the Docker VM's own disk are the ones the readers can count on. See
+    # artifacts/docs/claude-plan/edge-depth-table-publish.md, decision 1.
+    - edge-depth-tables:/opt/airflow/edge_depth_tables
     # scripts/flood_metrics/extract_run.py imports flood_utils.py for per-vehicle impassable
     # depths (FLOOD_UTILS_DIR). Mount only this folder, read-only, not all of ./floodmap: it has
     # no import dependency on the rest of that tree (checked: stdlib only).
@@ -324,8 +330,8 @@ services:
         fi
         mkdir -v -p /opt/airflow/{logs,dags,scripts,plugins,config}
         /entrypoint airflow version
-        mkdir -v -p /opt/airflow/{data,state}
-        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,scripts,plugins,config,data,state}
+        mkdir -v -p /opt/airflow/{data,state,edge_depth_tables}
+        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,scripts,plugins,config,data,state,edge_depth_tables}
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
@@ -430,6 +436,7 @@ services:
 
 volumes:
   graphhopper-graph-cache:
+  edge-depth-tables:
   airflow-postgres-data:
   # Backed by a host path instead of Docker's default storage location so task logs land on
   # AIRFLOW_LOGS_HOST_PATH (see .env.example) instead of the SSD-backed Docker data disk.

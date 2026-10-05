@@ -1,5 +1,6 @@
 import struct
 import tempfile
+import threading
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -218,6 +219,47 @@ class LatestPointerTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             read_latest(self.dir)
+
+    def test_a_reader_never_sees_an_empty_or_partial_pointer(self):
+        """A pointer written in place is empty for a moment, and a reader that polls then reads nothing.
+        write_latest replaces the file in one step, so every read gives one of the two names."""
+        write_latest(self.dir, "a.bin")
+        stop = threading.Event()
+        seen, failures = set(), []
+
+        def read_loop():
+            while not stop.is_set():
+                try:
+                    seen.add(read_latest(self.dir).name)
+                except Exception as e:  # noqa: BLE001 - any failure is a finding
+                    failures.append(repr(e))
+
+        reader = threading.Thread(target=read_loop)
+        reader.start()
+        try:
+            for i in range(4000):
+                write_latest(self.dir, "a.bin" if i % 2 else "b.bin")
+        finally:
+            stop.set()
+            reader.join()
+
+        self.assertEqual(failures[:3], [])
+        self.assertEqual(seen, {"a.bin", "b.bin"})
+
+    def test_no_temporary_file_is_left_behind(self):
+        write_latest(self.dir, "a.bin")
+        write_latest(self.dir, "b.bin")
+
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), ["latest"])
+
+    def test_a_failed_write_keeps_the_previous_pointer(self):
+        write_latest(self.dir, "a.bin")
+
+        with self.assertRaises(ValueError):
+            write_latest(self.dir, "../x.bin")
+
+        self.assertEqual(read_latest(self.dir), self.dir / "a.bin")
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), ["latest"])
 
 
 if __name__ == "__main__":
