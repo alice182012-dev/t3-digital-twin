@@ -50,3 +50,4 @@ Nothing is deployed to the server while the replay runs, because a rebuild or a 
 
 - **2026-10-05, active.** Written after `/refresh-artifacts`.
 - **2026-10-05, active.** The user chose the re-run and asked for a storage check after 48 hours. Added `US-069`. No server deploys until the window ends.
+- **2026-10-05, active.** The user closed `US-034` and `US-037` on the 137 runs and started Sprint 6, waiving new evidence. `US-068` and `US-069` carry to the Backlog. The server steps of Sprint 6 still wait for the replay now running. Order today: `US-049` files on the Mac, then `US-068` build.

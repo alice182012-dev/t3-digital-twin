@@ -1,6 +1,6 @@
 # TODOS
 
-## Current sprint: Sprint 5, 2026-10-01 to 2026-10-25
+## Current sprint: Sprint 6, 2026-10-05 to 2026-11-01
 
 ### Done - US-046 Record the routing baselines on the server
 
@@ -14,7 +14,7 @@
 
 **Result:** 2026-10-02, GraphHopper alone answers `POST /route` in 8 to 21 ms at the p50, and with the run's flood model in 153 to 1,857 ms. The graph has 67,833 edges and a run has 8 steps of 15 minutes.
 
-### Active - US-034 Soak the flood-road backend and check it against known answers
+### Done - US-034 Soak the flood-road backend and check it against known answers
 
 **What:** Run the GraphHopper flood-road backend for 48 hours on the live app. The container logs must show no unexplained 5xx responses, and `POST /route` must block or allow each road of a fixed set according to the vehicle depth limits ([[carried-over-backlog]] Story 3).
 
@@ -24,7 +24,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 3 (US-034), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock started with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. Your checks: `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00` once a day (expect exit code 0), and at the end after 16:00 +07 on 2026-10-04. `US-064` is done, so a failed read cannot pass.
+**Result:** 2026-10-05, closed on the 137 runs of the replay that ran, at your decision, so Sprint 6 can start. The end check of `run_soak.sh` was not run and the evidence is waived. The first run on the real host (2026-10-02) passed the container and known-answer checks (14 roads, 56 checks).
 
 ### Done - US-063 Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak
 
@@ -98,6 +98,42 @@
 
 **Result:** 2026-10-05, 21 tests pass against a throwaway PostGIS container. `flood_extent_polygon` had no retention policy and reached 13 GB by 2026-10-04 ([[docker-data-vhdx-fills-c-drive-again]]); it now gets the same automated per-publish prune `flood_extent_step` and the MinIO bucket already had.
 
+### Active - US-049 Build the Java module skeleton, the image, and the CI job
+
+**What:** A Java module built against the pinned GraphHopper version (commit `d7dc1b06`), an image that runs it in place of the stock class, and a GitHub Actions job that builds and tests it ([[time-aware-routing-engine-stories]] Story R4, plan in [[sprint-6-java-toolchain-and-edge-export]]).
+
+**Effort:** L
+**Priority:** P0
+**Depends on:** [[time-aware-routing-engine-stories]] Story R1 (`US-046`), which is done. The server image build waits for the replay still running.
+
+**Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
+
+### Active - US-039 Export the graph's edges
+
+**What:** Export every edge of the GraphHopper graph with its id and geometry, plus the graph's hash, as `edges.csv` and `graph.json` ([[edge-depth-table-stories]] Story E1, plan in [[sprint-6-java-toolchain-and-edge-export]]).
+
+**Effort:** M
+**Priority:** P0
+**Depends on:** `US-049`, same sprint. The run on the server waits for the replay still running.
+
+**Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
+
+## Backlog
+
+Unfinished items carried over from Sprint 5 and Sprint 4:
+
+### Done - US-037 Narrow the per-run critical path under the 15-minute cycle
+
+**What:** Speed up the slowest steps of a run (trigger, `3_calculate_depth`, raster load, tile build) so every simulated run publishes step 1 before it becomes now, with a measured margin ([[carried-over-backlog]] Story 6, option D of [[five-minute-tile-freshness]]).
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), for the retest.
+
+**Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
+
+**Result:** 2026-10-05, closed again on the 137 runs, at your decision. The 136 completed runs stayed under the 15-minute budget (maximum 14.9 minutes), but `report.py` was not run and `9_build_flood_tiles` grew 4.8 times over the window. The `flood_extent_polygon` lead (now pruned by `US-067`) is not verified. Details in [[us-037-narrow-the-per-run-critical-path]].
+
 ### Active - US-068 Show the rain ingested into the simulation in the XCom of `1_trigger_simulation`
 
 **What:** `1_trigger_simulation` pushes a `rain_ingested` XCom next to `sim_id`: the slot, the rain source, the interval count, the first and last offset, the maximum mm/h, and the total mm of the series sent to 3Di ([[carried-over-backlog]] Story 11).
@@ -118,29 +154,13 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
 
-## Backlog
-
-Unfinished items carried over from Sprint 4:
-
-### Active - US-037 Narrow the per-run critical path under the 15-minute cycle
-
-**What:** Speed up the slowest steps of a run (trigger, `3_calculate_depth`, raster load, tile build) so every simulated run publishes step 1 before it becomes now, with a measured margin ([[carried-over-backlog]] Story 6, option D of [[five-minute-tile-freshness]]).
-
-**Effort:** M
-**Priority:** P2
-**Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), for the retest.
-
-**Sprint:** 4, [[carried-over-backlog]] Story 6 (US-037), in [[sprint-plan]].
-
-**Today:** 2026-10-05, still open. The `US-063` replay stopped early at 137 of the intended 192 runs (last one 2026-10-03 19:00 UTC, an unrelated stale run ended during today's disk incident), and nobody has run `scripts/pipeline_margins/report.py`, this story's own pass check, against the window yet. A critical-path analysis of the 136 completed runs stayed under the 15-minute budget throughout, but `9_build_flood_tiles` alone grew 4.8x over the 48 hours with no cross-run overlap to explain it; an unverified lead points at `flood_extent_polygon`'s unbounded growth over the same window. Not closing until the official report runs and that lead is checked. Details in [[us-037-narrow-the-per-run-critical-path]].
-
 ## Blockers for the next sprint
 
-The next sprint is Sprint 6, 2026-10-26 to 2026-11-01. 
+The next sprint is Sprint 7, 2026-11-02 to 2026-11-08.
 
-Checked on 2026-10-02 against its rows (`US-049`, `US-039`).
+Checked on 2026-10-05 against its rows (`US-041`, `US-042`, `US-044`).
 
-Any blocker stops Sprint 6: None
+Any blocker stops Sprint 7: None
 
 The unresolved blockers are:
 

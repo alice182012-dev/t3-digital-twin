@@ -56,7 +56,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   truck 35 cm, and foot 40 cm. The set is built from real roads in `flood_road_values` whose depth lies
   between two limits, as the 2026-09-28 overpass did (`way/776941610#3`, 20.2 cm). The expected result of
   each road comes from the limits, not from another backend.
-  Priority: P2. Status: In progress. Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
+  Priority: P2. Status: Done (closed 2026-10-05 on 137 runs, evidence waived by the user). Estimate: M. Sprint: 5 ([[sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
   length to 48 hours on 2026-10-01. The comparison with the earlier Valhalla backend is dropped (see the last
   history entry).
   Test points: inside the model border (`.claude/CLAUDE.md`).
@@ -64,6 +64,11 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   Tooling: `scripts/backend_soak/` (29 tests). `run_soak.sh` is the verdict. It exits with 0 only if no container restarted, no log has a 5xx response or an error line, and no known-answer check failed. See "Soak and known-answer check" in [[graphhopper-backend]].
   Interim of the void window, 2026-10-02 03:13 +07 (2 hours 28 minutes in): the logs since 00:45 hold 2,422 requests on `floodmap-backend` (1,981 with 200 and 441 with 400), 308 on the frontend, and 0 responses with 5xx and 0 error lines in all three containers. The known-answer check on the 03:00 run covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none, and all 40 blocked promises held.
   To finish: after 2026-10-04 16:00 +07, run `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00`. If it exits with 0, render its output as the evidence image and set the story to `Done`. If it does not, log the failure as a blocker.
+  Details (closed on 137 runs, 2026-10-05):
+  1. What: the soak is closed on the 137 runs of the replay that ran, not on the full 48 hours. The user decided this on 2026-10-05 to move on to Sprint 6.
+  2. How: the replay of `US-063` ran from 2026-10-02 16:00 +07 and stopped at 137 of 192 runs when the 2026-10-04 disk-full incident cut it. The first run on the real host (2026-10-02, 16:11 +07) passed the container check and the known-answer check (14 roads, 56 checks). The end check of `run_soak.sh` over the window was not run.
+  3. Why: the user judged 137 runs enough of a pattern, and wanted to start Sprint 6.
+  4. Effect: Sprint 6 can start. The 48-hour clean-logs result is not proven, and the story has no screenshot of an end check. Evidence waived by the user. The storage check `US-069` still reads the running replay. Flagged for the human to confirm.
 
 - **Story 4 (US-035): Revalidate "loading is very slow".**
   As a user opening the app, I want to know if loading is slow and why, so a real slowness gets its own
@@ -118,7 +123,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
   or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
   now, with a measured margin, not after.
-  Priority: P2. Status: In progress (reopened 2026-10-02). Estimate: M. Sprint: 4, carried in the `TODOS.md` Backlog. Dependencies: Story 8 (`US-063`) for the retest. Independent of Sprint 3's
+  Priority: P2. Status: Done (re-closed 2026-10-05 on 137 runs, evidence waived by the user). Estimate: M. Sprint: 4, carried in the `TODOS.md` Backlog. Dependencies: Story 8 (`US-063`) for the retest. Independent of Sprint 3's
   frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
   set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
   so there may be headroom to raise it (12 logical cores available per
@@ -133,6 +138,11 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   2. How: three changes. The 8 depth processes read their inputs from the container's local disk (`depth_inputs.py`, `684262b`, `3e83a7f`), which cut depth from 6.8 to 7.5 to 3.2 to 3.9 minutes. The tile dissolve runs one process per band (`4e793c0`, `1607484`), with identical areas. A run hotstarts only if the previous slot's run is success or running (`eef34aa` to `828446f`), so a restart starts from the initial water level. Each was found by measuring: the depth experiment of 2026-10-01 and a stage profile of the tile build.
   3. Why: the map showed a tile 1.5 to 3 minutes after its time ([[map-shows-forecast-not-now]]), and under the growing test storm the tile task reached 15 to 17 minutes, longer than the 15-minute cycle.
   4. Effect: the tile task took 4.4 to 6.1 minutes in the four runs, growing about 0.6 minutes per run as the storm grew from a cold start. At that pace the margin reaches zero in about four more runs. The pass holds for the first hour of a storm, not for a storm that has run for hours. The test storm (`FLOOD_TEST_RAIN_MM_HR=50`) is still on. The blocker [[map-shows-forecast-not-now]] stays `monitoring`.
+  Details (re-closed on 137 runs, 2026-10-05):
+  1. What: closed again on 2026-10-05 at the user's decision, on the 137 runs of the replay, not on `report.py` passing over 192. The earlier evidence covers four runs only.
+  2. How: an analysis of the 136 completed runs (critical path from trigger start to tile build end) stayed under the 15-minute budget, with a maximum of 14.9 minutes. `scripts/pipeline_margins/report.py` was not run over the window.
+  3. Why: the user judged 137 runs enough of a pattern, and wanted to start Sprint 6.
+  4. Effect: `9_build_flood_tiles` grew 4.8 times over the window (90.9 s to 439.4 s). The lead is the unbounded growth of `flood_extent_polygon`, which `US-067` now prunes, and it is not verified. A later run or the replay now running can show whether the growth is gone. The blocker [[map-shows-forecast-not-now]] stays `monitoring`. Flagged for the human to confirm.
 
 - **Story 7 (US-038): Fix the documentation and config drift found by the README rewrite.**
   As a new teammate, I want `.env.example`, the vault links, and the concept pages to match the code, so a fresh
@@ -247,3 +257,4 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
 - **2026-10-05, draft.** Story 6 (`US-037`) stays `In progress`. The Story 8 replay stopped early at 137 of the intended 192 runs (last one 2026-10-03 19:00 UTC, a stale run ended during an unrelated disk incident), so the window is incomplete, and nobody has run `scripts/pipeline_margins/report.py` (this story's own pass check) against it yet. A separate cut of the same data, each run's critical path end to end over the 136 completed runs, stayed under the 15-minute budget throughout (max 14.9 min), unlike the stress-test baseline, but `9_build_flood_tiles` alone grew 4.8x over the window (90.9 s to 439.4 s) with no cross-run overlap to explain it. An unverified lead: `flood_extent_polygon` had no retention and grew unbounded for the entire window before a same-day manual fix, and if `9_build_flood_tiles` reads that table, its growth is a plausible cause. Full numbers and the open follow-up in [[us-037-narrow-the-per-run-critical-path]].
 - **2026-10-05, draft.** Story 11 (`US-068`) added to Sprint 5 at the user's request: the XCom of `1_trigger_simulation` should show the rain ingested into the simulation. The user chose Sprint 5 and a summary (not the full series) in the XCom.
 - **2026-10-05, draft.** The user said the replay is running again and will be checked after 48 hours. Story 12 (`US-069`) added to Sprint 5 at the user's request, to check the storage after the 48 hours. `US-034`, `US-037`, and this story all read the same window.
+- **2026-10-05, draft.** Stories 3 (`US-034`) and 6 (`US-037`) are `Done` at the user's decision, on the 137 runs of the replay, so Sprint 6 can start. Neither has its end check (`run_soak.sh`, `report.py`) or a new screenshot, and the user waived the evidence. The Details of each say so.
