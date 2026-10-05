@@ -46,11 +46,13 @@ public class TimeAwareDijkstra extends AbstractRoutingAlgorithm {
     private final StickyClosure closure;
     private final IntObjectMap<List<Label>> labels = new GHIntObjectHashMap<>();
     private final PriorityQueue<Label> heap = new PriorityQueue<>();
+    private final int baseEdges;
     private int visitedNodes;
 
     public TimeAwareDijkstra(Graph graph, Weighting weighting, TraversalMode traversalMode, StickyClosure closure) {
         super(graph, weighting, traversalMode);
         this.closure = closure;
+        this.baseEdges = graph.getBaseGraph().getEdges();
     }
 
     @Override
@@ -87,7 +89,9 @@ public class TimeAwareDijkstra extends AbstractRoutingAlgorithm {
             if (weighting.hasTurnCosts() && EdgeIterator.Edge.isValid(current.edge)) {
                 enterMs += weighting.calcTurnMillis(current.edge, iter.getBaseNode(), iter.getEdge());
             }
-            if (closure.closed(EdgeIds.original(iter), closure.departureEpochMs() + enterMs)) continue;
+            // A virtual edge (a snap in the middle of a road) has an id past the base graph's. Its depth is its road's.
+            int roadId = iter.getEdge() < baseEdges ? iter.getEdge() : EdgeIds.original(iter.detach(false));
+            if (closure.closed(roadId, closure.departureEpochMs() + enterMs)) continue;
 
             int key = traversalMode.createTraversalId(iter, false);
             Label next = new Label(iter.getEdge(), iter.getAdjNode(), weight, current, current.elapsedMs + edgeMillis);
