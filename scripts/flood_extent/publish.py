@@ -132,6 +132,43 @@ def prune_step_rows(db_conn, keep_runs, always_keep):
     db_conn.commit()
 
 
+def prune_polygon_rows(db_conn, keep_runs, always_keep):
+    """Deletes the `flood_extent_polygon` rows of every run outside the newest `keep_runs`.
+
+    Keyed on `run_ts` alone, the same granularity `prune_step_rows` uses, not on the table's own
+    primary key `(run_ts, valid_time_utc, dn_code)`: a run's polygon rows all share one `run_ts`,
+    so "the newest `keep_runs` runs" picks out the same runs here as it does for
+    `flood_extent_step`, even though a run's polygon-row count varies with how many bands and
+    timesteps it had. `flood_extent_polygon` had no prune at all before this, unlike
+    `flood_extent_step` and the bucket, which `publish_run` has always pruned. That gap is what
+    let it grow unbounded from 2026-09-24 to 13 GB by 2026-10-04 (see the blocker page
+    docker-data-vhdx-fills-c-drive-again.md), almost all dead TOAST bloat behind a few thousand
+    live rows.
+
+    Order relative to `prune_step_rows` doesn't matter: each prunes its own table from that
+    table's own distinct `run_ts` values, never from the other table's rows or from what the other
+    already deleted, so calling this before, after, or interleaved with `prune_step_rows` reaches
+    the same end state either way. What does matter, and is unchanged by adding this call, is
+    running only after every timestep of the run being published has succeeded: pruning mid-run,
+    before this run's own rows exist for every timestep, could count a run as fully present when
+    it is only partial, and prune a good older run out from under a reader still using it.
+    """
+    if db_conn is None:
+        return
+    with db_conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM flood_extent_polygon
+            WHERE run_ts <> %(always_keep)s
+              AND run_ts NOT IN (
+                  SELECT DISTINCT run_ts FROM flood_extent_polygon ORDER BY run_ts DESC LIMIT %(keep_runs)s
+              )
+            """,
+            {"keep_runs": keep_runs, "always_keep": always_keep},
+        )
+    db_conn.commit()
+
+
 def cleanup_old_files(root_dirs, max_age_hours=24):
     """Deletes every top-level child of each root older than `max_age_hours`.
 
@@ -164,8 +201,9 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
 
     Fails loudly (raises) if any timestep fails, without deleting anything already published for
     the timesteps that succeeded — a missing tile 404s and the map treats it as empty, so partial
-    per-timestep state is safe. Bucket pruning and the 24h local cleanup only run after every
-    timestep in this run succeeds, so a partial failure never prunes still-good older runs.
+    per-timestep state is safe. Bucket pruning, step-row pruning, polygon-row pruning, and the 24h
+    local cleanup only run after every timestep in this run succeeds, so a partial failure never
+    prunes still-good older runs.
     """
     depth_dir = Path(depth_dir)
     if not flood_extent.RUN_DIR.match(run_ts):
@@ -199,5 +237,6 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
 
     prune_bucket_runs(s3, bucket, keep_runs, always_keep=run_ts)
     prune_step_rows(db_conn, keep_runs, always_keep=run_ts)
+    prune_polygon_rows(db_conn, keep_runs, always_keep=run_ts)
     cleanup_old_files(cleanup_dirs, cleanup_max_age_hours)
     return results

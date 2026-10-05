@@ -26,7 +26,7 @@
 
 **Today:** 2026-10-02, the first window (from 00:45 +07) is void. You stopped the pipeline, because the 50 mm/h rain is not a real event, and Docker on the server returned HTTP 500 at 13:53 +07. Docker works again, and every container was recreated at about 15:00 ([[2026-10-02-disk-cleanup-and-d-drive-move]]). The soak clock started with the replay at 2026-10-02 16:00 +07 and ends on 2026-10-04 at 16:00 +07. Your checks: `sh scripts/backend_soak/run_soak.sh 2026-10-02T16:00:00+07:00` once a day (expect exit code 0), and at the end after 16:00 +07 on 2026-10-04. `US-064` is done, so a failed read cannot pass.
 
-### Active - US-063 Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak
+### Done - US-063 Replay a realistic 48-hour rain for the `US-037` retest and the `US-034` soak
 
 **What:** Replace the constant 50 mm/h test rain with the Hanoi rain of 2025-10-05 to 2025-10-08, cut to 48 hours (2025-10-05T22:30Z to 2025-10-07T22:30Z, 246.8 mm, peak 56.48 mm/h). The server's gate is 0.01 mm/h, so all 192 runs simulate. At 5 mm/h, 104 would simulate ([[carried-over-backlog]] Story 8, plan in [[us-063-realistic-rain-replay-for-us-037-and-us-034]]).
 
@@ -36,7 +36,7 @@
 
 **Sprint:** 5, [[carried-over-backlog]] Story 8 (US-063), in [[sprint-plan-2]].
 
-**Today:** 2026-10-02, running. The server got `c3d398e` at 15:20 +07, and you unpaused `flood_mapping_full` at about 15:54 +07. The 16:00 slot read the replay (`Replaying ... from 2026-10-02T09:00:00Z`, gate max 1.10 mm/h) and its simulation started. The 15:45 slot ran before that as a pre-roll. The window is one chain of 192 runs to 2026-10-04 15:45 +07. Your checks, with commands in the plan under "Checks while the replay runs": the peak check on 2026-10-03 after 16:35 +07 (expect `max=56.48 mm/h`), then the end of the window after 16:00 +07 on 2026-10-04.
+**Result:** 2026-10-05, 137 of the 192 runs completed (136 success, 1 failed) before the 2026-10-04 disk-full incident cut the chain short. The `Replaying` line and the peak rate (`max=56.48 mm/h`) both match real server logs. `US-037` and `US-034` need the fuller window and stay open.
 
 ### Done - US-064 Make the soak check fail when it cannot read the server
 
@@ -74,7 +74,7 @@
 
 **Result:** 2026-10-02, you decided to keep the 15-minute refresh for now. The map-age label and a faster pipeline were not chosen.
 
-### Active - US-066 Narrow and compress netcdf_values onto TimescaleDB
+### Done - US-066 Narrow and compress netcdf_values onto TimescaleDB
 
 **What:** Redesign `netcdf_values` into a narrow, compressed, retention-managed TimescaleDB hypertable, so the mesh-simulation ingest pipeline stops refilling C: every time a long soak test runs ([[netcdf-values-storage-redesign]], plan in [[netcdf-values-timescale-migration]]).
 
@@ -84,7 +84,19 @@
 
 **Sprint:** 5, [[netcdf-values-storage-redesign]] (US-066), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, reviewed. Implemented and merged on branch `us-066-netcdf-values-timescale`, verified on a real production run: `flood_mapping_full`'s `3b_upload_netcdf_postgres` wrote `file_id` 245 (1,302,146 rows, simulation 449585) through the new hypertable with the compression and retention policies both active. The old 56 GB table on `storage-postgres` stays untouched for now. Not yet `Done`: no screenshot evidence captured, see [[netcdf-values-storage-redesign]].
+**Result:** 2026-10-05, criteria 1 to 3 re-verified live against the real containers and recorded with rendered evidence. Criterion 4 spot-check found only 2 of 112 old file_ids were ever backfilled, both matching row for row; the other 110 are pre-migration soak data nothing in the codebase reads. Dropped on the user's go: `DROP TABLE netcdf_values;` ran clean, `minio_custom` went from 70 GB to 14 GB ([[2026-10-05-us-066-criterion-4-spot-check]]).
+
+### Done - US-067 Prune old runs' flood_extent_polygon rows on every publish
+
+**What:** Add `prune_polygon_rows` to `scripts/flood_extent/publish.py`, called from `publish_run` right after `prune_step_rows`, deleting `flood_extent_polygon` rows for every run outside the newest `keep_runs` ([[prune-flood-extent-polygon-rows]]).
+
+**Effort:** S
+**Priority:** P1
+**Depends on:** None.
+
+**Sprint:** 5, [[prune-flood-extent-polygon-rows]] (US-067), in [[sprint-plan-2]].
+
+**Result:** 2026-10-05, 21 tests pass against a throwaway PostGIS container. `flood_extent_polygon` had no retention policy and reached 13 GB by 2026-10-04 ([[docker-data-vhdx-fills-c-drive-again]]); it now gets the same automated per-publish prune `flood_extent_step` and the MinIO bucket already had.
 
 ## Backlog
 

@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-02
+related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]"]
+last_updated: 2026-10-05
 ---
 
 # MinIO flood-extent tile pipeline
@@ -143,20 +143,39 @@ loaded before the switch, until the deploy runbook in [[raster-first-flood-pipel
 
 ## Retention
 
-`publish_run`'s `prune_bucket_runs` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 3) in
-the bucket, always preserving the run currently being published, and deletes every object under
-older `runs/<run>/` prefixes in batches of 1,000 keys (the `DeleteObjects` API's per-call cap).
-Local scratch space (`FLOOD_EXTENT_WORK_DIR`, plus the depth directory itself) is separately swept
-by `cleanup_old_files`, which deletes any top-level child older than
+`publish_run`'s `prune_bucket_runs` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 8,
+`dags/flood_mapping_dag.py`'s `FLOOD_EXTENT_KEEP_RUNS`) in the bucket, always preserving the run
+currently being published, and deletes every object under older `runs/<run>/` prefixes in batches
+of 1,000 keys (the `DeleteObjects` API's per-call cap). Local scratch space
+(`FLOOD_EXTENT_WORK_DIR`, plus the depth directory itself) is separately swept by
+`cleanup_old_files`, which deletes any top-level child older than
 `FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS` (default 24), using each child's newest file's mtime as its
 age so a folder still being written is never mistaken for a stale one.
 
+`publish_run` also calls `prune_step_rows` and `prune_polygon_rows` (`US-067`,
+[[prune-flood-extent-polygon-rows]]) right after `prune_bucket_runs`, both with the same
+`keep_runs` and `always_keep`. Each deletes its own table's rows for every `run_ts` outside the
+newest `keep_runs`, computed from that table's own distinct `run_ts` values: `prune_step_rows` on
+`flood_extent_step`, `prune_polygon_rows` on `flood_extent_polygon`. Before `US-067`,
+`flood_extent_polygon` had no prune at all, unlike the bucket and `flood_extent_step`, and grew
+unbounded from 2026-09-24 to 13 GB by 2026-10-04
+([[docker-data-vhdx-fills-c-drive-again]]), almost all dead TOAST bloat behind a few thousand
+live rows. A one-off `DELETE` plus `VACUUM (FULL)` took it to 5 GB that day; `prune_polygon_rows`
+is the automated policy that stops it from happening again, deleting roughly one run's worth of
+rows on every publish instead of letting runs accumulate forever. No `VACUUM FULL` runs as part of
+this: checked against the live `storage-postgres` container on 2026-10-05, the table has no
+per-table autovacuum override (`scale_factor 0.2`, `threshold 50`, the cluster defaults), and a
+delete this size on every 15-minute cycle is expected to stay under that trigger between runs,
+unlike the unbounded growth it replaces. `last_autovacuum` was still null at that check because
+`flood_mapping_full` has been paused since the incident, so nothing has exercised the new prune
+yet.
+
 `raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
 the newest `keep_runs` runs by `run_ts` and deletes every tile of older runs. A caller that passes
-no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 3), which is what `flood_mapping_full` does.
-The manual two-event test DAG passes 1,000, so a test run never prunes production tiles. The load
-never deletes the run it just loaded, even when an older run is loaded again later. A value below
-1 fails the load.
+no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 8, `raster_load.py`'s `DEFAULT_KEEP_RUNS`),
+which is what `flood_mapping_full` does. The manual two-event test DAG passes 1,000, so a test run
+never prunes production tiles. The load never deletes the run it just loaded, even when an older
+run is loaded again later. A value below 1 fails the load.
 
 ## How the frontend picks a timestep
 

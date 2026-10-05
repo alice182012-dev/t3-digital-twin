@@ -1,15 +1,15 @@
 ---
 date_open: 2026-10-04
-date_closed:
+date_closed: 2026-10-05
 type: blocker
-status: open
+status: resolved
 severity: P1
 subsystem: infra, docker, storage-postgres
-approaches_tried: 4
-approaches_remaining: 1
+approaches_tried: 5
+approaches_remaining: 0
 tags: [blocker, infra, docker, storage, postgres]
-related: ["[[2026-10-02-disk-cleanup-and-d-drive-move]]", "[[move-non-ssd-storage-to-d-drive]]", "[[minio-flood-extent-pipeline]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[netcdf-values-timescale-migration]]", "[[netcdf-values-storage-redesign]]"]
-last_updated: 2026-10-04
+related: ["[[2026-10-02-disk-cleanup-and-d-drive-move]]", "[[move-non-ssd-storage-to-d-drive]]", "[[minio-flood-extent-pipeline]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[netcdf-values-timescale-migration]]", "[[netcdf-values-storage-redesign]]", "[[prune-flood-extent-polygon-rows]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
+last_updated: 2026-10-05
 ---
 
 # Docker's vhdx fills C: again, and Postgres stops answering
@@ -115,14 +115,30 @@ can hold a multi-day soak without this recurring. That redesign is planned in
 [[netcdf-values-timescale-migration]] (story [[netcdf-values-storage-redesign]], `US-066`,
 Sprint 5), not yet implemented.
 
+### Approach 5: ship both fixes, drop the old table, compact the vhdx one more time (2026-10-05)
+
+With `US-067` (`prune_polygon_rows`) and `US-066` (the TimescaleDB redesign) both shipped and
+verified live, the old 56 GB `netcdf_values` table on `storage-postgres` held only pre-migration
+soak data nothing in the codebase read (full spot-check in
+[[2026-10-05-us-066-criterion-4-spot-check]]). On the user's go, `DROP TABLE netcdf_values;` ran
+clean: `minio_custom` 70 GB to 14 GB, the `storage-postgres-data` volume 76.61 GB to 16.01 GB, the
+container healthy throughout.
+
+That freed space inside Docker's volume, not yet on `C:`. The same `wsl --shutdown` +
+`diskpart compact vdisk` pass from Approaches 3 and 4 ran again: `C:` free space went from 43.4 GB
+to 163.4 GB, a 120 GB gain. Docker Desktop restarted and all 15 containers came back up healthy.
+This time the session still wasn't Administrator, so the user ran the elevated `diskpart` step
+themselves, the same hand-off Approach 3 needed.
+
 ## Decision and explanation
 
-Partially resolved. `flood_extent_polygon` is fixed. `netcdf_values` needs
-[[netcdf-values-timescale-migration]] implemented before this is fully closed; until then, a long
-soak test will refill `netcdf_values` the same way. The vhdx itself still needs one more
-`wsl --shutdown` + `diskpart compact vdisk` pass to convert the Postgres-side space freed in
-Approach 4 into space the Windows host can actually see — the same gap Approach 3 hit, now with
-less to compact.
+Resolved. `flood_extent_polygon` now has an automated prune ([[prune-flood-extent-polygon-rows]],
+`US-067`). `netcdf_values` is redesigned onto TimescaleDB with compression and retention policies
+([[netcdf-values-timescale-migration]], `US-066`), and the old 56 GB table on `storage-postgres`
+is dropped (`minio_custom` 70 GB to 14 GB). The vhdx is compacted (Approach 5): `C:` free space
+went from 43.4 GB to 163.4 GB, a 120 GB gain, and all 15 containers came back up healthy
+afterward. Both root-cause tables now have an automated policy in code, not a one-off hand fix, so
+a future soak test should not refill either one unbounded.
 
 ## Concerns
 
@@ -159,3 +175,20 @@ on that concept page separately from this blocker.
   (13 GB to 5 GB). `netcdf_values` needs a schema redesign, now planned but not yet built in
   [[netcdf-values-timescale-migration]]. Stays `open` until that plan ships and a final vhdx
   compaction converts the reclaimed Postgres space into Windows-visible free space.
+- **2026-10-05, open.** `flood_extent_polygon` now has an automated policy instead of the one-off
+  hand fix: `publish.py`'s `prune_polygon_rows`, called from `publish_run` on every publish
+  ([[prune-flood-extent-polygon-rows]], `US-067`). This Concerns section's note about
+  [[minio-flood-extent-pipeline]]'s stale raster-retention default is also fixed, on the same
+  page's Retention section. Still `open` on `netcdf_values` and the final vhdx compaction, neither
+  touched by this change.
+- **2026-10-05, open.** On the user's go, `DROP TABLE netcdf_values;` ran on `storage-postgres`.
+  Confirmed before (56 GB, 142,548,685 rows) and after (`to_regclass` returns null, `minio_custom`
+  70 GB to 14 GB, the `storage-postgres-data` Docker volume 76.61 GB to 16.01 GB). The container
+  stayed healthy throughout, no restart needed. Both of this blocker's root-cause tables now have a
+  fix in place. Stays `open` on one remaining step: a `wsl --shutdown` + `diskpart compact vdisk`
+  pass to convert the space just freed inside the Docker volume into space Windows can actually
+  see on `C:`.
+- **2026-10-05, resolved.** Approach 5: ran the vhdx compaction one more time. `C:` free space went
+  from 43.4 GB to 163.4 GB. Docker Desktop restarted and all 15 containers came back up healthy.
+  Both root-cause tables now have an automated fix in code, the old dead data is dropped, and the
+  disk space is reclaimed end to end, from Postgres through the vhdx to the Windows host. Closing.

@@ -41,9 +41,11 @@ CREATE TABLE IF NOT EXISTS flood_extent_step (
 );
 
 -- Runs published before flood_extent_step existed get their wet steps listed. Only into an empty
--- table: flood_extent_polygon is never pruned, so a backfill on every call would bring back step
--- rows whose tiles prune_bucket_runs already deleted. Only the newest 3 runs, the bucket's
--- keep_runs before the 15-minute cycle, since older runs have no tiles left.
+-- table: this backfill runs once, before flood_extent_step has any rows of its own, so by the
+-- time publish.py's prune_polygon_rows starts pruning flood_extent_polygon on every publish,
+-- flood_extent_step is already populated and this INSERT is a no-op (its WHERE NOT EXISTS guard).
+-- Only the newest 3 runs, the bucket's keep_runs before the 15-minute cycle, since older runs
+-- have no tiles left.
 INSERT INTO flood_extent_step (run_ts, valid_time_utc, is_empty)
 SELECT DISTINCT run_ts, valid_time_utc, false
 FROM flood_extent_polygon

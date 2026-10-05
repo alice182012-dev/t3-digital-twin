@@ -2,11 +2,11 @@
 date_drafted: 2026-10-04
 type: user-story
 us_ids: ["US-066"]
-status: reviewed
+status: done
 subsystem: infra, storage-postgres, timescaledb
 sprint: 5
 source_ideas: []
-related: ["[[netcdf-values-timescale-migration]]", "[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[sprint-plan-2]]", "[[timescaledb-and-flood-metrics]]"]
+related: ["[[netcdf-values-timescale-migration]]", "[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[sprint-plan-2]]", "[[timescaledb-and-flood-metrics]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
 tags: [user-story, infra, storage, timescaledb, postgres]
 ---
 
@@ -69,3 +69,35 @@ through the new path, then:
   Not marked `done`: no rendered-output screenshot evidence captured per this vault's evidence
   rule, only direct verification in this session. `TODOS.md` and [[sprint-plan-2]] updated to
   match.
+- **2026-10-05, done.** Re-ran criteria 1 to 3 live against the real containers and they still
+  hold, unchanged: `mesh_elements` still has exactly 63,339 rows (42,501 lines, 20,838 nodes, 0
+  duplicates on the key), `policy_compression` and `policy_retention` are both active with
+  `last_run_status = Success`, and `file_id` 245 still has 1,302,146 rows across all 6 variables.
+  Rendered as `us-066-netcdf-timescale-verify.png`, captured on host ADMIN / 100.67.84.55 at
+  2026-10-05 03:42 UTC. `TODOS.md` and [[sprint-plan-2]] updated to match.
+
+  Criterion 4 exercised: the old `netcdf_values` on `storage-postgres` still holds 142,548,685 rows
+  (56 GB) across `file_id` 131 to 242 (2026-10-02 17:15 to 2026-10-03 21:00), all from the soak
+  test that caused [[docker-data-vhdx-fills-c-drive-again]], predating `file_id` 245, the first
+  write through the new path. `scripts/database/backfill_netcdf_values.py` had only ever been run
+  on the two most recent file_ids, 241 and 242; both match the old table row for row (1,320,167 and
+  1,320,179), with zero loss. The other 110 file_ids were never backfilled. Of their 139,908,339
+  rows, 84,471,989 (`file_id` 173 to 240) still fall inside the new hypertable's 48-hour retention
+  window as of this check; the remaining 55,436,350 (`file_id` 131 to 172) are already older than
+  that window and would be dropped by `policy_retention` even if copied now. No code outside the
+  ingestion and backfill scripts reads `netcdf_values` on either table, so no live query depends on
+  any of this data. Full finding in [[2026-10-05-us-066-criterion-4-spot-check]].
+
+  The literal criterion text ("dropped only after a row-count and value spot-check against the new
+  tables passes") has passed for the 2 file_ids actually copied and spot-checked, not for the other
+  110. Recommendation: drop, since the un-copied rows are pre-migration soak exhaust that nothing
+  reads and that the retention policy would discard anyway as it ages past 48 hours; the decision
+  not to backfill the rest is a choice to let that soak data lapse, not a parity failure.
+- **2026-10-05, done.** `DROP TABLE netcdf_values;` run on `storage-postgres`, on the user's go.
+  Confirmed before: 56 GB, 142,548,685 rows. Confirmed after: `to_regclass('netcdf_values')`
+  returns null, `minio_custom`'s database size dropped from 70 GB to 14 GB, and the
+  `airflow_new_storage-postgres-data` Docker volume dropped from 76.61 GB to 16.01 GB.
+  `storage-postgres` stayed healthy throughout, no restart needed. Criterion 4 is now fully
+  exercised. This frees space inside the Docker volume, not yet on the Windows host: `C:` still
+  needs a `wsl --shutdown` + `diskpart compact vdisk` pass to convert it into Windows-visible free
+  space, the same open step [[docker-data-vhdx-fills-c-drive-again]] already tracks.

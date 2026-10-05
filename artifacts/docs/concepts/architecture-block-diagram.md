@@ -3,10 +3,9 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [architecture, diagram]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]", "[[netcdf-values-storage-redesign]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]"]
+last_updated: 2026-10-05
 ---
-
 # Block diagram: T3-Digital-Twin architecture
 
 Companion diagram for `artifacts/raw/T3-Digital-Twin_Architecture.md`, section 3 (Container
@@ -30,16 +29,17 @@ flowchart TB
   subgraph PIPE["Simulation & postprocessing"]
     AIRFLOW["Airflow DAG<br/>flood_mapping_dag.py"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
+    NETCDF["netcdf_to_pg.py<br/>(task 3b_upload_netcdf_postgres)"]:::built
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
     ROADLOAD["load_road_segments.py<br/>(task load_road_segments)"]:::built
     ROUTEEXT["flood_on_roads.py<br/>(task flood_on_roads)"]:::built
-    TILEEXT["flood_extent.py + publish.py<br/>(GRASS raster→polygon)"]:::built
+    TILEEXT["flood_extent.py + publish.py<br/>(GRASS raster→polygon,<br/>prune_polygon_rows every publish)"]:::built
   end
 
   subgraph DATA["Data stores"]
-    PG["storage-postgres (PostGIS)<br/>flood_road_values<br/>flood_extent_polygon<br/>flood_depth_raster_tile<br/>road_segment"]:::built
+    PG["storage-postgres (PostGIS)<br/>flood_road_values<br/>flood_extent_polygon (pruned, US-067)<br/>flood_depth_raster_tile<br/>road_segment"]:::built
     MINIO["MinIO<br/>flood-extent bucket (.pbf tiles)"]:::built
-    TSDB["TimescaleDB"]:::designed
+    TSDB["timescaledb (US-066)<br/>mesh_elements<br/>netcdf_variable_catalog<br/>netcdf_values (compressed, 48h retention)"]:::built
     ULS["User Location Store"]:::designed
   end
 
@@ -59,6 +59,8 @@ flowchart TB
   GAUGE -->|water levels| AIRFLOW
   HE -.->|model, templates| ThreeDI
   AIRFLOW --> DEPTH
+  AIRFLOW --> NETCDF
+  NETCDF -->|mesh, variables, values| TSDB
   DEPTH --> RASTERLOAD
   RASTERLOAD -->|flood_depth_raster_tile| PG
   ROADLOAD -->|road_segment| PG
@@ -77,7 +79,6 @@ flowchart TB
 
   BACKEND -.->|not implemented| CITIZEN
   BACKEND -.->|not implemented| COUNCIL
-  PG -.-> TSDB
   TSDB -.-> CITIZEN
   ULS -.-> CITIZEN
   CITIZEN -.-> FCM
@@ -95,3 +96,16 @@ through `scripts/database/geojson_to_pg.py`) left `dags/flood_mapping_dag.py` on
 a road piece, as D-006 in [[decision-log]] records. `floodmap-backend` reads `flood_road_values` for
 routing, as before. The road loader and flood-on-roads nodes are marked Built because their code is
 in the DAG, but neither task has run on the server yet. The plan is [[raster-first-flood-pipeline]].
+
+TimescaleDB moved from Designed to Built on 2026-10-05 ([[netcdf-values-storage-redesign]],
+`US-066`). The DAG's `3b_upload_netcdf_postgres` task (`netcdf_to_pg.py`) runs in parallel with
+`3_calculate_depth`, not downstream of it — both depend only on `2_download_results` and
+`0b_ensure_schema` finishing, per `dags/flood_mapping_dag.py`'s task graph. It writes the
+deduplicated mesh geometry and variable catalog (`mesh_elements`, `netcdf_variable_catalog`) and
+the per-timestep values onto a `netcdf_values` hypertable with a 6-hour compression policy and a
+48-hour retention policy, replacing a same-named table on `storage-postgres` that had no retention
+at all and reached 56 GB during a 48-hour soak test ([[docker-data-vhdx-fills-c-drive-again]]). That
+old table is dropped. The dotted `PG -.-> TSDB` edge from the earlier diagram is gone with it: the
+DAG writes to TimescaleDB directly, never through `storage-postgres`. `flood_extent_polygon` on
+`storage-postgres` also got an automated prune the same week ([[prune-flood-extent-polygon-rows]],
+`US-067`), the other table the same incident found growing unbounded.

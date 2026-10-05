@@ -2,9 +2,9 @@
 date: 2026-10-04
 type: plan
 branch: front-end-according-to-mock-up
-status: active
+status: complete
 tags: [plan, infra, storage, postgres, timescaledb]
-related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[netcdf-values-storage-redesign]]", "[[minio-flood-extent-pipeline]]"]
+related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[netcdf-values-storage-redesign]]", "[[minio-flood-extent-pipeline]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
 ---
 
 # Plan: narrow and compress netcdf_values onto TimescaleDB
@@ -182,3 +182,10 @@ gated on step 5's real-run verification specifically so that it is not taken on 
   request. The only step left is step 6: dropping the old `netcdf_values` on `storage-postgres`.
   Nothing further gates it now that step 5 is proven, but it hasn't run, so the old 56 GB table is
   still there and is still the only place the soak's full history lives.
+- **2026-10-05, done.** Step 6 ran: a spot-check found only 2 of 112 old `file_id`s were ever
+  backfilled into the new hypertable (both matching row for row), and the other 110 are
+  pre-migration soak data nothing in the codebase reads — so the soak's full history was never
+  actually unique to the old table once its retention window passed. On the user's go,
+  `DROP TABLE netcdf_values;` ran clean on `storage-postgres`: `minio_custom` 70 GB to 14 GB. Full
+  finding in [[2026-10-05-us-066-criterion-4-spot-check]]. This plan is complete; the story
+  [[netcdf-values-storage-redesign]] (`US-066`) is `Done`.
