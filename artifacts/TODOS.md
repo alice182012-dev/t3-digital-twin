@@ -120,7 +120,7 @@
 
 **Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
 
-**Today:** 2026-10-05, ready to start: `US-049` is done. Tests on a tiny OSM file come first, then the run on the server with the graph cache read-only (expect 67,833 rows).
+**Today:** 2026-10-05, built and tested (18 tests pass, checked on an Andorra graph: 2,820 rows for 2,820 edges, identical on two runs). Left: run `java/time-aware-routing/export-edges.sh` from the Mac on the server graph, expecting 67,833 rows, and a screenshot of its output.
 
 ## Backlog
 

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-05
 ---
 
 # Edge depth table format
@@ -65,5 +65,6 @@ The real graph has 67,833 edges and a run has 8 steps, so a real table is about 
 
 ## Open items
 
-- The hash algorithm and the file extension are not fixed. The export story decides the hash, and the Airflow task story (`US-041`) decides the file name.
+- The file extension is not fixed. The Airflow task story (`US-041`) decides the file name.
+- The hash algorithm is fixed by the export (`US-039`, built 2026-10-05). It is a SHA-256, written as 64 lowercase hex characters, over the node count, the edge count, and for each edge in id order its base node, adjacent node, point count, and points in 1e-7 degrees. `ExportEdges` writes it to `graph.json` as `graph_hash`, and the table's `graphHash` header holds the same text. See `java/time-aware-routing/README.md`. Not yet run on the server graph.
 - The Java reader (`US-043`) must pass the same bytes. The literal-bytes test is the fixture it starts from.

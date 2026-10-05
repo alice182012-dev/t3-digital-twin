@@ -24,7 +24,7 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   Given the built graph on the server, when the export command runs, then it writes one row per edge with the
   edge id and its geometry in EPSG:4326, plus a hash of the graph build, and the row count equals the graph's
   edge count.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 6. Dependencies: Story R4.
+  Priority: P0. Status: Reviewed. Estimate: M. Sprint: 6. Dependencies: Story R4 (`US-049`, done).
 
 - **Story E2 (US-040): Define the table format and write the Python reader and writer.**
   As an engineer, I want one documented file format with a reference reader and writer, so the Java engine and
@@ -91,3 +91,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-09-29, draft.** Written from [[edge-depth-table]]. No story has started.
 - **2026-10-01, draft.** Story E2 (`US-040`) is `Done`: the Python reader and writer pass 25 tests, and a table of 2,000,000 edges and 9 steps is 36.0 MB. Output rendered as `us-040-table-check-output.png`. The format is [[edge-depth-table-format]].
 - **2026-10-02, draft.** The gate of Story E7 is cleared. The user accepted the build-time limit: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth` (see [[edge-depth-table]]).
+- **2026-10-05, draft.** Story E1 (`US-039`) is `Reviewed`. `ExportEdges` in `java/time-aware-routing/` writes `edges.csv` and `graph.json` from a read-only graph cache. 18 tests pass in the module (9 new). On an Andorra import with the repo's four profiles and LM it wrote 2,820 rows for 2,820 edges, with identical output on two runs. Not done: the run on the server graph (expect 67,833 rows) and its screenshot. The hash algorithm is fixed now, see [[edge-depth-table-format]].
