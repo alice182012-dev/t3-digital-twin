@@ -104,7 +104,7 @@
 
 **Effort:** L
 **Priority:** P0
-**Depends on:** [[time-aware-routing-engine-stories]] Story R1 (`US-046`), which is done. The server image build waits for the replay still running.
+**Depends on:** [[time-aware-routing-engine-stories]] Story R1 (`US-046`), which is done. The server is free, since you paused `flood_mapping_full` on 2026-10-05.
 
 **Sprint:** 6, [[time-aware-routing-engine-stories]] Story R4 (US-049), in [[sprint-plan-2]].
 
@@ -114,7 +114,7 @@
 
 **Effort:** M
 **Priority:** P0
-**Depends on:** `US-049`, same sprint. The run on the server waits for the replay still running.
+**Depends on:** `US-049`, same sprint.
 
 **Sprint:** 6, [[edge-depth-table-stories]] Story E1 (US-039), in [[sprint-plan-2]].
 
@@ -150,7 +150,7 @@ Unfinished items carried over from Sprint 5 and Sprint 4:
 
 **Effort:** S
 **Priority:** P1
-**Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), the replay running again. The start time is still to be given.
+**Depends on:** [[carried-over-backlog]] Story 8 (`US-063`), the replay running. You paused the DAG on 2026-10-05, so the 24-hour and 48-hour readings do not exist yet. Waiting for your decision on when to read them.
 
 **Sprint:** 5, [[carried-over-backlog]] Story 12 (US-069), in [[sprint-plan-2]].
 
