@@ -2,14 +2,14 @@
 date_open: 2026-10-05
 date_closed: 
 type: blocker
-status: open
+status: monitoring
 severity: P1
 subsystem: airflow-pipeline
 approaches_tried: 1
 approaches_remaining: "confirm the cause on the server, from the 9c log after the pull, and the plan of a slow step if one is cancelled"
 tags: [blocker, airflow, postgres, edge-depth-table, replay]
 related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-3]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-06
 ---
 
 # 9c sampling step runs over 770 seconds
@@ -65,3 +65,4 @@ leave the table stale for a run. The cause is unproven until the server shows it
 
 - **2026-10-05, open.** Found during the replay by the user ("the task 9c is taking really long"). Case under rule 11: does not block build.
 - **2026-10-05, open.** Approach 1 built and pushed (`5e358bf`). Waiting for the pull on the server and the next 9c log.
+- **2026-10-06, monitoring.** The server working directory is at `4d262ef`, which contains the fix (`5e358bf`), so the pull is done. Run `20261006T104500` (slot 03:30 UTC, task started 10:41:12 +07) took 51.1 s: 8 steps of 5.7 to 6.8 s, 67,833 edges, 1,085,487 bytes, published. The log prints no `ANALYZE` line and the pull time is unknown, so it is not proven that this run used the guard. Next evidence: `last_analyze` of `flood_depth_raster_tile` against the run start, and several more 9c runs under load. Close it as `resolved` when they stay near 50 s.
