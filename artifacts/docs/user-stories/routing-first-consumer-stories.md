@@ -42,14 +42,20 @@ engine proof runs).
   `US-055` for the server run.
   Evidence: None yet.
 
-- **Story C3 (US-073): Group the routing-owned tasks in the DAG.**
-  As a maintainer, I want the tasks that only routing needs shown as one group, so the boundary is visible.
-  Given `dags/flood_mapping_dag.py`, when the graph is parsed, then `load_road_segments`, `flood_on_roads` and
-  `9c_build_edge_depth_table` sit in a TaskGroup `routing_adapter` that depends only on the core's published
-  output, and the existing DAG graph tests pass unchanged apart from the task ids' group prefix. The group stays
-  in the same DAG, because the 9c timing limit of `US-045` is easier to hold there.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 11. Dependencies: None. Task ids change with the group
-  prefix, so any reference to them (logs, `scripts/pipeline_margins`, the proof tooling) must be checked first.
+- **Story C3 (US-073): Move the routing-owned tasks into their own DAG, triggered by the core's published output.**
+  As a maintainer, I want the tasks that only routing needs to run in a separate DAG, so a routing failure or
+  redeploy never touches the core run, and the next application can plug in the same way.
+  Given the core DAG, when `9b_load_depth_raster` finishes, then it emits an Airflow asset event carrying the run
+  id, and a DAG `routing_adapter` scheduled on that asset runs `load_road_segments`, `flood_on_roads` and
+  `9c_build_edge_depth_table` for that run. The core DAG no longer contains those tasks and its graph tests are
+  updated. A routing failure leaves the core run green. 9c still ends within 5 minutes of `3_calculate_depth`
+  (the limit of `US-045`), measured once on the server, and runs in a pool so it does not compete with depth for
+  worker slots. The asset event is the "run X published" signal in the contract of Story C1.
+  Fallback if the asset trigger gives trouble: a TaskGroup `routing_adapter` inside the same DAG.
+  Priority: P2. Status: Not started. Estimate: M. Sprint: 11. Dependencies: Story C1 (the contract names the
+  signal), and `US-055` for the server timing, since the proof and the replay rely on today's DAG shape. Task ids
+  move to a new `dag_id`, so `scripts/pipeline_margins`, the proof tooling and anything keyed on
+  `flood_mapping_full` task ids must be checked first.
   Evidence: None yet.
 
 - **Story C4 (US-074): Give the vehicle thresholds one owner.**
@@ -73,3 +79,4 @@ engine proof runs).
 
 - **2026-10-06, draft.** Written at the user's request after the discussion of making the system ready for other
   applications, with routing as the first customer. Placed in Sprint 11 of [[sprint-plan-3]].
+- **2026-10-06, draft.** Story C3 changed from a TaskGroup (S) to a separate DAG triggered by an asset event (M), at the user's request. The earlier reason for one DAG, the 9c timing limit, does not need it: 9c depends only on `9b_load_depth_raster`, so an asset trigger adds seconds. The TaskGroup stays as the fallback.

@@ -30,22 +30,25 @@ first customer. The scratch note with the cost and benefit of the options is `ma
 
 ## Decisions
 
-1. Keep the routing tasks in the same DAG. A separate DAG risks the 9c timing limit of `US-045`.
+1. Move the routing tasks into a separate DAG `routing_adapter`, scheduled on an Airflow asset that `9b_load_depth_raster` emits (changed 2026-10-06 at the user's request). The first draft kept them in one DAG for the 9c timing limit of `US-045`, but 9c depends only on `9b`, so an asset trigger adds seconds. The asset event is the contract's "run published" signal. A TaskGroup in the same DAG is the fallback.
 2. No read API and no per-run export now. Both wait for a second consumer that shows which shape it wants.
 3. The core's simulation and pipeline code do not change.
 
 ## Steps
 
-1. `US-071` the contract page and the contract test. 2. `US-072` the read-only role. 3. `US-073` the TaskGroup.
-4. `US-074` the thresholds' owner. 5. `US-075` the guard test. Order: US-071 first, US-072 and US-075 after it,
-US-073 and US-074 any time.
+1. `US-071` the contract page and the contract test. 2. `US-072` the read-only role. 3. `US-073` the separate DAG.
+4. `US-074` the thresholds' owner. 5. `US-075` the guard test. Order: US-071 first, then US-072, US-073 and US-075.
+US-074 any time.
 
 ## Risks
 
-- The TaskGroup prefix changes task ids. Logs, `scripts/pipeline_margins` and the proof tooling may name them.
+- Moving tasks to a new `dag_id` changes where their logs and task ids live. `scripts/pipeline_margins` and the `US-055` proof tooling may name them. Do it after `US-055`.
+- The 9c limit (end within 5 minutes of `3_calculate_depth`) needs one measurement on the server with the asset trigger. A pool keeps routing tasks from taking depth's worker slots.
+- The routing DAG needs the run id from the asset event, or must query the newest published run.
 - The read-only role needs a server change. It waits for `US-055` and the end of the replay.
 - Sprint 11 also holds `US-033` (M), so the sprint is fuller than the others (see [[sprint-plan-3]] Status history).
 
 ## Status history
 
 - **2026-10-06, active.** Plan written with the stories. Nothing built.
+- **2026-10-06, active.** Decision 1 changed from one DAG to a separate DAG (`US-073`, now M).
