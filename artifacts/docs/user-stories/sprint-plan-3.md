@@ -6,7 +6,7 @@ plan_number: 3
 start_date: 2026-11-16
 end_date: 2026-12-13
 tags: [user-story, sprint-plan, routing, graphhopper]
-related: ["[[9c-sampling-step-runs-over-770-seconds]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]"]
+related: ["[[9c-sampling-step-runs-over-770-seconds]]", "[[routing-first-consumer-stories]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]"]
 ---
 
 # Sprint plan 3: the engine in the backend, the advice, and the rollout
@@ -18,7 +18,7 @@ so its sprint numbers continue at 9. It covers four weeks (`.claude/CLAUDE.md`, 
 ## Why these four sprints
 
 Four sprints because a plan covers four weeks. Sprints 9 and 10 hold the remaining engine work. Sprint 11 holds a
-carried, dependency-free item. Sprint 12 is spare capacity for slips, and no story is placed there yet.
+carried, dependency-free item and the routing-as-first-consumer stories. Sprint 12 is spare capacity for slips, and no story is placed there yet.
 
 Calendar, from `start_date` in the frontmatter:
 
@@ -31,7 +31,7 @@ Calendar, from `start_date` in the frontmatter:
 
 - **Sprint 9** adds the other two profiles, the backend switch with its fallback, and the departure endpoint.
 - **Sprint 10** shows the advice in the alert and rolls the engine out.
-- **Sprint 11** writes `DESIGN.md` from the shipped UI.
+- **Sprint 11** writes `DESIGN.md` from the shipped UI and makes routing the first consumer of an explicit core output contract ([[routing-first-consumer-stories]]).
 - **Sprint 12** is spare.
 
 The advice waits for the table because option C reads depth by edge id. That puts the "wait until" alert in Sprint 10,
@@ -67,15 +67,20 @@ factor, and the flag goes on with evidence.
 | US-070 | P1 | Stop a slow sampling step from holding the database | S | [[edge-depth-table-stories]] E8 | Story E3 | None yet | - | Reviewed |
 | US-055 | P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate cleared 2026-10-02: the user set the latency factor to 2 | None yet | - | In progress |
 
-## Sprint 11: DESIGN.md
+## Sprint 11: DESIGN.md and the routing output contract
 
 **Dates:** 2026-11-30 to 2026-12-06 (Monday to Sunday)
 
-**Sprint goal:** the project has one versioned file of design tokens extracted from the shipped UI.
+**Sprint goal:** the project has one versioned file of design tokens extracted from the shipped UI, and routing reads the core's output only through a stated, tested contract.
 
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
 | US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | None | None yet | - | Not started |
+| US-071 | P1 | Write the output contract and a test that checks it against the live schema | M | [[routing-first-consumer-stories]] C1 | None | None yet | - | Not started |
+| US-072 | P1 | Run the routing backend on a read-only database role | S | [[routing-first-consumer-stories]] C2 | Story C1, and `US-055` for the server run | None yet | - | Not started |
+| US-073 | P2 | Group the routing-owned tasks in the DAG | S | [[routing-first-consumer-stories]] C3 | None | None yet | - | Not started |
+| US-074 | P2 | Give the vehicle thresholds one owner | S | [[routing-first-consumer-stories]] C4 | None | None yet | - | Not started |
+| US-075 | P2 | Fail a test when the backend reads a table outside the contract | S | [[routing-first-consumer-stories]] C5 | Story C1 | None yet | - | Not started |
 
 ## Sprint 12: spare capacity
 
@@ -131,3 +136,4 @@ file and in this plan.
 - **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R9 (`US-054`) moved from `Not started` to `Reviewed`. Built tests first in the frontend (25 new tests, 304 in all pass, `tsc` clean, production build compiles). It stays `Reviewed` until the alert is seen against the real backend in `US-055`. Plan: [[wait-until-alert]].
 - **2026-10-05, active.** [[time-aware-routing-engine-stories]] Story R10 (`US-055`) moved from `Not started` to `In progress`. The proof tooling and the one-shot runbook are built and tested (`scripts/routing_proof/`, plan [[engine-server-proof-and-rollout]]). The evidence is one run of `rollout.ps1` on the server after the 48-hour replay ends, which is also the first run of that script. `US-052`, `US-051`, `US-053`, and `US-054` stay `Reviewed` until then.
 - **2026-10-05, active.** New row `US-070` (Sprint 10, P1, S): task 9c ran over 770 s in one step during the replay. Blocker [[9c-sampling-step-runs-over-770-seconds]], case under rule 11: does not block build in the next sprint, so the fix was built here and Sprint 11 is not held. `ANALYZE` before sampling and a 120 s step limit, pushed as `5e358bf`, status `Reviewed` until the server shows the next 9c log. `US-045` and `US-055` read its result.
+- **2026-10-06, active.** New rows `US-071` to `US-075` in Sprint 11, at the user's request: make routing the first consumer of an explicit core output contract, so the system is ready for other applications without building them ([[routing-first-consumer-stories]], plan [[routing-first-consumer-contract]]). Sprint 11 now holds one M carried row (`US-033`, P3) and five new rows (one M, four S), so it is fuller than the other sprints. If it slips, `US-033` (P3, no dependency) is the first to move to Sprint 12, which needs the user's go because the user placed it. `US-072` needs the server, so its evidence waits for `US-055`. No blocker stops Sprint 11, and the stories are not yet in `TODOS.md` because Sprint 11 has not started (rule 9).
