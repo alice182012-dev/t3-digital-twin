@@ -9,9 +9,23 @@ Cut a new event:
 
 List the runs the rain gate lets through, as chains with their start times:
     python3 rain_replay.py preview EVENT.csv START_UTC THRESHOLD_MM_HR [HOURS]
+
+Print the first 15-minute slot at least LEAD_MINUTES after NOW_UTC:
+    python3 rain_replay.py next-slot NOW_UTC LEAD_MINUTES
+
+Check that a replay setting can run, and print its event, runs, chains, and unpause time:
+    python3 rain_replay.py check EVENT.csv START_UTC THRESHOLD_MM_HR
+
+Print the rain mode that this environment selects: live, replay, or fixed-rate:
+    python3 rain_replay.py status [--expect-mode MODE] [--expect-start START_UTC]
+
+`check` and `status` exit with code 1 and a one-line reason when the setting cannot run, or when the
+status differs from an expected value.
 """
 import argparse
 import csv
+import os
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple
 
@@ -19,9 +33,19 @@ SOURCE_RATE_COLUMN = "precipitation_mm_hr"
 SOURCE_TIME_COLUMN = "timestamp_utc"
 EVENT_HEADER = ["offset_minutes", "precipitation_mm_hr"]
 LOCAL_ZONE = timezone(timedelta(hours=7))
+SLOT_MINUTES = 15
+LOOKAHEAD_HOURS = 2
+# compose.yml passes ${FLOOD_RAIN_THRESHOLD_MM_HR:-5}, so a blank gate is 5 in the worker.
+DEFAULT_GATE_MM_HR = "5"
 # A run saves states valid 1 and 2 slots later, and a run hotstarts from a state at most 2 slots old.
 # So a run hotstarts when the last simulating slot is at most 4 slots earlier, and cold-starts otherwise.
 HOTSTART_REACH_SLOTS = 4
+
+
+class ReplaySetting(NamedTuple):
+    event_path: str
+    start: datetime
+    gate_mm_hr: float
 
 
 def _parse_utc(value):
@@ -31,6 +55,22 @@ def _parse_utc(value):
 
 def _iso_z(moment):
     return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _local(moment):
+    return moment.astimezone(LOCAL_ZONE).strftime("%Y-%m-%d %H:%M")
+
+
+def _slot_floor(moment):
+    utc = moment.astimezone(timezone.utc)
+    return utc.replace(minute=utc.minute - utc.minute % SLOT_MINUTES, second=0, microsecond=0)
+
+
+def next_slot(now, lead_minutes):
+    """The first slot at or after `now + lead_minutes`."""
+    earliest = now.astimezone(timezone.utc) + timedelta(minutes=lead_minutes)
+    floor = _slot_floor(earliest)
+    return floor if floor == earliest else floor + timedelta(minutes=SLOT_MINUTES)
 
 
 def read_source(path):
@@ -64,6 +104,11 @@ def load_event(path):
         if next(reader) != EVENT_HEADER:
             raise ValueError(f"{path} does not have the header {','.join(EVENT_HEADER)}")
         return [(int(offset), float(rate)) for offset, rate in reader]
+
+
+def total_mm(event):
+    step_hours = (event[1][0] - event[0][0]) / 60
+    return sum(rate for _, rate in event) * step_hours
 
 
 def _rate_at(event, offset_minutes):
@@ -137,6 +182,105 @@ def describe(slots, event_start, threshold):
     return lines
 
 
+def parse_start(value):
+    try:
+        return _parse_utc(value)
+    except ValueError:
+        raise ValueError(f"the start {value!r} is not a time") from None
+
+
+def parse_gate(value):
+    try:
+        return float(value)
+    except ValueError:
+        raise ValueError(f"the gate {value!r} is not a number") from None
+
+
+def load_replay(setting):
+    """The event of a setting and the plan of its runs. ValueError with a one-line reason when it cannot replay."""
+    if setting.start != _slot_floor(setting.start):
+        raise ValueError(f"the start {_iso_z(setting.start)} is not on a {SLOT_MINUTES}-minute slot")
+    try:
+        event = load_event(setting.event_path)
+    except StopIteration:
+        raise ValueError(f"{setting.event_path} does not load: it is empty") from None
+    except (OSError, ValueError) as error:
+        raise ValueError(f"{setting.event_path} does not load: {error}") from None
+    if len(event) < 2:
+        raise ValueError(f"{setting.event_path} does not load: it has fewer than two rows")
+    hours = event[-1][0] / 60
+    slots = simulating_slots(event, setting.start, setting.gate_mm_hr, hours, LOOKAHEAD_HOURS, SLOT_MINUTES)
+    if not any(slot.simulates for slot in slots):
+        raise ValueError(f"gate {setting.gate_mm_hr:g} mm/h: no run of the event simulates")
+    return event, slots
+
+
+def _event_line(path, event):
+    peak = max(rate for _, rate in event)
+    return f"event {path}: {len(event)} rows, {total_mm(event):.1f} mm, peak {peak:.1f} mm/h"
+
+
+def check_lines(setting):
+    event, slots = load_replay(setting)
+    return [
+        _event_line(setting.event_path, event),
+        *describe(slots, setting.start, setting.gate_mm_hr),
+        f"unpause flood_mapping_full before {_local(setting.start)} +07 ({_iso_z(setting.start)})",
+    ]
+
+
+def read_rain_env(env):
+    """The rain that `env` selects: ("live", None), ("fixed-rate", mm_per_hour), or ("replay", ReplaySetting).
+
+    Rejects the half-set or mixed combination that `create_simulation.get_rain_forecast` rejects, with its message.
+    """
+    replay_file = env.get("FLOOD_TEST_RAIN_CSV", "").strip()
+    replay_start = env.get("FLOOD_TEST_RAIN_START", "").strip()
+    test_rain = env.get("FLOOD_TEST_RAIN_MM_HR", "").strip()
+    if bool(replay_file) != bool(replay_start) or (replay_file and test_rain):
+        raise ValueError(
+            "Set FLOOD_TEST_RAIN_CSV together with FLOOD_TEST_RAIN_START and without FLOOD_TEST_RAIN_MM_HR, "
+            "or set none of them"
+        )
+    if replay_file:
+        gate = env.get("FLOOD_RAIN_THRESHOLD_MM_HR", "").strip() or DEFAULT_GATE_MM_HR
+        return "replay", ReplaySetting(replay_file, parse_start(replay_start), parse_gate(gate))
+    if test_rain:
+        return "fixed-rate", parse_gate(test_rain)
+    return "live", None
+
+
+def status_lines(mode, detail, now):
+    if mode == "live":
+        return ["mode live"]
+    if mode == "fixed-rate":
+        return ["mode fixed-rate", f"rate {detail:g} mm/h"]
+    event, slots = load_replay(detail)
+    simulating = [detail.start + timedelta(minutes=slot.offset_minutes) for slot in slots if slot.simulates]
+    slot = _slot_floor(now)
+    rate = _rate_at(event, (slot - detail.start).total_seconds() / 60)
+    return [
+        "mode replay",
+        _event_line(detail.event_path, event),
+        f"start {_iso_z(detail.start)} ({_local(detail.start)} +07)",
+        f"gate {detail.gate_mm_hr:g} mm/h: {len(simulating)} of {len(slots)} runs simulate, "
+        f"first {_local(simulating[0])} +07, last {_local(simulating[-1])} +07",
+        f"slot {_iso_z(slot)} rate {rate:g} mm/h, next slot {_iso_z(slot + timedelta(minutes=SLOT_MINUTES))}",
+    ]
+
+
+def _status(expect_mode, expect_start):
+    mode, detail = read_rain_env(os.environ)
+    print("\n".join(status_lines(mode, detail, datetime.now(timezone.utc))))
+    if expect_mode and mode != expect_mode:
+        raise ValueError(f"mode is {mode}, expected {expect_mode}")
+    if expect_start:
+        actual = _iso_z(detail.start) if mode == "replay" else "unset"
+        expected = _iso_z(parse_start(expect_start))
+        if actual != expected:
+            raise ValueError(f"start is {actual}, expected {expected}")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -150,15 +294,36 @@ def main(argv=None):
     preview.add_argument("start_utc")
     preview.add_argument("threshold", type=float)
     preview.add_argument("hours", nargs="?", type=float, default=48)
+    slot = sub.add_parser("next-slot")
+    slot.add_argument("now_utc")
+    slot.add_argument("lead_minutes", type=int)
+    check = sub.add_parser("check")
+    check.add_argument("event")
+    check.add_argument("start_utc")
+    check.add_argument("threshold")
+    status = sub.add_parser("status")
+    status.add_argument("--expect-mode", choices=["live", "replay", "fixed-rate"])
+    status.add_argument("--expect-start")
     args = parser.parse_args(argv)
     if args.command == "cut":
         event = cut_window(read_source(args.source), args.start_utc, args.hours)
         write_event(args.out, event)
-        print(f"{args.out}: {len(event)} rows, {sum(rate for _, rate in event) * 0.5:.1f} mm, peak {max(rate for _, rate in event)} mm/h")
-    else:
+        print(f"{args.out}: {len(event)} rows, {total_mm(event):.1f} mm, peak {max(rate for _, rate in event)} mm/h")
+    elif args.command == "preview":
         event_start = _parse_utc(args.start_utc)
-        slots = simulating_slots(load_event(args.event), event_start, args.threshold, args.hours, 2, 15)
+        slots = simulating_slots(load_event(args.event), event_start, args.threshold, args.hours, LOOKAHEAD_HOURS, SLOT_MINUTES)
         print("\n".join(describe(slots, event_start, args.threshold)))
+    elif args.command == "next-slot":
+        print(_iso_z(next_slot(_parse_utc(args.now_utc), args.lead_minutes)))
+    else:
+        try:
+            if args.command == "check":
+                setting = ReplaySetting(args.event, parse_start(args.start_utc), parse_gate(args.threshold))
+                print("\n".join(check_lines(setting)))
+            else:
+                _status(args.expect_mode, args.expect_start)
+        except ValueError as error:
+            sys.exit(str(error))
 
 
 if __name__ == "__main__":
