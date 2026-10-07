@@ -86,7 +86,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C1 (US-071), in [[sprint-plan-3]].
 
-**Status note:** `Reviewed`. Built on branch `modular` (commits `888c86e`, `27e8957`). The live schema and key check passed in the server's backend container on 2026-10-07 and failed on a deliberately wrong page. Evidence screenshot pending.
+**Status note:** `Reviewed`. Built on branch `modular` (commits `888c86e`, `27e8957`). The live schema and key check passed in the server's backend container on 2026-10-07 and failed on a deliberately wrong page. Server step: none beyond the plan, the live check already passed. Evidence screenshot pending.
 
 ### Active - US-072 Run the routing backend on a read-only database role
 
@@ -98,7 +98,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C2 (US-072), in [[sprint-plan-3]].
 
-**Status note:** `Reviewed`. Built on `modular` (`56426ed`). Offline tests pass. The role script, the live test, and the endpoint checks run on the server after the replay, with the steps in the commit report.
+**Status note:** `Reviewed`. Built on `modular` (`56426ed`). Offline tests pass. The role script, the live test, and the endpoint checks run on the server after the replay. Add `ROUTING_READER_PASSWORD` to `.env` and create the role before `rollout.ps1` recreates the backend. Steps 3, 4, and 7 of [[sprint-11-server-rollout]].
 
 ### Active - US-073 Move the routing-owned tasks into their own DAG, triggered by the core's published output
 
@@ -110,7 +110,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C3 (US-073), in [[sprint-plan-3]].
 
-**Status note:** `Reviewed`. Built on `modular` (`77169c3`). Real Airflow 3.1.7 on the server serialized both DAGs. No event has fired and 9c's 5-minute limit is not measured. The pool `routing_adapter` must be created by hand first.
+**Status note:** `Reviewed`. Built on `modular` (`77169c3`). Real Airflow 3.1.7 on the server serialized both DAGs. No event has fired and 9c's 5-minute limit is not measured. Create the pool `routing_adapter` first (step 5 of [[sprint-11-server-rollout]]), then unpause the core DAG for about one hour and read the events (steps 9 to 12).
 
 ### Active - US-074 Give the vehicle thresholds one owner
 

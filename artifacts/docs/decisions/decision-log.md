@@ -216,6 +216,18 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Affects:** [[frontend-mockup-recheck-stories]] Stories 4 (`US-079`) and 5 (`US-080`). The legend part of [[map-shows-forecast-not-now]] is settled.
 - **Revisit if:** the project is published outside the team, or the user wants the mockup's "Updated" wording back.
 
+## D-011: Build all of Sprint 11 before the next server run, and deploy once
+
+- **Date:** 2026-10-07
+- **Status:** active. Decided by the user on 2026-10-07.
+- **Decided by:** the user, when asked to continue after `US-071` to `US-075` were scoped.
+- **Decision:** All Sprint 11 stories are built and tested locally on the branch `modular` before any further 48-hour run. The server gets one deploy of the engine stories and Sprint 11 together, and one short DAG run (about one hour) instead of a second replay.
+- **Why:** A 48-hour run costs a lot, and every story that needs the server can share one run. The ordering is in [[sprint-11-server-rollout]].
+- **Alternatives:** Deploy `US-055` alone on the old DAG shape and the Sprint 11 stories later. That costs a second deploy.
+- **Evidence:** `modular` holds `US-051` to `US-054` and `US-071` to `US-075`, each `Reviewed`. `rollout.ps1` only checks that the core DAG is paused, and `table_timing.ps1` was rewritten for `routing_adapter`, so the old shape is not required.
+- **Affects:** [[sprint-plan-3]] Sprints 9 to 11, and the stories that wait on `US-055`.
+- **Revisit if:** the first run of `rollout.ps1` fails because of the role or the DAG move, which would argue for the two-deploy order.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and
