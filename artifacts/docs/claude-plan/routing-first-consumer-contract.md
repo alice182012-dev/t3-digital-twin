@@ -52,3 +52,5 @@ US-074 any time.
 
 - **2026-10-06, active.** Plan written with the stories. Nothing built.
 - **2026-10-06, active.** Decision 1 changed from one DAG to a separate DAG (`US-073`, now M).
+- **2026-10-07, active.** Steps 1 to 5 are built on the branch `modular` (`US-071` to `US-075`, all `Reviewed`). Item 5 under "What routing reads from the core today" describes 2026-10-06: since `77169c3` the three routing tasks `load_road_segments`, `flood_on_roads`, and `9c_build_edge_depth_table` are in the DAG `routing_adapter`, not in the core DAG. The concept page [[3di-simulation-orchestration]] has the current shape. Not deployed.
+

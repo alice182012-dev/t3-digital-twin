@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
 related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-07
 ---
 
 # Edge depth table format
@@ -65,12 +65,12 @@ The real graph has 67,833 edges and a run has 8 steps, so a real table is about 
 
 ## Build task (US-041)
 
-Task `9c_build_edge_depth_table` of `flood_mapping_full` writes `<EDGE_TABLE_DIR>/<run_ts>.bin` after `9b_load_depth_raster`. The code is `scripts/edge_depth/`. The design and the reasons are in [[edge-depth-table-airflow-task]].
+Task `9c_build_edge_depth_table` of the DAG `routing_adapter` writes `<EDGE_TABLE_DIR>/<run_ts>.bin` after `9b_load_depth_raster` of `flood_mapping_full` emits its asset event. Until commit `77169c3` on the branch `modular` is deployed, the task still runs inside `flood_mapping_full`. The code is `scripts/edge_depth/`. The design and the reasons are in [[edge-depth-table-airflow-task]].
 
 - **Input, the export.** `graph.json` and `edges.csv` from `ExportEdges`, in `EDGE_EXPORT_DIR` (default `data/mapping/graph_export`). Airflow cannot run the export, because it runs in the GraphHopper image, so an operator writes the two files with `java/time-aware-routing/export-edges.sh` and `EXPORT_DEST`. `graph_edges.load_graph_edges` copies them into the PostGIS tables `graph_edge` and `graph_edge_export` when the hash differs from the loaded one, in one transaction.
 - **Sampling.** The method and the SQL of `flood_on_roads`, with `graph_edge` in place of `road_segment`: the midpoint of every metre along the edge, matched to its pixel by grid arithmetic, the deepest sample. Metres are rounded to whole centimetres and capped at 65,535. An edge that touches no wet pixel reads 0.
 - **Output.** `<run_ts>.bin` in the format above, with the export's graph hash, the run name, and the step times in UTC. It is written under a temporary name and renamed. The `latest` pointer, retention, and the storage choice belong to `US-042`.
-- **A failure does not fail the run.** `edge_table_done` is a no-op leaf with `trigger_rule="all_done"`. `hotstart_policy` lets a run hotstart only when the previous slot's run succeeded, so a red DAG run would force cold starts.
+- **A failure does not fail the core run.** The task is in `routing_adapter`, and nothing in `flood_mapping_full` waits for it. `hotstart_policy` lets a run hotstart only when the previous slot's run succeeded, so a red core run would force cold starts. A failed 9c turns only the `routing_adapter` run red. The no-op leaf `edge_table_done` that did this job inside the core DAG is gone.
 - **Report.** The task prints and pushes to XCom (`edge_depth_table`) the edge and step counts, the wet edges per step, the sampling seconds, the file size, and the total seconds.
 - **Check.** `scripts/edge_depth/spot_check.py` compares the table with a direct `ST_Value` reading at the same sample points. `scripts/edge_depth/server_check.sh` builds a retained run's table in the Airflow worker on the server and runs the check.
 

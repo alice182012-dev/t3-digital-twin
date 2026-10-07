@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-07
 ---
 
 # 3Di simulation orchestration
@@ -24,36 +24,69 @@ The last section covers the manual two-event test DAG, which runs the same steps
         v
 1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 9_build_flood_tiles
         |                        |                      |
-        |                        v                      +--> 9b_load_depth_raster --+
-        |               3b_upload_netcdf_postgres                                   |
-        v                                                                           v
-0b_ensure_schema --> load_road_segments --------------------------------------> flood_on_roads
+        |                        v                      +--> 9b_load_depth_raster
+        |               3b_upload_netcdf_postgres
+        v
+0b_ensure_schema
 ```
 
 The diagram leaves out the edges from `0b_ensure_schema` to `3b_upload_netcdf_postgres`,
-`9_build_flood_tiles`, `9b_load_depth_raster`, and `flood_on_roads`.
+`9_build_flood_tiles`, and `9b_load_depth_raster`. The DAG has 8 tasks. Since 2026-10-07 (commit
+`77169c3` on the branch `modular`, not yet deployed) the routing tasks are in their own DAG,
+`routing_adapter`, described in the next section.
 
 `0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
-`9_build_flood_tiles`, `9b_load_depth_raster`, `load_road_segments`, and `flood_on_roads`, since
-each needs its PostGIS tables to exist first. It creates the netcdf tables that
-`3b_upload_netcdf_postgres` writes, `road_segment`, and `flood_road_values` with its `segment_id`
-column.
+`9_build_flood_tiles`, and `9b_load_depth_raster`, since each needs its PostGIS tables to exist
+first. It creates the netcdf tables that `3b_upload_netcdf_postgres` writes, `flood_road_values`
+with its `segment_id` column, and `road_segment` and `graph_edge`, which only `routing_adapter`
+uses. It runs before `9b_load_depth_raster`, so those tables exist before the first asset event.
+
+Task `9b_load_depth_raster` declares the asset `FLOOD_DEPTH_RASTER` (`dags/core_assets.py`) as an
+outlet and sets `run_ts` in the event's `extra`. Airflow emits the event only when the task
+succeeds, so a dry cycle emits none. The event is the signal that a run's depth tiles are in
+`flood_depth_raster_tile`. See [[core-output-contract]], "Readiness".
+
+Tasks `9_build_flood_tiles` and `9b_load_depth_raster` name the run with
+`flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
+the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG, per the plan
+[[raster-first-flood-pipeline]].
+
+## The routing_adapter DAG
+
+`dags/routing_adapter_dag.py` has the schedule `[FLOOD_DEPTH_RASTER]`, so it runs after each
+`9b_load_depth_raster` success. It has three tasks. All use the Airflow pool `routing_adapter`,
+which has one slot, so routing holds at most one worker slot and never two writers on
+`road_segment`. Someone creates the pool once by hand (README, "Create the Airflow pools").
+Nothing in `flood_mapping_full` waits for these tasks, so a failure here leaves the core run
+green and does not block the next slot from hotstarting.
+
+```
+load_road_segments --> flood_on_roads
+
+9c_build_edge_depth_table
+```
+
+`published_run_ts` gives each task its run. It reads `run_ts` from the triggering asset events. If
+the scheduler folds several events into one run, the newest `run_ts` wins, the same rule as the
+`latest` pointer of the edge depth table. A manual run has no triggering event and reads the newest
+event that `9b_load_depth_raster` ever emitted.
 
 `load_road_segments` makes `road_segment` match the roads file each cycle. An unchanged file reports
 0 inserted, 0 updated, and 0 deleted. A bad file fails the task before anything is written. See
 [[road-segment-table]].
 
-`flood_on_roads` waits for `9b_load_depth_raster`, `load_road_segments`, and `0b_ensure_schema`. It
-samples the run's tiles along each road piece and writes `flood_road_values`, the table the routing
-backend reads. See [[flood-on-roads]].
+`flood_on_roads` waits for `load_road_segments`. It samples the run's tiles along each road piece
+and writes `flood_road_values`, the table the routing backend reads. It replaced the GeoJSON chain
+as the writer on 2026-09-25. See [[flood-on-roads]].
 
-`9c_build_edge_depth_table` waits for `9b_load_depth_raster`. It samples the run's tiles along every GraphHopper edge and writes `<run>.bin`, the edge depth table, into `EDGE_TABLE_DIR`. It reads the export of the graph's edges from `EDGE_EXPORT_DIR`, then publishes the table (US-042): `latest` points at it, only forward, and the newest `EDGE_TABLE_KEEP_RUNS` stay. `EDGE_TABLE_DIR` is the Docker volume `edge-depth-tables`. Nothing reads the table yet, and the routing engine falls back to today's model without it, so the task must not fail the DAG run: `edge_table_done`, a no-op with `trigger_rule="all_done"`, is the leaf after it. A failure shows red on `9c` and the run stays green, which keeps the next slot allowed to hotstart. See [[edge-depth-table-format]], "Build task".
-
-Tasks `9_build_flood_tiles`, `9b_load_depth_raster`, and `flood_on_roads` name the run with
-`flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
-the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG, per the plan
-[[raster-first-flood-pipeline]]. `flood_on_roads` replaced it as the writer of `flood_road_values`
-on 2026-09-25.
+`9c_build_edge_depth_table` has no upstream task, because the event already says the tiles are
+loaded. It has the highest priority in the pool, so it takes the slot before the road tasks. It
+samples the run's tiles along every GraphHopper edge and writes `<run>.bin`, the edge depth table,
+into `EDGE_TABLE_DIR`. It reads the export of the graph's edges from `EDGE_EXPORT_DIR`, then
+publishes the table (US-042): `latest` points at it, only forward, and the newest
+`EDGE_TABLE_KEEP_RUNS` stay. `EDGE_TABLE_DIR` is the Docker volume `edge-depth-tables`. The limit
+of `US-045` is that it ends within 5 minutes of `3_calculate_depth`. The asset trigger is not yet
+measured against that limit. See [[edge-depth-table-format]], "Build task".
 
 **Schedule.** The DAG runs on the cron `*/15 * * * *` with `catchup=False` and `max_active_runs=2`
 (`dags/flood_mapping_dag.py`), following the design in [[map-shows-forecast-not-now]]. The repository

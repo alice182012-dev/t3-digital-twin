@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [architecture, diagram]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]", "[[netcdf-values-storage-redesign]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-07
 ---
 # Block diagram: T3-Digital-Twin architecture
 
@@ -28,6 +28,7 @@ flowchart TB
 
   subgraph PIPE["Simulation & postprocessing"]
     AIRFLOW["Airflow DAG<br/>flood_mapping_dag.py"]:::built
+    ADAPTER["Airflow DAG routing_adapter<br/>(runs on the 9b asset event)"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
     NETCDF["netcdf_to_pg.py<br/>(task 3b_upload_netcdf_postgres)"]:::built
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
@@ -61,6 +62,10 @@ flowchart TB
   HE -.->|model, templates| ThreeDI
   AIRFLOW --> DEPTH
   AIRFLOW --> NETCDF
+  RASTERLOAD -->|asset event, run_ts| ADAPTER
+  ADAPTER --> ROADLOAD
+  ADAPTER --> ROUTEEXT
+  ADAPTER --> EDGETABLE
   NETCDF -->|mesh, variables, values| TSDB
   DEPTH --> RASTERLOAD
   RASTERLOAD -->|flood_depth_raster_tile| PG
@@ -94,8 +99,9 @@ flowchart TB
 The GeoJSON chain that used to write `flood_road_values` (`scripts/mapping/extract_geojson_full.py`
 through `scripts/database/geojson_to_pg.py`) left `dags/flood_mapping_dag.py` on 2026-09-24. On
 2026-09-25 the DAG task `flood_on_roads` took over as the writer. It reads the run's tiles from
-`flood_depth_raster_tile` and the road pieces from `road_segment`, and runs after
-`9b_load_depth_raster` and `load_road_segments`. Each row's `depth` is the deepest 1 m sample along
+`flood_depth_raster_tile` and the road pieces from `road_segment`. Since 2026-10-07 it runs in the
+DAG `routing_adapter`, after `load_road_segments`, on the asset event of `9b_load_depth_raster`
+(commit `77169c3` on the branch `modular`, not yet deployed). Each row's `depth` is the deepest 1 m sample along
 a road piece, as D-006 in [[decision-log]] records. `floodmap-backend` reads `flood_road_values` for
 routing, as before. The road loader and flood-on-roads nodes are marked Built because their code is
 in the DAG, but neither task has run on the server yet. The plan is [[raster-first-flood-pipeline]].
