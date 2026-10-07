@@ -411,8 +411,10 @@ services:
       POSTGRES_HOST: storage-postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
-      POSTGRES_USER: ${POSTGRES_USER:-minio_custom}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # US-072. The backend connects as the read-only role that scripts/database/create_routing_reader_role.py makes,
+      # never as the writer. Compose refuses to start without the reader's password instead of falling back.
+      POSTGRES_USER: ${ROUTING_READER_USER:-routing_reader}
+      POSTGRES_PASSWORD: ${ROUTING_READER_PASSWORD:?Set ROUTING_READER_PASSWORD in .env}
       PHOTON_BASE_URL: ${PHOTON_BASE_URL:-https://photon.komoot.io}
       # US-052. On: POST /route goes to the time-aware engine first and falls back to today's request when the engine
       # cannot run (missing, stale, or mismatched table), and the response says so. Off: today's behavior exactly.

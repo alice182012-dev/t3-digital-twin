@@ -165,3 +165,13 @@ The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_dep
 | `netcdf_values` | 48 hours | TimescaleDB retention policy, `scripts/database/create_timescale_tables.py:119` |
 
 The prunes of the three run tables and the bucket keep the run being published, even when it is older than the newest 8. The prune of the edge depth files keeps the file that `latest` names (`_retain` in `scripts/edge_depth/publish_edge_depth.py`). `netcdf_values` is not a contract table. It holds the raw 3Di results, and no code outside `scripts/database/` reads it.
+
+## Reader role
+
+The routing backend connects as a role that can read only the tables on this page (`US-072`). The script `scripts/database/create_routing_reader_role.py` creates the role and reads its table list from this page with `core_contract.contract_tables`. It revokes the role's other table rights and its `CREATE` right on schema `public`, then grants `SELECT` on each contract table. Rerun it after a table is added to or removed from this page.
+
+- **Name.** `ROUTING_READER_USER`, default `routing_reader`.
+- **Password.** `ROUTING_READER_PASSWORD` in `.env`. The `floodmap-backend` service in `compose.yml` needs it and has no fallback to the writer role.
+- **PostGIS.** The role needs no extra grant. PostGIS functions are executable by `PUBLIC`, and `spatial_ref_sys`, `geometry_columns`, and `raster_columns` are readable by `PUBLIC`. This was read from the server catalog on 2026-10-07.
+- **New tables.** A table the writer creates later is not readable by the role, because the database has no default privileges. `TRUNCATE` keeps the grant.
+- **Test.** `floodmap/graphhopper-flood-road/backend/test_reader_role.py` connects with the backend's own settings. It checks that `SELECT` works on each contract table and that writes and a read of `road_segment` fail with a permission error.
