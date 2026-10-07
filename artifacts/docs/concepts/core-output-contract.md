@@ -11,7 +11,7 @@ last_updated: 2026-10-07
 
 The 3Di pipeline (the Airflow DAG `flood_mapping_full`) publishes flood results that other applications read. This page lists what it publishes: five PostgreSQL tables, the edge depth files, and the vector tiles in MinIO. Routing is the first consumer. The story is `US-071` ([[routing-first-consumer-stories]] Story C1).
 
-The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the five column tables on this page and compares them with the live database. It fails when a column name, type, nullability, or position differs. The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema. Type is the text of PostgreSQL's `format_type(atttypid, atttypmod)`.
+The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the five column tables on this page and compares them with the live database. It fails when a column name, type, nullability, or position differs, or when a primary key or unique constraint differs. The `Primary key columns` and `Unique columns` bullets are its input for keys. The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema. Type is the text of PostgreSQL's `format_type(atttypid, atttypmod)`.
 
 The facts on this page come from the code at commit `5e4a314`. Each one cites its file. A fact the code cannot show is marked as unverified.
 
@@ -33,6 +33,7 @@ One row is one 256 by 256 pixel tile of the flood depth raster at one forecast s
 | `created_at` | `timestamp without time zone` | yes |
 
 - **Key.** The primary key is (`run_ts`, `valid_time_utc`, `tile_y`, `tile_x`). `tile_x` and `tile_y` count tiles from the raster's upper-left corner.
+- **Primary key columns.** `run_ts`, `valid_time_utc`, `tile_y`, `tile_x`.
 - **Units.** Band 1 of `rast` is the water depth in metres. Inside the raster, a dry cell and a cell outside the model both read 0, and 0 is the band's NoData value (`floodmap/graphhopper-flood-road/backend/flood_points.py:111-113`).
 - **CRS.** EPSG:4326. Task `9b_load_depth_raster` reprojects each depth file from the model's EPSG:3405 with nearest-neighbour sampling before it loads it (`scripts/flood_extent/raster_load.py:55-59`).
 - **Writer.** `9b_load_depth_raster` calls `raster_load.load_run`. It loads every forecast step of the run, and it replaces all tiles of one step in one transaction (`raster_load.py:62-80`).
@@ -53,6 +54,8 @@ One row is the dissolved polygon of one depth band at one forecast step of one r
 | `created_at` | `timestamp without time zone` | yes |
 
 - **Key.** The primary key is `id`. (`run_ts`, `valid_time_utc`, `dn_code`) is unique, and the writer upserts on it.
+- **Primary key columns.** `id`.
+- **Unique columns.** `run_ts`, `valid_time_utc`, `dn_code`.
 - **Units.** `dn_code` names the band by its upper limit in centimetres. 10 is a depth over 0.05 m up to 0.1 m, and so on to 60, which ends at 0.6 m. 600 is any depth over 0.6 m. A depth of 0.05 m or less is dry and has no row (`BAND_TABLE` and `TOP_CODE` in `scripts/flood_extent/flood_extent.py:41-44`). `area_m2` is in square metres, measured in the model's projected CRS before the polygon is reprojected (`flood_extent.py:199-207`).
 - **CRS.** EPSG:4326.
 - **Writer.** Task `9_build_flood_tiles` calls `publish.publish_run` (`scripts/flood_extent/publish.py:49-76`). It writes only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, 2 by default (`dags/flood_mapping_dag.py:58`). A dry step has no rows.
@@ -70,6 +73,7 @@ One row says that one forecast step of one run is fully published: its tiles are
 | `published_at` | `timestamp without time zone` | yes |
 
 - **Key.** The primary key is (`run_ts`, `valid_time_utc`).
+- **Primary key columns.** `run_ts`, `valid_time_utc`.
 - **Meaning of `is_empty`.** `true` means the step is dry. A dry step has a row here and no rows in `flood_extent_polygon`.
 - **Writer.** `9_build_flood_tiles`. The writer inserts the step row in the same transaction as the step's polygon rows, after the step's tiles are uploaded (`publish.py:49-76`, `publish.py:222-227`). A rewrite sets `published_at` to `NOW()` again.
 - **Retention.** The newest 8 runs by `run_ts` (`prune_step_rows`, `publish.py:113-132`).
@@ -92,6 +96,7 @@ One row is the flood depth of one road piece at one forecast time, from one run.
 | `segment_id` | `text` | yes |
 
 - **Key.** The primary key is `id`. `file_id` references `flood_road_file.id` with `ON DELETE CASCADE`. No constraint makes (`timestamp`, `forecast_time`, `segment_id`) unique. The writer keeps it unique: it deletes the run's rows for those forecast times and inserts new ones in one transaction, under an advisory lock (`scripts/flood_roads/flood_on_roads.py:176-224`).
+- **Primary key columns.** `id`.
 - **Time.** `timestamp` is the run, and `forecast_time` is the forecast step. Both are Vietnam local time (+07) without an offset, not UTC. `timestamp` is `run_ts` read as a time, and `forecast_time` is `valid_time_utc` plus 7 hours (`flood_on_roads.py:30-32`, `flood_on_roads.py:59-61`, `flood_on_roads.py:211`).
 - **Units.** `depth` is in metres. It is the deepest of the samples taken every 1 m along the piece (decision D-006, `flood_on_roads.py:1-11`).
 - **CRS.** `geom_4326` is EPSG:4326. `geom` is the same line as GeoJSON text.
@@ -110,6 +115,7 @@ One row is one edge of the GraphHopper graph.
 | `geom` | `geometry(LineString,4326)` | no |
 
 - **Key.** The primary key is `edge_id`, GraphHopper's own edge id. It changes when the graph is imported again (`scripts/database/create_graph_edge_table.py:8-14`).
+- **Primary key columns.** `edge_id`.
 - **Units.** `length_m` is the geodesic length in metres, `ST_Length(geom::geography)` (`scripts/edge_depth/graph_edges.py:101-106`).
 - **CRS.** EPSG:4326.
 - **Writer.** Task `9c_build_edge_depth_table` loads the graph export when its hash differs from the hash in `graph_edge_export`. It replaces the whole table in one transaction (`graph_edges.py:118-138`).

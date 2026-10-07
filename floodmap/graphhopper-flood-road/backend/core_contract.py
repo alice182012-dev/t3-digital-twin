@@ -60,3 +60,40 @@ def parse_contract(markdown_text: str) -> dict[str, list[Column]]:
 def contract_tables(markdown_text: str) -> frozenset[str]:
     """The names of the tables the contract describes."""
     return frozenset(parse_contract(markdown_text))
+
+
+class Keys(NamedTuple):
+    primary: tuple[str, ...]
+    unique: tuple[tuple[str, ...], ...]
+
+
+_KEY_BULLET = re.compile(r"^- \*\*(Primary key|Unique) columns\.\*\*\s*(.+)$")
+
+
+def parse_keys(markdown_text: str) -> dict[str, Keys]:
+    """Table name to its primary key and unique constraints, from the `Primary key columns` and
+    `Unique columns` bullets under each table heading. Raises ValueError on a repeated primary key."""
+    primary: dict[str, tuple[str, ...]] = {}
+    unique: dict[str, list[tuple[str, ...]]] = {}
+    heading: str | None = None
+    for number, raw in enumerate(markdown_text.splitlines(), start=1):
+        line = raw.strip()
+        match = _HEADING.match(line)
+        if match:
+            heading = match.group(1)
+            continue
+        bullet = _KEY_BULLET.match(line)
+        if not bullet:
+            continue
+        if heading is None:
+            raise ValueError(f"line {number}: a key bullet needs a heading that names its table")
+        columns = tuple(re.findall(r"`([^`]+)`", bullet.group(2)))
+        if not columns:
+            raise ValueError(f"line {number}: {heading} has a key bullet with no column in code font")
+        if bullet.group(1) == "Primary key":
+            if heading in primary:
+                raise ValueError(f"line {number}: table {heading} has two primary keys")
+            primary[heading] = columns
+        else:
+            unique.setdefault(heading, []).append(columns)
+    return {name: Keys(cols, tuple(unique.get(name, ()))) for name, cols in primary.items()}

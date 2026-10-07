@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from core_contract import Column, contract_tables, parse_contract
+from core_contract import Column, Keys, contract_tables, parse_contract, parse_keys
 
 CONTRACT_TABLES = {
     "flood_depth_raster_tile",
@@ -29,6 +29,15 @@ FROM pg_attribute a
 JOIN pg_class c ON c.oid = a.attrelid
 WHERE c.oid = to_regclass(%s) AND a.attnum > 0 AND NOT a.attisdropped
 ORDER BY a.attnum
+"""
+
+_LIVE_KEYS_SQL = """
+SELECT c.contype, array_agg(a.attname::text ORDER BY k.ord)
+FROM pg_constraint c
+CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)
+JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+WHERE c.conrelid = to_regclass(%s) AND c.contype IN ('p', 'u')
+GROUP BY c.oid, c.contype
 """
 
 SAMPLE = """# Sample
@@ -47,6 +56,8 @@ One row is one thing.
 | `geom` | `geometry(Geometry,4326)` | yes |
 
 - **Key.** `id`.
+- **Primary key columns.** `id`.
+- **Unique columns.** `run_ts`, `valid_time_utc`.
 
 ### second_table
 
@@ -95,6 +106,44 @@ def diff_columns(table: str, expected: list[Column], actual: list[Column]) -> li
     if contract_order != live_order:
         lines.append(f"{table}: column order {contract_order} in the contract, {live_order} in the database")
     return lines
+
+
+def diff_keys(table: str, expected: Keys | None, primary: tuple[str, ...], unique: set[tuple[str, ...]]) -> list[str]:
+    if expected is None:
+        return [f"{table}: the contract lists no primary key"]
+    lines = []
+    if expected.primary != primary:
+        lines.append(f"{table}: primary key {list(expected.primary)} in the contract, {list(primary)} in the database")
+    for cols in sorted(set(expected.unique) - unique):
+        lines.append(f"{table}: unique {list(cols)} in the contract, not in the database")
+    for cols in sorted(unique - set(expected.unique)):
+        lines.append(f"{table}: unique {list(cols)} in the database, not in the contract")
+    return lines
+
+
+def test_parses_keys() -> None:
+    assert parse_keys(SAMPLE) == {"first_table": Keys(("id",), (("run_ts", "valid_time_utc"),))}
+
+
+def test_rejects_two_primary_keys() -> None:
+    text = "### t\n\n- **Primary key columns.** `a`.\n- **Primary key columns.** `b`.\n"
+    try:
+        parse_keys(text)
+    except ValueError as error:
+        assert "table t has two primary keys" in str(error), error
+    else:
+        raise AssertionError("two primary keys on one table must be rejected")
+
+
+def test_diff_keys_names_the_table() -> None:
+    expected = Keys(("run_ts", "id"), (("a", "b"), ("c",)))
+    assert diff_keys("t", expected, ("id",), {("a", "b"), ("d",)}) == [
+        "t: primary key ['run_ts', 'id'] in the contract, ['id'] in the database",
+        "t: unique ['c'] in the contract, not in the database",
+        "t: unique ['d'] in the database, not in the contract",
+    ]
+    assert diff_keys("t", expected, ("run_ts", "id"), {("a", "b"), ("c",)}) == []
+    assert diff_keys("t", None, ("id",), set()) == ["t: the contract lists no primary key"]
 
 
 def test_parses_each_column_table_in_page_order() -> None:
@@ -152,6 +201,9 @@ def test_page_describes_the_five_contract_tables() -> None:
     assert not missing, f"the page does not describe {sorted(missing)}"
     empty = sorted(name for name in CONTRACT_TABLES if not tables[name])
     assert not empty, f"the page lists no columns for {empty}"
+    keys = parse_keys(path.read_text(encoding="utf-8"))
+    no_key = sorted(CONTRACT_TABLES - set(keys))
+    assert not no_key, f"the page lists no primary key for {no_key}"
 
 
 def test_page_matches_the_live_schema() -> None:
@@ -166,6 +218,7 @@ def test_page_matches_the_live_schema() -> None:
     from db import DB_CONFIG
 
     tables = parse_contract(path.read_text(encoding="utf-8"))
+    keys = parse_keys(path.read_text(encoding="utf-8"))
     conn = psycopg2.connect(**DB_CONFIG)
     try:
         lines = []
@@ -174,6 +227,11 @@ def test_page_matches_the_live_schema() -> None:
                 cur.execute(_LIVE_COLUMNS_SQL, (table,))
                 live = [Column(name, type_, nullable) for name, type_, nullable in cur.fetchall()]
                 lines += diff_columns(table, tables.get(table, []), live)
+                cur.execute(_LIVE_KEYS_SQL, (table,))
+                found = cur.fetchall()
+                primary = next((tuple(cols) for kind, cols in found if kind == "p"), ())
+                unique = {tuple(cols) for kind, cols in found if kind == "u"}
+                lines += diff_keys(table, keys.get(table), primary, unique)
     finally:
         conn.close()
     assert not lines, "the contract page differs from the live schema:\n" + "\n".join(lines)
@@ -181,6 +239,9 @@ def test_page_matches_the_live_schema() -> None:
 
 
 def main() -> int:
+    test_parses_keys()
+    test_rejects_two_primary_keys()
+    test_diff_keys_names_the_table()
     test_parses_each_column_table_in_page_order()
     test_rejects_a_nullable_that_is_not_yes_or_no()
     test_rejects_a_table_described_twice()
