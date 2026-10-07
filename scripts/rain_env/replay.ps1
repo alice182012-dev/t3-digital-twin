@@ -137,10 +137,15 @@ function Stop-Replay {
         "restored the four rain keys from $stateFile and deleted it"
         $expect = @()
     } else {
+        $wasReplay = (Get-KeyValue $text "FLOOD_TEST_RAIN_CSV") -or (Get-KeyValue $text "FLOOD_TEST_RAIN_START")
         foreach ($key in $keys[0..2]) { $text = Set-KeyValue $text $key "" }
-        $text = Set-KeyValue $text "FLOOD_RAIN_THRESHOLD_MM_HR" $null
+        if ($wasReplay) {
+            $text = Set-KeyValue $text "FLOOD_RAIN_THRESHOLD_MM_HR" $null
+            "no $stateFile, so blanked FLOOD_TEST_RAIN_CSV, FLOOD_TEST_RAIN_START, and FLOOD_TEST_RAIN_MM_HR, and removed the FLOOD_RAIN_THRESHOLD_MM_HR line (the gate is then the compose default of 5)"
+        } else {
+            "no $stateFile and no replay in .env, so the gate stays as it is"
+        }
         Write-EnvText $text
-        "no $stateFile, so blanked FLOOD_TEST_RAIN_CSV, FLOOD_TEST_RAIN_START, and FLOOD_TEST_RAIN_MM_HR, and removed the FLOOD_RAIN_THRESHOLD_MM_HR line (the gate is then the compose default of 5)"
         $expect = @("--expect-mode", "live")
     }
     Update-Worker
