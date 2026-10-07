@@ -2,6 +2,7 @@
 
 The DAG file is imported with small stand-ins for the Airflow modules it uses. The stand-ins record
 each task id and each `>>` edge, and the tests compare them with the intended graph.
+test_routing_adapter_dag.py reuses load_dag_module for the routing DAG.
 """
 
 import importlib.util
@@ -9,7 +10,7 @@ import os
 import sys
 import types
 import unittest
-from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -26,10 +27,6 @@ EXPECTED_TASKS = {
     "3b_upload_netcdf_postgres",
     "9_build_flood_tiles",
     "9b_load_depth_raster",
-    "9c_build_edge_depth_table",
-    "edge_table_done",
-    "load_road_segments",
-    "flood_on_roads",
 }
 
 EXPECTED_EDGES = {
@@ -43,12 +40,6 @@ EXPECTED_EDGES = {
     ("0b_ensure_schema", "3b_upload_netcdf_postgres"),
     ("0b_ensure_schema", "9_build_flood_tiles"),
     ("0b_ensure_schema", "9b_load_depth_raster"),
-    ("9b_load_depth_raster", "flood_on_roads"),
-    ("9b_load_depth_raster", "9c_build_edge_depth_table"),
-    ("9c_build_edge_depth_table", "edge_table_done"),
-    ("load_road_segments", "flood_on_roads"),
-    ("0b_ensure_schema", "load_road_segments"),
-    ("0b_ensure_schema", "flood_on_roads"),
 }
 
 
@@ -89,15 +80,21 @@ class FakeOperator:
         return self
 
 
+@dataclass(frozen=True)
+class FakeAsset:
+    name: str
+
+
 def module(name, **attrs):
     fake = types.ModuleType(name)
     fake.__dict__.update(attrs)
     return fake
 
 
-def load_dag_module():
+def load_dag_module(path="dags/flood_mapping_dag.py"):
     fakes = {
         "airflow": module("airflow", DAG=FakeDag),
+        "airflow.sdk": module("airflow.sdk", Asset=FakeAsset),
         "airflow.exceptions": module("airflow.exceptions", AirflowException=RuntimeError),
         "airflow.providers": module("airflow.providers"),
         "airflow.providers.standard": module("airflow.providers.standard"),
@@ -110,10 +107,12 @@ def load_dag_module():
         "boto3": module("boto3", client=MagicMock()),
         "psycopg2": module("psycopg2", connect=MagicMock()),
     }
-    spec = importlib.util.spec_from_file_location("flood_mapping_dag_under_test", ROOT / "dags/flood_mapping_dag.py")
+    spec = importlib.util.spec_from_file_location(f"{Path(path).stem}_under_test", ROOT / path)
     dag_module = importlib.util.module_from_spec(spec)
     saved_path = list(sys.path)
     try:
+        # Airflow puts the DAGs folder on sys.path, which is how a DAG file imports core_assets.
+        sys.path.append(str(ROOT / "dags"))
         with patch.dict(sys.modules, fakes), patch("builtins.print"):
             spec.loader.exec_module(dag_module)
     finally:
@@ -172,16 +171,20 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_road_segment_table.main.assert_called_once_with()
         database.create_graph_edge_table.main.assert_called_once_with()
 
-    def test_a_failed_edge_table_does_not_fail_the_run(self):
-        """A DAG run takes its state from its leaf tasks. edge_table_done runs whatever happens to the
-        edge table task, so a failure shows red on the task and the run stays green, which keeps the
-        next slot's run allowed to hotstart (hotstart_policy)."""
-        edge_table_done = self.dag.tasks["edge_table_done"]
+    def test_no_core_task_waits_on_a_routing_task(self):
+        """A DAG run takes its state from its leaf tasks. The leaves are core tasks only, so a routing failure
+        cannot turn the run red and break the next slot's hotstart (hotstart_policy)."""
         leaves = {t for t in self.dag.tasks if not any(up == t for up, _ in self.dag.edges)}
 
-        self.assertEqual(edge_table_done.kwargs["trigger_rule"], "all_done")
-        self.assertIn("edge_table_done", leaves)
-        self.assertNotIn("9c_build_edge_depth_table", leaves)
+        self.assertEqual(leaves, {"3b_upload_netcdf_postgres", "9_build_flood_tiles", "9b_load_depth_raster"})
+
+    def test_load_depth_raster_declares_the_published_asset(self):
+        self.assertEqual(
+            self.dag.tasks["9b_load_depth_raster"].kwargs["outlets"], [FakeAsset("flood_depth_raster_tile")]
+        )
+        self.assertEqual(
+            [name for name, task in self.dag.tasks.items() if "outlets" in task.kwargs], ["9b_load_depth_raster"]
+        )
 
 
 class DepthRunTests(unittest.TestCase):
@@ -204,13 +207,17 @@ class DepthRunTests(unittest.TestCase):
         raster_load.load_run.return_value = ["a", "b"]
         self.dag_module.raster_load = raster_load
         self.dag_module.DB_CONFIG = {}
+        event = types.SimpleNamespace(extra={})
 
         with patch("builtins.print"):
-            result = self.dag_module.task_load_depth_raster(ti=self.ti)
+            result = self.dag_module.task_load_depth_raster(
+                ti=self.ti, outlet_events={FakeAsset("flood_depth_raster_tile"): event}
+            )
 
         self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2})
         args = raster_load.load_run.call_args.args
         self.assertEqual(args[1:3], (self.tmp.name, "20260924T170639"))
+        self.assertEqual(event.extra, {"run_ts": "20260924T170639"})
 
     def test_build_flood_tiles_uses_the_earliest_depth_file_as_run_ts(self):
         publish = MagicMock()
@@ -228,116 +235,6 @@ class DepthRunTests(unittest.TestCase):
         self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "flooded_timesteps": 1})
         self.assertEqual(publish.publish_run.call_args.args[:2], (self.tmp.name, "20260924T170639"))
         self.assertIn("/opt/airflow/data/mapping/results", publish.publish_run.call_args.kwargs["cleanup_dirs"])
-
-    def test_flood_on_roads_computes_the_run_named_by_the_earliest_depth_file(self):
-        flood_on_roads = MagicMock()
-        flood_on_roads.compute.return_value = MagicMock(
-            timesteps=(
-                MagicMock(forecast_time=datetime(2026, 9, 24, 17, 6, 39), rows=3, wet_pieces=2),
-                MagicMock(forecast_time=datetime(2026, 9, 24, 18, 6, 39), rows=3, wet_pieces=0),
-            ),
-            rows=6,
-            target_table="flood_road_values",
-            seconds=1.0,
-        )
-        self.dag_module.flood_on_roads = flood_on_roads
-        self.dag_module.DB_CONFIG = {}
-
-        with patch("builtins.print"):
-            result = self.dag_module.task_flood_on_roads(ti=self.ti)
-
-        self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "rows": 6})
-        self.assertEqual(flood_on_roads.compute.call_args.args[1:], ("20260924T170639",))
-
-    def test_build_edge_depth_table_builds_the_run_named_by_the_earliest_depth_file(self):
-        build_edge_depth = MagicMock()
-        build_edge_depth.build_table.return_value = MagicMock(
-            path=Path("/opt/airflow/data/mapping/edge_depth/20260924T170639.bin"),
-            graph_hash="a" * 64,
-            graph_loaded=False,
-            edge_count=67833,
-            step_count=8,
-            wet_edges=(10, 20, 30, 0, 0, 0, 0, 0),
-            sample_seconds=(1.0,) * 8,
-            size_bytes=1085368,
-            seconds=12.5,
-        )
-        self.dag_module.build_edge_depth = build_edge_depth
-        publish = self.dag_module.publish_edge_depth = MagicMock()
-        publish.publish_table.return_value = MagicMock(
-            latest="20260924T170639.bin", previous="20260924T165639.bin", moved=True, removed=("20260924T150639.bin",),
-            kept=("20260924T170639.bin",),
-        )
-        self.dag_module.DB_CONFIG = {}
-
-        with patch("builtins.print"):
-            result = self.dag_module.task_build_edge_depth_table(ti=self.ti)
-
-        args = build_edge_depth.build_table.call_args.args
-        self.assertEqual(args[1], "20260924T170639")
-        self.assertEqual(str(args[2]), "/opt/airflow/data/mapping/graph_export")
-        self.assertEqual(str(args[3]), "/opt/airflow/edge_depth_tables")
-        self.assertEqual(result["run_ts"], "20260924T170639")
-        self.assertEqual((result["edge_count"], result["steps"], result["bytes"]), (67833, 8, 1085368))
-        self.assertEqual(result["wet_edges"], [10, 20, 30, 0, 0, 0, 0, 0])
-        self.assertEqual(result["seconds"], 12.5)
-        self.assertEqual(
-            result["published"],
-            {"latest": "20260924T170639.bin", "previous": "20260924T165639.bin", "moved": True,
-             "removed": ["20260924T150639.bin"]},
-        )
-        self.ti.xcom_push.assert_called_once_with(key="edge_depth_table", value=result)
-        publish.publish_table.assert_called_once_with(
-            "/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=3
-        )
-
-    def test_the_edge_table_folders_can_be_set_by_environment(self):
-        env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5"}
-        with patch.dict(os.environ, env):
-            dag_module = load_dag_module()
-        dag_module.flood_extent = self.dag_module.flood_extent
-        dag_module.build_edge_depth = MagicMock()
-        dag_module.publish_edge_depth = MagicMock()
-        dag_module.publish_edge_depth.publish_table.return_value = MagicMock(removed=())
-        dag_module.build_edge_depth.build_table.return_value = MagicMock(
-            path=Path("/tables/x.bin"), graph_hash="a" * 64, graph_loaded=False, edge_count=1, step_count=1,
-            wet_edges=(0,), sample_seconds=(0.1,), size_bytes=40, seconds=1.0,
-        )
-        dag_module.DB_CONFIG = {}
-
-        with patch("builtins.print"):
-            dag_module.task_build_edge_depth_table(ti=self.ti)
-
-        args = dag_module.build_edge_depth.build_table.call_args.args
-        self.assertEqual((str(args[2]), str(args[3])), ("/exports", "/tables"))
-        self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5})
-
-    def test_a_failed_build_publishes_nothing_so_latest_stays(self):
-        self.dag_module.build_edge_depth = MagicMock()
-        self.dag_module.build_edge_depth.build_table.side_effect = RuntimeError("no export")
-        self.dag_module.publish_edge_depth = MagicMock()
-        self.dag_module.DB_CONFIG = {}
-
-        with patch("builtins.print"), self.assertRaises(RuntimeError):
-            self.dag_module.task_build_edge_depth_table(ti=self.ti)
-
-        self.dag_module.publish_edge_depth.publish_table.assert_not_called()
-        self.ti.xcom_push.assert_not_called()
-
-    def test_a_failed_publish_fails_the_task_and_reports_nothing(self):
-        self.dag_module.build_edge_depth = MagicMock()
-        self.dag_module.build_edge_depth.build_table.return_value = MagicMock(
-            path=Path("/tables/x.bin"), graph_hash="a" * 64, graph_loaded=False, edge_count=1, step_count=1,
-            wet_edges=(0,), sample_seconds=(0.1,), size_bytes=40, seconds=1.0,
-        )
-        self.dag_module.publish_edge_depth = MagicMock()
-        self.dag_module.publish_edge_depth.publish_table.side_effect = ValueError("not a valid table")
-        self.dag_module.DB_CONFIG = {}
-
-        with patch("builtins.print"), self.assertRaises(ValueError):
-            self.dag_module.task_build_edge_depth_table(ti=self.ti)
-
-        self.ti.xcom_push.assert_not_called()
 
     def test_a_missing_depth_folder_fails_the_task(self):
         self.ti.xcom_pull.side_effect = lambda task_ids, key=None: None
@@ -366,31 +263,6 @@ class DownloadResultTests(unittest.TestCase):
                 "/opt/airflow/data/mapping/results/102/results_3di.nc",
             ],
         )
-
-
-class LoadRoadSegmentsTests(unittest.TestCase):
-    def setUp(self):
-        self.dag_module = load_dag_module()
-        self.dag_module.DB_CONFIG = {}
-        self.loader = MagicMock(DEFAULT_ROADS_PATH="/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson")
-        self.loader.load.return_value = MagicMock(inserted=0, updated=0, deleted=0, total=35652)
-        self.dag_module.load_road_segments = self.loader
-
-    def test_loads_the_production_roads_file_and_reports_the_counts(self):
-        with patch.dict(os.environ), patch("builtins.print"):
-            os.environ.pop("ROADS_GEOJSON_PATH", None)
-            result = self.dag_module.task_load_road_segments()
-
-        self.assertEqual(result, {"inserted": 0, "updated": 0, "deleted": 0, "total": 35652})
-        self.assertEqual(
-            self.loader.load.call_args.args[1], "/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson"
-        )
-
-    def test_a_bad_roads_file_fails_the_task(self):
-        self.loader.load.side_effect = ValueError("feature 0 has no properties['@id']")
-
-        with patch("builtins.print"), self.assertRaises(ValueError):
-            self.dag_module.task_load_road_segments()
 
 
 if __name__ == "__main__":

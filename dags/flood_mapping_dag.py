@@ -7,6 +7,8 @@ import os
 import boto3
 import psycopg2
 
+from core_assets import FLOOD_DEPTH_RASTER
+
 
 BASE_PATH = "/opt/airflow"
 SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
@@ -17,8 +19,6 @@ sys.path.append(SCRIPTS_PATH)
 # so its directory needs to be importable directly too.
 sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
 sys.path.append(os.path.join(SCRIPTS_PATH, "flood_extent"))
-# edge_depth/*.py import each other as top-level modules, like flood_extent/*.py.
-sys.path.append(os.path.join(SCRIPTS_PATH, "edge_depth"))
 
 try:
     import create_simulation
@@ -37,11 +37,7 @@ try:
     import flood_extent
     import publish
     import raster_load
-    import build_edge_depth
-    import publish_edge_depth
     from db_config import DB_CONFIG
-    from roads import load_road_segments
-    from flood_roads import flood_on_roads
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -64,13 +60,6 @@ FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE
 # scripts/flood_extent/raster_load.py's own scratch space for the EPSG:4326-reprojected copy of
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
-# 9c_build_edge_depth_table reads the export of the graph's edges (graph.json and edges.csv, written by
-# java/time-aware-routing/export-edges.sh) from the first folder, writes <run>.bin into the second, then
-# publishes it: `latest` points at it, and the newest EDGE_TABLE_KEEP_RUNS tables stay. The second folder is the
-# Docker volume edge-depth-tables (compose.yml), which the routing readers mount read-only.
-EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
-EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
-EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "3"))
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
 # states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
@@ -274,6 +263,8 @@ def task_load_depth_raster(**kwargs):
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
     of reading the file from disk. Same run_ts as task 9, so both tables key off the (run,
     valid_time) pair the frontend already selects.
+
+    On success it emits FLOOD_DEPTH_RASTER with the run_ts, which schedules routing_adapter_dag.py.
     """
     depth_dir, run_ts = depth_run(kwargs["ti"])
 
@@ -284,105 +275,8 @@ def task_load_depth_raster(**kwargs):
     finally:
         conn.close()
     print(f"✅ Depth rasters loaded: {len(loaded)} timesteps")
+    kwargs["outlet_events"][FLOOD_DEPTH_RASTER].extra = {"run_ts": run_ts}
     return {"run_ts": run_ts, "timesteps": len(loaded)}
-
-
-def task_build_edge_depth_table(**kwargs):
-    """Writes this run's edge depth table: the deepest flood sample along every GraphHopper edge, in
-    centimetres, at every step, tagged with the graph hash (US-041), and publishes it (US-042): `latest`
-    points at it, only forward, and the newest EDGE_TABLE_KEEP_RUNS tables stay. It reads the tiles task 9b
-    loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
-
-    Nothing reads the table yet, and the engine falls back to today's model without it, so a failure here
-    must not fail the DAG run. edge_table_done is the leaf that keeps the run green (hotstart_policy lets
-    a run hotstart only when the previous slot's run succeeded)."""
-    ti = kwargs["ti"]
-    _, run_ts = depth_run(ti)
-
-    print(f"🧮 9c. Building the edge depth table for run {run_ts}: {EDGE_EXPORT_DIR} -> {EDGE_TABLE_DIR}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        built = build_edge_depth.build_table(conn, run_ts, EDGE_EXPORT_DIR, EDGE_TABLE_DIR)
-    finally:
-        conn.close()
-    # A failure above or here leaves `latest` on the previous table: the pointer moves only inside publish_table.
-    published = publish_edge_depth.publish_table(EDGE_TABLE_DIR, built.path.name, keep=EDGE_TABLE_KEEP_RUNS)
-    report = {
-        "run_ts": run_ts,
-        "path": str(built.path),
-        "graph_hash": built.graph_hash,
-        "graph_loaded": built.graph_loaded,
-        "edge_count": built.edge_count,
-        "steps": built.step_count,
-        "wet_edges": list(built.wet_edges),
-        "sample_seconds": [round(seconds, 2) for seconds in built.sample_seconds],
-        "bytes": built.size_bytes,
-        "seconds": round(built.seconds, 2),
-        "published": {
-            "latest": published.latest,
-            "previous": published.previous,
-            "moved": published.moved,
-            "removed": list(published.removed),
-        },
-    }
-    ti.xcom_push(key="edge_depth_table", value=report)
-    print(
-        f"✅ Edge depth table: {built.edge_count} edges, {built.step_count} steps, {built.size_bytes} bytes, "
-        f"wet edges per step {list(built.wet_edges)}, {built.seconds:.1f} s"
-        + (", graph edges reloaded" if built.graph_loaded else "")
-    )
-    print(
-        f"📌 latest -> {published.latest}"
-        + ("" if published.moved else f" (unchanged: {built.path.name} is not newer)")
-        + (f", removed {list(published.removed)}" if published.removed else "")
-    )
-    return report
-
-
-def task_edge_table_done(**kwargs):
-    """Does nothing. It runs after 9c whatever 9c's state is, so the DAG run does not take 9c's failure."""
-
-
-def task_load_road_segments(**kwargs):
-    """Makes road_segment match the roads file. A file that has not changed reports zero changes;
-    a bad file raises before anything is written."""
-    roads_path = os.getenv("ROADS_GEOJSON_PATH", load_road_segments.DEFAULT_ROADS_PATH)
-    print(f"🛣️ Loading road pieces into road_segment: {roads_path}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = load_road_segments.load(conn, roads_path)
-    finally:
-        conn.close()
-    print(
-        f"✅ road_segment: {result.inserted} inserted, {result.updated} updated, "
-        f"{result.deleted} deleted, {result.total} rows total"
-    )
-    if result.updated or result.deleted:
-        # See artifacts/docs/concepts/road-segment-table.md, "Limits of the id".
-        print("⚠️ Existing segment_id values now describe different road; older per-piece results no longer line up")
-    return {
-        "inserted": result.inserted,
-        "updated": result.updated,
-        "deleted": result.deleted,
-        "total": result.total,
-    }
-
-
-def task_flood_on_roads(**kwargs):
-    """Writes this run's per-piece flood depth into flood_road_values, the table routing reads,
-    from the tiles task 9b loaded under the same run name."""
-    _, run_ts = depth_run(kwargs["ti"])
-
-    print(f"🌊 Computing flood on roads for run {run_ts}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = flood_on_roads.compute(conn, run_ts)
-    finally:
-        conn.close()
-    for step in result.timesteps:
-        print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
-    print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
-    return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
 
 
 default_args = {
@@ -433,19 +327,9 @@ with DAG(
         task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
     )
     t9b = PythonOperator(
-        task_id="9b_load_depth_raster", python_callable=task_load_depth_raster
-    )
-    t_roads = PythonOperator(
-        task_id="load_road_segments", python_callable=task_load_road_segments
-    )
-    t_flood_roads = PythonOperator(
-        task_id="flood_on_roads", python_callable=task_flood_on_roads
-    )
-    t9c = PythonOperator(
-        task_id="9c_build_edge_depth_table", python_callable=task_build_edge_depth_table
-    )
-    t_edge_done = PythonOperator(
-        task_id="edge_table_done", python_callable=task_edge_table_done, trigger_rule="all_done"
+        task_id="9b_load_depth_raster",
+        python_callable=task_load_depth_raster,
+        outlets=[FLOOD_DEPTH_RASTER],
     )
 
     t0 >> t1 >> t2 >> t3
@@ -454,7 +338,3 @@ with DAG(
     t2 >> t3b
     t1 >> t_ddl
     t_ddl >> [t3b, t9, t9b]
-    t_ddl >> [t_roads, t_flood_roads]
-    t_roads >> t_flood_roads
-    t9b >> t_flood_roads
-    t9b >> t9c >> t_edge_done

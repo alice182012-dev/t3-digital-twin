@@ -1,7 +1,7 @@
 """Loads the roads GeoJSON into road_segment: one row per road piece, keyed by a stable segment_id.
 
 Usage: python load_road_segments.py [ROADS_GEOJSON]   (defaults to $ROADS_GEOJSON_PATH, then the
-path dags/flood_mapping_dag.py uses)
+path dags/routing_adapter_dag.py uses)
 
 Create the table first with scripts/database/create_road_segment_table.py.
 
