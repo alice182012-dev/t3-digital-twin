@@ -1,6 +1,4 @@
-import importlib.util
 import unittest
-from pathlib import Path
 
 from corridor import RoadNetwork, Way
 from scenarios import SCENARIOS, STEP_SECONDS, VEHICLE_LIMIT_CM, run_scenario, scenario_depth_cm
@@ -115,15 +113,8 @@ class RunScenarioTest(unittest.TestCase):
 
 
 class VehicleLimitTest(unittest.TestCase):
-    def test_limits_equal_the_backends_thresholds(self):
-        path = Path(__file__).resolve().parents[2] / "floodmap/graphhopper-flood-road/scripts/flood_utils.py"
-        spec = importlib.util.spec_from_file_location("flood_utils_under_test", path)
-        flood_utils = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(flood_utils)
-
-        self.assertEqual(
-            {vehicle: flood_utils.vehicle_threshold_cm(vehicle) for vehicle in VEHICLE_LIMIT_CM}, VEHICLE_LIMIT_CM
-        )
+    def test_limits_are_the_motorbike_and_car_thresholds_of_flood_utils(self):
+        self.assertEqual(VEHICLE_LIMIT_CM, {"motorbike": 20, "car": 30})
 
     def test_steps_are_the_8_steps_of_15_minutes_that_a_real_run_has(self):
         self.assertEqual(STEP_SECONDS, tuple(900 * k for k in range(8)))

@@ -8,19 +8,22 @@ the table's minute, because the table fixes the minute and not the distance.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from corridor import RoadNetwork
 from sticky_reference import DEFAULT_MARGIN_S, Crossing, Edge, Graph, Route, StickyClosure, earliest_arrival, find_crossings
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "floodmap" / "graphhopper-flood-road" / "scripts"))
+from flood_utils import VEHICLE_PROFILES  # noqa: E402
+
 STEP_MINUTES = 15
 STEP_COUNT = 8  # the 8 steps of a real run, 15 minutes apart, 105 minutes from the first to the last
 STEP_SECONDS = tuple(60 * STEP_MINUTES * k for k in range(STEP_COUNT))
 
-# Keep equal to VEHICLE_PROFILES[...]["threshold_cm"] in floodmap/graphhopper-flood-road/scripts/flood_utils.py.
-# A test fails if they drift.
-VEHICLE_LIMIT_CM = {"motorbike": 20, "car": 30}
+VEHICLE_LIMIT_CM = {vehicle: VEHICLE_PROFILES[vehicle]["threshold_cm"] for vehicle in ("motorbike", "car")}
 
 DEFAULT_FLOOD_CM = 50
 _CORRIDOR_AT = {"middle": 0.5, "far": 0.9}  # how far along the route the corridor road is entered
