@@ -1,0 +1,62 @@
+"""Reads the column tables of artifacts/docs/concepts/core-output-contract.md.
+
+Each table under a heading whose header row is `| Column | Type | Nullable |` describes the table
+the heading names. Type is PostgreSQL's format_type() text, Nullable is `yes` or `no`.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import NamedTuple
+
+HEADER = ("Column", "Type", "Nullable")
+_HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
+_SEPARATOR = re.compile(r"^\|[\s:|-]+\|$")
+_NULLABLE = {"yes": True, "no": False}
+
+
+class Column(NamedTuple):
+    name: str
+    type: str
+    nullable: bool
+
+
+def _cells(line: str) -> list[str]:
+    return [cell.strip().strip("`").strip() for cell in line.strip().strip("|").split("|")]
+
+
+def parse_contract(markdown_text: str) -> dict[str, list[Column]]:
+    """Table name to its columns in page order. Raises ValueError on a malformed contract table."""
+    tables: dict[str, list[Column]] = {}
+    heading: str | None = None
+    current: list[Column] | None = None
+    for number, raw in enumerate(markdown_text.splitlines(), start=1):
+        line = raw.strip()
+        if current is not None:
+            if _SEPARATOR.match(line):
+                continue
+            if line.startswith("|"):
+                cells = _cells(line)
+                if len(cells) != 3:
+                    raise ValueError(f"line {number}: a row of table {heading} needs 3 cells, got {len(cells)}")
+                name, type_, nullable = cells
+                if nullable not in _NULLABLE:
+                    raise ValueError(f"line {number}: {heading}.{name} has Nullable {nullable!r}, expected yes or no")
+                current.append(Column(name, type_, _NULLABLE[nullable]))
+                continue
+            current = None
+        match = _HEADING.match(line)
+        if match:
+            heading = match.group(1)
+        elif line.startswith("|") and tuple(_cells(line)) == HEADER:
+            if heading is None:
+                raise ValueError(f"line {number}: a column table needs a heading that names its table")
+            if heading in tables:
+                raise ValueError(f"line {number}: table {heading} is described twice")
+            current = tables[heading] = []
+    return tables
+
+
+def contract_tables(markdown_text: str) -> frozenset[str]:
+    """The names of the tables the contract describes."""
+    return frozenset(parse_contract(markdown_text))
