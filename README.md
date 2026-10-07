@@ -11,8 +11,11 @@ gives the overview and links to the concept pages for depth.
 
 ## How a forecast becomes a route
 
-One Airflow DAG, `flood_mapping_full` in `dags/flood_mapping_dag.py`, produces all flood data. Two
-services read it. `floodmap-backend` answers routing and depth questions from PostGIS, and the
+One Airflow DAG, `flood_mapping_full` in `dags/flood_mapping_dag.py`, produces all flood data. When
+`9b_load_depth_raster` finishes, it emits the Airflow asset `flood_depth_raster_tile` with the run's
+`run_ts`. That event starts a second DAG, `routing_adapter` in `dags/routing_adapter_dag.py`, which
+writes the routing inputs. A failure in `routing_adapter` does not fail the core run. Two services
+read the data. `floodmap-backend` answers routing and depth questions from PostGIS, and the
 frontend draws flood-extent tiles from MinIO.
 
 ```mermaid
@@ -29,9 +32,13 @@ flowchart LR
   TILES -->|"flood_extent_polygon, flood_extent_step"| PG[("storage-postgres, PostGIS")]
   NC -->|"netcdf_* tables"| PG
   RASTER -->|"flood_depth_raster_tile"| PG
-  ROADS["load_road_segments"] -->|"road_segment"| PG
-  PG --> FOR["flood_on_roads"]
+  RASTER -.->|"asset event, run_ts"| ADAPTER["routing_adapter DAG"]
+  ADAPTER --> ROADS["load_road_segments"]
+  ROADS -->|"road_segment"| PG
+  ADAPTER --> FOR["flood_on_roads"]
   FOR -->|"flood_road_values"| PG
+  ADAPTER --> EDGE["9c_build_edge_depth_table"]
+  EDGE -->|"edge depth table"| VOL[("edge-depth-tables volume")]
   PG --> BE["floodmap-backend"]
   BE -->|"route request with custom_model"| GH["graphhopper"]
   GH --> BE
@@ -53,10 +60,11 @@ starts at the run's 15-minute clock slot. If any interval reaches `FLOOD_RAIN_TH
 (default 5 mm/h), the run continues. If none does, the task skips every later task, and the run
 succeeds. Set `FLOOD_TEST_RAIN_MM_HR` to use a fixed rain rate instead of calling Tomorrow.io.
 
-Two Airflow pools keep runs from blocking each other. `threedi_trigger` (2 slots) holds the rain
+Three Airflow pools keep runs from blocking each other. `threedi_trigger` (2 slots) holds the rain
 check and the 3Di trigger, which wait on remote APIs. `depth_calc` (1 slot) holds the CPU-heavy
-depth calculation, so two runs never compute depth at the same time. Airflow 3 does not let a DAG
-file create a pool, so you create both once by hand. See
+depth calculation, so two runs never compute depth at the same time. `routing_adapter` (1 slot)
+holds the three routing tasks, so routing takes at most one worker slot. Airflow 3 does not let a
+DAG file create a pool, so you create all three once by hand. See
 [Create the Airflow pools](#create-the-airflow-pools).
 
 ### 3Di runs the simulation and hands over a saved state
@@ -181,8 +189,10 @@ time to peak and when a road becomes passable again. It writes them to `flood_se
 
 ### Other DAGs and the storage UI
 
-`dags/` holds five more DAGs besides `flood_mapping_full`:
+`dags/` holds six more DAGs besides `flood_mapping_full`:
 
+- `routing_adapter` runs on the asset event of `9b_load_depth_raster`. It loads `road_segment`,
+  writes `flood_road_values`, and builds the edge depth table for that run.
 - `flood_forecast_consecutive_state_test` runs two synthetic rain events by hand to test a
   hotstart.
 - `calculate_depth_manual_test` runs the depth calculation by hand.
@@ -274,7 +284,9 @@ Each port has an override variable in `compose.yml`, such as `FLOOD_ROUTING_FRON
 
 ### Repository layout
 
-- `dags/` holds the Airflow DAGs. `flood_mapping_dag.py` defines `flood_mapping_full`.
+- `dags/` holds the Airflow DAGs. `flood_mapping_dag.py` defines `flood_mapping_full`, and
+  `routing_adapter_dag.py` defines `routing_adapter`. `core_assets.py` defines the asset that links
+  them.
 - `scripts/` holds the Python code that the DAG tasks call. It has the 3Di client and simulation
   steps at its top level. Its subfolders are `database/` for table creation, `flood_extent/` for
   tiles and raster loading, `flood_roads/`, `roads/`, `flood_metrics/`, `initial_wl/`, and
@@ -355,11 +367,13 @@ For the incident behind this rule, see
 
 ### Create the Airflow pools
 
-Create the two pools once per Airflow database. The DAG file cannot create them.
+Create the three pools once per Airflow database. The DAG files cannot create them. A task whose
+pool does not exist stays unscheduled until the pool is created.
 
 ```bash
 docker --context remote-server compose exec airflow-apiserver airflow pools set threedi_trigger 2 "Rain check and 3Di trigger"
 docker --context remote-server compose exec airflow-apiserver airflow pools set depth_calc 1 "One depth calculation at a time"
+docker --context remote-server compose exec airflow-apiserver airflow pools set routing_adapter 1 "Routing tasks of routing_adapter, one at a time"
 ```
 
 ### Create the first storage UI user

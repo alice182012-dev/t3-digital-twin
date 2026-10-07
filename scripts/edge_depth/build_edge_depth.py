@@ -37,7 +37,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 SAMPLE_STEP_M = 1.0
 # One sampling step takes about 5 s on an idle database. A step that runs past this is a bad plan or a
 # starved database, and it is cancelled so it cannot hold the database for the runs behind it (on 2026-10-05
-# one step ran over 770 s). The build fails, the run stays green (edge_table_done is all_done), and the
+# one step ran over 770 s). The build fails, the core run stays green (9c runs in routing_adapter), and the
 # previous table stays published.
 DEFAULT_STEP_TIMEOUT_S = 120.0
 _MAX_CM = 0xFFFF

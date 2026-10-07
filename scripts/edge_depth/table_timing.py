@@ -5,7 +5,8 @@ Reads the output of table_timing.ps1, one run per line, nine fields joined by `~
 
     run_id, logical_date, end of 3_calculate_depth, start and end of 9_build_flood_tiles (all UTC ISO, empty when the
     task did not succeed), state of 9c_build_edge_depth_table, its start and end, and the XCom `edge_depth_table` it
-    pushed (JSON, empty when none).
+    pushed (JSON, empty when none). 9c runs in the routing_adapter run that the run's 9b asset event triggered, so
+    its fields are empty until that run exists, and the run counts as pending.
 
 The limit (US-045, set by the user on 2026-10-02): the table task runs beside the tile task, never delays it, and ends
 within 5 minutes of the end of 3_calculate_depth. The report passes (exit code 0) when at least one run has a table, no

@@ -149,7 +149,7 @@ The database stores forecast step times in UTC, and file and object names carry 
 
 A row in `flood_extent_step` is the signal that a step is published. Its `published_at` is when the writer committed it. A consumer that sees the row can read the step's tiles and polygon rows.
 
-The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can finish before or after it. Tasks `flood_on_roads` and `9c_build_edge_depth_table` run after 9b. A consumer of those three outputs checks for its own rows, as `flood_points.py` does with `_TIMESTEP_LOADED_SQL`. An Airflow asset event from 9b is planned as the signal for them (`US-073`). It is not built at this commit.
+The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can finish before or after it. When 9b succeeds, it emits the Airflow asset `flood_depth_raster_tile` with `{"run_ts": "<run_ts>"}` in the event's `extra` (`dags/core_assets.py`, `US-073`). The event says that every timestep of that run is in `flood_depth_raster_tile`. The DAG `routing_adapter` runs on it, and its tasks `flood_on_roads` and `9c_build_edge_depth_table` write the other two outputs for that run. A consumer of those three outputs that is not an Airflow DAG checks for its own rows, as `flood_points.py` does with `_TIMESTEP_LOADED_SQL`. The event is in the code at this commit and not yet deployed on the server.
 
 ## Retention
 
