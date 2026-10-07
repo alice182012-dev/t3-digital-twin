@@ -30,7 +30,7 @@ engine proof runs).
   [[edge-depth-table-format]]) and the tiles in MinIO: schema, units, CRS, the time convention (UTC in the
   database, +07 in filenames), keys, retention (8 runs, 48 h for `netcdf_values`), and `flood_extent_step.published_at`
   as the readiness flag.
-  Priority: P1. Status: Not started. Estimate: M. Sprint: 11. Dependencies: None.
+  Priority: P1. Status: Reviewed (built on `modular`, live check passed on the server's backend container on 2026-10-07; screenshot pending).. Estimate: M. Sprint: 11. Dependencies: None.
   Evidence: None yet.
 
 - **Story C2 (US-072): Run the routing backend on a read-only database role.**
@@ -38,7 +38,7 @@ engine proof runs).
   consumer cannot write into the core.
   Given the role, when the backend runs on it, then every endpoint works and an `INSERT` into any core table
   fails with a permission error.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 11. Dependencies: Story C1 (the table list), and
+  Priority: P1. Status: Reviewed (built on `modular`, offline tests pass; role script and live test not yet run, they wait for the end of the replay).. Estimate: S. Sprint: 11. Dependencies: Story C1 (the table list), and
   `US-055` for the server run.
   Evidence: None yet.
 
@@ -52,7 +52,7 @@ engine proof runs).
   (the limit of `US-045`), measured once on the server, and runs in a pool so it does not compete with depth for
   worker slots. The asset event is the "run X published" signal in the contract of Story C1.
   Fallback if the asset trigger gives trouble: a TaskGroup `routing_adapter` inside the same DAG.
-  Priority: P2. Status: Not started. Estimate: M. Sprint: 11. Dependencies: Story C1 (the contract names the
+  Priority: P2. Status: Reviewed (built on `modular`, serialized by Airflow 3.1.7 on the server; trigger and the 9c limit not yet observed).. Estimate: M. Sprint: 11. Dependencies: Story C1 (the contract names the
   signal), and `US-055` for the server timing, since the proof and the replay rely on today's DAG shape. Task ids
   move to a new `dag_id`, so `scripts/pipeline_margins`, the proof tooling and anything keyed on
   `flood_mapping_full` task ids must be checked first.
@@ -65,14 +65,14 @@ engine proof runs).
   `td_limit_cm` all read them, then there is one source, the existing test that compares `td_limit_cm` with
   `flood_utils` still passes, and the extractor's import works inside the Airflow container (the problem of
   [[airflow-cannot-import-flood-utils]] must not return).
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 11. Dependencies: None.
+  Priority: P2. Status: Reviewed (built on `modular`, tests pass; the Airflow container import is unchanged and was checked on 2026-10-07).. Estimate: S. Sprint: 11. Dependencies: None.
   Evidence: None yet.
 
 - **Story C5 (US-075): Fail a test when the backend reads a table outside the contract.**
   As a maintainer, I want a guard so routing cannot grow a new hidden dependency on the core.
   Given the backend source, when the guard test scans its SQL for table names, then it passes only for tables
   listed in the contract, and a query on any other table fails it.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 11. Dependencies: Story C1.
+  Priority: P2. Status: Reviewed (built on `modular`, tests pass and a fault check fails as it should).. Estimate: S. Sprint: 11. Dependencies: Story C1.
   Evidence: None yet.
 
 ## Status history

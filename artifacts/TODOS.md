@@ -86,7 +86,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C1 (US-071), in [[sprint-plan-3]].
 
-**Status note:** not started.
+**Status note:** `Reviewed`. Built on branch `modular` (commits `888c86e`, `27e8957`). The live schema and key check passed in the server's backend container on 2026-10-07 and failed on a deliberately wrong page. Evidence screenshot pending.
 
 ### Active - US-072 Run the routing backend on a read-only database role
 
@@ -98,7 +98,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C2 (US-072), in [[sprint-plan-3]].
 
-**Status note:** not started.
+**Status note:** `Reviewed`. Built on `modular` (`56426ed`). Offline tests pass. The role script, the live test, and the endpoint checks run on the server after the replay, with the steps in the commit report.
 
 ### Active - US-073 Move the routing-owned tasks into their own DAG, triggered by the core's published output
 
@@ -110,7 +110,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C3 (US-073), in [[sprint-plan-3]].
 
-**Status note:** not started.
+**Status note:** `Reviewed`. Built on `modular` (`77169c3`). Real Airflow 3.1.7 on the server serialized both DAGs. No event has fired and 9c's 5-minute limit is not measured. The pool `routing_adapter` must be created by hand first.
 
 ### Active - US-074 Give the vehicle thresholds one owner
 
@@ -122,7 +122,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C4 (US-074), in [[sprint-plan-3]].
 
-**Status note:** not started.
+**Status note:** `Reviewed`. Built on `modular` (`0ab6028`). `VEHICLE_PROFILES` in `flood_utils.py` is the owner, and guard tests fail if a second copy or a broken mount appears.
 
 ### Active - US-075 Fail a test when the backend reads a table outside the contract
 
@@ -134,7 +134,7 @@
 
 **Sprint:** 11, [[routing-first-consumer-stories]] Story C5 (US-075), in [[sprint-plan-3]].
 
-**Status note:** not started.
+**Status note:** `Reviewed`. Built on `modular` (`892afe3`). The guard reads the backend's SQL with `ast` and fails on a table outside the contract.
 
 ## Backlog
 
