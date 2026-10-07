@@ -6,7 +6,7 @@ plan_number: 3
 start_date: 2026-11-16
 end_date: 2026-12-13
 tags: [user-story, sprint-plan, routing, graphhopper]
-related: ["[[9c-sampling-step-runs-over-770-seconds]]", "[[routing-first-consumer-stories]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]", "[[frontend-mockup-recheck-and-sprint-11-start]]"]
+related: ["[[core-output-hygiene-stories]]", "[[rain-replay-test-environment-stories]]", "[[rain-replay-test-environment]]", "[[9c-sampling-step-runs-over-770-seconds]]", "[[routing-first-consumer-stories]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]", "[[frontend-mockup-recheck-and-sprint-11-start]]"]
 ---
 
 # Sprint plan 3: the engine in the backend, the advice, and the rollout
@@ -32,7 +32,7 @@ Calendar, from `start_date` in the frontmatter:
 - **Sprint 9** adds the other two profiles, the backend switch with its fallback, and the departure endpoint.
 - **Sprint 10** shows the advice in the alert and rolls the engine out.
 - **Sprint 11** makes routing the first consumer of an explicit core output contract ([[routing-first-consumer-stories]]).
-- **Sprint 12** rechecks the frontend against the mockup ([[frontend-mockup-recheck-stories]]) and absorbs slips.
+- **Sprint 12** rechecks the frontend against the mockup ([[frontend-mockup-recheck-stories]]), builds the rain test environment ([[rain-replay-test-environment-stories]]), closes two core output gaps ([[core-output-hygiene-stories]]), and absorbs slips.
 
 The advice waits for the table because option C reads depth by edge id. That puts the "wait until" alert in Sprint 10,
 later than an approach that joined route pieces by geometry would have. The user chose exactness over speed on
@@ -100,6 +100,10 @@ factor, and the flag goes on with evidence.
 | US-082 | P3 | Show the travel time and the maximum depth on each route tab | S | [[frontend-mockup-recheck-stories]] 7 | `US-077` | None yet | - | Not started |
 | US-083 | P3 | Build a mobile version of screen 2e | M | [[frontend-mockup-recheck-stories]] 8 | `US-077`, `US-078`, `US-082` | None yet | - | Not started |
 | US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | `US-077` to `US-083`, so the tokens come from the final UI | None yet | - | Not started |
+| US-088 | P1 | Cut the Hanoi storm of 2026-09-16 and 2026-09-17 into a replay event | S | [[rain-replay-test-environment-stories]] 1 | None. Needs the Earthdata login on the Mac | None yet | - | In progress |
+| US-089 | P1 | Start and stop a rain replay on the server with one command each | M | [[rain-replay-test-environment-stories]] 2 | None to build. `US-088` supplies the storm | None yet | - | Reviewed |
+| US-086 | P2 | Prune old rows of `flood_road_values` | S | [[core-output-hygiene-stories]] 1 | `US-073`. The size reading is better after `US-089` | None yet | - | Not started |
+| US-087 | P3 | Make `test_flood_areas.py` run without hand-set paths, and run it in CI | S | [[core-output-hygiene-stories]] 2 | None | None yet | - | Not started |
 
 ## Backlog
 
@@ -122,7 +126,7 @@ and E7 were cleared the same day ([[sprint-plan-2]]).
 
 | Risk | Impact | Mitigation |
 | ---- | ------ | ---------- |
-| Sprint 12 holds two M, seven S, and two XS rows, and it is also the slip buffer | A slip in Sprints 9 to 11 has no room | `US-033` (M, P3), `US-083` (M, P3), `US-082` and `US-081` (S, P3) are the first rows to move to the next plan. Moving a row the user placed needs the user's go. |
+| Sprint 12 holds three M, ten S, and two XS rows, and it is also the slip buffer | A slip in Sprints 9 to 11 has no room | `US-033` (M, P3), `US-083` (M, P3), `US-082` and `US-081` (S, P3) are the first rows to move to the next plan, then `US-087` (S, P3). `US-088` and `US-089` (P1) stay, because the deferred DAG analysis needs them. Moving a row the user placed needs the user's go. |
 | `US-033` (`DESIGN.md`) is the last row of Sprint 12 and depends on `US-077` to `US-083` | If those rows slip, `US-033` slips with them | `US-033` extracts tokens from the UI that those rows finish. Moving it to the next plan with them is the plan. |
 | Plan 2 slips, so Story R5 or E5 is not `Done` when Sprint 9 starts | Sprint 9 cannot start its rows | Sprint 12 absorbs one week of slip. Beyond that, start a new plan and move rows. |
 | The fallback is today's single-step model | A fallback response can still send a traveller into rising water | The response carries a flag and the frontend says "timing check unavailable". Track how often the fallback runs. |
@@ -161,4 +165,5 @@ file and in this plan.
 - **2026-10-07, active.** The replay was still running at this check (42 of 48 hours, `flood_mapping_full` unpaused), so the user asked to hold off on `rollout.ps1` and anything that recreates `graphhopper` or `floodmap-backend`, while continuing read-only work. `US-072`'s steps 3 to 5 of [[sprint-11-server-rollout]] ran: `ROUTING_READER_PASSWORD` set in `.env`, the `routing_reader` role created (reads the 5 contract tables, confirmed on host ADMIN), and the `routing_adapter` Airflow pool created. `US-071`, `US-074`, and `US-075` need no rebuild, so their evidence was captured now and they moved to `Done` in `TODOS.md` and above. `US-072` and `US-073` still wait for `rollout.ps1`. A subagent checked `US-045` and `US-069` against the live replay: neither is ready to close. `routing_adapter` only started running 2 hours before the check, so 9c has one real data point (60.1 s build, 8.21 min past `3_calculate_depth`, over the 5-minute limit, but indistinguishable from the new DAG's cold start at n=1), and `table_timing.ps1` has no `ST_Value` spot-check. The 42-hour storage reading shows `flood_extent_polygon` and `edge_depth_tables` holding their retention caps, but `docker_data.vhdx` and `netcdf_values` are still growing, and no 24-hour reading exists to compare against. Both wait for the 48-hour mark and more `routing_adapter` runs; see `TODOS.md`.
 - **2026-10-07, active.** `flood_mapping_full` paused (user's call, ahead of the natural 48-hour end), so `rollout.ps1` ran on host ADMIN against `modular`. `graphhopper` needed a graph re-import first (`US-051`'s profile fingerprint change; the app's own edge-based graph hash held, so the table stayed valid, see [[graph-reimport-procedure]]). Every check not needing the DAG then passed: `scenario-check.sh` (32/32), and the engine proof's `compare` (37.5% changed, median detour 0.94), `crossings` (0), `departures` (3/3), and `latency` (6/6 within 2x baseline) against 24 real pairs. `US-051`, `US-052`, `US-053`, and `US-072` moved to `Done` above. `US-054`'s browser check and `US-073`'s DAG-timing measurement, along with `US-045` and `US-069`, are deferred to after Sprint 11 at the user's request, to be tested together. `US-055` stays `In progress` pending those.
 - **2026-10-07, active.** `US-054`'s browser check completed: drove the deployed frontend by hand (`type`/`Enter`, not URL params; needed a fresh clear-and-retype cycle per field) with a pair noted elsewhere as currently blocked, and the alert rendered the acceptance text exactly. `US-054` moved to `Done`. `US-055` now has only `US-045` left among its own dependencies, deferred with the rest of the DAG-timing work until after Sprint 11.
-
+- **2026-10-07, active.** Four rows added to Sprint 12 at the user's request, from the log of 2026-10-07 and a new ask: `US-086` (prune `flood_road_values`, S, P2), `US-087` (run `test_flood_areas.py` in CI, S, P3), `US-088` (cut the storm of 2026-09-16/17 into a replay event, S, P1), and `US-089` (start and stop a replay with one command, M, P1). Sprint 12 now holds three M, ten S, and two XS rows, over the size of one week, so the move order is in the Risks table. No row was moved. The user asked to build `US-088` and `US-089` before Sprint 12 starts, so both are `In progress` while Sprint 12 has no actual start date, and neither is in `TODOS.md`, which holds only the current sprint (rule 9).
+- **2026-10-07, active.** [[rain-replay-test-environment-stories]] Story 2 (`US-089`) moved from `In progress` to `Reviewed`. Built and merged into `modular`, 58 Python tests pass, `replay.ps1` not yet run on the server. `US-088` stays `In progress`: the NASA download hosts did not answer from the build session, so the user runs the download on the Mac.

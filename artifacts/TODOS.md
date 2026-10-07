@@ -172,9 +172,9 @@ Unfinished items carried over from Sprint 8. The Done items of Sprints 4 to 8 we
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 12, 2026-12-07 to 2026-12-13, in [[sprint-plan-3]]. It is spare capacity, and no story is placed in it.
+The next sprint is Sprint 12, 2026-12-07 to 2026-12-13, in [[sprint-plan-3]]. It holds 15 rows (`US-076` to `US-089` and `US-033`) and is over the size of one week. `US-088` and `US-089` started early, at your request, and are tracked in [[rain-replay-test-environment-stories]] and [[sprint-plan-3]], not in this file, because Sprint 12 has not started.
 
-Checked on 2026-10-07 against `sprint-plan-3`: no row to check.
+Checked on 2026-10-07 against `sprint-plan-3`: Sprint 12's rows depend on no open blocker. `US-088` needs the NASA download, which the build session could not reach, and the user runs it on the Mac.
 
 Any blocker stops Sprint 12: None
 
