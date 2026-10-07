@@ -1,8 +1,13 @@
+import sys
 import unittest
 from datetime import datetime, timedelta
+from pathlib import Path
 
-from extract_run import Segment, impassable_from_m, metric_rows, segments_from_rows
+from extract_run import FLOOD_UTILS_DIR, Segment, impassable_from_m, metric_rows, segments_from_rows
 from metrics import DepthSeries, extract
+
+REPO = Path(__file__).resolve().parents[2]
+OWNER = REPO / "floodmap" / "graphhopper-flood-road" / "scripts" / "flood_utils.py"
 
 T10 = datetime(2026, 9, 23, 10, 0)
 T11 = datetime(2026, 9, 23, 11, 0)
@@ -95,6 +100,19 @@ class ImpassableFromTests(unittest.TestCase):
             impassable_from_m(),
             {"motorbike": 0.20, "car": 0.30, "truck": 0.35, "foot": 0.40},
         )
+
+    def test_reads_them_from_the_owner_module(self):
+        impassable_from_m()
+        self.assertIn("flood_utils", sys.modules, "impassable_from_m did not import flood_utils")
+        self.assertEqual(Path(sys.modules["flood_utils"].__file__).resolve(), OWNER)
+
+    def test_airflow_mounts_the_owner_where_the_extractor_looks(self):
+        # The blocker airflow-cannot-import-flood-utils: ./scripts is /opt/airflow/scripts in the container,
+        # so FLOOD_UTILS_DIR resolves under /opt/airflow and needs this mount, or the import fails there only.
+        folder = OWNER.parent.relative_to(REPO).as_posix()
+        compose = (REPO / "compose.yml").read_text(encoding="utf-8")
+        self.assertIn(f"- ./{folder}:/opt/airflow/{folder}:ro", compose)
+        self.assertEqual(FLOOD_UTILS_DIR.resolve(), OWNER.parent)
 
 
 if __name__ == "__main__":
