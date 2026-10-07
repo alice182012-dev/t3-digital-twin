@@ -46,7 +46,7 @@ US-074 any time.
 - The 9c limit (end within 5 minutes of `3_calculate_depth`) needs one measurement on the server with the asset trigger. A pool keeps routing tasks from taking depth's worker slots.
 - The routing DAG needs the run id from the asset event, or must query the newest published run.
 - The read-only role needs a server change. It waits for `US-055` and the end of the replay.
-- Sprint 11 also holds `US-033` (M), so the sprint is fuller than the others (see [[sprint-plan-3]] Status history).
+- Sprint 11 held `US-033` (M) when this plan was written. It moved to Sprint 12 on 2026-10-07 (see [[sprint-plan-3]] Status history).
 
 ## Status history
 

@@ -200,6 +200,22 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   schema and stay unused. The raw architecture doc still describes `background_cycle`, and it is read-only.
 - **Revisit if:** the user wants a forecast beyond the 2-hour window of the 15-minute cycle.
 
+## D-010: The legend keeps "As of", and the "Powered by GraphHopper" line and links are removed
+
+- **Date:** 2026-10-07
+- **Status:** active. Decided by the user on 2026-10-07.
+- **Decided by:** the user, after the frontend recheck against the mockup ([[frontend-mockup-recheck-and-sprint-11-start]], differences G4 and G5).
+- **Decision:** The legend keeps "As of `time`" for a step at or before now and "Forecast for `time`" for a later step. It does not
+  return to the mockup's "Updated". The "Powered by GraphHopper" line is deleted from the empty routing panel if the license allows it. The settings box's links to `graphhopper.com` (info, imprint, privacy, terms) are deleted too, as the user confirmed the same day.
+- **Why:** The timestep shows when the data is valid, not when it was updated ([[map-shows-forecast-not-now]]). The mockup shows
+  neither a "Powered by" line nor GraphHopper's name.
+- **Alternatives:** Return to "Updated" to match the mockup. Keep "Powered by" as a credit.
+- **Evidence:** `timestepLabel.ts` produces "As of" and "Forecast for". `sidebar/PoweredBy.tsx` renders the line. The GraphHopper Maps
+  source is Apache 2.0 (`floodmap/graphhopper-maps/NOTICE.md`), which does not require a badge in the UI. It does require the license and
+  notice files to stay with the code, so `NOTICE.md` and `LICENSE.txt` stay. This is a reading of the license by Claude, not legal advice.
+- **Affects:** [[frontend-mockup-recheck-stories]] Stories 4 (`US-079`) and 5 (`US-080`). The legend part of [[map-shows-forecast-not-now]] is settled.
+- **Revisit if:** the project is published outside the team, or the user wants the mockup's "Updated" wording back.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and

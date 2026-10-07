@@ -44,7 +44,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `DESIGN.md` lists the tokens (colors, type scale, spacing) extracted from the mockup, and each value the
   shipped `FloodLegend.module.css` and `PlaceDepthPopup.module.css` use either matches a token or is listed
   as a known divergence.
-  Priority: P3. Status: Not started. Estimate: M. Sprint: 11 ([[sprint-plan-3]]; 2026-11-30 to 2026-12-06). Dependencies: None. Blocks nothing.
+  Priority: P3. Status: Not started. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13), moved from Sprint 11 on 2026-10-07 so it extracts from the UI that `US-077` to `US-083` finish. Dependencies: `US-077` to `US-083`. Blocks nothing.
 
 - **Story 3 (US-034): Soak the flood-road backend and check it against known answers.**
   As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a 48-hour soak and
@@ -231,6 +231,7 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
   Story 5 stays in Sprint 2 (its decision sets Sprint 3's wording), Stories 2 and 3 to the next plan (P3 and blocked on user input).
 - **2026-09-29, draft.** Story 3 (the soak) is in [[sprint-plan-2]] Sprint 5, before the routing engine builds on the backend. Story 2
   (`DESIGN.md`) is in [[sprint-plan-3]] Sprint 11.
+- **2026-10-07, draft.** Story 2 (`US-033`) moved from Sprint 11 to Sprint 12 of [[sprint-plan-3]], at the user's request, so the tokens come from the UI that the stories of [[frontend-mockup-recheck-stories]] finish.
 - **2026-09-29, draft.** Story 5 was `Reviewed`, not `Done`: the user chose to keep narrowing the publish delay
   ([[five-minute-tile-freshness]] option D), not accept it as final and not commit to option E. Added
   Story 6 (the option D work) to Sprint 4.
