@@ -30,17 +30,31 @@ engine proof runs).
   [[edge-depth-table-format]]) and the tiles in MinIO: schema, units, CRS, the time convention (UTC in the
   database, +07 in filenames), keys, retention (8 runs, 48 h for `netcdf_values`), and `flood_extent_step.published_at`
   as the readiness flag.
-  Priority: P1. Status: Reviewed (built on `modular`, live check passed on the server's backend container on 2026-10-07; screenshot pending).. Estimate: M. Sprint: 11. Dependencies: None.
-  Evidence: None yet.
+  Priority: P1. Status: Done. Estimate: M. Sprint: 11. Dependencies: None.
+  Evidence: ![[us-071-live-schema-contract-2026-10-07.png]]
+  Details:
+  1. Built `core_contract.py` (the parser) and `test_core_contract.py` (the offline parser tests plus the live-schema
+     test), reading `artifacts/docs/concepts/core-output-contract.md`.
+  2. The live test connects to `storage-postgres` and compares every contract table's columns, types, nullability
+     and keys against `pg_attribute`/`pg_constraint`.
+  3. On 2026-10-07, run on the server (host ADMIN) in a one-off container with the repo mounted read-only: "live
+     schema matches the contract for 5 tables, ok". A deliberately wrong page was checked earlier and failed as
+     expected.
+  4. US-072, US-073 and US-075 read this contract's table list, so it unblocks them.
 
 - **Story C2 (US-072): Run the routing backend on a read-only database role.**
   As the operator, I want the backend to connect with a role that can only read the contract tables, so a
   consumer cannot write into the core.
   Given the role, when the backend runs on it, then every endpoint works and an `INSERT` into any core table
   fails with a permission error.
-  Priority: P1. Status: Reviewed (built on `modular`, offline tests pass; role script and live test not yet run, they wait for the end of the replay).. Estimate: S. Sprint: 11. Dependencies: Story C1 (the table list), and
+  Priority: P1. Status: Done. Estimate: S. Sprint: 11. Dependencies: Story C1 (the table list), and
   `US-055` for the server run.
-  Evidence: None yet.
+  Evidence: ![[us-072-reader-role-2026-10-07.png]]
+  Details:
+  1. On 2026-10-07, host ADMIN: `ROUTING_READER_PASSWORD` added to `.env`, `scripts/database/create_routing_reader_role.py` run, confirmed the role reads the 5 contract tables.
+  2. `floodmap-backend` recreated as `routing_reader` (confirmed via `printenv` and a clean startup log).
+  3. `test_reader_role.py` run live: every contract table's `SELECT` works, every table's `INSERT` is refused, and a table outside the contract is refused too. Print line: "ok: routing_reader reads 5 contract tables and writes nothing".
+  4. A 116-check soak run against real traffic produced 0 `permission denied` lines in the backend log, and all 5 contract-table endpoints (`/flood/runs`, `/flood/timesteps`, `/flood/areas`, `/flood/points`, `/flood/forecast`) answered correctly under the reader role.
 
 - **Story C3 (US-073): Move the routing-owned tasks into their own DAG, triggered by the core's published output.**
   As a maintainer, I want the tasks that only routing needs to run in a separate DAG, so a routing failure or
@@ -65,15 +79,31 @@ engine proof runs).
   `td_limit_cm` all read them, then there is one source, the existing test that compares `td_limit_cm` with
   `flood_utils` still passes, and the extractor's import works inside the Airflow container (the problem of
   [[airflow-cannot-import-flood-utils]] must not return).
-  Priority: P2. Status: Reviewed (built on `modular`, tests pass; the Airflow container import is unchanged and was checked on 2026-10-07).. Estimate: S. Sprint: 11. Dependencies: None.
-  Evidence: None yet.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 11. Dependencies: None.
+  Evidence: ![[us-074-vehicle-limit-owner-2026-10-07.png]]
+  Details:
+  1. `VEHICLE_PROFILES` in `flood_utils.py` is the one owner of the vehicle depth thresholds.
+  2. `scripts/test_vehicle_limit_owner.py` scans the repo's source files and fails if a second file defines the
+     same limits, and the existing test comparing `td_limit_cm` (GraphHopper `config.yml`) with `flood_utils`
+     still passes (confirmed earlier re-running `test_time_aware_route.py`'s
+     `test_the_limits_equal_the_thresholds_of_flood_utils`).
+  3. Run on the server (host ADMIN) on 2026-10-07: `test_no_source_file_defines_the_limits_again ... ok`.
+  4. The Airflow container's import of `flood_utils` ([[airflow-cannot-import-flood-utils]]) was checked
+     unchanged on 2026-10-07.
 
 - **Story C5 (US-075): Fail a test when the backend reads a table outside the contract.**
   As a maintainer, I want a guard so routing cannot grow a new hidden dependency on the core.
   Given the backend source, when the guard test scans its SQL for table names, then it passes only for tables
   listed in the contract, and a query on any other table fails it.
-  Priority: P2. Status: Reviewed (built on `modular`, tests pass and a fault check fails as it should).. Estimate: S. Sprint: 11. Dependencies: Story C1.
-  Evidence: None yet.
+  Priority: P2. Status: Done. Estimate: S. Sprint: 11. Dependencies: Story C1.
+  Evidence: ![[us-075-contract-table-guard-2026-10-07.png]]
+  Details:
+  1. `test_backend_reads_contract_tables.py` reads the backend's SQL with `ast` and lists every table name it
+     queries.
+  2. The guard passes only when every table is one of the 5 the contract (Story C1) lists, and fails when a query
+     targets a table outside it.
+  3. Run on the server (host ADMIN) on 2026-10-07: "backend reads only contract tables (5 listed) ... backend
+     reads ['flood_depth_raster_tile', 'flood_extent_polygon', 'flood_extent_step', 'flood_road_values'] ... ok".
 
 ## Status history
 
