@@ -4,13 +4,14 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-08
 ---
 
 # GraphHopper flood-road backend
 
-`floodmap/graphhopper-flood-road/backend/server.py` sits between the frontend and a pinned
-GraphHopper instance. It answers flood queries GraphHopper cannot answer on its own, and proxies
+`floodmap/graphhopper-flood-road/backend/server.py` sits between the frontend and the `graphhopper`
+service, which runs the time-aware image `graphhopper-time-aware:local` (see "The pinned stock image,
+and why the `foot` profile was blocked"). It answers flood queries GraphHopper cannot answer on its own, and proxies
 the rest of GraphHopper's API unchanged.
 
 ## Why a separate backend exists
@@ -23,15 +24,16 @@ Both `GET /flood/areas` (the map overlay) and `POST /route` (routing) call the s
 function, `flood_areas.derive_areas`, so the overlay a user sees and the areas GraphHopper actually
 routes around can never drift apart.
 
-## Three flood tables, one intentional split
+## Flood tables, one intentional split
 
-The backend reads from three separate PostGIS tables, and they are not interchangeable:
+The backend reads from separate PostGIS tables, and they are not interchangeable:
 
 - `flood_road_values`, keyed by `(timestamp, forecast_time)`. `flood_areas.py` reads this table to
-  build the `custom_model` for routing. Its own ingestion pipeline is separate from the tile
-  pipeline below.
-- `flood_extent_polygon`, keyed by `(run_ts, valid_time)`. `flood_extent_runs.py` reads this table
-  to back `GET /flood/runs` and `GET /flood/timesteps`, the map's timestep picker. See
+  build the `custom_model` for routing. The task `flood_on_roads` of the DAG `routing_adapter` writes it
+  from `flood_depth_raster_tile`, so it has its own writer and its own timing.
+- `flood_extent_polygon`, keyed by `(run_ts, valid_time_utc, dn_code)`, and `flood_extent_step`, keyed
+  by `(run_ts, valid_time_utc)`. `flood_extent_runs.py` reads the polygon table for `GET /flood/runs`
+  and the step table for `GET /flood/timesteps`, the map's timestep picker. See
   [[minio-flood-extent-pipeline]] for how this table gets populated.
 - `flood_depth_raster_tile`, keyed by `(run_ts, valid_time_utc, tile_y, tile_x)`, one EPSG:4326
   raster tile per row. `flood_points.py` reads it to back `GET /flood/points`. `scripts/flood_extent/raster_load.py`
@@ -45,8 +47,9 @@ not point the routing derivation at `flood_extent_polygon`, and do not point the
 ## Request flow for POST /route
 
 `graphhopper-maps` sends its route request body unchanged; that body already carries three extra
-fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_handle_route` in
-`server.py` does four things:
+fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. With `TIME_AWARE_ROUTING`
+off, the default in `compose.yml`, `_handle_route` in `server.py` does four things. The flag-on path is
+in "The engine in the backend (US-052)".
 
 1. Strips those three fields plus `buffer`, `simplify`, and `min_area` from the body.
 2. Calls `flood_areas.derive_areas` (through a 30-second in-process cache, `cached_areas`) to get
@@ -71,6 +74,9 @@ fields the vendored frontend fork adds: `valid_time`, `run`, `vehicle_type`. `_h
 | `/flood/areas` | GET | The same flood polygons `POST /route` grades against, for the map overlay. |
 | `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster_tile`. |
 | `/route` | POST | Flood-graded route; see the flow above. |
+| `/route/departures` | POST | When the usual route first clears, from the edge depth table. See "The departures endpoint (US-053)". |
+| `/flood/forecast` | POST | Mean depth, maximum depth, and wet fraction along a route for up to 8 steps of 15 minutes, from `flood_depth_raster_tile` (`flood_forecast.py`). |
+| `/flood/profile` | POST | Depth at evenly spaced samples along a route at one `valid_time`, from `flood_depth_raster_tile` (`flood_profile.py`). |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
 | `/places/reverse` | GET | The nearest named Vietnamese place to `lat` and `lon` (Photon `/reverse`), as `{"result": {name, address, ...} or null}`. Backs the place-depth popup. |
 
@@ -126,26 +132,28 @@ request, and the first raster function call in a new PostgreSQL backend loads th
 library, which took 56 ms locally. A full request is therefore about 58 ms locally, down from about
 150 ms. The server's own latency has not been measured after this change.
 
-## The pinned image, and why the `foot` profile was blocked
+## The pinned stock image, and why the `foot` profile was blocked
 
-`compose.yml` pins the `graphhopper` service to
-`israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`,
-a 12.0-SNAPSHOT build, by digest rather than `:latest`. The `ch.disable`-in-body behavior the
+`compose.yml` builds the `graphhopper` service from `java/time-aware-routing` as
+`graphhopper-time-aware:local`. The `Dockerfile` of that folder starts from the stock image
+`israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32`
+(`ARG STOCK_IMAGE`), a 12.0-SNAPSHOT build pinned by digest rather than `:latest`. A comment in
+`compose.yml` keeps the same digest as the rollback line. The `ch.disable`-in-body behavior the
 routing flow above depends on is undocumented in that build and could change without notice, so the
 pin is deliberate: re-pull only after re-running the `ch.disable` smoke test.
 
 Adding any new vehicle profile used to fail at startup with `Cannot compile expression:
 '<name>_access' not available`, thrown from GraphHopper's own `checkProfilesConsistency()`. This
-was not a broken build. This pinned image's `graphhopper.sh` entrypoint defaults its graph output
+was not a broken build. The stock image's `graphhopper.sh` entrypoint defaults its graph output
 directory to `/data/default-gh` and always passes it as a `-Ddw.graphhopper.graph.location` JVM
 system property, which overrides `config.yml`'s `graph.location: /data/graph-cache` setting
-(Dropwizard system-property overrides win over the YAML file). `compose.yml`'s entrypoint never
+(Dropwizard system-property overrides win over the YAML file). `compose.yml` never
 passed the `-o` flag that changes that default, so the app always loaded a graph baked into the
 image at `/data/default-gh`, imported once with only `car_access`, `hgv`, and the other three
 built-in profiles' encoded values, before this repository's history starts. `/data/graph-cache`,
 the actual mounted volume, was never used at all, which is why every earlier attempt saw no import
 progress and an empty cache directory. Fixed by adding `-o /data/graph-cache` to the `graphhopper`
-service's `entrypoint` in `compose.yml`, which makes the app import the mounted OSM extract into
+service's `command` in `compose.yml` (`run-time-aware.sh` takes the same `-c` and `-o` options), which makes the app import the mounted OSM extract into
 the real, persistent volume using whatever `graph.encoded_values` `config.yml` declares.
 `graphhopper/config.yml` now registers a fourth profile, `foot`, backed by `foot_custom.json`
 (`foot_priority` stays trimmed out; see that file's own comment for why). See
@@ -209,7 +217,7 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 
 ## The time-aware module (US-049, skeleton)
 
-`java/time-aware-routing/` is a Maven module built against GraphHopper commit `d7dc1b06` (`12.0-SNAPSHOT`), the commit the stock image's jar came from. It changes no behavior yet.
+`java/time-aware-routing/` is a Maven module built against GraphHopper commit `d7dc1b06` (`12.0-SNAPSHOT`), the commit the stock image's jar came from. The skeleton changes no weighting. The later sections add the search and the backend integration.
 
 - `TimeAwareGraphHopper` extends `GraphHopper` and returns a `TimeAwareWeightingFactory`, which today returns the stock weighting.
 - `com.graphhopper.http.GraphHopperManaged` is a shadow copy of the stock class. `GraphHopperBundle` calls `new GraphHopperManaged(...)`, and the web server has no setting to pick another class. The image puts the module's jar before `graphhopper-web.jar`, so the JVM loads the copy. The log line `TimeAwareGraphHopper active` proves which class loaded. The copy drops the GTFS branch.
@@ -218,23 +226,23 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 - A weighting that only raises weights keeps the LM lower bounds valid ([[routing-not-time-aware]], 2026-10-05).
 - 12.0-SNAPSHOT is not on Maven Central. CI and the `Dockerfile` both build the pinned commit first. CI is `.github/workflows/java-module.yml`.
 
-Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. On the server (2026-10-05) the image started beside the live service with the `TimeAwareGraphHopper active` log line, and 12 routes (4 profiles, 3 pairs inside the model border) matched the live service. `java/time-aware-routing/smoke-test.sh` repeats the check. The image and its test container stay a separate service until a later story switches `compose.yml` to it.
+Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. On the server (2026-10-05) the image started beside the live service with the `TimeAwareGraphHopper active` log line, and 12 routes (4 profiles, 3 pairs inside the model border) matched the live service. `java/time-aware-routing/smoke-test.sh` repeats the check. Since `US-052`, `compose.yml` builds the `graphhopper` service from this image.
 
 ## The time-aware search (US-050)
 
 `TimeAwareGraphHopper.doCreateRouter` returns a `TimeAwareRouter`. Read from the pinned source (commit `d7dc1b06`): `Weighting.calcEdgeWeight` has no time argument, so a weighting alone cannot know the arrival time, and the search has to carry it. `Router.createSolver` and `createFlexSolver` are protected, so a subclass can run its own `RoutingAlgorithmFactory` without changing the shadowed `GraphHopperManaged`.
 
 - A request with the hint `td_departure` (epoch seconds), on a profile with the hint `td_limit_cm` (the vehicle's limit in cm), is routed by `TimeAwareDijkstra` through a flexible solver. Landmarks and contraction hierarchies are skipped, because their bounds and shortcuts do not know the time. Every other request goes the stock way.
-- The depth table comes from `TimeAwareGraphHopper.setTableSupplier`. Nothing connects it to `LatestTableSource` yet, so no server request is time-aware until `US-052`. With no table the request is routed as before.
+- The depth table comes from the `TableProvider` that `TimeAwareGraphHopper.setTableProvider` sets. `importOrLoad` sets it to a `LatestTableSource` when `time_aware.table_dir` is configured (`US-052`). With no table the request is routed as before.
 - A label holds the weight and the time spent. A node can hold several labels, and a label is dropped only when another one at that node is no heavier and no later. A test fails without that rule (a light but slow way hides a heavier way that arrives before the road closes).
 - A snap in the middle of a road gives virtual edges with ids past the graph's. `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to read `getOriginalEdgeKey()`. A test fails without that mapping.
 - In the tests, `SpeedWeighting` takes millis as distance over speed times 1000 and weighs a minute as 600, so test roads get their length from that.
 
-Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. Not measured yet: latency (`US-055`), and the search on real Hanoi roads (`US-055`).
+Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. On the server on 2026-10-07 (`US-055`, from `artifacts/TODOS.md`), `latency` stayed within 2 times the `US-046` baseline in all 6 cells, `compare` on 24 real pairs changed 37.5% of routes with a median detour ratio of 0.94, `crossings` found 0, and `scenario-check.sh` matched 32 of 32. `US-055` stays `In progress`, because `US-045` is open.
 
 ## The engine in the backend (US-052)
 
-Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `floodmap-backend` (default `false`).
+Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `floodmap-backend` (default `false`). The engine was deployed and tested on the server on 2026-10-07 (`US-055`). `scripts/routing_proof/rollout.ps1` turns the flag on for the proof and puts it back off unless run with `-LeaveOn`. At rest on 2026-10-08 the backend reads `TIME_AWARE_ROUTING=false`, so ordinary live routing is still single-timestep. Whether `-LeaveOn` was used on 2026-10-07 is unconfirmed. `US-045` (live timing of task 9c) is still open.
 
 - **Flag off:** `POST /route` is today's request. The client's `td_*` fields are removed either way.
 - **Flag on:** the backend sends `td_departure`, the later of `valid_time` and the server clock, and no flood `custom_model`. GraphHopper answers with `td.status` (`applied`, `unknown`, or `fallback`), `td.run`, `td.departure`, `td.last_step`, and `td.reason` for a fallback. On `fallback`, or on an answer with no `td.status` (a GraphHopper without the module), the backend sends today's request with the flood custom_model and keeps `td.status: fallback` and the reason in the response. An error passes through, so a route closed by the table gives "Connection between locations not found".
@@ -242,7 +250,7 @@ Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `f
 - **Table folder:** `time_aware.table_dir` in `config.yml` (the volume `edge-depth-tables`, read-only at `/tables`). `TimeAwareGraphHopper` hashes the loaded graph after the import and follows `latest`. A table for another graph is refused, and the response names both hashes.
 - **Compose:** the `graphhopper` service builds from `java/time-aware-routing` (`graphhopper-time-aware:local`) and starts through `run-time-aware.sh`. Roll back by restoring the stock image line (kept as a comment) and setting the flag to `false`.
 - **All four vehicles (US-051):** `td_limit_cm` is 20 for `motorbike`, 30 for `car`, 35 for `truck`, and 40 for `foot` in `config.yml`. A test in Java and one in Python keep them equal to `threshold_cm` in `flood_utils.py` and to the limits of `ScenarioReport`. The report runs 32 cases for the four vehicles.
-- **Not seen yet:** the deployed image on the server, and the hash of the live graph equal to the table's. The tests show it on a small graph. `US-055` shows it on the real one.
+- **On the server:** the image was built and deployed on 2026-10-07 (host `ADMIN`, `rollout.ps1`), after a graph re-import for the `US-051` profile change. The flag stayed `false` at the end of that run (log of 2026-10-07). The hash of the live graph equal to the table's was not checked on its own. The `departures` check returned answers for 3 of 3 trips, and a table for another graph gives `status: unavailable`, so the hashes matched at that time.
 
 ## The departures endpoint (US-053)
 
@@ -251,7 +259,7 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
 - **The usual route** is requested with no flood model and no time-aware search, with the `edge_id` and `time` details and the hint `td_info`. The two details must line up one to one. If they do not, the endpoint answers with an error and does not guess.
 - **The table** is read by the backend's own reader (`edge_depth_reader.py`) from `EDGE_TABLE_DIR` (`/tables`, the volume `edge-depth-tables`, read-only). The table's graph hash must equal `td.graph_hash` from GraphHopper. A table that is missing, damaged, or for another graph gives `status: unavailable` and a `reason`, with HTTP 200, so the client can show "timing check unavailable".
 - **The rule** is the closure rule of `US-050`, with the margin of 600 s and the limit of the profile from `flood_utils.py`. A candidate is `blocked`, `unknown` (the trip ends after the last step), or `clear`. Candidates run from the step that contains now to the last step. The answer holds `run`, `run_age_s` (now minus the first step of the table), `candidates` (each with `departure`, `leave_at`, `arrival`, `status`), and `earliest_clear`.
-- **Not seen yet:** a real route on the server (`US-055`).
+- **On the server:** `departures` answered 3 of 3 real trips on 2026-10-07 (`artifacts/TODOS.md`, `US-055`).
 
 ## Open items
 
@@ -262,14 +270,16 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
   request, for every vehicle profile, whenever a `valid_time` was attached — which is always,
   since `TimeSlider` supplies one on mount. Root cause was a missing `geom_4326` column on
   `flood_road_values`; fixed 2026-09-23 by running the migration that was supposed to add and
-  backfill it. See [[flood-route-missing-geom-column]] for the full investigation. Worth checking
-  Airflow's ingestion DAG history for the same period, since its `INSERT`s reference that column
-  too and may have been failing silently.
+  backfill it. See [[flood-route-missing-geom-column]] for the full investigation. The GeoJSON
+  ingestion chain that also wrote that column left `flood_mapping_full` on 2026-09-24, and
+  `flood_on_roads` in `routing_adapter` now writes `flood_road_values`.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
-  with a real PostGIS and a stub GraphHopper. The 48-hour soak of `US-034`
-  ([[carried-over-backlog]] Story 3, Sprint 5) runs from 2026-10-02 00:45 +07 to 2026-10-04 00:45 +07.
+  with a real PostGIS and a stub GraphHopper. The soak of `US-034`
+  ([[carried-over-backlog]] Story 3) closed on 2026-10-05 on the 137 runs of the replay that ran
+  (2026-10-02 to 2026-10-04), not on 48 hours. The user waived the evidence screenshot, and the end
+  check of `run_soak.sh` over the window was not run (`sprint-plan-2`).
   "Soak and known-answer check" below describes the tooling. The comparison with the old Valhalla
   backend was dropped on 2026-10-01, because the Valhalla model was wrong when it ran.
 - GraphHopper's log has no size limit and each flood-graded `/route` request writes one line of up to

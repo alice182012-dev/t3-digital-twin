@@ -4,20 +4,20 @@ type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
 related: ["[[routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-07
+last_updated: 2026-10-08
 ---
 
 # Core output contract
 
-The 3Di pipeline (the Airflow DAG `flood_mapping_full`) publishes flood results that other applications read. This page lists what it publishes: five PostgreSQL tables, the edge depth files, and the vector tiles in MinIO. Routing is the first consumer. The story is `US-071` ([[routing-first-consumer-stories]] Story C1).
+The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read. This page lists what it publishes: five PostgreSQL tables, the edge depth files, and the vector tiles in MinIO. Routing is the first consumer. The story is `US-071` ([[routing-first-consumer-stories]] Story C1).
 
 The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the five column tables on this page and compares them with the live database. It fails when a column name, type, nullability, or position differs, or when a primary key or unique constraint differs. The `Primary key columns` and `Unique columns` bullets are its input for keys. The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema. Type is the text of PostgreSQL's `format_type(atttypid, atttypmod)`.
 
-The facts on this page come from the code at commit `5e4a314`. Each one cites its file. A fact the code cannot show is marked as unverified.
+The facts on this page were checked against the code at commit `db99bc1`. Each one cites its file. A fact the code cannot show is marked as unverified.
 
 ## Tables
 
-The DDL is in `scripts/database/`. Task `0b_ensure_schema` of `flood_mapping_full` runs it on every run (`dags/flood_mapping_dag.py:179-187`), and every `CREATE` and `ADD COLUMN` in it has `IF NOT EXISTS`.
+The DDL is in `scripts/database/`. Task `0b_ensure_schema` of `flood_mapping_full` runs it on every run (`task_ensure_schema`, `dags/flood_mapping_dag.py:168-176`), and every `CREATE` and `ADD COLUMN` in it has `IF NOT EXISTS`.
 
 ### flood_depth_raster_tile
 
@@ -58,7 +58,7 @@ One row is the dissolved polygon of one depth band at one forecast step of one r
 - **Unique columns.** `run_ts`, `valid_time_utc`, `dn_code`.
 - **Units.** `dn_code` names the band by its upper limit in centimetres. 10 is a depth over 0.05 m up to 0.1 m, and so on to 60, which ends at 0.6 m. 600 is any depth over 0.6 m. A depth of 0.05 m or less is dry and has no row (`BAND_TABLE` and `TOP_CODE` in `scripts/flood_extent/flood_extent.py:41-44`). `area_m2` is in square metres, measured in the model's projected CRS before the polygon is reprojected (`flood_extent.py:199-207`).
 - **CRS.** EPSG:4326.
-- **Writer.** Task `9_build_flood_tiles` calls `publish.publish_run` (`scripts/flood_extent/publish.py:49-76`). It writes only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, 2 by default (`dags/flood_mapping_dag.py:58`). A dry step has no rows.
+- **Writer.** Task `9_build_flood_tiles` calls `publish.publish_run` (`scripts/flood_extent/publish.py:49-76`). It writes only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, 2 by default (`dags/flood_mapping_dag.py:54`). A dry step has no rows.
 - **Retention.** The newest 8 runs by `run_ts` (`prune_polygon_rows`, `publish.py:135-169`). `FLOOD_EXTENT_KEEP_RUNS` changes the number.
 
 ### flood_extent_step
@@ -101,8 +101,8 @@ One row is the flood depth of one road piece at one forecast time, from one run.
 - **Units.** `depth` is in metres. It is the deepest of the samples taken every 1 m along the piece (decision D-006, `flood_on_roads.py:1-11`).
 - **CRS.** `geom_4326` is EPSG:4326. `geom` is the same line as GeoJSON text.
 - **Which rows exist.** A piece that is wet at any step of a run gets a row at every step of that run, with 0 where it is dry. A piece that is dry at every step has no row (`flood_on_roads.py:148-167`). `segment_id` is the id of the piece in `road_segment`. It is NULL on rows from the older GeoJSON chain, `scripts/database/geojson_to_pg.py`, which `flood_mapping_full` does not call.
-- **Writer.** Task `flood_on_roads` calls `flood_on_roads.compute`, after `9b_load_depth_raster` and `load_road_segments` (`dags/flood_mapping_dag.py:371-385`, `dags/flood_mapping_dag.py:457-459`).
-- **Retention.** None found. No code in `dags/` or `scripts/` deletes old runs from this table, so it keeps every run. This is unverified on the live server.
+- **Writer.** Task `flood_on_roads` of the DAG `routing_adapter` calls `flood_on_roads.compute`. It runs on the `FLOOD_DEPTH_RASTER` event of `9b_load_depth_raster` and after `load_road_segments` (`dags/routing_adapter_dag.py:145-159`, `dags/routing_adapter_dag.py:198`).
+- **Retention.** None found. No code in `dags/` or `scripts/` deletes old runs from this table, so it keeps every run. This is unverified on the live server. `US-086` (Sprint 12, not started) adds a prune.
 
 ### graph_edge
 
@@ -123,13 +123,13 @@ One row is one edge of the GraphHopper graph.
 
 ## Edge depth files
 
-Task `9c_build_edge_depth_table` writes one file per run, `<run_ts>.bin`, into the Docker volume `edge-depth-tables`. A text file named `latest` holds the name of the current file. The newest 3 files stay (`EDGE_TABLE_KEEP_RUNS`, `dags/flood_mapping_dag.py:67-73`). Depths are in centimetres, and the step times are seconds since 1970-01-01T00:00:00Z. The byte layout, the `latest` pointer, and the graph hash check are in [[edge-depth-table-format]].
+Task `9c_build_edge_depth_table` writes one file per run, `<run_ts>.bin`, into the Docker volume `edge-depth-tables`. A text file named `latest` holds the name of the current file. The newest 3 files stay (`EDGE_TABLE_KEEP_RUNS`, `dags/routing_adapter_dag.py:42`). Depths are in centimetres, and the step times are seconds since 1970-01-01T00:00:00Z. The byte layout, the `latest` pointer, and the graph hash check are in [[edge-depth-table-format]].
 
 ## Tiles in MinIO
 
 Task `9_build_flood_tiles` uploads Mapbox Vector Tiles of the flood extent polygons.
 
-- **Bucket.** `flood-extent`, set by `FLOOD_EXTENT_BUCKET` (`dags/flood_mapping_dag.py:62`). `minio-init` gives the bucket an anonymous download policy (`compose.yml:129-133`).
+- **Bucket.** `flood-extent`, set by `FLOOD_EXTENT_BUCKET` (`dags/flood_mapping_dag.py:58`). `minio-init` gives the bucket an anonymous download policy (`compose.yml:129-133`).
 - **Object name.** `runs/<run_ts>/<timestep_key>/<z>/<x>/<y>.pbf`. `timestep_key` is the time in the step's depth file name, in the form `YYYYMMDDTHHMMSS` (`publish.py:79-91`, `stamp_key` in `flood_extent.py:326-331`). The content type is `application/x-protobuf`.
 - **Content.** One layer named `flood_extent`, zoom levels 10 to 16. Each feature has the band code in the field `DN`, with the same values as `flood_extent_polygon.dn_code` (`flood_extent.py:186-192`, defaults in `flood_extent.py:315-316`). The code does not set a tiling scheme, so the tiles use GDAL's default MVT grid. This page does not verify which grid that is.
 - **Which steps.** Only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, and only wet ones. A dry step has no objects.
@@ -149,7 +149,7 @@ The database stores forecast step times in UTC, and file and object names carry 
 
 A row in `flood_extent_step` is the signal that a step is published. Its `published_at` is when the writer committed it. A consumer that sees the row can read the step's tiles and polygon rows.
 
-The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can finish before or after it. When 9b succeeds, it emits the Airflow asset `flood_depth_raster_tile` with `{"run_ts": "<run_ts>"}` in the event's `extra` (`dags/core_assets.py`, `US-073`). The event says that every timestep of that run is in `flood_depth_raster_tile`. The DAG `routing_adapter` runs on it, and its tasks `flood_on_roads` and `9c_build_edge_depth_table` write the other two outputs for that run. A consumer of those three outputs that is not an Airflow DAG checks for its own rows, as `flood_points.py` does with `_TIMESTEP_LOADED_SQL`. The event is in the code at this commit and not yet deployed on the server.
+The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can finish before or after it. When 9b succeeds, it emits the Airflow asset `flood_depth_raster_tile` with `{"run_ts": "<run_ts>"}` in the event's `extra` (`dags/core_assets.py`, `US-073`). The event says that every timestep of that run is in `flood_depth_raster_tile`. The DAG `routing_adapter` runs on it, and its tasks `flood_on_roads` and `9c_build_edge_depth_table` write the other two outputs for that run. A consumer of those three outputs that is not an Airflow DAG checks for its own rows, as `flood_points.py` does with `_TIMESTEP_LOADED_SQL`. `artifacts/TODOS.md` records `routing_adapter` as running on the server from 2026-10-07 16:00 +07. The timing of the asset trigger on the server is still being read (`US-073`).
 
 ## Retention
 

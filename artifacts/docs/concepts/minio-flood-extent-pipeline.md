@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [minio, airflow, flood-tile]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-08
 ---
 
 # MinIO flood-extent tile pipeline
@@ -82,8 +82,7 @@ match any tile the frontend can actually fetch, off by exactly 7 hours.
 Each dissolved band polygon for each timestep gets one row in `flood_extent_polygon`
 (`run_ts, valid_time_utc, dn_code, area_m2, geom`), upserted on
 `(run_ts, valid_time_utc, dn_code)` so a retried publish replaces its own row instead of
-duplicating it. `flood_extent_runs.py` reads only this table; it never touches the tile files
-directly.
+duplicating it. `flood_extent_runs.list_runs` reads this table, and `list_timesteps` reads `flood_extent_step`. Neither touches the tile files directly.
 
 ## PostGIS depth raster
 
@@ -167,8 +166,8 @@ this: checked against the live `storage-postgres` container on 2026-10-05, the t
 per-table autovacuum override (`scale_factor 0.2`, `threshold 50`, the cluster defaults), and a
 delete this size on every 15-minute cycle is expected to stay under that trigger between runs,
 unlike the unbounded growth it replaces. `last_autovacuum` was still null at that check because
-`flood_mapping_full` has been paused since the incident, so nothing has exercised the new prune
-yet.
+`flood_mapping_full` was paused then, so nothing had exercised the new prune. `flood_mapping_full` was
+unpaused on the server on 2026-10-08, and whether autovacuum has run since is unverified.
 
 `raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
 the newest `keep_runs` runs by `run_ts` and deletes every tile of older runs. A caller that passes
@@ -179,25 +178,40 @@ run is loaded again later. A value below 1 fails the load.
 
 ## How the frontend picks a timestep
 
-**Branch `fifteen-minute-cycle` (not deployed) changes the rest of this section.** `publish_run` builds
-tiles and polygons for the first `tile_steps` steps of a run only (`FLOOD_EXTENT_TILE_STEPS`, default 2).
-After a step's tiles and polygon rows are written, it records the step in `flood_extent_step`
-(`run_ts`, `valid_time_utc`, `is_empty`, `published_at`), which is the published flag. `GET /flood/timesteps`
-reads that table and returns, for each time, the newest run that published it, so entries can carry
-different runs and dry steps stay in the list. `FloodStore.ts` selects the latest step at or before now
-(`findNowTimestepIndex`) and re-picks on every refetch. Retention rises to 8 runs. Runs published before
-the table existed are backfilled only when the table is empty, from the newest 3 runs. The raster load
-still covers every step, and `POST /flood/forecast` reads it for the route depth chart.
-The text below describes the code on the deployed branch.
+**Publishing.** `publish.publish_run` builds tiles and polygons for the first `tile_steps` depth rasters of
+a run only (`FLOOD_EXTENT_TILE_STEPS`, default 2, read in `dags/flood_mapping_dag.py`). For each step,
+`write_step_rows` upserts the `flood_extent_polygon` rows and then the step's `flood_extent_step` row
+(`run_ts`, `valid_time_utc`, `is_empty`, `published_at`) in one transaction, after the tiles are uploaded.
+The `flood_extent_step` row is the published flag. A dry step gets a step row with `is_empty` true and no
+polygon rows. The raster load still covers every step of the run in `flood_depth_raster_tile`.
 
-`GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
-`flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.
-On load, `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` selects the timestep closest to
-now (`reanchorTimestepIndex`). The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`,
-a demo default, so the page opens in flood mode whatever the timestamps say. `defaultMapMode`, which
-would open in flood mode only when the newest timestep is within `FRESH_DATA_WINDOW_MS` (45 minutes)
-of now, exists but is not used at load while that demo default stays. `useFloodBootstrap`
-re-fetches the timestep list well inside that window so the map picks up a new run promptly.
+**Listing.** `GET /flood/timesteps` (`server.py`) takes an optional `run` query parameter, default
+`latest`. `flood_extent_runs.list_timesteps` then reads `flood_extent_step` and returns each valid time
+with the newest `run_ts` that published it (`max(run_ts)` grouped by `valid_time_utc`), so consecutive
+entries can carry different runs. Dry steps stay in the list. An explicit `run` lists only that run's steps.
+Each `valid_time` is converted to UTC+7 so it matches the tile folder name.
+
+**Choosing the step.** `useFloodBootstrap` (`useFloodState.ts`) calls `loadFloodTimesteps` on mount and
+every `TIMESTEP_REFRESH_INTERVAL_MS` (5 minutes). Each response dispatches `FloodTimestepsReceived` with
+the clock read after the fetch. The reducer in `FloodStore.ts` re-picks `selectedIndex` with
+`findNowTimestepIndex` on every response: the latest `valid_time` at or before now, never a later one. When
+every step is later than now, it falls back to the earliest step. An empty list gives -1. No control selects
+a step by hand.
+
+**Map mode.** The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`, a demo default, so the
+page opens in flood mode. `defaultMapMode` opens in flood mode only when the selected step is within
+`FRESH_DATA_WINDOW_MS` (45 minutes) of now. It runs only when `userChoseMapMode` is false, which does not
+happen at load while the demo default stays.
+
+**Route depth chart.** `DepthForecastChart.tsx` sends `POST /flood/forecast` with the route's points,
+`from` (`forecastWindowStart(Date.now())`), and `steps` (`FORECAST_STEPS`, 8). `flood_forecast.lookup_forecast`
+reads `flood_depth_raster_tile`, not the step table. Each valid time in the window takes the newest run
+that has a raster for it. `from` defaults to now floored to 15 minutes, and `steps` runs from 1 to 96
+(`MAX_STEPS`).
+
+**Retention and backfill.** `publish_run` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 8).
+`scripts/database/create_flood_extent_tables.py` backfills `flood_extent_step` from the newest 3 runs in
+`flood_extent_polygon`, only when the step table is empty.
 
 ## Open items
 

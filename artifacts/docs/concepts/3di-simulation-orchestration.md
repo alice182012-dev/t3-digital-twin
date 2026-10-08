@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-07
+last_updated: 2026-10-08
 ---
 
 # 3Di simulation orchestration
@@ -13,7 +13,7 @@ last_updated: 2026-10-07
 run a 3Di simulation, run it, download the result, turn it into depth rasters, and hand those to
 the flood-extent tile task, the depth raster load, and the flood-on-roads task. This page covers the first three steps,
 through the depth raster. See [[minio-flood-extent-pipeline]] for what happens to the rasters after.
-The last section covers the manual two-event test DAG, which runs the same steps on synthetic rain.
+The section "The manual two-event test DAG" covers a DAG that runs the same steps on synthetic rain.
 
 ## The DAG's task order
 
@@ -32,14 +32,16 @@ The last section covers the manual two-event test DAG, which runs the same steps
 
 The diagram leaves out the edges from `0b_ensure_schema` to `3b_upload_netcdf_postgres`,
 `9_build_flood_tiles`, and `9b_load_depth_raster`. The DAG has 8 tasks. Since 2026-10-07 (commit
-`77169c3` on the branch `modular`, not yet deployed) the routing tasks are in their own DAG,
-`routing_adapter`, described in the next section.
+`77169c3` on the branch `modular`) the routing tasks are in their own DAG, `routing_adapter`,
+described in the next section. `routing_adapter` is unpaused on the server (checked 2026-10-08), and
+`artifacts/TODOS.md` records it running there from 2026-10-07 16:00 +07.
 
 `0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
 `9_build_flood_tiles`, and `9b_load_depth_raster`, since each needs its PostGIS tables to exist
-first. It creates the netcdf tables that `3b_upload_netcdf_postgres` writes, `flood_road_values`
-with its `segment_id` column, and `road_segment` and `graph_edge`, which only `routing_adapter`
-uses. It runs before `9b_load_depth_raster`, so those tables exist before the first asset event.
+first. It creates the netcdf tables and the TimescaleDB tables (including the `netcdf_values` hypertable)
+that `3b_upload_netcdf_postgres` writes, `flood_road_values` with its `segment_id` column, the flood
+extent tables, the depth raster tables, and `road_segment` and `graph_edge`, which only
+`routing_adapter` uses (`task_ensure_schema`). It runs before `9b_load_depth_raster`, so those tables exist before the first asset event.
 
 Task `9b_load_depth_raster` declares the asset `FLOOD_DEPTH_RASTER` (`dags/core_assets.py`) as an
 outlet and sets `run_ts` in the event's `extra`. Airflow emits the event only when the task
@@ -85,11 +87,12 @@ samples the run's tiles along every GraphHopper edge and writes `<run>.bin`, the
 into `EDGE_TABLE_DIR`. It reads the export of the graph's edges from `EDGE_EXPORT_DIR`, then
 publishes the table (US-042): `latest` points at it, only forward, and the newest
 `EDGE_TABLE_KEEP_RUNS` stay. `EDGE_TABLE_DIR` is the Docker volume `edge-depth-tables`. The limit
-of `US-045` is that it ends within 5 minutes of `3_calculate_depth`. The asset trigger is not yet
-measured against that limit. See [[edge-depth-table-format]], "Build task".
+of `US-045` is that it ends within 5 minutes of `3_calculate_depth`. The one real run measured so far
+ended 8.21 minutes after it, which one run cannot tell apart from the catch-up of a new DAG. `US-045`
+stays open until the 12-hour replay of 2026-10-08 supplies more runs (`artifacts/TODOS.md`). See [[edge-depth-table-format]], "Build task".
 
 **Schedule.** The DAG runs on the cron `*/15 * * * *` with `catchup=False` and `max_active_runs=2`
-(`dags/flood_mapping_dag.py`), following the design in [[map-shows-forecast-not-now]]. The repository
+(`dags/flood_mapping_dag.py`), following the design in [[map-shows-forecast-not-now]] and decision D-014 in [[decision-log]]. The repository
 has no `plugins/` directory and no custom timetable. A run can last about 15 minutes, so the next
 slot's run may start while the previous one finishes. The two runs share no files. Each download goes
 to `RESULT_DIR/<sim_id>/`, and each reprojected raster is named after its `run_ts`.
@@ -100,13 +103,17 @@ time to the slot, and `run_forecast_process` sets the 3Di start time and the rai
 equals the slot, or the newest state at most two cycles older, else it cold starts. See
 [[hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
 [[flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
-[[fifteen-minute-cycle-tiles-and-histogram]]. The live deployment state after 2026-09-28 is
-unverified, because the DAG was paused again that day.
+[[fifteen-minute-cycle-tiles-and-histogram]]. The user unpaused `flood_mapping_full` at about
+15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). Whether the DAG stays unpaused
+after the replay is unverified. The server also had the test DAGs `calculate_depth_manual_test` and
+`flood_forecast_consecutive_state_test` (both `schedule=None`) and `zz_cold_start_probe` unpaused on
+2026-10-08. `zz_cold_start_probe` has no file in `dags/` in the repository, so its schedule is unverified.
 
 ## The rain gate
 
 `task_check_forecast_rain` calls `create_simulation.get_rain_forecast()` (Tomorrow.io, 15-minute
-steps, `RAIN_LOOKAHEAD_HOURS` ahead) and `evaluate_rain_gate()`. A cycle only proceeds to
+steps, `RAIN_LOOKAHEAD_HOURS` ahead). The source is Tomorrow.io because NCHMF did not approve API
+access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle only proceeds to
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
 mm/h). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
 run ends as a successful dry-cycle skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
@@ -125,7 +132,7 @@ mm/h before the start and after the last row. Setting only one of the two variab
 with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
 `scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
 (246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
-rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular` and not yet run on the server (`US-089`, [[rain-replay-test-environment]]). See
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` has not run yet (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]). The server's git remote for this repository is `alice`, not `origin`. See
 [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 
 ## Triggering the simulation
@@ -284,12 +291,11 @@ therefore opens in map mode, and the tester switches to flood mode by hand.
 
 ## Open items
 
-- `.env`'s current `MAX_WORKERS=1` and `AIRFLOW_WORKER_CONCURRENCY` default of 1 look
-  under-provisioned relative to what
-  `artifacts/docs/claude-plan/calculate-depth-threedidepth-cli.md` describes as already checked in.
-  Confirm which is actually current before assuming either concurrency figure without re-reading
-  `.env`.
-- No regression tests found for `create_simulation.py`'s hotstart/cold-start branching beyond
-  `test_threedi_connection.py` (connectivity only). `test/test.py`, a local end-to-end harness for
-  the retired GeoJSON chain, was removed on 2026-09-29; it called `create_simulation` but asserted
-  nothing about hotstart/cold-start behavior.
+- `.env` on the Mac, read on 2026-10-08, sets `MAX_WORKERS=1` and no `AIRFLOW_WORKER_CONCURRENCY`, so
+  the `compose.yml` default of 1 applies (line 28). `artifacts/docs/claude-plan/calculate-depth-threedidepth-cli.md`
+  recorded `MAX_WORKERS=8` and `AIRFLOW_WORKER_CONCURRENCY=2` as checked in. The server's `.env` is
+  unverified, so confirm it before relying on either concurrency figure.
+- `test/test_create_simulation_cycle.py` tests the hotstart and cold-start branching of
+  `run_forecast_process` (exact state, fallback up to two cycles old, older state as a cold start), and
+  `scripts/test_hotstart_policy.py` tests `should_hotstart`. `test/test.py`, a local end-to-end harness
+  for the retired GeoJSON chain, was removed on 2026-09-29.
