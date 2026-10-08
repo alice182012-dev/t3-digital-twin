@@ -155,7 +155,8 @@ FROM "designs"
   moves to another sprint, and the parts of a split story get new IDs. The ID follows the story's
   label in its file (`Story 4 (US-014)`) and is listed in the file's `us_ids` frontmatter. The
   `Item` column of each sprint table and each matching `TODOS.md` item carry it too. The next free
-  ID is `US-090`. Raise this number when you assign one.
+  ID is `US-096`. Raise this number when you assign one.
+- A user story file starts its name with the story IDs it holds, so a search for the ID finds the file: `US-094-095-archive-and-netcdf-retirement-stories.md` holds `US-094` and `US-095`, and a file with one story is `US-086-prune-flood-road-values.md`. A file with a consecutive run of IDs uses the first and last (`US-090-093-...`). A file with scattered IDs lists each one (`US-076-077-085-...`) up to four, and past four uses the `us_ids` frontmatter only and a name that says the theme. Name a new epic file this way when you create it, and rename an old one only when you next edit it, updating its `[[wikilinks]]` in the same pass (grep the vault for the old name).
 - A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of

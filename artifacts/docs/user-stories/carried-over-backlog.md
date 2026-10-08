@@ -5,7 +5,7 @@ us_ids: ["US-032", "US-033", "US-034", "US-035", "US-036", "US-037", "US-038", "
 status: draft
 subsystem: floodmap-frontend, floodmap-backend
 source_ideas: []
-related: ["[[sprint-plan]]", "[[mockup-screen-coverage]]", "[[frontend-polish]]", "[[map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[sample_rate_1_bottleneck]]"]
+related: ["[[sprint-plan]]", "[[sprint-plan-4]]", "[[mockup-screen-coverage]]", "[[frontend-polish]]", "[[map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[sample_rate_1_bottleneck]]"]
 tags: [user-story, epic, backlog, sprint-2]
 ---
 
@@ -44,7 +44,7 @@ which is in Sprint 3, so it is [[frontend-depth-features]] Story 4. The address 
   `DESIGN.md` lists the tokens (colors, type scale, spacing) extracted from the mockup, and each value the
   shipped `FloodLegend.module.css` and `PlaceDepthPopup.module.css` use either matches a token or is listed
   as a known divergence.
-  Priority: P3. Status: Not started. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13), moved from Sprint 11 on 2026-10-07 so it extracts from the UI that `US-077` to `US-083` finish. Dependencies: `US-077` to `US-083`. Blocks nothing.
+  Priority: P3. Status: Not started. Estimate: M. Sprint: none yet. It carries to plan 5 ([[sprint-plan-4]], "Carried to plan 5"), because `US-083` is in Sprint 16, the last sprint of plan 4. It moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: `US-077` to `US-083`, so it extracts from the UI that they finish. Blocks nothing.
 
 - **Story 3 (US-034): Soak the flood-road backend and check it against known answers.**
   As the engineer who owns routing, I want the GraphHopper flood-road backend to run for a 48-hour soak and
@@ -221,6 +221,7 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
   Priority: P1. Status: Not started. Estimate: S. Sprint: 8 ([[sprint-plan-2]], moved from Sprint 5 on 2026-10-05). Dependencies: the DAG unpaused for 48 hours, and the replay of Story 8 (`US-063`) running, and the user's read-only access to the server. The replay's start time is still to be given. The 24-hour and 48-hour readings follow from it.
   Proposed pass mark, not yet confirmed by the user: growth of 10 percent or less in each of the three database objects between hour 24 and hour 48. The starting values are the ones in [[2026-10-05]] (C: 163.4 GB free, `storage-postgres-data` 16.01 GB, `minio_custom` 14 GB, `flood_extent_polygon` 5.1 GB).
   The readings are read-only. The same run is the retest for `US-034` and `US-037`, so this story adds no load.
+  Revised acceptance (2026-10-08, D-015). The check runs on the 12-hour replay of `US-088`, not the 48-hour one. Read the same numbers at the start (about 15:05 +07 on 2026-10-08), at hour 6 (about 21:05 +07), and at hour 12 (after the last simulating run at 03:00 +07 on 2026-10-09). The check passes if the three database objects stop growing between hour 6 and hour 12, `flood_extent_polygon` holds rows for no more than the newest `keep_runs` runs, and no container was auto-paused for lack of space. The start reading is partial (15:17 +07: C: free, `docker_data.vhdx`, `minio_custom`, `flood_extent_polygon` only). The pass mark is growth of 10 percent or less per database object between hour 6 and hour 12.
 
 ## Status history
 
@@ -232,6 +233,7 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
 - **2026-09-29, draft.** Story 3 (the soak) is in [[sprint-plan-2]] Sprint 5, before the routing engine builds on the backend. Story 2
   (`DESIGN.md`) is in [[sprint-plan-3]] Sprint 11.
 - **2026-10-07, draft.** Story 2 (`US-033`) moved from Sprint 11 to Sprint 12 of [[sprint-plan-3]], at the user's request, so the tokens come from the UI that the stories of [[frontend-mockup-recheck-stories]] finish.
+- **2026-10-08, draft.** Story 2 (`US-033`) moved out of Sprint 12 of [[sprint-plan-3]], at the user's request to finish the routing first. Its dependencies `US-077` to `US-083` are in Sprints 13 to 16 of [[sprint-plan-4]], so it carries to plan 5. The user asked for Sprint 13. Rule 3 puts it after `US-083`, so the user is asked to confirm.
 - **2026-09-29, draft.** Story 5 was `Reviewed`, not `Done`: the user chose to keep narrowing the publish delay
   ([[five-minute-tile-freshness]] option D), not accept it as final and not commit to option E. Added
   Story 6 (the option D work) to Sprint 4.
@@ -267,3 +269,4 @@ Blocker tracking: [[docker-data-vhdx-fills-c-drive-again]]
 - **2026-10-05, draft.** The user said the replay is running again and will be checked after 48 hours. Story 12 (`US-069`) added to Sprint 5 at the user's request, to check the storage after the 48 hours. `US-034`, `US-037`, and this story all read the same window.
 - **2026-10-05, draft.** Stories 3 (`US-034`) and 6 (`US-037`) are `Done` at the user's decision, on the 137 runs of the replay, so Sprint 6 can start. Neither has its end check (`run_soak.sh`, `report.py`) or a new screenshot, and the user waived the evidence. The Details of each say so.
 - **2026-10-05, draft.** Story 12 (`US-069`) moved to Sprint 8 at the user's request: no testing now, continue after Sprint 7. Story 11 (`US-068`) is `Reviewed`: the XCom is built and tested (22 tests pass). The acceptance check on a real DAG run waits for the DAG to be unpaused.
+- **2026-10-08, draft.** Story 12 (`US-069`) is checked on the 12-hour replay, from hour 6 to hour 12 (D-015). The user decided this. The user confirmed the 10 percent growth mark on 2026-10-08.

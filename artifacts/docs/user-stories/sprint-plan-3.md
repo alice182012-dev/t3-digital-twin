@@ -6,7 +6,7 @@ plan_number: 3
 start_date: 2026-11-16
 end_date: 2026-12-13
 tags: [user-story, sprint-plan, routing, graphhopper]
-related: ["[[core-output-hygiene-stories]]", "[[rain-replay-test-environment-stories]]", "[[rain-replay-test-environment]]", "[[9c-sampling-step-runs-over-770-seconds]]", "[[routing-first-consumer-stories]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]", "[[frontend-mockup-recheck-and-sprint-11-start]]"]
+related: ["[[core-output-hygiene-stories]]", "[[rain-replay-test-environment-stories]]", "[[rain-replay-test-environment]]", "[[9c-sampling-step-runs-over-770-seconds]]", "[[routing-first-consumer-stories]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[time-aware-routing-engine]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[carried-over-backlog]]", "[[routing-not-time-aware]]", "[[frontend-mockup-recheck-and-sprint-11-start]]", "[[US-090-093-routing-paper-experiments-stories]]", "[[frontend-mockup-recheck-stories]]", "[[sprint-plan-4]]", "[[paper-handoff-routing-and-system]]", "[[schedule-routing-paper-experiments-and-move-frontend]]", "[[US-094-095-archive-and-netcdf-retirement-stories]]", "[[archive-3di-results-and-retire-netcdf-values]]"]
 ---
 
 # Sprint plan 3: the engine in the backend, the advice, and the rollout
@@ -18,7 +18,7 @@ so its sprint numbers continue at 9. It covers four weeks (`.claude/CLAUDE.md`, 
 ## Why these four sprints
 
 Four sprints because a plan covers four weeks. Sprints 9 and 10 hold the remaining engine work. Sprint 11 holds a
-carried, dependency-free item and the routing-as-first-consumer stories. Sprint 12 holds the frontend recheck against the mockup and is also the buffer for slips.
+carried, dependency-free item and the routing-as-first-consumer stories. Sprint 12 finishes the routing work: the paper experiments, the rain replay environment, and core output hygiene. The frontend recheck moved to Sprint 13, the first sprint of [[sprint-plan-4]], on 2026-10-08.
 
 Calendar, from `start_date` in the frontmatter:
 
@@ -32,7 +32,7 @@ Calendar, from `start_date` in the frontmatter:
 - **Sprint 9** adds the other two profiles, the backend switch with its fallback, and the departure endpoint.
 - **Sprint 10** shows the advice in the alert and rolls the engine out.
 - **Sprint 11** makes routing the first consumer of an explicit core output contract ([[routing-first-consumer-stories]]).
-- **Sprint 12** rechecks the frontend against the mockup ([[frontend-mockup-recheck-stories]]), builds the rain test environment ([[rain-replay-test-environment-stories]]), closes two core output gaps ([[core-output-hygiene-stories]]), and absorbs slips.
+- **Sprint 12** finishes the routing: it runs the four paper experiments ([[US-090-093-routing-paper-experiments-stories]]), builds the rain test environment ([[rain-replay-test-environment-stories]]), closes two core output gaps ([[core-output-hygiene-stories]]), and absorbs small slips. The frontend recheck ([[frontend-mockup-recheck-stories]]) and `US-033` are scheduled in [[sprint-plan-4]], because a plan covers four sprints and this one ends with Sprint 12.
 
 The advice waits for the table because option C reads depth by edge id. That puts the "wait until" alert in Sprint 10,
 later than an approach that joined route pieces by geometry would have. The user chose exactness over speed on
@@ -66,6 +66,7 @@ factor, and the flag goes on with evidence.
 | US-054 | P1 | Show "wait until" in the no-route alert | S | [[time-aware-routing-engine-stories]] R9 | Story R8, and [[frontend-polish]] Story 4 ([[sprint-plan]] Sprint 3) | ![[us-054-wait-until-alert-browser-2026-10-07.png]] | 1. Exact acceptance text rendered in a browser against the real backend, checked 2026-10-07 on host ADMIN. | Done |
 | US-070 | P1 | Stop a slow sampling step from holding the database | S | [[edge-depth-table-stories]] E8 | Story E3 | None yet | - | Reviewed |
 | US-055 | P0 | Prove the engine on the server and roll it out | M | [[time-aware-routing-engine-stories]] R10 | Stories R6, R7, R9, E7. Gate cleared 2026-10-02: the user set the latency factor to 2 | None yet | - | In progress |
+| US-094 | P1 | Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain | M | [[US-094-095-archive-and-netcdf-retirement-stories]] 1 | None to build. Needs real rain to prove. Blocks `US-095` and `US-086` | None yet | - | Not started |
 
 ## Sprint 11: the routing output contract
 
@@ -80,29 +81,23 @@ factor, and the flag goes on with evidence.
 | US-073 | P2 | Move the routing-owned tasks into their own DAG, triggered by the core's published output | M | [[routing-first-consumer-stories]] C3 | Story C1, and `US-055` for the server timing | None yet | - | Reviewed |
 | US-074 | P2 | Give the vehicle thresholds one owner | S | [[routing-first-consumer-stories]] C4 | None | ![[us-074-vehicle-limit-owner-2026-10-07.png]] | 1. `VEHICLE_PROFILES` in `flood_utils.py` is the one owner, guard test ok 2026-10-07 on host ADMIN. | Done |
 | US-075 | P2 | Fail a test when the backend reads a table outside the contract | S | [[routing-first-consumer-stories]] C5 | Story C1 | ![[us-075-contract-table-guard-2026-10-07.png]] | 1. Guard passes on the backend's 4 real tables, checked 2026-10-07 on host ADMIN. | Done |
+| US-095 | P1 | Retire the `netcdf_values` ingest | M | [[US-094-095-archive-and-netcdf-retirement-stories]] 2 | `US-094` proven on real rain. The server drop needs the user's go | None yet | - | Not started |
 
-## Sprint 12: frontend recheck against the mockup
+## Sprint 12: finish the routing
 
 **Dates:** 2026-12-07 to 2026-12-13 (Monday to Sunday)
 
-**Sprint goal:** the UI matches the approved mockup, or each difference is a recorded decision, and the two states the mockup lacks have an approved design. The sprint also absorbs slips from Sprints 9 to 11.
+**Sprint goal:** finish the routing: the paper experiments, the rain replay environment, and core hygiene. Each paper result names its storm, and the experiments read the replay data of `US-089`.
 
 | Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
 | ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-076 | P1 | Compare the live app with the mockup in Aside at 1366x768 | S | [[frontend-mockup-recheck-stories]] 1 | None. Best after `US-055` | None yet | - | Not started |
-| US-077 | P2 | Match the depth chart columns and the route tab text to screen 2e | S | [[frontend-mockup-recheck-stories]] 2 | `US-076` | None yet | - | Not started |
-| US-078 | P2 | Show the place names on the start and destination pins | S | [[frontend-mockup-recheck-stories]] 3 | `US-076` | None yet | - | Not started |
-| US-084 | P2 | Design the no-route and "wait until" states, then match the UI to the design | S | [[frontend-mockup-recheck-stories]] 9 | `US-076`, `US-055` | None yet | - | Not started |
-| US-085 | P2 | Time out a route request in the client | S | [[frontend-mockup-recheck-stories]] 10 | None | None yet | - | Not started |
-| US-079 | P3 | Name the page "Floodmap" and remove the "Powered by GraphHopper" line | XS | [[frontend-mockup-recheck-stories]] 4 | None | None yet | - | Not started |
-| US-080 | P3 | Keep "As of" and bring the `US-007` record in line | XS | [[frontend-mockup-recheck-stories]] 5 | None | None yet | - | Not started |
-| US-081 | P3 | Draw a second dashed line for the selected mode's depth limit | S | [[frontend-mockup-recheck-stories]] 6 | `US-077`, `US-074` | None yet | - | Not started |
-| US-082 | P3 | Show the travel time and the maximum depth on each route tab | S | [[frontend-mockup-recheck-stories]] 7 | `US-077` | None yet | - | Not started |
-| US-083 | P3 | Build a mobile version of screen 2e | M | [[frontend-mockup-recheck-stories]] 8 | `US-077`, `US-078`, `US-082` | None yet | - | Not started |
-| US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | `US-077` to `US-083`, so the tokens come from the final UI | None yet | - | Not started |
+| US-091 | P1 | Measure how often a single-timestep route meets a closed road on arrival | M | [[US-090-093-routing-paper-experiments-stories]] 2 | `US-047`, `US-050`, `US-052` (all `Done`), the depth tables of the replay of `US-089`, and the server state proved by `US-055` | None yet | - | Not started |
+| US-090 | P1 | Write the FIFO lemma and the correctness proof of the sticky-closure forward search | M | [[US-090-093-routing-paper-experiments-stories]] 1 | None | None yet | - | Not started |
 | US-088 | P1 | Cut the Hanoi storm of 2026-09-16 and 2026-09-17 into a replay event | S | [[rain-replay-test-environment-stories]] 1 | None. Needs the Earthdata login on the Mac | None yet | - | In progress |
 | US-089 | P1 | Start and stop a rain replay on the server with one command each | M | [[rain-replay-test-environment-stories]] 2 | None to build. `US-088` supplies the storm | None yet | - | Reviewed |
-| US-086 | P2 | Prune old rows of `flood_road_values` | S | [[core-output-hygiene-stories]] 1 | `US-073`. The size reading is better after `US-089` | None yet | - | Not started |
+| US-092 | P2 | Test how the vehicle limits change the result | M | [[US-090-093-routing-paper-experiments-stories]] 3 | `US-091` (its harness and pair set). Moves to Sprint 13 if the harness slips | None yet | - | Not started |
+| US-093 | P2 | Measure how often the sticky rule gives no route or a longer route than an arrival-only reference | S | [[US-090-093-routing-paper-experiments-stories]] 4 | `US-047`, `US-050` (both `Done`), the depth tables of the replay, and the sampler of `US-091` (copyable) | None yet | - | Not started |
+| US-086 | P2 | Prune old rows of `flood_road_values` | S | [[core-output-hygiene-stories]] 1 | `US-073`, and `US-094` (the 24-hour prune is safe only if the archive works, D-017). The size reading is better after `US-089` | None yet | - | Not started |
 | US-087 | P3 | Make `test_flood_areas.py` run without hand-set paths, and run it in CI | S | [[core-output-hygiene-stories]] 2 | None | None yet | - | Not started |
 
 ## Backlog
@@ -112,7 +107,6 @@ Nothing here has a sprint number.
 
 | Item | Why it has no sprint | Linked risk |
 | ---- | -------------------- | ----------- |
-| Measure how many routes arrival-only closure would change | Needs the engine shipped first. A number, not a decision. | [[sticky-c-lite-routing]], roadmap phase 7 |
 | Sweep alternative routes across departures | Build only if the timeline often says "blocked" while a detour exists. | [[departure-time-advice-research]], step 2 |
 | Precompute per-run piece windows for the timeline | Build only if the request-time query proves slow. | [[departure-time-advice-research]] |
 | Saved routes and push alerts | Need accounts and an alert channel, which do not exist. | [[departure-time-advice-research]] |
@@ -126,9 +120,13 @@ and E7 were cleared the same day ([[sprint-plan-2]]).
 
 | Risk | Impact | Mitigation |
 | ---- | ------ | ---------- |
-| Sprint 12 holds three M, ten S, and two XS rows, and it is also the slip buffer | A slip in Sprints 9 to 11 has no room | `US-033` (M, P3), `US-083` (M, P3), `US-082` and `US-081` (S, P3) are the first rows to move to the next plan, then `US-087` (S, P3). `US-088` and `US-089` (P1) stay, because the deferred DAG analysis needs them. Moving a row the user placed needs the user's go. |
-| `US-033` (`DESIGN.md`) is the last row of Sprint 12 and depends on `US-077` to `US-083` | If those rows slip, `US-033` slips with them | `US-033` extracts tokens from the UI that those rows finish. Moving it to the next plan with them is the plan. |
-| Plan 2 slips, so Story R5 or E5 is not `Done` when Sprint 9 starts | Sprint 9 cannot start its rows | Sprint 12 absorbs one week of slip. Beyond that, start a new plan and move rows. |
+| Sprint 12 holds four M and four S rows and is also the slip buffer. `US-088` and `US-089` started early, so the open work is smaller | A slip in Sprints 9 to 11 has little room | `US-087` (S, P3) is the first row to move to Sprint 13 of [[sprint-plan-4]], then `US-086` (S, P2). `US-088` and `US-089` (P1) stay, because the deferred DAG analysis needs them. The experiments `US-090` and `US-091` (P1) stay, because the user said to finish the routing first. Moving a row the user placed needs the user's go. |
+| `US-092` reuses the harness and the pair set of `US-091` inside one week | A story that reads another story's output belongs in a later sprint (`.claude/CLAUDE.md`, rule 3). The user placed both in Sprint 12, so the rule bends | `US-091` builds the harness first, and `US-092` starts when the harness runs on one vehicle. If the harness is not working by the middle of the sprint, `US-092` moves to Sprint 13 of [[sprint-plan-4]], with the user's go. |
+| The experiments need the replay data and the engine proof | `US-091` and `US-093` read depth tables, and the edge depth table keeps only the newest 3 runs (`EDGE_TABLE_KEEP_RUNS=3`). The 12-hour replay ends at 03:00 +07 on 2026-10-09, and `US-055` is still `In progress` | Copy the tables of the replay off the server before retention removes them, and record the run names in the result file. `US-055` already passed `compare`, `crossings`, `departures`, and `latency` on 2026-10-07. Only its DAG-timing pieces are open. |
+| A result without a named storm is read as a measured rate | The paper would overstate what the model shows | Each story of [[US-090-093-routing-paper-experiments-stories]] names its storm and says the depths are 3Di output. The real 2026-09-16 replay is real rain. The 50 mm/h storm is synthetic. |
+| `US-095` drops 2,428 MB of `netcdf_values` and cannot be undone, and `US-094` can be proven only on real rain, which the replay does not give | The drop could run before the archive holds a real storm, and a dry week would stall Sprint 11 | The drop needs `US-094` proven and the user's explicit go. If no real rain falls by the end of Sprint 11, `US-095` moves to the next plan, with the user's go, or the user accepts a one-off real-rain run as proof (open question 4 in [[US-094-095-archive-and-netcdf-retirement-stories]]). `US-094` is M and sits in Sprint 10 beside `US-055` (M) and `US-070` (S). |
+| The proof of `US-094` waits for a real forecast above the 5 mm/h rain gate | `US-094`, `US-095` (Sprint 11), and `US-086` (Sprint 12) cannot close until it rains. A dry spell stops all three. | The user chose to wait, with no gate change and no override (2026-10-08). If no qualifying forecast arrives, move the three rows to the next plan or ask the user to change the proof. |
+| Plan 2 slips, so Story R5 or E5 is not `Done` when Sprint 9 starts | Sprint 9 cannot start its rows | Sprint 12 absorbs a small slip. Beyond that, start a new plan and move rows. |
 | The fallback is today's single-step model | A fallback response can still send a traveller into rising water | The response carries a flag and the frontend says "timing check unavailable". Track how often the fallback runs. |
 | The chart and the engine show different depths | Two numbers for one route on one screen | Both sample the same tiles. Note the spacing difference in the chart's documentation. |
 | The user had not set the latency factor | Closed on 2026-10-02. The factor is 2 | Story R10 passes when the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1. |
@@ -167,3 +165,11 @@ file and in this plan.
 - **2026-10-07, active.** `US-054`'s browser check completed: drove the deployed frontend by hand (`type`/`Enter`, not URL params; needed a fresh clear-and-retype cycle per field) with a pair noted elsewhere as currently blocked, and the alert rendered the acceptance text exactly. `US-054` moved to `Done`. `US-055` now has only `US-045` left among its own dependencies, deferred with the rest of the DAG-timing work until after Sprint 11.
 - **2026-10-07, active.** Four rows added to Sprint 12 at the user's request, from the log of 2026-10-07 and a new ask: `US-086` (prune `flood_road_values`, S, P2), `US-087` (run `test_flood_areas.py` in CI, S, P3), `US-088` (cut the storm of 2026-09-16/17 into a replay event, S, P1), and `US-089` (start and stop a replay with one command, M, P1). Sprint 12 now holds three M, ten S, and two XS rows, over the size of one week, so the move order is in the Risks table. No row was moved. The user asked to build `US-088` and `US-089` before Sprint 12 starts, so both are `In progress` while Sprint 12 has no actual start date, and neither is in `TODOS.md`, which holds only the current sprint (rule 9).
 - **2026-10-07, active.** [[rain-replay-test-environment-stories]] Story 2 (`US-089`) moved from `In progress` to `Reviewed`. Built and merged into `modular`, 58 Python tests pass, `replay.ps1` not yet run on the server. `US-088` stays `In progress`: the NASA download hosts did not answer from the build session, so the user runs the download on the Mac.
+- **2026-10-08, active.** `US-088` has its data and `US-089` has its first server run, both started before Sprint 12 begins. The event is `scripts/rain_events/hanoi_20260916_storm.csv` (12 hours, 53.88 mm, peak 8.73 mm/h), after the user decided that a replay runs 12 hours only (D-012 in [[decision-log]]). `replay.ps1 start` ran on the server and its read-back matched. Neither row is `Done`: `US-088` needs an evidence screenshot, and `US-089` needs `stop` and a screenshot. The user chose to start Sprint 12 on 2026-10-09, 59 days before its planned start of 2026-12-07, so its rows enter `TODOS.md` then and its Actual start is filled in then (rules 9 and 10).
+- **2026-10-08, active.** The 12-hour replay on the server (first run 15:45 +07, last 03:00 +07 on 2026-10-09, 42 runs) serves the deferred analysis: `US-045`, `US-069`, `US-070`, and `US-073`. `US-069` cannot show its 24-hour to 48-hour comparison in 12 hours, so its pass condition needs the user's decision. This is not a blocker for Sprint 12.
+- **2026-10-08, active.** Four new rows in Sprint 12, at the user's request ("From P1-P4 lets move them to sprint 12, and the front end can be sprint 13. We need to finish the routing first."): `US-090` (the FIFO lemma and proof, M, P1), `US-091` (the violation rate of single-timestep routes, M, P1), `US-092` (the vehicle limit sensitivity, M, P2), and `US-093` (the cost of sticky closure, S, P2), in [[US-090-093-routing-paper-experiments-stories]]. They come from the work items P1 to P4 of [[paper-handoff-routing-and-system]]. `US-092` reads the harness of `US-091` in the same sprint, which bends rule 3 at the user's placement, and the Risks table gives its fallback.
+- **2026-10-08, active.** The backlog row "Measure how many routes arrival-only closure would change" is now `US-093` in Sprint 12, and it is removed from the backlog table. The row said it needed the engine shipped. The engine is deployed behind the flag (`US-052`, `Done`), so only the arrival-only search and the replay's depth tables are missing.
+- **2026-10-08, active.** `US-076` to `US-085` (the frontend recheck, [[frontend-mockup-recheck-stories]]) moved from Sprint 12 to [[sprint-plan-4]], at the user's request. Sprint 13 is the first sprint of plan 4, because this plan ends with Sprint 12 and a plan covers four sprints (rule 10). The dependencies set the sprint of each row: see [[sprint-plan-4]]. Not in `TODOS.md`, so nothing to move there.
+- **2026-10-08, active.** `US-033` (`DESIGN.md`, [[carried-over-backlog]] Story 2) moved from Sprint 12 to the next plan. It reads the UI that `US-077` to `US-083` finish, and the chain `US-076`, `US-077`, `US-082`, `US-083` fills Sprints 13 to 16 of [[sprint-plan-4]], so no sprint is left after `US-083`. It is listed under "Carried to plan 5" there. This goes against the wording of the user's decision (Sprint 13) and follows rule 3. The user is asked to confirm.
+- **2026-10-08, active.** Sprint 12 now holds four M and four S rows: `US-090` to `US-093`, `US-088`, `US-089`, `US-086`, and `US-087`. `TODOS.md` still says the next sprint holds 15 rows. It is corrected in the same pass. Sprint 12 still starts on 2026-10-09 at the user's request, and its rows enter `TODOS.md` then (rule 9).
+- **2026-10-08, active.** Two rows added at the user's request, from D-016 and D-018 in [[decision-log]]: `US-094` (archive `results_3di.nc` and a run record to D: with real rain, M, P1, Sprint 10) and `US-095` (retire the `netcdf_values` ingest, M, P1, Sprint 11, the user's choice). `US-094` is in Sprint 10 because `US-095` reads its output, and Sprint 10 is the earliest sprint before Sprint 11 (rule 3). This is a decision made by dependency, and the user can override it. `US-086` (Sprint 12) now depends on `US-094`, because its 24-hour prune is safe only if the archive works (D-017). Both rows enter `TODOS.md` now, because Sprints 9 to 11 are the current sprint. Source: [[US-094-095-archive-and-netcdf-retirement-stories]].

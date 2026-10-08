@@ -5,8 +5,8 @@ us_ids: ["US-076", "US-077", "US-078", "US-079", "US-080", "US-081", "US-082", "
 status: draft
 subsystem: floodmap-frontend
 source_ideas: []
-related: ["[[sprint-plan-3]]", "[[frontend-mockup-recheck-and-sprint-11-start]]", "[[mockup-screen-coverage]]", "[[flood-routing-mockup-frontend-gap]]", "[[frontend-polish]]", "[[map-shows-forecast-not-now]]", "[[route-panel-stuck-on-loading-bars]]", "[[decision-log]]"]
-tags: [user-story, epic, frontend, mockup, sprint-12]
+related: ["[[sprint-plan-4]]", "[[sprint-plan-3]]", "[[frontend-mockup-recheck-and-sprint-11-start]]", "[[mockup-screen-coverage]]", "[[flood-routing-mockup-frontend-gap]]", "[[frontend-polish]]", "[[map-shows-forecast-not-now]]", "[[route-panel-stuck-on-loading-bars]]", "[[decision-log]]"]
+tags: [user-story, epic, frontend, mockup, sprint-13, sprint-14, sprint-15, sprint-16]
 ---
 
 # Epic: frontend recheck against the mockup
@@ -14,12 +14,12 @@ tags: [user-story, epic, frontend, mockup, sprint-12]
 The stories of [[mockup-screen-coverage]], [[frontend-polish]], and [[frontend-depth-features]] built the six screens of
 `artifacts/raw/frontend-mockups/Flood Routing Mockups v2.dc.html`. The recheck of 2026-10-07 found seven differences
 that none of those stories records, and one open blocker with no story. The evidence for each is in
-[[frontend-mockup-recheck-and-sprint-11-start]]. This epic turns every one of them into a story, and all of them are in
-Sprint 12 of [[sprint-plan-3]], at the user's request.
+[[frontend-mockup-recheck-and-sprint-11-start]]. This epic turns every one of them into a story. They were in Sprint 12 of [[sprint-plan-3]]. On 2026-10-08 they moved to
+[[sprint-plan-4]] (Sprints 13 to 16), so the routing work finishes first. Dependencies set the sprint of each row.
 
 Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an extension of the base Epic shape in
 [[user-story-types]]. A story reaches `Done` only with a screenshot and numbered details, recorded here and in
-`sprint-plan-3.md`. A UI story takes its screenshot from the running UI. Test points stay inside the model border
+`sprint-plan-4.md`. A UI story takes its screenshot from the running UI. Test points stay inside the model border
 (`.claude/CLAUDE.md`). Story 1 runs first, because its screenshots show which of the other differences are visible at
 1366x768.
 
@@ -30,7 +30,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   route, and "wait until") is opened in Aside at 1366x768, then each pair is saved as a screenshot, and every
   difference is logged as a row of this epic or as a blocker. A difference that [[frontend-mockup-recheck-and-sprint-11-start]]
   already lists (G1 to G7) is marked with its ID, not logged twice.
-  Priority: P1. Status: Not started. Estimate: S. Sprint: 12. Dependencies: None. It reads best after `US-055`, so the
+  Priority: P1. Status: Not started. Estimate: S. Sprint: 13 ([[sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: None. It reads best after `US-055`, so the
   flag is on and the "wait until" alert is real.
   Evidence: None yet.
 
@@ -43,7 +43,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   reads "Via `road`", and a tab with no unique description still reads "Route N".
   The pipeline publishes 15-minute steps, so the chart takes every second step. The PRD decision of 2026-09-23 ("30
   minutes, matching the mockup") stays true for the chart.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: Story 1 (screenshots of the chart and the
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 14 ([[sprint-plan-4]]; 2026-12-21 to 2026-12-27), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Story 1 (screenshots of the chart and the
   tabs). Covers G1 and G3.
   Evidence: None yet.
 
@@ -52,7 +52,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   panel.
   Given a route whose start and destination have names, when the map renders, then each pin shows its name next to it,
   as in screen 2e ("GO Thăng Long", "FPT Shop"). A point with only coordinates shows no label.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: Story 1. Covers G2.
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 14 ([[sprint-plan-4]]; 2026-12-21 to 2026-12-27), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Story 1. Covers G2.
   Evidence: None yet.
 
 - **Story 4 (US-079): Name the page "Floodmap" and remove the "Powered by GraphHopper" line and its links.**
@@ -67,7 +67,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   imprint, privacy, and terms. They describe GraphHopper GmbH's service and not this app, so they go too.
   Decided by the user on 2026-10-07: delete "Powered by" if possible, and delete the settings links
   ([[decision-log]] D-010).
-  Priority: P3. Status: Not started. Estimate: XS. Sprint: 12. Dependencies: None. Covers G4.
+  Priority: P3. Status: Not started. Estimate: XS. Sprint: 13 ([[sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: None. Covers G4.
   Evidence: None yet.
 
 - **Story 5 (US-080): Keep "As of" and bring the `US-007` record in line.**
@@ -78,7 +78,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   (`US-007`) say the same, and its screenshot is retaken from the live app.
   Decided by the user on 2026-10-07: keep "As of" ([[decision-log]] D-010). This settles the legend part of
   [[map-shows-forecast-not-now]]. The blocker stays `monitoring` for the pipeline delay.
-  Priority: P3. Status: Not started. Estimate: XS. Sprint: 12. Dependencies: None. Covers G5.
+  Priority: P3. Status: Not started. Estimate: XS. Sprint: 13 ([[sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: None. Covers G5.
   Evidence: None yet.
 
 - **Story 6 (US-081): Draw a second dashed line for the selected mode's depth limit.**
@@ -86,7 +86,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   route depth crosses it.
   Given a route and a selected mode, when the chart renders, then a second dashed line marks that mode's limit in
   centimetres, labelled, and it moves when the user selects another mode. The limits come from one owner (`US-074`).
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 12. Dependencies: Story 2, and `US-074` for the limits.
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 15 ([[sprint-plan-4]]; 2026-12-28 to 2027-01-03), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Story 2, and `US-074` for the limits.
   Covers the first "Try next" line of the mockup (G6).
   Evidence: None yet.
 
@@ -95,7 +95,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   opening each.
   Given a route with alternatives, when the tabs render, then each tab shows the road name, the travel time, and the
   maximum depth along that route in centimetres.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 12. Dependencies: Story 2 (the tab text). The depth comes from
+  Priority: P3. Status: Not started. Estimate: S. Sprint: 15 ([[sprint-plan-4]]; 2026-12-28 to 2027-01-03), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Story 2 (the tab text). The depth comes from
   `POST /flood/profile` for each alternative, so check the cost of one request per tab first. Covers the second "Try
   next" line (G6).
   Evidence: None yet.
@@ -106,7 +106,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   Given a viewport of 390x844, when a route result is open, then the profile row, the tabs, the chart, and the steps
   are all reachable without horizontal scroll, the legend is not covered, and the touch targets are at least 44 px.
   The mockup has no mobile design, so the story starts with a layout the user approves.
-  Priority: P3. Status: Not started. Estimate: M. Sprint: 12. Dependencies: Stories 2, 3, and 7, so the layout covers the
+  Priority: P3. Status: Not started. Estimate: M. Sprint: 16 ([[sprint-plan-4]]; 2027-01-04 to 2027-01-10), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Stories 2, 3, and 7, so the layout covers the
   final components. Covers the third "Try next" line (G6).
   Evidence: None yet.
 
@@ -115,7 +115,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   a choice and not an accident.
   Given the yellow "No safe route available" box and the alert of `US-054`, when the user has approved a design for
   each state, then the UI matches it at 1366x768 and at 390x844, and a screenshot of each state is saved.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: Story 1, and `US-055`, so the "wait until"
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 14 ([[sprint-plan-4]]; 2026-12-21 to 2026-12-27), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: Story 1, and `US-055`, so the "wait until"
   text comes from the real backend. Covers G7.
   Evidence: None yet.
 
@@ -125,7 +125,7 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   Given a route request that gets no answer, when it has waited longer than a limit the story sets from the numbers of
   `US-035`, then the request is cancelled, the panel shows a retry message, and the loading bars stop. A request that
   answers in time is not affected.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: None.
+  Priority: P2. Status: Not started. Estimate: S. Sprint: 13 ([[sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[sprint-plan-3]] on 2026-10-08. Dependencies: None.
   Blocker tracking: [[route-panel-stuck-on-loading-bars]]
   Evidence: None yet.
 
@@ -135,3 +135,8 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
   become a story in the sprint after Sprint 11, and for a browser comparison in Aside in the same sprint. The third
   candidate of the plan (the "Try next" lines) became three stories (6, 7, and 8), and the legend and "Powered by" questions
   became Stories 4 and 5 after the user's decisions (D-010).
+- **2026-10-08, draft.** All ten stories moved from Sprint 12 of [[sprint-plan-3]] to [[sprint-plan-4]], at the user's request:
+  "the front end can be sprint 13. We need to finish the routing first." Sprint 13 starts a new plan, because
+  [[sprint-plan-3]] ends with Sprint 12. By dependency (rule 3): Sprint 13 holds Stories 1, 4, 5, and 10. Sprint 14 holds
+  Stories 2, 3, and 9. Sprint 15 holds Stories 6 and 7. Sprint 16 holds Story 8. No story is `Done`, so the dates
+  of the plan are planned dates.

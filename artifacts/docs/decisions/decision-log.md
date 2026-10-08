@@ -228,6 +228,90 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Affects:** [[sprint-plan-3]] Sprints 9 to 11, and the stories that wait on `US-055`.
 - **Revisit if:** the first run of `rollout.ps1` fails because of the role or the DAG move, which would argue for the two-deploy order.
 
+## D-012: A rain replay runs for 12 hours
+
+- **Date:** 2026-10-08
+- **Status:** active. Decided by the user on 2026-10-08.
+- **Decided by:** the user, when the storm of 2026-09-16 and 2026-09-17 was chosen as the test event.
+- **Decision:** A test replay covers 12 hours of rain, not the 48 hours of the October 2025 event. The event file is the wettest 12 hours of the satellite series.
+- **Why:** Every simulating run is a real 3Di simulation, and the cost grows with the number of runs. The 12-hour event has 42 simulating runs at a gate of 5 mm/h.
+- **Alternatives:** Replay the full two-day series, or the 48-hour October event again. Both cost more runs.
+- **Evidence:** `scripts/rain_events/hanoi_20260916_storm.csv` has 24 rows, 53.88 mm, and a peak of 8.73 mm/h. `rain_replay.py check` at gate 5 lists 42 of 46 runs in 2 chains. The server read it back from inside the worker on 2026-10-08.
+- **Affects:** [[rain-replay-test-environment]], [[rain-replay-test-environment-stories]], and the stories that wait for a replay: `US-045`, `US-069`, `US-070`, and `US-073`. `US-069` names a 24-hour to 48-hour storage comparison that 12 hours cannot show.
+- **Revisit if:** a story needs a longer window, such as the `US-069` pass condition.
+
+## D-013: Rain forecast comes from Tomorrow.io, not NCHMF
+
+- **Date:** 2026-10-08, recorded after the fact. The date of the switch itself is not recorded in the vault.
+- **Status:** active. Confirmed by the user on 2026-10-08.
+- **Decided by:** the user.
+- **Decision:** The pipeline reads its rain forecast from the Tomorrow.io API. The original design named the NCHMF (Trung tâm dự báo KTTV Quốc Gia) forecast.
+- **Why:** NCHMF did not approve access to its API.
+- **Alternatives:** Wait for NCHMF approval, or read NCHMF files by hand. Neither gives an automated forecast every cycle.
+- **Evidence:** `scripts/create_simulation.py` lines 27 and 148 (`TOMORROW_API_KEY`, `api.tomorrow.io/v4/timelines`). `grep -ri nchmf dags scripts compose.yml` returns nothing.
+- **Affects:** [[3di-simulation-orchestration]], the architecture doc, and any paper text that names the rain source.
+- **Revisit if:** NCHMF grants API access.
+
+## D-014: The simulation cycle is 15 minutes
+
+- **Date:** 2026-10-08, recorded after the fact. The cycle was already running at 15 minutes.
+- **Status:** active. Approved by the user on 2026-10-08.
+- **Decided by:** the user.
+- **Decision:** `flood_mapping_full` runs one cycle every 15 minutes. The original design said about 30 minutes.
+- **Why:** The reaction-time research found that a 15-minute refresh covers the nowcast skill window for convective storms and is more than enough for multi-hour storms. See [[flood-map-reaction-time-findings]].
+- **Alternatives:** A 30-minute cycle, which matches Hanoi's own flooding-point monitor, or a 5-minute cycle, which adds little unless the rain input also updates every 5 minutes ([[five-minute-tile-freshness]]).
+- **Evidence:** `dags/flood_mapping_dag.py` schedule, and [[3di-simulation-orchestration]].
+- **Affects:** the architecture doc (ADR-006), the replay gate, and Paper B.
+- **Revisit if:** a rain input with a finer update interval becomes available.
+
+## D-015: US-069 is checked on the 12-hour replay, from hour 6 to hour 12
+
+- **Date:** 2026-10-08
+- **Status:** active. Decided by the user on 2026-10-08.
+- **Decided by:** the user, who said `US-069` needs only 12 hours of running and the comparison should use those 12 hours.
+- **Decision:** The storage check of `US-069` reads the numbers at the start of the 12-hour replay, at hour 6, and at hour 12, and compares hour 6 with hour 12. It replaces the 24-hour to 48-hour comparison. The other conditions stay: `flood_extent_polygon` holds rows for no more than the newest `keep_runs` runs, and no container is auto-paused for lack of space.
+- **Why:** D-012 set a replay to 12 hours, so the 24-hour and 48-hour readings cannot exist.
+- **Alternatives:** Define the pass as "capped tables stop growing at their cap". That says nothing about the uncapped tables.
+- **Evidence:** the replay runs from about 15:05 +07 on 2026-10-08 to the last simulating run at 03:00 +07 on 2026-10-09. The only start reading is partial (15:17 +07 on 2026-10-08: C: free, `docker_data.vhdx`, `minio_custom`, `flood_extent_polygon`), so the pass rests on hour 6 against hour 12.
+- **Affects:** [[carried-over-backlog]] Story 12 (`US-069`), `TODOS.md`. The user confirmed the pass mark on 2026-10-08: growth of 10 percent or less per database object between hour 6 and hour 12.
+- **Revisit if:** the server cannot be read at hour 6 (about 21:05 +07).
+
+## D-016: Archive `results_3di.nc` to the D: drive on the server, only with real rain
+
+- **Date:** 2026-10-08
+- **Status:** active. Decided by the user on 2026-10-08.
+- **Decided by:** the user, after asking where the data of a past storm would be found.
+- **Decision:** Each simulating run keeps its `results_3di.nc` in an archive folder on the server's D: drive. Archiving starts only when the pipeline reads the real rain forecast (Tomorrow.io), not the test rain (`FLOOD_TEST_RAIN_CSV` or `FLOOD_TEST_RAIN_MM_HR` set).
+- **Why:** After a storm, the system keeps rasters and tiles for about 2 hours, `netcdf_values` for 48 hours, and the NetCDF files for 24 hours. No store holds the storm for later analysis. The NetCDF file is the source of truth: the depth rasters, polygons, and road depths can be rebuilt from it and the model.
+- **Alternatives:** Keep `flood_road_values` (about 18 MB per run). Re-download results from 3Di by `sim_id`, which is unverified because the local 3Di docs do not state how long 3Di keeps results.
+- **Evidence:** `results` holds 14 files of 98 MB in total on the worker, about 7 MB per run. `flood_road_values` is 6,955 MB for 377 run timestamps.
+- **Affects:** `dags/flood_mapping_dag.py` (the 24-hour `cleanup_dirs` that now deletes `RESULT_DIR`), `compose.yml` (a D: mount), [[3di-simulation-orchestration]], Paper B. A run record (`sim_id`, rain input, model revision, graph hash, run timestamp) is part of the archive. Stories: `US-094` (Sprint 10) in [[US-094-095-archive-and-netcdf-retirement-stories]], and `US-086` depends on it.
+- **Revisit if:** D: free space falls, or 3Di is found to keep results long enough to re-download.
+
+## D-017: `flood_road_values` is pruned after 24 hours
+
+- **Date:** 2026-10-08
+- **Status:** active. Decided by the user on 2026-10-08.
+- **Decided by:** the user.
+- **Decision:** `US-086` removes rows of `flood_road_values` older than 24 hours, in place of keeping the newest N runs.
+- **Why:** The table grows about 18 MB per run with no cap (6,955 MB on 2026-10-08), and the raw archive of D-016 keeps the storm for analysis.
+- **Alternatives:** Keep the newest N runs, which would hold less than 24 hours during dense runs.
+- **Evidence:** the size reading in [[core-output-hygiene-stories]] Story 1.
+- **Affects:** `US-086`, [[core-output-contract]], and anything that reads `flood_road_values` older than 24 hours (the flood metric extractor, if it is ever scheduled).
+- **Revisit if:** the archive of D-016 is not working when the first prune runs.
+
+## D-018: Retire the `netcdf_values` ingest
+
+- **Date:** 2026-10-08
+- **Status:** active. Decided by the user on 2026-10-08.
+- **Decided by:** the user, who said to retire it in Sprint 11.
+- **Decision:** Remove task `3b_upload_netcdf_postgres`, the TimescaleDB tables `netcdf_values`, `mesh_elements`, and `netcdf_variable_catalog`, and the scripts and tests that use them. Do it only after the archive of D-016 is proven, so no data is lost. The other three TimescaleDB tables (`institution_histogram_bar`, `background_forecast_depth`, `depth_history`) stay.
+- **Why:** `netcdf_values` is 2,428 MB with a 48-hour retention policy, and `3b` takes about 81 s per run. The archived NetCDF file of D-016 is the source of truth, so the ingest holds nothing the archive lacks.
+- **Alternatives:** Keep the ingest beside the archive. Rejected by the user.
+- **Evidence:** dependency check of 2026-10-08. The only foreign key is `netcdf_values.variable_id` to `netcdf_variable_catalog(id)`, so drop `netcdf_values` first. No views or continuous aggregates exist. The code references are listed in `US-095`.
+- **Affects:** `US-095` (Sprint 11) in [[US-094-095-archive-and-netcdf-retirement-stories]], `US-066` and `US-069` (the storage check reads `netcdf_values`), [[3di-simulation-orchestration]], the architecture doc. Whether to retire the `timescaledb` container afterward is a separate decision and is not made here.
+- **Revisit if:** `US-094` does not hold a real storm before Sprint 11 ends.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and

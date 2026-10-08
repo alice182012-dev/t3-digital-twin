@@ -32,9 +32,11 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
   Read the size first. Measure the row count, the table size, and the rows per run on the server, and record them in
   [[core-output-contract]] before choosing N. The contract page already lists this table as having no retention.
   Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: `US-073` (the task goes into
-  `routing_adapter`), done as `Reviewed` on `modular`. The size reading is better after the storm replay of `US-089`,
+  `routing_adapter`), done as `Reviewed` on `modular`, and `US-094` (the archive of D-016 must work before the 24-hour prune runs). The size reading is better after the storm replay of `US-089`,
   because a replay writes many runs quickly.
   Evidence: None yet.
+
+  Revised acceptance (2026-10-08, D-017). The user chose a time-based prune: rows older than 24 hours are removed, in place of "the newest N runs". The size reading was taken on 2026-10-08: 6,955 MB, about 214,000 rows (planner estimate), 377 run timestamps since 2026-09-23, about 18 MB per run. The 24-hour rule is safe only because the raw 3Di output is archived (D-016); without the archive this table is the only depth history older than 2 days.
 
 - **Story 2 (US-087): Make `test_flood_areas.py` run without hand-set paths, and run it in CI.**
   As a maintainer, I want the routing flood-area test to run the same way everywhere, so a regression in
@@ -61,3 +63,5 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
   findings were rechecked against the code before the stories were written. Finding 1 holds: no age-based prune
   exists. Finding 4 is narrower than logged: the test imports with the documented path and skips without a database.
   The next free ID was `US-086`.
+- **2026-10-08, draft.** Story 1 (`US-086`) prunes rows older than 24 hours instead of keeping N runs (D-017). The user decided this, after the raw 3Di output archive was chosen (D-016).
+- **2026-10-08, draft.** Story 1 (`US-086`) depends on `US-094` (archive `results_3di.nc` to D:, Sprint 10 in [[sprint-plan-3]]), because the 24-hour prune is safe only if the archive works (D-017). See [[US-094-095-archive-and-netcdf-retirement-stories]].

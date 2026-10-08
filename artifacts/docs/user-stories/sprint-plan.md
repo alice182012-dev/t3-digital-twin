@@ -144,7 +144,7 @@ These two rows did not fit in four weeks and block nothing in this plan. They ar
 | Item | Priority | Story | Estimate | Epic | Placed in | Why it waits |
 | ---- | -------- | ----- | -------- | ---- | --------- | ------------ |
 | US-034 | P2 | Soak the flood-road backend and check it against known answers | M | [[carried-over-backlog]] Story 3 | [[sprint-plan-2]] Sprint 5 (2026-10-19 to 2026-10-25) | It should soak the backend after Sprint 3's changes. The user set the soak length to 48 hours on 2026-10-01. |
-| US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | [[sprint-plan-3]] Sprint 12 (2026-12-07 to 2026-12-13), moved from Sprint 11 on 2026-10-07 | P3, and it blocks nothing. The finished UI of Sprint 3 gives it real components to extract from. |
+| US-033 | P3 | Write a project `DESIGN.md` with real design tokens | M | [[carried-over-backlog]] Story 2 | No sprint yet. Carried to plan 5 ([[sprint-plan-4]]), moved from Sprint 12 on 2026-10-08 | P3, and it blocks nothing. The finished UI of Sprint 3 gives it real components to extract from. |
 
 ## Dropped
 
