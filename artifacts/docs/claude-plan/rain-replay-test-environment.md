@@ -66,3 +66,4 @@ so it makes fewer runs, but its peak is higher.
 - **2026-10-07, active.** Written after the user asked for a test environment and named the scripts that build the
   rain (`test-code/rain input/`). The scripts have the dates of an earlier event written into them and use the Final
   Run short name, which has no data for September 2026. The plan uses a copy with the Late Run.
+- **2026-10-08, active.** The user decided that a replay runs for 12 hours only, to save 3Di compute cost. The storm event is cut to its wettest 12 hours before it is committed, so the preview shows fewer simulating runs than the 48-hour October event. `US-045` and `US-069` still need several `routing_adapter` runs; 12 hours of storm gives those runs, but not the 24-hour to 48-hour comparison that `US-069` names. Raise that with the user when the replay starts.
