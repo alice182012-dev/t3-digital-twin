@@ -440,3 +440,22 @@ is the maximum.
 - **Evidence:** the sizing in `US-105`, read on the server on 2026-10-10. The row size and the compression ratio are estimates until `US-106` measures them.
 - **Affects:** `US-105`, `US-106`, [[EP-21-industry-analysis-on-the-flood-data|EP-21]], and [[timescaledb-schema]].
 - **Revisit if:** an industry application needs forecast error or lead time, if compression on the real TimescaleDB server is far below 10 times, or if the gauge hot start adds observed depth.
+
+## D-029: Give vault edits to a Haiku subagent
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** Every edit under `artifacts/` goes to the `vault-writer` agent (`.claude/agents/vault-writer.md`), which runs on Haiku in the same Claude Code terminal.
+  The main session keeps code, DAGs, and scripts.
+  The brief to the agent is short: the story ID, the task, and the date.
+  The agent reads `git log`, `git diff`, and the story file for the rest.
+  A fact that exists nowhere in the repo, such as a measured number, a server result, or a user decision, goes into the brief.
+  The main session reads what the agent wrote before it reports the work as done.
+- **Why:** Vault writing is routine work, and a smaller model does it at a lower cost per token than the main session.
+  The agent needs no extra tool, and it runs in the terminal the session already uses.
+  Haiku is billed, not free, so the saving is lower cost and not zero cost.
+- **Alternatives:** (1) Hermes, a free model in a second tmux pane. It needs a second tool to run and sits outside the Claude Code terminal, so it is the fallback below. (2) Keep vault edits in the main session. It spends the main model's tokens on routine writing.
+- **Evidence:** The user's choice on 2026-10-10. No cost measurement exists yet.
+- **Affects:** `.claude/CLAUDE.md` (section "Vault edits go to the vault-writer agent") and `.claude/agents/vault-writer.md`.
+- **Revisit if:** the cost still hurts after about a week, around 2026-10-17. The fallback is Hermes in a second tmux pane, which reuses `vault-writer.md` as its instructions.
