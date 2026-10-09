@@ -1,10 +1,10 @@
 ---
 date: 2026-10-06
-type: plan
-branch: front-end-according-to-mock-up
+type: concept
 status: active
-tags: [plan, architecture, contract, routing, sprint-11]
+tags: [concept, architecture, contract, routing, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[architecture-block-diagram]]", "[[graphhopper-backend]]", "[[edge-depth-table-format]]"]
+last_updated: 2026-10-06
 ---
 
 # Plan: routing as the first consumer of the core output

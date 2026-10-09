@@ -1,9 +1,10 @@
 ---
 date: 2026-09-25
-type: plan
+type: concept
 status: active
-tags: [plan, tiles, forecast, histogram, frontend, airflow]
+tags: [concept, tiles, forecast, histogram, frontend, airflow]
 related: ["[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[BL-009-hotstart-state-saved-at-end-of-run|hotstart-state-saved-at-end-of-run]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]"]
+last_updated: 2026-09-25
 ---
 
 # Fifteen-minute cycle: tiles and flood histogram

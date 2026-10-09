@@ -1,9 +1,10 @@
 ---
 date: 2026-09-24
-type: plan
+type: concept
 status: active
-tags: [plan, airflow, postgis, raster, routing, timescaledb]
+tags: [concept, airflow, postgis, raster, routing, timescaledb]
 related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[minio-flood-extent-pipeline]]", "[[3di-simulation-orchestration]]", "[[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]]", "[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]"]
+last_updated: 2026-09-24
 ---
 
 # Raster-first flood pipeline

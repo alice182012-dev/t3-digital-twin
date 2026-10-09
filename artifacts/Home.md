@@ -39,15 +39,6 @@ For the status, priority, approach counts, and dates of every blocker, see [[Blo
 
 See [[TODOS]], which shows the current sprint by query.
 
-## Active plans
-
-```dataview
-TABLE date AS "Date", branch AS "Branch"
-FROM "docs/claude-plan"
-WHERE status = "active"
-SORT date DESC
-```
-
 ## Recent logs
 
 ```dataview
@@ -126,13 +117,13 @@ FROM "designs"
   or say so explicitly enough that there's no ambiguity this is what they mean.
 - Every log, plan, decision, concept, blocker, lesson, idea, epic, sprint, and user story doc gets a YAML
   frontmatter block: `date` (`date_open` for a blocker, `date_drafted` for an epic or user story, `date_captured`
-  for a lesson or idea), `type` (`log`/`plan`/`decision`/`concept`/`blocker`/`lesson`/`idea`/
+  for a lesson or idea), `type` (`log`/`decision`/`concept`/`blocker`/`lesson`/`idea`/
   `user-story`/`epic`/`sprint`/`reference`), `status` (`active`/`parked`/`done`/`superseded` for most;
   `open`/`monitoring`/`resolved`/`wont-fix` for a blocker; `Not started`/`Ready`/`In progress`/`Reviewed`/`Blocked`/`Done`/`Superseded` for a user story, `active`/`done`/`parked` for an epic, `planning`/`active`/`done` for a sprint;
   `active`/`retired` for a lesson; `unexplored`/`exploring`/`go`/`needs-clarification`/`killed` for
   an idea), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
-- `artifacts/archive/` holds retired documents (old logs, finished plans, resolved blockers, story-level history, cut research). It is excluded from Obsidian search and from every query here. Wikilinks to archived files still resolve by name.
-- Every document kind has a code, and the code starts the file name, so a search for the code finds the file. The codes are `US-nnn` (user story, `docs/stories/`), `EP-nn` (epic, `docs/epics/`), `SPR-nnn` (sprint, `docs/sprints/`, equal to the sprint number), `BL-nnn` (blocker, `docs/blockers/`), `L-nnn` (lesson, `docs/lessons/`), and `D-nnn` (decision, in `decision-log.md`). A code is assigned once from the next free number below, never reused, and never renumbered. Link a document by its full file name with the old or short name as an alias: `[[BL-023-9c-sampling-step-runs-over-770-seconds|9c sampling step]]`. Concept pages, logs, and plans keep topic or date names. The retired codes `PRD-nnn` and `SP-nn` stay in `archive/`. The next free numbers are `US-103`, `EP-21`, `SPR-014`, `BL-029`, `L-012`, and `D-025`. Raise the number when you assign one.
+- `artifacts/archive/` holds retired documents (old logs, retired plans, resolved blockers, story-level history, cut research). It is excluded from Obsidian search and from every query here. Wikilinks to archived files still resolve by name.
+- Every document kind has a code, and the code starts the file name, so a search for the code finds the file. The codes are `US-nnn` (user story, `docs/stories/`), `EP-nn` (epic, `docs/epics/`), `SPR-nnn` (sprint, `docs/sprints/`, equal to the sprint number), `BL-nnn` (blocker, `docs/blockers/`), `L-nnn` (lesson, `docs/lessons/`), and `D-nnn` (decision, in `decision-log.md`). A code is assigned once from the next free number below, never reused, and never renumbered. Link a document by its full file name with the old or short name as an alias: `[[BL-023-9c-sampling-step-runs-over-770-seconds|9c sampling step]]`. Concept pages, logs, and plans keep topic or date names. The retired codes `PRD-nnn` and `SP-nn` stay in `archive/`. The next free numbers are `US-103`, `EP-21`, `SPR-014`, `BL-029`, `L-012`, and `D-026`. Raise the number when you assign one.
 - A user story (`docs/stories/US-nnn-<slug>.md`) is work that fits one sprint. Its frontmatter holds `us_id`, `title`, `epic`, `kind`, `status`, `priority`, `estimate`, and `sprint`, and the file holds the story text, its evidence, and its numbered details. Nothing else keeps a second copy of those fields: the sprint file, the boards, the epic, and `TODOS.md` read them with queries. `sprint` is set only at sprint planning, and moving a story out of a sprint is one edit that clears it. An epic file holds the goal, reason, assumptions, and definition of done, and lists its stories by query. A sprint file never lists stories by hand. See [[scrum-framework]] and `.claude/CLAUDE.md`, "Scrum: sprints, epics, and stories", for the full convention.
 - A lesson (a `## L-nnn` section of `docs/lessons/lessons.md`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
@@ -145,12 +136,11 @@ FROM "designs"
   `approaches_remaining` in place as the blocker's state changes, and add a dated bullet to its
   "Status history" section on every status change or new attempt, including a failed one.
 - A concept page (`docs/concepts/`) is the standing reference for one subsystem: what it is, how
-  it works, and its open items, cited against real file paths. When a log or plan changes
-  something a concept page describes, update that page in the same pass instead of leaving the
-  fact stranded in the log. `last_updated` tracks the date of the last such pass, separate from
+  it works, and its open items, cited against real file paths. A story that changes
+  something a concept page describes updates that page before it is `Done`. `last_updated` tracks the date of the last such pass, separate from
   `date` (when the page was created).
 - `TODOS.md` shows the current sprint by query and holds no state of its own. The sprint file holds the goal, the dates, the review, and the retrospective.
 - Screenshots referenced from a log go under `logs/image/<date>/`; create the folder when the
   first screenshot for that date is added, don't pre-create empty ones.
-- New logs and plans should start from the templates in `templates/` (Templater) so the
+- New logs, sprints, epics, and stories should start from the templates in `templates/` (Templater) so the
   frontmatter and section structure stay consistent.

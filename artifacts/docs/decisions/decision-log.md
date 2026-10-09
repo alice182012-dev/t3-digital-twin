@@ -392,3 +392,15 @@ is the maximum.
 - **Evidence:** the readings in `docs/concepts/project-management/`, and the user's answers on 2026-10-10: "ok" to restart the calendar at a Monday, "fresh" for Sprint 13, and "yes and retire the prds" for the epics.
 - **Affects:** `.claude/CLAUDE.md` (the rules for sprints, stories, and PRDs), `Home.md`, `TODOS.md`, the templates (`sprint.md` and `epic.md` are new, `prd.md` is archived), `archive/prds/`, `archive/epics/`, `archive/sprints/`, every story's `epic` and `sprint` fields, and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|Sprint 13]], which starts on 2026-10-12.
 - **Revisit if:** two sprints in a row end below half of the forecast, or the product owner wants a different sprint length. Atlassian advises trying every event for two sprints before changing them.
+
+## D-025: Retire the plan folder, shrink the logs, and add a definition of ready and a WIP limit
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user ("go, and keep the previous-day summary rule").
+- **Decision:** (1) The `claude-plan/` folder is retired. Four plans that describe how a subsystem works became concept pages (`raster-first-flood-pipeline`, `rain-replay-test-environment`, `routing-first-consumer-contract`, `fifteen-minute-cycle-tiles-and-histogram`), and the other 18 are in `archive/plans/`. Multi-day work with no story gets a story, or a spike. (2) The concept pages stay. Their update rule is now part of the Definition of done. `timescaledb-schema` is `parked`, because its population was dropped in D-009. (3) The daily log stays, capped at about 20 lines, and keeps the previous-day summary. It drops the pickup list. (4) A story is `Ready` only when it passes INVEST. (5) At most two stories are `In progress`. (6) `US-021` is `Superseded`.
+- **Why:** The Lean principles treat unread documents as waste. 21 of 23 plans said `active` although their work was done, 7 had no inbound link, and the plan duplicated what the story and the epic hold. Atlassian's Definition of Ready gives the pull step a checkable entry rule.
+- **Alternatives:** Keep the plan folder and mark finished plans `done`. It keeps a second home for the plan of each story. Drop the previous-day summary rule. The user chose to keep it.
+- **Evidence:** the readings "What are the Lean Principles?" and "What is Definition of Ready" in `docs/concepts/project-management/`.
+- **Affects:** `.claude/CLAUDE.md`, `Home.md`, `templates/daily-log.md`, `templates/user-story.md`, `scrum-framework`, the refresh-artifacts skill, and `US-021`.
+- **Revisit if:** a multi-day piece of work has no good home in a story, a spike, or a concept page.

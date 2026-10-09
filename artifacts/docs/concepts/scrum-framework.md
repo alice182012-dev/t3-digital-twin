@@ -47,10 +47,25 @@ A story that is not part of an epic is allowed, but rare.
 
 `Not started` (in the backlog), then `Ready`, then `In progress`, then `Reviewed`, then `Done`. `Blocked` and `Superseded` can happen at any point.
 
-- **Ready:** the acceptance check, the estimate, and the dependencies are written, and a story rated L is split.
+- **Ready:** the story passes the INVEST check in the next section.
 - **Reviewed:** built and read through. The acceptance check has not passed.
 - **Done:** the Definition of done below holds.
 - A story that is not `Done` at the review leaves the sprint. Its `sprint` is cleared and it is estimated again.
+
+## Definition of ready
+
+A story is `Ready` only when it passes INVEST (Atlassian, "What is Definition of Ready", in `docs/concepts/project-management/`). Planning takes only `Ready` stories. A story that fails a check stays in the backlog and goes to refinement.
+
+| Check | The story passes when |
+| ----- | --------------------- |
+| Independent | Its dependencies are `Done` or in the same sprint, and the story names them. |
+| Negotiable | It states the outcome, not the method. The team may change the method. |
+| Valuable | It names the user value, or for a spike the question and the decision it unlocks. |
+| Estimable | It has an `estimate` of XS, S, M, or L, and the team knows what the work involves. |
+| Small | It is not rated L, so it fits one sprint. Split an L. |
+| Testable | The acceptance check is written and names the environment where it runs. |
+
+Review the definition at each retrospective. If the team often does not finish a sprint, or scrambles to understand work inside it, tighten the definition.
 
 ## Definition of done
 
@@ -81,9 +96,9 @@ Estimates are XS (1), S (2), M (3), and L (5). A story rated L is split before i
 4. Set `sprint: N` on the picked stories.
 5. Create the sprint file from `templates/sprint.md`. Schedule the start of any long run (a 12-hour replay) now.
 
-**Daily log.** The daily log under `artifacts/logs/` is the daily scrum. Start it with what moved, what moves today, and what blocks. Write one line per event and link to the story, blocker, or decision that holds the detail. The log starts with a summary of the previous day.
+**Daily log.** The daily log under `artifacts/logs/` is the daily scrum, about 20 lines. It starts with a summary of the previous day (a standing rule of the user), then what moved, what moves next, what blocks, and the server facts that have no other home. Write one line per event and link to the story, blocker, or decision that holds the detail. It holds no pickup list, because the sprint file and the backlog do.
 
-**Execution.** Take the top story that is not started, set it `In progress`, and keep only a few in progress at once. New work found during the sprint goes to the backlog. It enters the sprint only if it threatens the goal, and then the product owner decides what leaves. A blocker found in the sprint gets a blocker page the same day.
+**Execution.** Take the top story that is not started and set it `In progress`. At most two stories are `In progress` at once (a Lean limit on work in progress). Start any long run, such as the 12-hour replay, on the first day, because waiting is the largest waste in this project. A story that waits on an event that may not happen this sprint (real rain above 5 mm/h) does not enter the sprint. New work found during the sprint goes to the backlog. It enters the sprint only if it threatens the goal, and then the product owner decides what leaves. A blocker found in the sprint gets a blocker page the same day.
 
 **Sprint review** (last day, 30 minutes). Walk through each `Done` story by its evidence. The product owner accepts or rejects it. Record the result in the sprint file's Review section.
 
@@ -96,6 +111,14 @@ A blocker is an impediment. It gets a page from `templates/blocker.md`. If it bl
 ## Ideas and spikes
 
 An idea is a note in `raw/ideas/` (the user's, read-only for Claude). An experiment on it is a spike story with `source_ideas` pointing at the note. The work happens in `marie-curie/`. The spike ends with an answer in the story and a `D-nnn` decision. A go becomes real stories, which go through refinement like any other. At each review Claude lists the ideas whose spike might come next, and the product owner picks.
+
+## Lean checks
+
+The Lean principles (Atlassian, "What are the Lean Principles?") shape three rules.
+
+- **Waste.** Documents nobody reads are inventory and overproduction. There are no separate plan files, and the daily log is capped.
+- **Flow.** A wait is waste. The WIP limit and the early start of long runs address it.
+- **Pull.** Work enters a sprint by planning from the ordered backlog and only when it is `Ready`.
 
 ## Where each fact lives
 
@@ -116,4 +139,5 @@ An idea is a note in `raw/ideas/` (the user's, read-only for Claude). An experim
 - PRDs are retired. The four PRDs are in `archive/prds/`, and each epic holds what its PRD held.
 - The 16 epics became 4 (`EP-17` to `EP-20`). The old ones are in `archive/epics/`.
 - `TODOS.md` no longer holds state. It shows the current sprint.
+- The `claude-plan/` folder is retired ([[decision-log|D-025]]). Four plans became concept pages and the others are in `archive/plans/`.
 - Sprints 1 to 12 were not weeks. Their `sprint` values stay on `Done` stories for history. Sprint 13 starts on 2026-10-12, a Monday.

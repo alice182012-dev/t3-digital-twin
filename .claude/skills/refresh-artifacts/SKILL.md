@@ -2,7 +2,7 @@
 name: refresh-artifacts
 description: >
   Re-reads the artifacts/ Obsidian vault in this repo (t3-digital-twin) to refresh Claude's
-  understanding of current project state: active plans, open blockers, recent logs, the
+  understanding of current project state: open blockers, recent logs, the
   current sprint file, the product backlog, and captured lessons. Use this whenever the user asks
   to "catch up on the project", "refresh context", "what's the current state", "resume work",
   "what's blocked", "what's in progress", or starts a new session on this project after a gap.
@@ -53,10 +53,8 @@ already settled.
      status only, since a resolved blocker is history, not something the current session needs to
      act on. Note: `resolved`/`wont-fix` are lowercase and the field is `status`, not
      `date_closed` — grep frontmatter directly rather than assuming.
-   - **Active plans** (`docs/claude-plan/`): read in full any page with `status: active`. Skip
-     anything else in that folder.
    - **Recent logs** (`logs/`): read the two or three most recent dated files in full (sort by
-     filename, which is `YYYY-MM-DD.md`). Skip older logs unless a blocker, plan, or epic you're
+     filename, which is `YYYY-MM-DD.md`). Skip older logs unless a blocker or epic you're
      reading directly references one by date, in which case follow that specific link.
    - **Sprint and stories** (`docs/sprints/`, `docs/stories/`): find the sprint file with the highest
      `sprint` number in its frontmatter (`SPR-013-...`, and so on) and read it in full, including its
@@ -71,7 +69,7 @@ already settled.
    - **Concepts** (`docs/concepts/`): list titles and `last_updated` dates only, don't read bodies
      by default. Concepts are standing reference, not recent activity, so they don't belong in an
      initial refresh. Read a specific concept page in full only when something else you just read
-     (an active plan, an open blocker, an epic) links to it and the task at hand needs that
+     (an open blocker, an epic, a story) links to it and the task at hand needs that
      subsystem's detail.
    - **Lessons** (`docs/lessons/`): read all of them in full, regardless of `status`. They're
      short, checkable rules by design (the template caps them at three short sections), so the
@@ -91,7 +89,7 @@ already settled.
 ## Reporting back
 
 End with a short status summary, not a transcript of everything read. Cover, in a few sentences
-each: what's actively in progress (from Active plans and the current sprint), what's blocked (from
+each: what's actively in progress (from the current sprint), what's blocked (from
 open or monitoring blockers, one line each), what the most recent log entry actually accomplished,
 and what the sprint goal and the top of the backlog are. A wall of
 restated file contents is not a refresh; the point is to load the state into context, not to prove

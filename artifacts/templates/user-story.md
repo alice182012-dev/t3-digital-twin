@@ -38,7 +38,8 @@ Name the file US-nnn-<slug>.md in artifacts/docs/stories/. Take nnn from the nex
 number in the Conventions of Home.md, and raise that number.
 - kind: story (user value), spike (a question with a timebox), or bug (a defect).
 - status: Not started (in the backlog), Ready, In progress, Reviewed, Blocked, Done, or Superseded.
-  Ready means the acceptance check, the estimate, and the dependencies are written.
+  Ready means the story passes INVEST: independent, negotiable, valuable, estimable, small (not L),
+  and testable. See the Definition of ready in [[scrum-framework]].
 - sprint: the sprint number, set only at sprint planning. Empty means the story is in the
   backlog. A story that is not Done at the sprint review gets its sprint cleared.
 - estimate: XS=1, S=2, M=3, L=5 points. Split a story rated L before it enters a sprint.

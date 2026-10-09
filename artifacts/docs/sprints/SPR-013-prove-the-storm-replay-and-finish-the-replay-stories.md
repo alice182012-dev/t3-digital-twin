@@ -23,6 +23,7 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 - **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). The forecast is 13 to 16 points.
 - **Proposed picks.** `US-102` (M, P0), `US-089` (M, P1), and `US-091` (M, P1) make 9 points. They share one 12-hour replay, so the replay is the critical path and starts on Monday.
 - **Room for about 4 to 7 more points.** The ready stories with no dependency on the replay are `US-076` (S), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
+- **Work in progress.** At most two stories are `In progress` at once. `US-102` starts first on Monday, because the replay is the longest wait.
 - **Not picked.** `US-094` waits for real rain above 5 mm/h and cannot finish this sprint.
 
 **Open decisions for the product owner at planning:**
@@ -31,7 +32,6 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 2. Give the go for the 12-hour replay (`US-102`).
 3. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain.
 4. Decide what to do about the growth of `9c` within a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], 46 s to 96 s, cause unknown), or leave the blocker at `monitoring`.
-5. `US-021` (TimescaleDB population) is `Not started` but D-009 dropped its use. Mark it `Superseded` or keep it.
 
 ## Sprint backlog
 

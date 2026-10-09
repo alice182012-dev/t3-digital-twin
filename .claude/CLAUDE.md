@@ -168,14 +168,12 @@ version when the concern is business/product altitude ("is this the right
 thing to build/safe to ship") and pstack's when it's engineering altitude
 ("is this code well-structured").
 
-## Plans live in artifacts/docs/claude-plan
+## No separate plan files
 
-Write a plan file in `artifacts/docs/claude-plan/` only for multi-day work that has no story file, and name it
-after what is being built (for example `flood-extent-polygon-tiles-airflow-minio.md`). Work that has a story
-file keeps its plan in that story: its acceptance check, its status history, and its details. A story is the
-one home of its plan (see "Write each fact once"). Update a plan file as the plan changes, and read the
-matching plan first when resuming that topic. When the work is done, set the plan's `status` to `done` and move
-it to `artifacts/archive/plans/`, so sessions stop reading it.
+There is no `claude-plan/` folder (retired 2026-10-10, `D-025`). A story is the one home of its plan: its
+acceptance check, its status history, and its details. Multi-day work with no story gets a story, or a spike
+when the answer is unknown. A plan that turns into standing reference of how a subsystem works becomes a concept
+page. Old plans are in `artifacts/archive/plans/`.
 
 ## Scrum: sprints, epics, and stories
 
@@ -201,9 +199,11 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
    `archive/`. The hierarchy is theme, then epic, then story. Keep epics few.
 5. **Story fields.** A story has `us_id`, `title`, `epic`, `kind` (`story`, `spike`, or `bug`), `status`,
    `priority`, `estimate` (XS=1, S=2, M=3, L=5 points), and `sprint`. Statuses are `Not started` (in the
-   backlog), `Ready`, `In progress`, `Reviewed`, `Blocked`, `Done`, and `Superseded`. A story is `Ready` when
-   its acceptance check, estimate, and dependencies are written and it is not rated L. Split a story rated L
-   before it enters a sprint.
+   backlog), `Ready`, `In progress`, `Reviewed`, `Blocked`, `Done`, and `Superseded`.
+   **Definition of ready.** A story is `Ready`, and so may enter a sprint, only when it passes the INVEST
+   check: independent (its dependencies are done or in the same sprint), negotiable, valuable (the user value or
+   the question is stated), estimable (it has an estimate), small (not rated L, so it fits one sprint), and
+   testable (the acceptance check names the environment). Planning takes only `Ready` stories.
 6. **Spikes.** An experiment or a proof is a story with `kind: spike`, a question, and a timebox of one sprint
    or less. It ends with an answer in the story and a `D-nnn` decision. It does not need a UI screenshot. An
    idea in `raw/ideas/` stays read-only. The spike links it in `source_ideas` and works in `marie-curie/`.
@@ -216,7 +216,10 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
    count. A spike records its measured result instead. Take the screenshot before changing the status. If the
    check fails, log the failure as a blocker and leave the story off `Done`. A story that is not `Done` at the
    review leaves the sprint: clear `sprint` and estimate it again.
-8. **Mid-sprint work.** A new fix, feature, or bug found during a sprint is written as a story in the backlog,
+8. **Work in progress.** At most two stories are `In progress` at once. A story that waits on a long run or on
+   an outside event starts that wait first. A story that waits on something that may not happen this sprint
+   (real rain, for example) does not enter the sprint.
+   **Mid-sprint work.** A new fix, feature, or bug found during a sprint is written as a story in the backlog,
    with `sprint` empty. It enters the sprint only if it threatens the sprint goal, and the product owner
    decides what leaves. The sprint goal does not change.
 9. **`TODOS.md`** shows the current sprint and holds no state of its own. Never add an item by hand. Set the
@@ -301,7 +304,7 @@ other file links to it. This applies to the vault below and to the Scrum rules a
 
 `artifacts/` is a working knowledge base, not a folder of one-off notes. See
 `artifacts/Home.md` for the index and conventions. The product backlog is the set of
-story files with no sprint. `artifacts/TODOS.md` shows the current sprint by query. Five kinds of files live here, and each has a different
+story files with no sprint. `artifacts/TODOS.md` shows the current sprint by query. Several kinds of files live here, and each has a different
 maintenance rule:
 
 - **`artifacts/raw/`** is the user's own source material: architecture notes,
@@ -318,12 +321,14 @@ maintenance rule:
   what to try, `marie-curie/` is where the trying actually happens. Never put
   experiment code, scripts, or data dumps in `raw/ideas/`; that's what
   `marie-curie/` is for.
-- **Logs** (`artifacts/logs/`) and **plans** (`artifacts/docs/claude-plan/`)
-  are the primary record: what happened, in the order it happened. Append-only,
-  one file per day or per plan. Never rewritten after the fact except to add
-  a `related` link or close out a status. A daily log is an index (see "Write
-  each fact once"): one line per event, linking to the story, blocker, or
-  decision that holds the detail.
+- **Logs** (`artifacts/logs/`) are the daily scrum: what happened, in the order
+  it happened. Append-only, one file per working day. Never rewritten after the
+  fact except to add a `related` link. A daily log is an index (see "Write each
+  fact once") of about 20 lines: a summary of the previous day (a standing rule
+  from the user), what moved, what moves next, what blocks, and server facts that
+  have no other home. One line per event, linking to the story, blocker, or
+  decision that holds the detail. It holds no pickup list, because the sprint
+  file and the backlog do.
 - **Archive** (`artifacts/archive/`) holds retired documents: logs before 2026-10-01, finished plans, resolved
   blockers, the story-level history lines of epics and sprint plans, and the research cut from long pages. It is
   excluded from Obsidian search (`userIgnoreFilters`), no Dataview query reads it, and sessions do not open it
@@ -333,12 +338,11 @@ maintenance rule:
   one page per subsystem (for example `graphhopper-backend.md`,
   `minio-flood-extent-pipeline.md`): what it is, how it works now, and its
   open items, cited against real file paths and line-level facts, not
-  paraphrased from memory. **When a log entry or a finished plan changes
-  something a concept page describes, update that concept page in the same
-  session** instead of leaving the fact only in the log. A log records that
-  something happened; a concept page is where a later session goes to learn
-  the subsystem without re-reading every log that ever touched it. Bump
-  `last_updated` in that page's frontmatter when you do this.
+  paraphrased from memory. A story that changes something a concept page
+  describes updates that page before it is `Done` (Definition of done, item 3),
+  and bumps `last_updated`. A log records that something happened; a concept page
+  is where a later session goes to learn the subsystem without re-reading every
+  log that ever touched it.
 - Before writing a new concept page, check whether one already exists for
   that subsystem (`artifacts/docs/concepts/`, or `artifacts/Home.md`'s
   Concepts query) and update it instead of starting a new one.
@@ -376,7 +380,7 @@ This folder is the opposite of `artifacts/raw/`: `raw/` is read-only and
 precious, `marie-curie/` is read-write and disposable. Create, edit, and delete
 files in `marie-curie/` freely. When an experiment works and becomes real work,
 move it to where it belongs (a script into `scripts/`, a DAG into `dags/`, a
-decision into `artifacts/docs/claude-plan/` or `artifacts/docs/concepts/`)
+decision into `artifacts/docs/decisions/decision-log.md` or `artifacts/docs/concepts/`)
 instead of leaving finished work sitting in scratch space.
 
 `marie-curie/` also pairs with `artifacts/raw/ideas/`: an idea written down

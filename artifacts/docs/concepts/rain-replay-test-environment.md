@@ -1,10 +1,10 @@
 ---
 date: 2026-10-07
-type: plan
-branch: modular
+type: concept
 status: active
-tags: [plan, rain, replay, test-environment, us-088, us-089, sprint-12]
+tags: [concept, rain, replay, test-environment, us-088, us-089, sprint-12]
 related: ["[[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]"]
+last_updated: 2026-10-07
 ---
 
 # Plan: a rain test environment

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-021"
 story_label: "4"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Not started
+status: Superseded
 priority: P1
 estimate: M
 sprint: 
@@ -25,3 +25,7 @@ hourly bars, then bars 1 through 6 return `constant_cycle` data and bars 7 throu
 this checks the stored data directly.
 Priority: P1. Status: Dropped (2026-10-01, D-009 in [[decision-log]]). Estimate: M. Sprint: 4 (re-cut 2026-09-29). Dependencies: Story 2, Story 3, [[EP-06-raster-first-pipeline|raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
 [[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]].
+
+## Status history
+
+- **2026-10-10, superseded.** `background_cycle` runs and the 24-bar histogram were dropped on 2026-10-01 ([[decision-log|D-009]]), so nothing needs the TimescaleDB population this story would build. Pruned from the backlog at the Lean cleanup of the same day ([[decision-log|D-025]]).
