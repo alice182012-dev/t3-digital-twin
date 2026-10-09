@@ -66,29 +66,36 @@ None.
 
 **Sprint file:** [[SPR-013-prove|SPR-013]]
 
-**Status:** planning. 8 points picked, 2 done.
+**Status:** planning.
+8 points picked, 2 done.
 
 ### In progress - US-089 Start a replay
 
-**Story:** [[US-089-start|US-089]]. P1, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
+**Story:** [[US-089-start|US-089]].
+P1, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ### Ready - US-102 Replay the storm
 
-**Story:** [[US-102-replay|US-102]]. P0, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
+**Story:** [[US-102-replay|US-102]].
+P0, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ### Done - US-070 Stop a slow step
 
-**Story:** [[US-070-slow|US-070]]. P1, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
+**Story:** [[US-070-slow|US-070]].
+P1, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ## Product backlog
 
-1 stories. The top 1 by priority:
+1 stories.
+The top 1 by priority:
 
-- [[US-091-measure|US-091]], P1, M, Not started. Measure it
+- [[US-091-measure|US-091]], P1, M, Not started.
+  Measure it
 
 ## Open blockers
 
-- [[BL-028-rain-gate|BL-028]], P0, monitoring. rain gate stops the simulation
+- [[BL-028-rain-gate|BL-028]], P0, monitoring.
+  rain gate stops the simulation
 
 All blockers: [[Blockers board]].
 """,
