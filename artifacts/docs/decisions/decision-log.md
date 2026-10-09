@@ -355,3 +355,16 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 
 The question of which depth the flood metric extractor and TimescaleDB metrics use is settled by D-006: they read `depth`, which
 is the maximum.
+
+## D-022: Drop the netcdf tables before `US-094` is proven on real rain
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** the five netcdf tables are dropped on 2026-10-10 after the deploy of `US-095`, before the archive of `US-094` is proven on a real forecast above 5 mm/h. The three empty TimescaleDB tables stay.
+- **Why:** `US-094` waits for rain that may not come for weeks, and `netcdf_values` held 5,378 MB in TimescaleDB and grew about 13 MB per run. D-018 said to retire the ingest, and the user waived its condition "only after `US-094` is proven".
+- **Alternatives:** Wait for `US-094` to run on real rain, as the story said.
+- **Evidence:** `us-095-drop-check-output.png`, and the readings in `US-095`.
+- **Affects:** `US-095`, `US-094`, `US-066`. Until the archive runs on real rain, no copy of the per-timestep 3Di values is kept, because the replay results are deleted by the 24-hour cleanup of task `9`.
+- **Revisit if:** a result of a replay run is needed after its raw output is deleted.
+

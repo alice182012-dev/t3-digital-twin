@@ -34,7 +34,6 @@ flowchart TB
     AIRFLOW["Airflow DAG flood_mapping_full<br/>flood_mapping_dag.py<br/>(every 15 min, rain gate)"]:::built
     ADAPTER["Airflow DAG routing_adapter<br/>(runs on the 9b asset event)"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
-    NETCDF["netcdf_to_pg.py<br/>(task 3b_upload_netcdf_postgres)"]:::built
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
     ROADLOAD["load_road_segments.py<br/>(task load_road_segments)"]:::built
     ROUTEEXT["flood_on_roads.py<br/>(task flood_on_roads)"]:::built
@@ -47,7 +46,7 @@ flowchart TB
     PG["storage-postgres (PostGIS)<br/>flood_road_values<br/>flood_extent_polygon (pruned, US-067)<br/>flood_extent_step<br/>flood_depth_raster_tile<br/>road_segment, graph_edge,<br/>graph_edge_export"]:::built
     MINIO["MinIO<br/>flood-extent (.pbf tiles),<br/>initial-wl, manholes-data"]:::built
     EDGEVOL["Docker volume edge-depth-tables<br/>(run.bin files, latest pointer)"]:::built
-    TSDB["timescaledb (US-066)<br/>mesh_elements<br/>netcdf_variable_catalog<br/>netcdf_values (compressed, 48h retention)<br/>histogram tables (empty, D-009)"]:::built
+    TSDB["timescaledb<br/>histogram tables (empty, D-009)"]:::built
     ULS["User Location Store"]:::designed
   end
 
@@ -71,12 +70,10 @@ flowchart TB
   PHOTON --> BACKEND
   HE -.->|model, templates| ThreeDI
   AIRFLOW --> DEPTH
-  AIRFLOW --> NETCDF
   RASTERLOAD -->|asset event, run_ts| ADAPTER
   ADAPTER --> ROADLOAD
   ADAPTER --> ROUTEEXT
   ADAPTER --> EDGETABLE
-  NETCDF -->|mesh, variables, values| TSDB
   DEPTH --> RASTERLOAD
   RASTERLOAD -->|flood_depth_raster_tile| PG
   ROADLOAD -->|road_segment| PG
@@ -129,14 +126,6 @@ used is unconfirmed. `US-045` (live timing of task 9c) is still open. The decisi
 ADR-008 in the architecture document.
 
 TimescaleDB moved from Designed to Built on 2026-10-05 ([[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]],
-`US-066`). The DAG's `3b_upload_netcdf_postgres` task (`netcdf_to_pg.py`) runs in parallel with
-`3_calculate_depth`, not downstream of it — both depend only on `2_download_results` and
-`0b_ensure_schema` finishing, per `dags/flood_mapping_dag.py`'s task graph. It writes the
-deduplicated mesh geometry and variable catalog (`mesh_elements`, `netcdf_variable_catalog`) and
-the per-timestep values onto a `netcdf_values` hypertable with a 6-hour compression policy and a
-48-hour retention policy, replacing a same-named table on `storage-postgres` that had no retention
-at all and reached 56 GB during a 48-hour soak test ([[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]). That
-old table is dropped. The dotted `PG -.-> TSDB` edge from the earlier diagram is gone with it: the
-DAG writes to TimescaleDB directly, never through `storage-postgres`. `flood_extent_polygon` on
+`US-066`), with a `netcdf_values` hypertable that task `3b_upload_netcdf_postgres` filled. On 2026-10-10 the ingest was retired ([[US-095-retire-the-netcdf-values-ingest|US-095]], D-018, D-022): the task, its scripts, and the tables `netcdf_values`, `netcdf_variable_catalog`, and `mesh_elements` are gone, and so are the three `storage-postgres` netcdf tables. `timescaledb` keeps only the three empty histogram tables. `flood_extent_polygon` on
 `storage-postgres` also got an automated prune the same week ([[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]],
 `US-067`), the other table the same incident found growing unbounded.

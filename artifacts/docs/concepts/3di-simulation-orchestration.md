@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-08
+last_updated: 2026-10-10
 ---
 
 # 3Di simulation orchestration
@@ -18,28 +18,26 @@ The section "The manual two-event test DAG" covers a DAG that runs the same step
 ## The DAG's task order
 
 ```
-0_check_forecast_rain --(dry)--> run ends, every later task skipped
+0_check_forecast_rain --(dry state)--> run ends, every later task skipped
         |
-      (rain)
+   (rain, or a flood still stands)
         v
 1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 9_build_flood_tiles
         |                        |                      |
         |                        v                      +--> 9b_load_depth_raster
-        |               3b_upload_netcdf_postgres
+        |               2b_archive_results --> 2c_archive_done
         v
 0b_ensure_schema
 ```
 
-The diagram leaves out the edges from `0b_ensure_schema` to `3b_upload_netcdf_postgres`,
-`9_build_flood_tiles`, and `9b_load_depth_raster`. The DAG has 8 tasks. Since 2026-10-07 (commit
+The diagram leaves out the edges from `0b_ensure_schema` to `9_build_flood_tiles` and `9b_load_depth_raster`, and from `2c_archive_done` to `9_build_flood_tiles`. The DAG has 9 tasks. Task `3b_upload_netcdf_postgres` left the DAG on 2026-10-10 ([[US-095-retire-the-netcdf-values-ingest|US-095]]). Since 2026-10-07 (commit
 `77169c3` on the branch `modular`) the routing tasks are in their own DAG, `routing_adapter`,
 described in the next section. `routing_adapter` is unpaused on the server (checked 2026-10-08), and
 `artifacts/TODOS.md` records it running there from 2026-10-07 16:00 +07.
 
-`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_upload_netcdf_postgres`,
-`9_build_flood_tiles`, and `9b_load_depth_raster`, since each needs its PostGIS tables to exist
-first. It creates the netcdf tables and the TimescaleDB tables (including the `netcdf_values` hypertable)
-that `3b_upload_netcdf_postgres` writes, `flood_road_values` with its `segment_id` column, the flood
+`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `9_build_flood_tiles` and
+`9b_load_depth_raster`, since each needs its PostGIS tables to exist
+first. It creates the three empty TimescaleDB tables, `flood_road_values` with its `segment_id` column, the flood
 extent tables, the depth raster tables, and `road_segment` and `graph_edge`, which only
 `routing_adapter` uses (`task_ensure_schema`). It runs before `9b_load_depth_raster`, so those tables exist before the first asset event.
 
@@ -113,10 +111,12 @@ after the replay is unverified. The server also had the test DAGs `calculate_dep
 
 `task_check_forecast_rain` calls `create_simulation.get_rain_forecast()` (Tomorrow.io, 15-minute
 steps, `RAIN_LOOKAHEAD_HOURS` ahead). The source is Tomorrow.io because NCHMF did not approve API
-access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle only proceeds to
+access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle proceeds to
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
-mm/h). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
-run ends as a successful dry-cycle skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
+mm/h). Below that, `scripts/standing_flood.py` reads the newest 5 runs of `flood_road_values` (US-101,
+[[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]). The run proceeds while a recent run (under 45 minutes old) is in progress and either one of those 5 runs has a deepest value of 5 cm or more
+(`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0. Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
+run ends as a successful dry-state skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
 `sim_id` there always means a real 3Di failure, so it raises `AirflowException` rather than
 `AirflowSkipException`, which would otherwise show identically green in the Airflow UI for both a
 legitimate skip and an actual failure.
