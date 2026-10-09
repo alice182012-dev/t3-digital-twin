@@ -61,6 +61,9 @@ ON flood_road_values USING GIST(geom_4326);
 
 CREATE INDEX IF NOT EXISTS idx_flood_values_forecast_timestamp
 ON flood_road_values(forecast_time, timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_flood_values_file_id
+ON flood_road_values(file_id);
 """
 
 BACKFILL_SQL = """
