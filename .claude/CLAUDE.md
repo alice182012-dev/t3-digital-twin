@@ -225,8 +225,10 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
    **Mid-sprint work.** A new fix, feature, or bug found during a sprint is written as a story in the backlog,
    with `sprint` empty. It enters the sprint only if it threatens the sprint goal, and the product owner
    decides what leaves. The sprint goal does not change.
-9. **`TODOS.md`** shows the current sprint and holds no state of its own. Never add an item by hand. Set the
-   story's `sprint` at planning, and the query shows it.
+9. **`TODOS.md`** is generated and holds no state of its own. Never edit it by hand, except the block between
+   `<!-- next-action:start -->` and `<!-- next-action:end -->`. Change a story, a sprint, or a blocker file, then
+   run `python3 -I scripts/render_todos.py` to rewrite it. `python3 -I scripts/render_todos.py --check` exits 1
+   when the file is out of date. Closing a story is one edit in the story file and one run of the script.
 10. **Review and retrospective.** On the last day, fill the Review and Retrospective sections of the sprint
     file: the goal met or not, the points delivered, the stories that left, then what worked, what did not, and
     one action. Check the previous action first. An action becomes a story, a rule change, or an `L-nnn`
@@ -307,7 +309,7 @@ other file links to it. This applies to the vault below and to the Scrum rules a
 
 `artifacts/` is a working knowledge base, not a folder of one-off notes. See
 `artifacts/Home.md` for the index and conventions. The product backlog is the set of
-story files with no sprint. `artifacts/TODOS.md` shows the current sprint by query. Several kinds of files live here, and each has a different
+story files with no sprint. `artifacts/TODOS.md` is generated from the story, sprint, and blocker files. Several kinds of files live here, and each has a different
 maintenance rule:
 
 - **`artifacts/raw/`** is the user's own source material: architecture notes,
