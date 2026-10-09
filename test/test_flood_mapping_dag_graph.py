@@ -26,7 +26,6 @@ EXPECTED_TASKS = {
     "2b_archive_results",
     "2c_archive_done",
     "3_calculate_depth",
-    "3b_upload_netcdf_postgres",
     "9_build_flood_tiles",
     "9b_load_depth_raster",
 }
@@ -40,9 +39,7 @@ EXPECTED_EDGES = {
     ("2c_archive_done", "9_build_flood_tiles"),
     ("3_calculate_depth", "9_build_flood_tiles"),
     ("3_calculate_depth", "9b_load_depth_raster"),
-    ("2_download_results", "3b_upload_netcdf_postgres"),
     ("1_trigger_simulation", "0b_ensure_schema"),
-    ("0b_ensure_schema", "3b_upload_netcdf_postgres"),
     ("0b_ensure_schema", "9_build_flood_tiles"),
     ("0b_ensure_schema", "9b_load_depth_raster"),
 }
@@ -191,7 +188,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         with patch("builtins.print"):
             self.dag_module.task_ensure_schema()
 
-        database.create_netcdf_tables.create_tables.assert_called_once_with()
+        database.create_timescale_tables.main.assert_called_once_with()
         database.create_flood_road_tables.main.assert_called_once_with()
         database.create_flood_extent_tables.main.assert_called_once_with()
         database.create_flood_depth_raster_tables.main.assert_called_once_with()
@@ -203,7 +200,11 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         cannot turn the run red and break the next slot's hotstart (hotstart_policy)."""
         leaves = {t for t in self.dag.tasks if not any(up == t for up, _ in self.dag.edges)}
 
-        self.assertEqual(leaves, {"3b_upload_netcdf_postgres", "9_build_flood_tiles", "9b_load_depth_raster"})
+        self.assertEqual(leaves, {"9_build_flood_tiles", "9b_load_depth_raster"})
+
+    def test_no_task_ingests_the_netcdf_into_a_database(self):
+        self.assertFalse(any("netcdf" in task_id for task_id in self.dag.tasks))
+        self.assertFalse(hasattr(self.dag_module, "task_upload_netcdf_postgres"))
 
     def test_a_failed_archive_does_not_stop_the_tile_build(self):
         self.assertEqual(self.dag.tasks["2c_archive_done"].kwargs["trigger_rule"], "all_done")

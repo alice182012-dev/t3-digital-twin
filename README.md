@@ -25,12 +25,10 @@ flowchart LR
   SIM <-->|"template, rain, saved state"| TDI["3Di API"]
   SIM --> DL["2_download_results"]
   DL -->|"results_3di.nc"| DEPTH["3_calculate_depth"]
-  DL --> NC["3b_upload_netcdf_postgres"]
   DEPTH -->|"depth_*.tif"| TILES["9_build_flood_tiles"]
   DEPTH -->|"depth_*.tif"| RASTER["9b_load_depth_raster"]
   TILES -->|".pbf tiles"| MINIO[("MinIO flood-extent bucket")]
   TILES -->|"flood_extent_polygon, flood_extent_step"| PG[("storage-postgres, PostGIS")]
-  NC -->|"netcdf_* tables"| PG
   RASTER -->|"flood_depth_raster_tile"| PG
   RASTER -.->|"asset event, run_ts"| ADAPTER["routing_adapter DAG"]
   ADAPTER --> ROADS["load_road_segments"]
@@ -79,9 +77,7 @@ Each run registers timed saved states with 3Di and records them in
 it cold starts from the template. Only a finished simulation writes its states to the file, so a
 crashed run leaves the older states for the next run.
 
-`2_download_results` saves `results_3di.nc` into a folder per simulation id. In parallel,
-`3b_upload_netcdf_postgres` loads the NetCDF into the `netcdf_files`, `netcdf_variables`, and
-`netcdf_values` tables.
+`2_download_results` saves `results_3di.nc` into a folder per simulation id.
 
 For the details, see
 [`3di-simulation-orchestration.md`](artifacts/docs/concepts/3di-simulation-orchestration.md).

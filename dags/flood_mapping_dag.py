@@ -29,8 +29,6 @@ try:
     import download_result
     import calculate_depth
     import netcdf_input
-    import database.netcdf_to_pg
-    import database.create_netcdf_tables
     import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
@@ -223,20 +221,7 @@ def task_ensure_schema(**kwargs):
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()
     database.create_graph_edge_table.main()
-    database.create_netcdf_tables.create_tables()
     database.create_timescale_tables.main()
-
-
-def task_upload_netcdf_postgres(**kwargs):
-    ti = kwargs["ti"]
-    nc_path = ti.xcom_pull(task_ids="2_download_results", key="nc_path")
-
-    if not nc_path or not os.path.exists(nc_path):
-        raise ValueError(f"❌ Không tìm thấy NetCDF để ingest: {nc_path}")
-
-    print(f"🗄️ 3b. Uploading NetCDF to Postgres: {nc_path}")
-
-    database.netcdf_to_pg.upload_netcdf_to_database(nc_path)
 
 
 def task_calculate_depth(**kwargs):
@@ -374,9 +359,6 @@ with DAG(
         python_callable=task_calculate_depth,
         pool=POOL_DEPTH_CALC,
     )
-    t3b = PythonOperator(
-        task_id="3b_upload_netcdf_postgres", python_callable=task_upload_netcdf_postgres
-    )
     t9 = PythonOperator(
         task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
     )
@@ -390,6 +372,5 @@ with DAG(
     t2 >> t2b >> t2c >> t9
     t3 >> t9
     t3 >> t9b
-    t2 >> t3b
     t1 >> t_ddl
-    t_ddl >> [t3b, t9, t9b]
+    t_ddl >> [t9, t9b]

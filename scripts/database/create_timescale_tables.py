@@ -1,8 +1,6 @@
 import psycopg2
-from psycopg2.extras import execute_values
 
 from db_config import TIMESCALE_DB_CONFIG
-from netcdf_variables import VARIABLE_CATALOG
 
 SQL = """
 CREATE EXTENSION IF NOT EXISTS timescaledb;
@@ -79,53 +77,6 @@ CREATE TABLE IF NOT EXISTS depth_history (
 SELECT create_hypertable(
     'depth_history', by_range('valid_time'), if_not_exists => TRUE
 );
-
-CREATE TABLE IF NOT EXISTS netcdf_variable_catalog (
-    id SMALLINT PRIMARY KEY,
-    variable_name TEXT UNIQUE NOT NULL,
-    mesh_type TEXT NOT NULL,
-    element_type TEXT NOT NULL
-);
-
--- element_id restarts at 1 per (mesh_type, element_type), so the same number is
--- a different 2D line and 2D node within one model. The key carries both.
-CREATE TABLE IF NOT EXISTS mesh_elements (
-    model_id BIGINT NOT NULL,
-    mesh_type TEXT NOT NULL,
-    element_type TEXT NOT NULL,
-    element_id BIGINT NOT NULL,
-    x DOUBLE PRECISION,
-    y DOUBLE PRECISION,
-    PRIMARY KEY (model_id, mesh_type, element_type, element_id)
-);
-
--- file_id has no foreign key because netcdf_files lives on storage-postgres.
-CREATE TABLE IF NOT EXISTS netcdf_values (
-    file_id INT NOT NULL,
-    element_id BIGINT NOT NULL,
-    variable_id SMALLINT NOT NULL REFERENCES netcdf_variable_catalog(id),
-    "timestamp" TIMESTAMPTZ NOT NULL,
-    value DOUBLE PRECISION NOT NULL
-);
-
-SELECT create_hypertable('netcdf_values', by_range('timestamp', INTERVAL '1 day'), if_not_exists => TRUE);
-
-ALTER TABLE netcdf_values SET (
-  timescaledb.compress,
-  timescaledb.compress_segmentby = 'file_id, variable_id',
-  timescaledb.compress_orderby = 'element_id'
-);
-SELECT add_compression_policy('netcdf_values', INTERVAL '6 hours', if_not_exists => TRUE);
-SELECT add_retention_policy('netcdf_values', INTERVAL '48 hours', if_not_exists => TRUE);
-"""
-
-CATALOG_SEED_SQL = """
-INSERT INTO netcdf_variable_catalog (id, variable_name, mesh_type, element_type)
-VALUES %s
-ON CONFLICT (id) DO UPDATE SET
-    variable_name = EXCLUDED.variable_name,
-    mesh_type = EXCLUDED.mesh_type,
-    element_type = EXCLUDED.element_type;
 """
 
 
@@ -134,16 +85,12 @@ def main():
     cur = conn.cursor()
 
     cur.execute(SQL)
-    execute_values(cur, CATALOG_SEED_SQL, VARIABLE_CATALOG)
     conn.commit()
 
     cur.close()
     conn.close()
 
-    print(
-        "Tables institution_histogram_bar, background_forecast_depth, depth_history, "
-        "netcdf_variable_catalog, mesh_elements, netcdf_values ready."
-    )
+    print("Tables institution_histogram_bar, background_forecast_depth, depth_history ready.")
 
 
 if __name__ == "__main__":

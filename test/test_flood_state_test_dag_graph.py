@@ -172,7 +172,6 @@ class StateTestDagGraphTests(unittest.TestCase):
         with patch("builtins.print"):
             self.dag_module.task_ensure_schema()
 
-        database.create_netcdf_tables.create_tables.assert_called_once_with()
         database.create_flood_road_tables.main.assert_called_once_with()
         database.create_flood_extent_tables.main.assert_called_once_with()
         database.create_flood_depth_raster_tables.main.assert_called_once_with()

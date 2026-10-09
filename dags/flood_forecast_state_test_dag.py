@@ -58,7 +58,6 @@ try:
     import create_simulation
     import download_result
     import calculate_depth
-    import database.create_netcdf_tables
     import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
@@ -219,7 +218,6 @@ def task_ensure_schema(**kwargs):
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()
-    database.create_netcdf_tables.create_tables()
 
 
 def depth_stamps(depth_dir):

@@ -34,10 +34,8 @@ $out = & {
     docker exec $postgres psql -U minio_custom -d minio_custom -At -F " | " -c "select 'flood_depth_raster_tile', pg_size_pretty(pg_total_relation_size('flood_depth_raster_tile')), count(*) || ' rows', count(distinct run_ts) || ' runs' from flood_depth_raster_tile"
     docker exec $postgres psql -U minio_custom -d minio_custom -At -F " | " -c "select 'graph_edge', pg_size_pretty(pg_total_relation_size('graph_edge')), count(*) || ' rows' from graph_edge"
 
-    Section "4. netcdf_values (timescaledb, database flood_metrics)"
+    Section "4. Database size (timescaledb, database flood_metrics)"
     docker exec $timescale psql -U flood_metrics -d flood_metrics -At -F " | " -c "select 'flood_metrics total', pg_size_pretty(pg_database_size('flood_metrics'))"
-    docker exec $timescale psql -U flood_metrics -d flood_metrics -At -F " | " -c "select 'netcdf_values', pg_size_pretty(hypertable_size('netcdf_values')), (select count(*) from timescaledb_information.chunks where hypertable_name = 'netcdf_values') || ' chunks'"
-    docker exec $timescale psql -U flood_metrics -d flood_metrics -At -F " | " -c "select 'compression', pg_size_pretty(sum(before_compression_total_bytes)::bigint) || ' before', pg_size_pretty(sum(after_compression_total_bytes)::bigint) || ' after' from hypertable_compression_stats('netcdf_values')"
 
     Section "5. Containers that Docker or the host paused or stopped"
     docker ps -a --filter "status=paused" --filter "status=exited" --filter "status=dead" --format "{{.Names}}  {{.Status}}"
