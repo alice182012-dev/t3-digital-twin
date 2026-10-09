@@ -53,6 +53,17 @@ class StickyClosureTest(unittest.TestCase):
         r = rule({1: FLOODED_FROM_STEP_1}, margin_s=299)
         self.assertFalse(r.is_closed(1, arrival_s=600))  # window 0..899 stops short
 
+    def test_an_arrival_exactly_on_a_step_counts_that_step(self):
+        r = rule({1: FLOODED_FROM_STEP_1}, margin_s=0)
+        self.assertTrue(r.is_closed(1, arrival_s=900))
+        self.assertFalse(r.is_closed(1, arrival_s=899))
+
+    def test_a_departure_between_two_steps_ignores_the_step_before_it(self):
+        wet_at_step_0 = {1: [50, 0, 0, 0, 0, 0, 0, 0, 0]}
+        self.assertFalse(rule(wet_at_step_0, departure_s=450).is_closed(1, arrival_s=450))
+        wet_at_step_1 = {1: [0, 50, 0, 0, 0, 0, 0, 0, 0]}
+        self.assertTrue(rule(wet_at_step_1, departure_s=450).is_closed(1, arrival_s=450))  # window 450..1050
+
     def test_water_that_drained_before_departure_does_not_close_the_road(self):
         drains = {1: [50, 50, 0, 0, 0, 0, 0, 0, 0]}
         self.assertTrue(rule(drains, departure_s=0).is_closed(1, arrival_s=1200))
