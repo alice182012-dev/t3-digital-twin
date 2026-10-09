@@ -104,6 +104,16 @@ In all, 235 of 240 searches were exact (0.979), against 114 of 240 in approach 3
 
 The exact set now holds pairs where a closure matters. Of the 233 exact searches with a route, 231 were `same` and 2 were `sticky_longer`. None broke the nesting check. This sample is 15 pairs, so these counts show that the comparison now produces results, and they are not the `US-093` shares.
 
+Diagnosis of the 3 pairs that stay inexact (2026-10-09, budget 10,000,000 expansions, one pair at a time, `marie-curie/us-099/diagnose_10m.jsonl`). None finished, at 3.3 times the earlier budget. Each took about 90 s and a peak of 3.7 to 4.5 GB of memory, because every open label stays in the queue.
+
+| Pair | Vehicle | Lower bound at departure | Sticky route | Gap |
+| ---- | ------- | ------------------------ | ------------ | --- |
+| 4518 to 28381 | foot | 1,213 s | 1,235 s | 22 s (1.8%) |
+| 13281 to 50745 | car | 1,323 s | 1,333 s | 10 s (0.7%) |
+| 29891 to 2808 | motorbike | 855 s | none | not known |
+
+A sticky route is also an arrival-only route, because the sticky closed set contains the arrival-only closed set. So the arrival-only answer for the first two pairs lies between the lower bound and the sticky end, and the extra time of sticky is at most 22 s and 10 s. These two searches are stuck on a plateau: many simple paths have a bound just below the answer, and best-first search has to expand all of them. The third pair is different. Sticky has no route, so the open question is whether arrival-only has one, and proving that it has none means exhausting the simple paths. The memory figures make a budget of 30,000,000 impractical on a 16 GB Mac (my estimate from the linear growth, not an observed failure).
+
 Tests: the search matches a brute-force enumeration of every simple path on 1,900 seeded random graphs (the new 1,500-case set has roads that close and reopen). A destination shut off by a closed road ends with 0 expansions on a 6 by 6 grid. A separate run of 6,000 cases found 0 mismatches.
 
 ## Options remaining
@@ -177,3 +187,4 @@ The sticky side is not in question. A seeded test of 300 graphs in `scripts/rout
 - **2026-10-09, open.** Approach 3 ran option A on the real graph (`US-099`): exact rate 0.475 (114 of 240 searches) at a budget of 3,000,000 expansions, mean 10 s and maximum 27.6 s per search. The blocker stays open. The measured rate does not meet an exact-enough bar such as 95 percent, and the decision between option A, option B, and sticky closure is in `US-100`.
 - **2026-10-09, open.** The user chose option A as the definition of the reference: the earliest arrival over routes that visit no node twice. Loop-and-wait is not allowed, and the departure time is fixed per trip. Option B is dropped. The exact-enough bar, the cost limit, and the sprint are still open, so the blocker stays `open`. The cost of option A (0.475 exact) is the remaining problem. `approaches_remaining` goes from 2 to 1.
 - **2026-10-09, open.** Approach 4 (pruned option A, now in `scripts/routing_reference/arrival_only.py`) raised the exact rate from 0.475 to 0.979 (235 of 240) and cut the wall time from 618 s to 76 s. Option B is not needed. The blocker stays `open` until the user sets the exact-enough bar (question 3). If the bar is 95 percent per vehicle, every vehicle meets it (motorbike 0.95, car 0.98, truck 1.00, foot 0.98). `approaches_remaining` stays 1: a stronger bound for the 3 pairs left.
+- **2026-10-09, open.** Diagnosis of the 3 inexact pairs at a budget of 10,000,000 (3.3 times more): none finished, and peak memory was 3.7 to 4.5 GB. Two pairs have a sticky route within 1.8% and 0.7% of the lower bound, so the extra time of sticky is bounded there. One pair has no sticky route and stays open. A larger budget is not the fix.
