@@ -61,6 +61,13 @@ def run_timestamp(run_ts: str) -> datetime:
     return datetime.strptime(run_ts, "%Y%m%dT%H%M%S")
 
 
+def lock_run(cur, target_table: str, timestamp: datetime) -> None:
+    """Holds the run's lock until the transaction ends. Two concurrent writers of one run would each
+    delete only committed rows and then both insert, leaving duplicates, and a prune deleting a run
+    must not interleave with a rewrite of it."""
+    cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"{target_table}/{timestamp:%Y%m%dT%H%M%S}",))
+
+
 def create_shadow_table(conn, name: str) -> None:
     """A table shaped like flood_road_values, for comparing this task's output with the old rows
     without touching what routing reads. LIKE copies columns, defaults, and indexes, not the
@@ -181,9 +188,7 @@ def compute(conn, run_ts: str, target_table: str = DEFAULT_TARGET) -> ComputeRes
     timestamp = run_timestamp(run_ts)
     target = sql.Identifier(target_table)
     with conn, conn.cursor() as cur:
-        # Two concurrent writers of one run would each delete only committed rows and then both
-        # insert, leaving duplicates.
-        cur.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (f"{target_table}/{run_ts}",))
+        lock_run(cur, target_table, timestamp)
         cur.execute(_TIMESTEPS_SQL, {"run_ts": run_ts})
         valid_times = [row[0] for row in cur.fetchall()]
         if not valid_times:
