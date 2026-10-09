@@ -48,8 +48,8 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 
 `ExportEdges <graph-cache-folder> <output-folder>` opens the graph cache read-only and writes two files.
 
-- `edges.csv` has the header `edge_id,wkt` and one row per edge, in edge-id order. `wkt` is a quoted LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node.
-- `graph.json` has `format_version`, `graph_hash`, `edge_count`, `node_count`, and `graphhopper_commit`.
+- `edges.csv` has the header `edge_id,wkt,base_node,adj_node` and one row per edge, in edge-id order. `wkt` is a quoted LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node. `base_node` and `adj_node` are the GraphHopper node ids of the edge.
+- `graph.json` has `format_version` (2; format 1 had only `edge_id` and `wkt`), `graph_hash`, `edge_count`, `node_count`, and `graphhopper_commit`.
 
 The hash is a SHA-256 over the node count, the edge count, and for each edge in id order its base node, adjacent node, point count, and points in 1e-7 degrees. It reads no file timestamps, so two exports of one graph, and two imports of one OSM file, give one hash. Any change to a node, an edge, or a geometry changes it.
 
