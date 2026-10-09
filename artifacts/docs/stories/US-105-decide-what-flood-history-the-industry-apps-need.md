@@ -28,8 +28,8 @@ The spike works in `marie-curie/` and measures on the server.
 
 **Sub-questions.**
 
-1. Which industries come first, and what question does each ask of the data? The product owner names at least three niches. The spike lists the data each one reads.
-2. What is the grain: one value per road piece per step, the raster, or the polygons?
+1. Answered by the product owner on 2026-10-10. The industries to prepare for are finance, urban planning, and agriculture. No application for them is built now. The platform is made ready so that a customer from any industry can start quickly.
+2. The grain is one value per road piece and moment, as [[decision-log|D-028]] says. Finance and agriculture may ask about parcels and fields. An area-based history waits for a customer who needs it, and a new story adds it then.
 3. Answered by [[decision-log|D-028]]. History keeps the latest forecast of each road piece and moment. It keeps no other forecast, so analyses of forecast error or lead time are out of scope.
 4. Does a missing row mean dry or unknown? `flood_road_values` has no row for a piece that was dry at every step of a run.
 5. How long must history last, and what does that cost in rows? [[decision-log|D-028]] sets several years. The spike measures the real row count per day on the server and the compressed size on a real TimescaleDB server, then sets the age at which old data is dropped.
@@ -42,14 +42,15 @@ The spike works in `marie-curie/` and measures on the server.
 - The row size (about 130 bytes with the primary key index) and the compression ratio (10 times) are estimates. The spike replaces both with measurements.
 - Free disk is 100 GB on C: and 581 GB on D:. The `timescaledb-data` volume lives in Docker's disk image on C: ([[BL-022-docker-data-vhdx-fills-c-drive-again|BL-022]]).
 
-Given the answers to the five sub-questions, when the spike ends, then the story holds a table of niche, question, and data needed, and a decision `D-nnn` in `decision-log.md` that names the store, the grain, how long data is kept, and how a consumer tells dry from unknown.
+Given the answers to the five sub-questions, when the spike ends, then the story holds the three industries, and a decision `D-nnn` in `decision-log.md` that names the store, the grain, how long data is kept, and how a consumer tells dry from unknown.
 The decision also confirms or changes the proposed consumer rule of [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-Dependencies: None. The product owner's list of niches is an input.
+Dependencies: None.
 
 ## Status history
 
 - **2026-10-10, draft.** Ready: the question is stated, it has an estimate, and the answer is a decision.
+- **2026-10-10, industries named.** The product owner named finance, urban planning, and agriculture, and said the work prepares the platform and builds no industry application. Sub-questions 1 and 2 are answered.
 - **2026-10-10, narrowed.** [[decision-log|D-028]] answered sub-question 3 and set the retention target of sub-question 5.
 
 ## Evidence and details

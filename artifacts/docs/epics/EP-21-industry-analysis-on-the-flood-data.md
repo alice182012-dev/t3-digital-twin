@@ -17,6 +17,7 @@ Applications for different industries read the forecast flood data and the flood
 Routing ([[EP-18-time-aware-routing-engine|EP-18]]) is the first such application.
 A flood-data-analysis application is the second.
 Every further industry is a new consumer of the same contract, not a change to the pipeline.
+This epic prepares the platform for finance, urban planning, and agriculture. It builds no application for them, so a customer from any industry can start quickly.
 
 ## Why
 
@@ -48,11 +49,11 @@ Run each check on the server.
 1. Given a replay run published on the server, when an application connects with its own read-only role, then it reads the run's manifest rows and the run's `flood_road_values`, and a write, or a read of a table outside its list, fails with a permission error.
 2. Given a run older than the retention limit of the contract tables, when the application asks for the depth of one road piece at a time inside that run, then it gets the value from the history store, and a spot check against the `flood_road_values` rows loaded at that time gives the same number.
 3. Given the analysis service in its own container, when the image is built, then it installs no package into the Airflow image.
-4. Given the first niche analysis that [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] names, when a user asks for it, then the service answers from the history store. This check is written when the spike names the niche.
+4. The check for a first industry analysis is written when a customer asks for one. This epic does not build it.
 
 ## Risks and open questions
 
-- Which industries come first, and what each one asks, is the product owner's input. Without it `US-105` cannot finish.
+- Finance and agriculture may ask about parcels and fields, which the road-piece history of [[decision-log|D-028]] does not answer. A new story adds an area-based history when a customer needs it.
 - History from the model's forecast is not history of what happened. An analysis that needs observed depth waits for the gauge work.
 - Storage growth is unmeasured. No compression or retention policy exists for the Timescale tables.
 
