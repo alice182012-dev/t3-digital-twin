@@ -535,6 +535,31 @@ class TimeAwareRouterTest {
     }
 
     @Test
+    void aViaRequestWithAShallowRoadGivesTheDryDetourFirstAndTheLimitRouteSecond(@TempDir Path dir) throws Exception {
+        floodAll(dir, 20, corridorEdge);
+        int before = TimeAwareRouter.precautionSearches.get();
+        GHRequest request = new GHRequest(List.of(
+                new com.graphhopper.util.shapes.GHPoint(ORIGIN[0], ORIGIN[1]),
+                new com.graphhopper.util.shapes.GHPoint(21.0000, 105.7540),
+                new com.graphhopper.util.shapes.GHPoint(DESTINATION[0], DESTINATION[1]))).setProfile("car");
+        request.setPathDetails(List.of("edge_id"));
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, T0.getEpochSecond());
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(2, r.getAll().size());
+        assertEquals("recommended,through_water", hint(r, "td.kinds"));
+        assertFalse(r.getAll().get(0).getPathDetails().get("edge_id").stream().anyMatch(d -> d.getValue().equals(corridorEdge)),
+                "path 0 reaches the via point by the detour");
+        assertTrue(r.getAll().get(1).getPathDetails().get("edge_id").stream().anyMatch(d -> d.getValue().equals(corridorEdge)),
+                "path 1 crosses the corridor");
+        assertTrue(r.getAll().get(0).getDistance() > r.getAll().get(1).getDistance());
+        assertEquals(before + 1, TimeAwareRouter.precautionSearches.get(), "one second search for the whole request");
+        assertEquals(1, provider.calls, "one read of the table per request, for every leg and both searches");
+    }
+
+    @Test
     void aFallbackCarriesNoKinds() {
         provider.problem = "no table has been published";
 
