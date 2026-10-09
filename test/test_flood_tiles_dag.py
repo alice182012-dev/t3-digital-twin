@@ -69,7 +69,11 @@ class BuildFloodTilesTests(unittest.TestCase):
     def test_a_triggering_event_builds_its_run_from_the_announced_folder(self):
         result = self.build(**self.triggered_by("20260924T170639"))
 
-        self.assertEqual(result, [{"run_ts": "20260924T170639", "timesteps": 2, "flooded_timesteps": 1}])
+        self.assertEqual(len(result), 1)
+        self.assertEqual(
+            {key: result[0][key] for key in ("run_ts", "input", "timesteps", "flooded_timesteps", "input_seconds")},
+            {"run_ts": "20260924T170639", "input": "files", "timesteps": 2, "flooded_timesteps": 1, "input_seconds": 0.0},
+        )
         self.assertEqual(self.publish.publish_run.call_args.args[:2], (self.dirs["20260924T170639"], "20260924T170639"))
         self.assertEqual(
             self.publish.publish_run.call_args.kwargs,
@@ -121,6 +125,76 @@ class BuildFloodTilesTests(unittest.TestCase):
         os.rmdir(self.dirs["20260924T170639"])
 
         result = self.build(**self.triggered_by("20260924T170639", "20260924T172139"))
+
+        self.assertEqual([built["run_ts"] for built in result], ["20260924T172139"])
+
+
+RASTER_PUBLISHED = fakes.FakeAsset("flood_depth_raster_tile")
+
+
+def load_postgis_module():
+    with patch.dict(os.environ, {"FLOOD_TILES_INPUT": "postgis"}):
+        return fakes.load_dag_module("dags/flood_tiles_dag.py")
+
+
+class InputModeTests(unittest.TestCase):
+    def test_the_default_mode_reads_the_files_of_task_3(self):
+        module = fakes.load_dag_module("dags/flood_tiles_dag.py")
+
+        self.assertEqual(module.TILES_INPUT, "files")
+        self.assertEqual(module.dag.kwargs["schedule"], [ANNOUNCED])
+
+    def test_the_postgis_mode_runs_on_the_loaded_raster_event(self):
+        module = load_postgis_module()
+
+        self.assertEqual(module.dag.kwargs["schedule"], [RASTER_PUBLISHED])
+        self.assertEqual(module.dag.tasks["9_build_flood_tiles"].kwargs["inlets"], [RASTER_PUBLISHED])
+
+    def test_an_unknown_mode_fails_at_parse_time(self):
+        with patch.dict(os.environ, {"FLOOD_TILES_INPUT": "s3"}), self.assertRaises(ValueError):
+            fakes.load_dag_module("dags/flood_tiles_dag.py")
+
+
+class PostgisBuildTests(unittest.TestCase):
+    def setUp(self):
+        self.dag_module = load_postgis_module()
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dag_module.FLOOD_TILES_EXPORT_DIR = self.tmp.name
+        self.exported_during_build = []
+
+        def export_run(conn, run_ts, out_dir, steps):
+            Path(out_dir).mkdir(parents=True)
+            (Path(out_dir) / "depth_20260924_170639.tif").write_text("x")
+            self.export_args = (run_ts, out_dir, steps)
+
+        def publish_run(depth_dir, *args, **kwargs):
+            self.exported_during_build.append(sorted(p.name for p in Path(depth_dir).iterdir()))
+            return {"a": MagicMock(is_empty=False)}
+
+        self.dag_module.raster_export = MagicMock(export_run=export_run)
+        self.dag_module.publish = MagicMock(publish_run=publish_run)
+        self.dag_module.DB_CONFIG = {}
+
+    def build(self, **kwargs):
+        with patch.dict(os.environ, ENV), patch("builtins.print"):
+            return self.dag_module.task_build_flood_tiles(**kwargs)
+
+    def test_the_run_is_exported_built_and_the_export_is_removed(self):
+        kwargs = {"triggering_asset_events": {RASTER_PUBLISHED: [types.SimpleNamespace(extra={"run_ts": "20260924T170639"})]}}
+
+        result = self.build(**kwargs)
+
+        expected_dir = str(Path(self.tmp.name) / "20260924T170639")
+        self.assertEqual(self.export_args, ("20260924T170639", expected_dir, 2))
+        self.assertEqual(self.exported_during_build, [["depth_20260924_170639.tif"]])
+        self.assertFalse(Path(expected_dir).exists())
+        self.assertEqual((result[0]["run_ts"], result[0]["input"]), ("20260924T170639", "postgis"))
+
+    def test_a_manual_run_builds_the_newest_loaded_run(self):
+        events = [types.SimpleNamespace(extra={"run_ts": run_ts}) for run_ts in ("20260924T172139", "20260924T170639")]
+
+        result = self.build(inlet_events={RASTER_PUBLISHED: events})
 
         self.assertEqual([built["run_ts"] for built in result], ["20260924T172139"])
 
