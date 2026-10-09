@@ -1,15 +1,15 @@
 ---
 date_open: 2026-09-25
-date_closed: 
+date_closed: 2026-10-09
 type: blocker
-status: open
+status: resolved
 severity: P1
 subsystem: floodmap-backend
 approaches_tried: 0
 approaches_remaining: 3
 tags: [blocker, routing, forecast, graphhopper, safety]
 related: ["[[map-shows-forecast-not-now]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-09
 ---
 
 # Routing checks each road at one moment, not at the time the traveller reaches it
@@ -599,3 +599,4 @@ The evidence image is `us-046-baselines-check-output.png`, and the raw JSON is `
 - **2026-10-02, open.** `US-046` recorded the p50 and p95 of `POST /route` in "Latency of POST /route, 2026-10-02". GraphHopper alone answers in 8 to 21 ms at the p50, and the flood model raises that to 153 to 1,857 ms. The 30-second area cache hides 0.6 to 1.0 s of PostGIS work. The user can now set the latency factor of the PRD. The blocker stays open.
 - **2026-10-02, open.** The user cleared the three gates. The sticky-from-departure wording is confirmed (`US-050`), the build-time limit is set (`US-045`: the table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`), and the latency factor is 2 times the baseline (`US-055`). No gate of the build is open. The blocker stays open until the rollout story has evidence.
 - **2026-10-05, open.** `US-049` answered the LM question (assumption 5 of [[time-aware-routing-engine]]). A weighting that only raises edge weights, or closes edges with an infinite weight, keeps the landmark lower bounds valid, so the time-aware search can run with LM. Source: `LMApproximator` states that all routing weights must be larger than or equal to the preparation weights. Test: `LandmarkLowerBoundTest` in `java/time-aware-routing/`, 10 random graphs, with the landmarks prepared on the stock weighting. No LM estimate exceeds the real weight, and LM A* (`astar` and `astarbi`) finds the Dijkstra weight on every pair tried. A control weighting that lowers weights does break the bounds, so the test can fail. The test uses GraphHopper's own random graphs, not the Hanoi graph.
+- **2026-10-09, resolved.** `US-055` is `Done` on the engine proof of 2026-10-07 (9 of 24 routes changed, median detour 0.94, 0 routes cross a road closed on arrival, 6 of 6 latency cells within 2 times the baseline) and the table timing of `US-045` (gap 2.69 to 3.91 minutes over 45 runs). The user closed the blocker on 2026-10-09 while `TIME_AWARE_ROUTING` is `false` at rest, so live routing is still single-timestep until the flag goes on. The flag goes on when the DAG runs on real rain, with `rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`. Evidence: `us-055-rollout-results-check-output.png` in `docs/user-stories/evidence/`.

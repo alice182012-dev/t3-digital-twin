@@ -62,7 +62,7 @@ caption that gives the capture time and host.
   6. A plain list of what the proof does not say: it does not solve Kleff's problem with reopening windows, and it is
      exact for the sticky rule and not for the true arrival-time rule.
   The suite of `scripts/routing_reference/` passes after the new tests.
-  Priority: P1. Status: Not started. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13).
+  Priority: P1. Status: Done. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13).
   Dependencies: None. The user's confirmation of "sticky from departure" is already in place (2026-10-02).
   Evidence: None yet.
 
@@ -82,7 +82,7 @@ caption that gives the capture time and host.
   the engine. Arrival times assume free flow, so the story adds one sensitivity case that slows travel on deep
   edges, labelled as a sensitivity case.
   Needs no new engine.
-  Priority: P1. Status: Not started. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13).
+  Priority: P1. Status: In progress. Estimate: M. Sprint: 12 ([[sprint-plan-3]]; 2026-12-07 to 2026-12-13).
   Dependencies: `US-047` (the reference and the checker, `Done`), `US-050` and `US-052` (the engine behind the flag,
   `Done`), and the depth tables of the 12-hour replay of `US-089` (copied before retention removes them, see rule 5).
   The server run reads the engine proof of `US-055`, which is `In progress`. The sticky-engine check inside this story
@@ -93,7 +93,7 @@ caption that gives the capture time and host.
   As the author of Paper A, I want a sensitivity analysis of the motorbike and truck limits, so the paper answers "why
   20 and 35 cm" with a measured range and not with a source that does not exist.
   Given the harness and the pair set of `US-091`, when the motorbike limit runs over 10, 15, 20, 25, 30, and 40 cm, the
-  truck limit over 25, 30, 35, 40, 50, and 60 cm, and the start of the cost band at 25, 50, and 75 percent of the
+  truck limit over 25, 30, 35, 40, 50, and 60 cm, and the precaution fraction of D-021 at 0.25, 0.5, and 0.75 of the
   limit, then a result file records for each setting the closed road length, the share of origin and destination pairs
   that still have a route, the mean detour, and the violation rate of `US-091`. It also holds a regret table: plan
   with limit A, judge against limit B. A short list names the settings where the conclusion changes. The file states
@@ -136,3 +136,7 @@ caption that gives the capture time and host.
   sprint 13. We need to finish the routing first." The four stories come from the work items P1 to P4 of
   [[paper-handoff-routing-and-system]]. P5 (open the Vu 2024 report) is replaced by the source search of 2026-10-08, so
   it has no story. IDs `US-090` to `US-093`, in the order P1, P2, P3, P4.
+- **2026-10-09, active.** Story 1 (`US-090`) is `Done`: [[sticky-closure-proof]], two new tests, evidence `us-090-proof-check-output.png`. The proof found the clock error of the engine, now `US-096` ([[sticky-closure-clock-anchored-at-floored-departure]]).
+- **2026-10-09, active.** Story 2 (`US-091`): the harness is built (`scripts/routing_experiments/`, 42 tests). After `US-096` the runner walks engine routes from the time of the request and starts the sticky window at `td.departure` (`88c151c`). The server run and the storm stages wait for the second replay (D-020).
+- **2026-10-09, active.** Stories 3 and 4 (`US-092`, `US-093`) are `In progress`. The offline code is merged on `modular` (`fc14d81` to `bb00594`): `arrival_only.py`, `sticky_cost.py`, `limit_sweep.py`. The first hour of `US-093` did not need more than a label-correcting search, so the estimate stays S. Open: the cost-band sweep of `US-092` (the reference has no cost factors) and a graph with node ids for a real run.
+- **2026-10-09, active.** D-021 replaces the cost band of Story 3 with the precaution fraction. The sweep records, for each fraction, the share of pairs with a recommended route, the share that fall back to the hard-limit route, and the extra time of the recommended route. The engine change is `US-097` ([[US-097-098-precaution-depth-routing-stories]]).

@@ -69,6 +69,7 @@ the table that gives it to them.
 5. **Verified, 2026-10-01.** The graph has 67,833 edges and 51,328 nodes (see "Baselines on the server" in
    [[routing-not-time-aware]]). At 8 steps and 2 bytes, a table is about 1.1 MB per run. The earlier guess of
    2 million edges and 36 MB was about 30 times too high.
+   **Measured on the server, 2026-10-09** ([[edge-depth-table-stories]] Story E7): every table is 67,833 edges and 1,085,487 bytes, and 9c took 44.8 to 90.3 s with a gap of 2.69 to 3.91 minutes after `3_calculate_depth`.
 6. **Verified, 2026-10-01.** A real run has 8 steps, 15 minutes apart, so the last step is 105 minutes after the
    first. The user stated a 2-hour horizon on 2026-09-29, and no step falls at 120 minutes.
 7. **Unverified.** Airflow can reach the volume or bucket that holds the table, and the routing container can

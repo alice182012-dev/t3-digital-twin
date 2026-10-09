@@ -1,20 +1,11 @@
 # TODOS
 
-## Current sprint: Sprints 9 to 11, 2026-10-05 to 2026-12-06
+## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
-### Active - US-055 Prove the engine on the server and roll it out
-
-**What:** Evidence on the server before the flag goes on. The four scenarios for the four vehicles pass the checker on the deployed image and a real run. The p50 and p95 of `POST /route` stay within 2 times the baseline of `US-046`. A fixed set of pairs run against today's model and the reference gives the share of routes that change and the median detour ratio. The tooling is built first, so the server needs one deploy and one run ([[time-aware-routing-engine-stories]] Story R10).
-
-**Effort:** M
-**Priority:** P0
-**Depends on:** `US-051`, `US-052`, `US-053`, `US-054` and `US-045`. The latency factor of 2 was set on 2026-10-02. The server run waits for the end of the 48-hour replay, because no image is built on the server until then.
-
-**Sprint:** 10, [[time-aware-routing-engine-stories]] Story R10 (US-055), in [[sprint-plan-3]].
-
-**Status note:** `In progress`. On 2026-10-07 (host ADMIN, branch `modular`), `rollout.ps1` ran (not from the Mac as written, run locally since this session is the server): the graphhopper/backend/frontend images built, graphhopper needed a graph re-import first (US-051's profile change, see [[graph-reimport-procedure]]), then every check that doesn't need the DAG passed — `compare` (37.5% changed, median detour 0.94), `crossings` (0), `departures` (3/3 trips), `latency` (all 6 cells within 2x the `US-046` baseline), `scenario-check.sh` (32/32), and a real browser check of the no-route alert. `US-051`, `US-052`, `US-053`, `US-054`, and `US-072` are now `Done` on this evidence. Only `US-045` is left among `US-055`'s own dependencies, and it's deferred with the rest of the DAG-timing work (`US-073`'s trigger/timing, `US-070`'s confirmation, `US-069`) until after Sprint 11, at the user's request, so they run together. That run started on 2026-10-08 (see `US-045`).
-
-**Pick up after `US-045` closes:** read the `US-045` result, then decide with you whether `TIME_AWARE_ROUTING` stays off at rest (it reads `false` on the server) or the next `rollout.ps1` runs with `-LeaveOn`.
+## Next action: 
+1. Start US-092 and US-093 on the US-091 harness.
+2. Rebuild the graphhopper image from the server's own desktop session for US-096, then check a route with a departure between two steps.
+3. After Sprint 12, run the second replay with EDGE_TABLE_KEEP_RUNS raised, and take the US-069 readings on time.
 
 ### Active - US-070 Stop a slow sampling step from holding the database
 
@@ -32,23 +23,7 @@
 
 **2026-10-08 readings:** over 9 runs `9c` took 46 to 64 s (63.1 s at most), and no step passed the 120 s cancel. The blocker closes when `9c` stays near 50 s, and it rose by about 2 s per run, so the item stays open until the numbers level off after 03:00 +07 on 2026-10-09.
 
-**Pick up after 03:00 +07 on 2026-10-09:** read the `9c` durations of all 42 runs from the Airflow metadata database (`task_instance`, `dag_id='routing_adapter'`). Close the blocker if they level off near 50 s. The readings of 2026-10-08 rose from 46 to 64 s over 9 runs.
-
-### Active - US-073 Move the routing-owned tasks into their own DAG, triggered by the core's published output
-
-**What:** `9b_load_depth_raster` emits an Airflow asset event with the run id. A DAG `routing_adapter` scheduled on that asset runs `load_road_segments`, `flood_on_roads`, and `9c_build_edge_depth_table`. A routing failure leaves the core run green, and 9c still ends within 5 minutes of `3_calculate_depth`. The fallback is a TaskGroup in the same DAG ([[routing-first-consumer-stories]] Story C3).
-
-**Effort:** M
-**Priority:** P2
-**Depends on:** `US-071` (the contract names the signal). The server timing waits for `US-055`, because the proof and the replay use today's DAG shape. Task ids move to a new `dag_id`, so check `scripts/pipeline_margins` and the proof tooling first.
-
-**Sprint:** 11, [[routing-first-consumer-stories]] Story C3 (US-073), in [[sprint-plan-3]].
-
-**Status note:** `Reviewed`. Built on `modular` (`77169c3`). Real Airflow 3.1.7 on the server serialized both DAGs, and `dags list-import-errors` is clean with `routing_adapter` registered. Pool `routing_adapter` created 2026-10-07 (step 5 of [[sprint-11-server-rollout]]). Unpausing the core DAG for about an hour to read the asset events and measure 9c (steps 9 to 12) is deferred until after Sprint 11, at the user's request, so it runs together with the rest of the analysis. The core DAG was unpaused on 2026-10-08 at about 15:05 +07 for the 12-hour replay, so the asset events and the 9c timing are read after 03:00 +07 on 2026-10-09.
-
-**2026-10-08 readings:** `routing_adapter` ran `9c` after each of 9 core runs (9 of 9, a 10th was running), and the gap to the end of `3_calculate_depth` stayed under 5 minutes (see `US-045`). Not observed: a routing failure leaving the core run green, because none occurred.
-
-**Pick up after 03:00 +07 on 2026-10-09:** confirm every simulating run triggered one `routing_adapter` run (42 of 42) and the calc-to-9c gap stayed under 5 minutes. A routing failure leaving the core run green is still unobserved, so decide whether a unit test is enough for `Done`.
+**2026-10-09 readings (45 runs):** `9c` took 44.8 to 90.3 s, and no step passed the 120 s cancel. The first chain rose from 44.8 to 90.3 s over 27 runs. The chain restarted at 22:49 +07 and the second chain went from 45.7 to 62.1 s, then held at 60.4 to 62.1 s for its last 6 runs. The time does not level off near 50 s, so the story stays `Reviewed` and the blocker stays `monitoring`. The growth resets at a chain restart, which points at rows that `flood_road_values` accumulated. The first prune of `US-086` ran on 2026-10-09 (14.8 million rows down to 1.1 million). Read the `9c` durations of the next `routing_adapter` runs: if the growth within a chain stops, close the blocker.
 
 ### Active - US-094 Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
 
@@ -74,27 +49,85 @@
 
 **Status note:** `Not started`.
 
-## Backlog
+### Active - US-086 Prune old rows of `flood_road_values`
 
-Unfinished items carried over from Sprint 8. The Done items of Sprints 9 to 11 (`US-051` to `US-054`, `US-071`, `US-072`, `US-074`, `US-075`) were deleted at the 2026-10-08 rollover. Their records are in the epic files and in [[sprint-plan-3]].
+**What:** Rows older than 24 hours leave the table (D-017), measured from the newest run in the table. The task goes in `routing_adapter` after `flood_on_roads`, with the window in a new variable. The size is read first and recorded in [[core-output-contract]] (6,955 MB on 2026-10-08, about 18 MB per run).
 
-### Active - US-045 Prove the table on the server
+**Effort:** S
+**Priority:** P2
+**Depends on:** `US-073` (`Done`). The `US-094` gate of D-017 was waived by you on 2026-10-09 (D-019).
 
-**What:** Measure the build time, the file size, and the edge count of the table task on a real run on the server, check 20 edges against `ST_Value`, and record the numbers in [[edge-depth-table]], replacing the guessed size. If the build time exceeds the limit, log a blocker ([[edge-depth-table-stories]] Story E7).
+**Sprint:** 12, [[core-output-hygiene-stories]] Story 1 (US-086), in [[sprint-plan-3]].
+
+**Status note:** `Reviewed`. Built, merged on `modular` (`4f6569d`), and the first prune ran on 2026-10-09 at your go: 368 runs and 13,749,316 rows deleted in about 40 s, 45 runs (1,087,512 rows) kept, then `VACUUM (ANALYZE)`. Evidence is in [[sprint-plan-3]]. It reaches `Done` after the task `prune_flood_road_values` runs once inside Airflow, which needs the next replay. `VACUUM (FULL, ANALYZE)` ran at your go (7.4 s): the table went from 7,497 MB to 537 MB with the 7 indexes, rows intact (1,087,512), and `minio_custom` from 9,290 MB to 2,330 MB. C: free stayed at 104.4 GiB, because `docker_data.vhdx` does not shrink by itself. Its effect on `9c` decides `US-070`.
+
+### Active - US-089 Start and stop a rain replay on the server with one command each
+
+**What:** `replay.ps1` starts, stops, and reports a replay, idempotently, and reads the values back inside the worker.
 
 **Effort:** M
-**Priority:** P0
-**Depends on:** `US-041` and `US-042`, both done. The limit is 5 minutes after the end of `3_calculate_depth`, never delaying the tile task, so it needs a live DAG run of task `9c`, which means the DAG unpaused. The unloaded numbers so far are 42.0 s, 1,085,487 bytes, and 160 of 160 values equal.
+**Priority:** P1
+**Depends on:** None to build.
 
-**Sprint:** 8, carried to the Backlog on 2026-10-05 because it needs the DAG unpaused for the 48-hour window. [[edge-depth-table-stories]] Story E7 (US-045), in [[sprint-plan-2]].
+**Sprint:** 12, [[rain-replay-test-environment-stories]] Story 2 (US-089), in [[sprint-plan-3]].
 
-**Status note:** not ready to close. `routing_adapter` (the DAG hosting 9c, `US-073`) only started running on `modular` on 2026-10-07 16:00 +07, about 2 hours before this check, so only one real 9c run exists despite 364 successful `flood_mapping_full` runs in the replay: 60.1 s build, 67,833 edges, 1,085,487 bytes, matching the 2026-10-06 numbers. The gap from the end of `3_calculate_depth` to the end of 9c was 8.21 minutes, over the 5-minute limit, but with n=1 this cannot be told apart from the new DAG's cold-start/backlog catch-up. `table_timing.ps1` has no `ST_Value` spot-check, but `scripts/edge_depth/spot_check.py` does (correction of 2026-10-08). Re-run after the replay ends and `routing_adapter` has accumulated several more runs.
+**Status note:** `Reviewed`. `start` ran on 2026-10-08. It stays open until the second replay runs after Sprint 12 and `stop` runs (D-020), then needs a screenshot.
 
-**2026-10-08 update:** a new 12-hour replay (`hanoi_20260916_storm.csv`, gate 5 mm/h) is on the server and `flood_mapping_full` was unpaused at about 15:05 +07. The first simulating run is 15:45 +07 and the last is 03:00 +07 on 2026-10-09: 42 runs in 2 chains. Each simulating run triggers `routing_adapter`, so the 12 hours should give the several 9c runs this item needs. Read the gaps after 03:00 +07, and build the `ST_Value` spot-check tooling before then.
+### Active - US-091 Measure how often a single-timestep route meets a closed road on arrival
 
-**2026-10-08 readings (17:08 +07, 9 successful runs of `flood_mapping_full`, 9 of `9c`):** build time 55.5 s on average, 63.1 s at most. The spot check (`spot_check.py`, 20 edges, run on the worker against the latest table `20261008T171500.bin`, 1,085,487 bytes) passed: 160 of 160 values equal a direct `ST_Value` reading. The gap from the end of `3_calculate_depth` to the end of `9c` was 2.69 to 3.42 minutes, under the 5-minute limit, but it grows with every run (2.69, 2.85, 2.91, 3.06, 3.10, 3.21, 3.30, 3.39, 3.42). The cause is the tasks before it: `9b_load_depth_raster` rose from 115 to 141 s, the tile build from 66 to 135 s, and `9c` from 46 to 64 s, while `3_calculate_depth` stayed at about 173 s. A straight-line extrapolation crosses 5 minutes near run 26, which is a projection, not a measurement. Not closed: read the same numbers after 03:00 +07 on 2026-10-09 to see whether the growth stops, then record them in [[edge-depth-table]] and take the evidence screenshot.
+**What:** The harness (pair sampler, route call, re-walk, result writer) and the violation rate by vehicle, length class, departure step, and storm stage.
 
-**Pick up after 03:00 +07 on 2026-10-09:** (1) re-run the timing query for all 42 runs and check the growth stopped and the gap stays under 5 minutes (it was 2.69 to 3.42 over 9 runs and rising); (2) re-run `spot_check.py` on the latest table; (3) record the numbers in [[edge-depth-table]], replacing the guessed size; (4) take the evidence screenshot; (5) copy a few edge depth tables off the server for `US-091` to `US-093`, because only the newest 3 stay. Copying a mid-replay snapshot is safer than waiting.
+**Effort:** M
+**Priority:** P1
+**Depends on:** `US-047`, `US-050`, `US-052`, and `US-055` (all `Done`), and the depth tables of a replay. Only 3 tables of the 12-hour replay remain (copied to `marie-curie/edge_tables_replay_2026-10-09/`).
+
+**Sprint:** 12, [[US-090-093-routing-paper-experiments-stories]] Story 2 (US-091), in [[sprint-plan-3]].
+
+**Status note:** `In progress`. The harness is built and merged on `modular` (`04c0288` to `245b90d`, package `scripts/routing_experiments/`, 41 tests pass, the server run is not done). The storm stages need the second replay, which runs after Sprint 12 (D-020), so this row cannot reach `Done` inside Sprint 12. Three things to know. First, the runner walks engine routes from the time of the request since `US-096` (`88c151c`). Second, the sticky engine cannot be checked on the old replay tables, because the backend departs at the later of the step time and now, so the sticky check needs live tables. Third, the single-timestep plan reads database flood areas and the re-walk reads the edge depth table of the same run, two depth sources, and the result file must say so.
+
+### Active - US-097 Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option
+
+**What:** The engine plans with the hard limit first, and with 50 percent of it only when the first route touches a road at that depth. `POST /route` returns the recommended route and the through-water option ([[US-097-098-precaution-depth-routing-stories]] Story 1, D-021).
+
+**Effort:** M
+**Priority:** P1
+**Depends on:** `US-096` (`Done` in code), the fraction sweep of `US-092`, and your go on the response contract.
+
+**Sprint:** 12, [[US-097-098-precaution-depth-routing-stories]] Story 1 (US-097), in [[sprint-plan-3]].
+
+**Status note:** `Reviewed`. Built and merged on `modular`, not pushed (the combined state ran on branch `ci-modular-combined`: 137 Java tests passed on GitHub Actions, run 37885851481, and 31 backend tests pass). The Python reference is `scripts/routing_experiments/precaution.py`. The contract you approved on 2026-10-09: `POST /route` returns path 0 as the recommended route and path 1 as the through-water route. The hints are `td.kinds` (`recommended`, `recommended,through_water`, or `through_water`), `td.limit_cm`, and `td.precaution_cm`. The fraction is the profile hint `td_precaution_fraction` (default 0.5). The hard-limit search runs first and the second search runs only when that route touches the precaution depth. It reaches `Done` after the `graphhopper` image is rebuilt on the server and a route with a shallow road shows two paths, with a screenshot. A via request with a shallow road has no test.
+
+### Active - US-092 Test how the vehicle limits change the result
+
+**What:** The same experiment with the vehicle limits varied.
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** `US-091` (its harness and pair set). Moves to Sprint 13 if the harness slips.
+
+**Sprint:** 12, [[US-090-093-routing-paper-experiments-stories]] Story 3 (US-092), in [[sprint-plan-3]].
+
+**Blocker tracking:** [[edge-export-has-no-node-ids]]. [[engine-has-no-depth-band-cost]] is `resolved` by D-021.
+
+**Status note:** `In progress`. The limit sweep is built and merged on `modular` (`bb00594`, `scripts/routing_experiments/limit_sweep.py`, 12 tests): closed length, route share, mean detour, violation rate, a regret table (plan limit A, judge limit B), and a list of settings where the conclusion changes. It runs on the Python reference with a synthetic graph. The cost band is replaced by the precaution fraction (D-021), swept at 0.25, 0.5, and 0.75 by `sweep_fraction` in `precaution.py` (merged, `044adfe`). Not done: a real run, which needs a graph with tail and head nodes (the `graph_edge` export holds geometry only) and the edge depth tables of the second replay.
+
+### Active - US-093 Measure how often the sticky rule gives no route or a longer route than an arrival-only reference
+
+**What:** The share of routes with no route or a detour against an arrival-only reference.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** `US-047`, `US-050` (both `Done`), the depth tables of a replay, and the sampler of `US-091`.
+
+**Sprint:** 12, [[US-090-093-routing-paper-experiments-stories]] Story 4 (US-093), in [[sprint-plan-3]].
+
+**Blocker tracking:** [[edge-export-has-no-node-ids]].
+
+**Status note:** `In progress`. The arrival-only search (`scripts/routing_reference/arrival_only.py`, label-correcting, `exact` flag) and the per-pair comparison with sticky closure (`scripts/routing_experiments/sticky_cost.py`) are merged on `modular` (`fc14d81` to `ae824ea`, 24 tests, a seeded 300-graph property test shows sticky never ends earlier than arrival-only). The estimate stays S. The real run waits for the second replay (D-020) and the same graph-with-nodes gap as `US-092`.
+
+## Backlog
+
+Unfinished items carried over from Sprint 8. The Done items of Sprints 9 to 11 (`US-051` to `US-054`, `US-071`, `US-072`, `US-074`, `US-075` on 2026-10-08, and `US-045`, `US-055`, `US-073`, `US-088`, `US-087`, `US-090`, `US-096` on 2026-10-09) were deleted. Their records are in the epic files and in [[sprint-plan-3]].
 
 ### Active - US-069 Check the storage after the 48-hour replay to see if the retention fixes work
 
@@ -118,17 +151,17 @@ Unfinished items carried over from Sprint 8. The Done items of Sprints 9 to 11 (
 
 **2026-10-08 decision (D-015):** the user decided the check uses the 12-hour replay and compares hour 6 with hour 12. Readings: start about 15:05 +07 (only a partial one exists, from 15:17 +07), hour 6 about 21:05 +07, hour 12 after the last simulating run at 03:00 +07 on 2026-10-09. The other conditions are unchanged. The pass mark is confirmed by the user: growth of 10 percent or less in each of the three database objects (`storage-postgres-data`, `minio_custom`, `netcdf_values`) between hour 6 and hour 12. No new size readings were taken on 2026-10-08.
 
+**2026-10-09 reading (07:50 +07, 4.8 hours after the last simulating run):** C: free 104.5 GiB, `minio_custom` 9,191 MB, `netcdf_values` 5,713 MB (hypertable), `flood_metrics` 5,729 MB, `flood_extent_polygon` 112 rows. The hour-6 reading of D-015 was never taken, so the comparison of hour 6 with hour 12 cannot be made, and `storage-postgres-data` and `docker_data.vhdx` were not read. The item cannot close. Decide with you: accept the 0-hour and 63-hour readings as the evidence, or run one more short replay with both readings taken on time.
+
 **Reminder for you:** ask Claude for the hour-6 reading at about 21:05 +07 on 2026-10-08, and the hour-12 reading after the last simulating run at 03:00 +07 on 2026-10-09. Claude cannot set a timer, so the readings happen only when you ask. Claude also needs to read `US-045` and `US-070` after 03:00 +07 (see their notes).
 
 **Pick up:** ask Claude for the hour-6 reading at about 21:05 +07 on 2026-10-08 and the hour-12 reading after 03:15 +07 on 2026-10-09. Then run `replay.ps1 stop` and pause `flood_mapping_full`, after you confirm what `stop` resets.
 
 ## Blockers for the next sprint
 
-The next sprint is Sprint 12, planned for 2026-12-07 to 2026-12-13 in [[sprint-plan-3]]. The user will start it on 2026-10-09, 59 days early. It holds 8 rows: `US-086` to `US-093`, four M and four S. The frontend rows `US-076` to `US-085` and `US-033` moved out on 2026-10-08 ([[sprint-plan-4]]). Its rows enter this file when the sprint starts, not before (rule 9). `US-088` and `US-089` started early and are tracked in [[rain-replay-test-environment-stories]]: `US-088` has its event file (`hanoi_20260916_storm.csv`) and waits for its evidence screenshot, and `US-089` ran `start` on the server on 2026-10-08 and waits for `stop` and a screenshot.
+The next sprint is Sprint 13, planned for 2026-12-14 to 2026-12-20 in [[sprint-plan-4]]. Its rows enter this file when the sprint starts, not before (rule 9).
 
-Checked on 2026-10-08 against `sprint-plan-3`: Sprint 12's rows depend on no open blocker. The NASA download that `US-088` needed ran on the Mac with a token, because the Earthdata login host is unreachable from the user's network. The server holds a 12-hour replay until 03:00 +07 on 2026-10-09, and no Sprint 12 row waits on it.
-
-Any blocker stops Sprint 12: None
+Any blocker stops Sprint 13: None known. Sprint 13 is the frontend recheck, which reads no open blocker below except [[route-panel-stuck-on-loading-bars]] and [[map-shows-forecast-not-now]], both monitoring.
 
 The unresolved blockers are:
 
@@ -137,3 +170,6 @@ The unresolved blockers are:
 3. [[routing-not-time-aware]], which `US-055` resolves.
 4. [[9c-sampling-step-runs-over-770-seconds]], monitoring, fixed in code by `US-070`. It blocks no build.
 5. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
+6. [[sticky-closure-clock-anchored-at-floored-departure]], monitoring, fixed in code by `US-096`. It resolves after the next rollout rebuilds the `graphhopper` image. It blocks no build.
+7. [[engine-has-no-depth-band-cost]], `resolved` by D-021 on 2026-10-09.
+8. [[edge-export-has-no-node-ids]], open. It blocks a real-graph run of `US-092` and `US-093`, which also wait for the second replay.

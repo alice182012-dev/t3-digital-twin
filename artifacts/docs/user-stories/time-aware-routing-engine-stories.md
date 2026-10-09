@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-09-29
 type: user-story
-us_ids: ["US-046", "US-047", "US-048", "US-049", "US-050", "US-051", "US-052", "US-053", "US-054", "US-055"]
+us_ids: ["US-096", "US-046", "US-047", "US-048", "US-049", "US-050", "US-051", "US-052", "US-053", "US-054", "US-055"]
 status: draft
 subsystem: floodmap-backend, floodmap-frontend
 source_ideas: ["[[sticky-c-lite-routing]]"]
@@ -166,9 +166,14 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
   same pairs run against today's model and the reference, then the percentage of pairs whose route changes
   and the median detour ratio are recorded. The concept page [[graphhopper-backend]] and
   [[routing-not-time-aware]] are updated, and the blocker moves to `resolved` only with this evidence.
-  Priority: P0. Status: In progress. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7.
+  Priority: P0. Status: Done. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7.
   Tooling built on 2026-10-05, tests first: `scripts/routing_proof/routing_proof.py` (25 tests, four changes make tests fail), `pairs.json` (24 pairs inside the model border), and `rollout.ps1` (untested, it needs the server). The evidence step is one run of `rollout.ps1` after the 48-hour replay ends, plus `scenario-check.sh` from the Mac. Plan: [[engine-server-proof-and-rollout]]. Gate cleared:
   the user set the latency factor of 2 on 2026-10-02, so the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1.
+
+- **Story R11 (US-096): Check each road at the requested departure, not the floored one.**
+  As a traveller, I want the engine to close a road that is too deep when I reach it, so a departure between two forecast steps does not shorten the margin of the rule (blocker [[sticky-closure-clock-anchored-at-floored-departure]]).
+  Given a road that is wet from the step at 1,800 s, a departure requested at 840 s, and a trip that enters the road 1,000 s in, when the engine plans the route, then the road is closed. Today the engine admits it. The first test reproduces the example in Java and fails, then the fix makes it pass. `StickyClosure` keeps the floored step as the start of its window and the requested departure as the arrival clock, and `TimeAwareDijkstra` and `StickyChecker` check at the requested departure plus the elapsed time. `check_crossings` in `scripts/routing_proof/routing_proof.py` and the harness of `US-091` (`scripts/routing_experiments/experiment.py`, line 90, which reads `td.departure`) walk from the requested departure. The Java suite and the Python suite pass, and a case with a departure exactly on a step gives the same result as before.
+  Priority: P1. Status: Done. Estimate: S. Sprint: 12. Dependencies: none to build. The server check waits for a rollout of the `graphhopper` image, which needs no replay running. `US-091` reports its engine result after this.
 
 ## Status history
 
@@ -183,3 +188,6 @@ Sprints 1 to 4. A story reaches `Done` only with a screenshot and numbered detai
 - **2026-10-05, draft.** Story R4 (`US-049`) is `Done`: CI run 1 passed and the image smoke test passed on the server (12 of 12 routes equal to the live service, `TimeAwareGraphHopper active` in the log). Evidence: `us-049-image-smoke-test-output.png`.
 - **2026-10-07, active.** On host ADMIN, branch `modular`, `rollout.ps1` ran (flood_mapping_full paused, run locally since this session is the server). `graphhopper` needed a graph re-import first, rehearsed for the first time, because `US-051`'s `td_limit_cm` hints changed GraphHopper's internal profile fingerprint (not the app's own edge-based graph hash, so the published table stayed valid). Every check that does not need the DAG then passed: `scenario-check.sh` (32/32), the engine proof's `compare`/`crossings`/`departures`/`latency` against 24 real pairs on the deployed backend. Stories R6 (`US-051`), R7 (`US-052`), and R8 (`US-053`) moved to `Done` on this evidence. R9 (`US-054`) stays `Reviewed`: a quick attempt to drive the real no-route UI flow in a browser did not trigger routing via URL params, and needs a proper interactive pass. R10 (`US-055`) stays `In progress`: its own dependencies include R9 (not yet `Done`) and `US-045` (not yet `Done`, see [[routing-first-consumer-stories]] and `TODOS.md`), and the DAG-timing pieces are deferred to after Sprint 11 at the user's request, to be tested together.
 - **2026-10-07, active.** R9 (`US-054`) moved to `Done`: drove the deployed frontend by hand (real keystrokes and `Enter`, URL params alone did not work), found a currently-blocked pair, and confirmed the alert's exact acceptance text in a browser against the real backend. R10 (`US-055`) now has only `US-045` left among its own dependencies, which is deferred with the rest of the DAG-timing work until after Sprint 11.
+- **2026-10-09, active.** R10 (`US-055`) moved to `Done` at the user's request. Evidence: `us-055-rollout-results-check-output.png` (9 of 24 routes changed, median detour 0.94, 0 crossings, 6 latency cells within the factor), plus `US-045` (gap 2.69 to 3.91 minutes). The flag stays off at rest until the DAG runs on real rain.
+- **2026-10-09, active.** New story R11 (`US-096`) from the blocker [[sticky-closure-clock-anchored-at-floored-departure]], found while writing the proof of `US-090`.
+- **2026-10-09, active.** R11 (`US-096`) is `Done` in code: 129 Java tests on GitHub Actions, the Python suites, evidence `us-096-fix-check-output.png`. The server image is rebuilt at the next rollout.

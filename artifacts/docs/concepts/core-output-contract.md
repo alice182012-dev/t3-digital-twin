@@ -159,7 +159,7 @@ The row covers only the outputs of task `9_build_flood_tiles`. Task `9b_load_dep
 | `flood_extent_polygon` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
 | `flood_extent_step` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
 | Tiles in `flood-extent` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
-| `flood_road_values` | Every run, no prune found | None |
+| `flood_road_values` | Rows older than `FLOOD_ROAD_VALUES_KEEP_HOURS` (default 24) before the newest run, pruned by the task `prune_flood_road_values` (US-086, D-017) | 45 runs and 1,087,512 rows after the first prune on 2026-10-09, from 413 runs and 14,836,828 rows (7,398 MB). After `VACUUM FULL` the table with its indexes is 537 MB |
 | `graph_edge` | The loaded graph | `graph_edges.py` |
 | Edge depth files | Newest 3 runs | `EDGE_TABLE_KEEP_RUNS`, `publish_edge_depth.py` |
 | `netcdf_values` | 48 hours | TimescaleDB retention policy, `scripts/database/create_timescale_tables.py:119` |

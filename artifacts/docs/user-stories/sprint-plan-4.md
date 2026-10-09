@@ -80,6 +80,7 @@ states have an approved design.
 | US-077 | P2 | Match the depth chart columns and the route tab text to screen 2e | S | [[frontend-mockup-recheck-stories]] 2 | `US-076` (Sprint 13) | None yet | - | Not started |
 | US-078 | P2 | Show the place names on the start and destination pins | S | [[frontend-mockup-recheck-stories]] 3 | `US-076` (Sprint 13) | None yet | - | Not started |
 | US-084 | P2 | Design the no-route and "wait until" states, then match the UI to the design | S | [[frontend-mockup-recheck-stories]] 9 | `US-076` (Sprint 13), `US-055` ([[sprint-plan-3]] Sprint 10) | None yet | - | Not started |
+| US-098 | P2 | Show the recommended route and the through-water option in the app | S | [[US-097-098-precaution-depth-routing-stories]] 2 | `US-097`, `US-076` (Sprint 13), and the design of `US-084` | None yet | - | Not started |
 
 ## Sprint 15: the limit line and the tab details
 

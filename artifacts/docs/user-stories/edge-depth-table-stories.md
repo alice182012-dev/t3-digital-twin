@@ -120,7 +120,7 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
   the build time for the run, and 20 edges match `ST_Value`. The story records the numbers in
   [[edge-depth-table]] and replaces the guessed size. If the build time exceeds the limit above, the
   story records a blocker.
-  Priority: P0. Status: Not started. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
+  Priority: P0. Status: Done. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
   set the build-time limit on 2026-10-02. The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 
 - **Story E8 (US-070): Stop a slow sampling step from holding the database.**
@@ -145,3 +145,4 @@ a screenshot and numbered details, recorded here and in `sprint-plan-2.md`.
 - **2026-10-05, draft.** Story E6 (`US-044`): the server check passed. With the export, `graph_edge`, and the `latest` table on hash `8c13d884...` the check says `FRESH`, and against another hash it says `STALE`, names both hashes, and exits 1. Evidence: `us-044-stale-table-check-server-output.png`. The status stays `Reviewed` until the user confirms the split with `US-043`.
 - **2026-10-05, draft.** Story E6 (`US-044`) is `Done`. The user confirmed the split with `US-043`: the page, the Python guard, and the operator check are closed here, and the refusal at request time in the Java reader is `US-043`'s acceptance. Evidence: `us-044-stale-table-check-server-output.png`.
 - **2026-10-05, draft.** Story E8 (`US-070`) is `Reviewed`. Built after task 9c ran over 770 s in one step during the replay. `ANALYZE` before sampling and a 120 s step limit, tests first (133 tests in `scripts/edge_depth/`, two mutations caught), pushed as `5e358bf`. Not done: the pull on the server and the next 9c log. It stays `Reviewed` until then.
+- **2026-10-09, draft.** Story E7 (`US-045`) is `Done`. Over the 45 runs of the 12-hour replay, the gap from the end of `3_calculate_depth` to the end of 9c was 2.69 to 3.91 minutes, under the 5-minute limit. The table is 67,833 edges and 1,085,487 bytes, and `spot_check.py` passed (160 of 160) on `20261009T031500.bin`. The gap grows within a chain and resets at a restart, so `US-086` (the prune of `flood_road_values`) matters for a longer chain. Evidence: `us-045-table-timing-check-output.png`. Story E8 (`US-070`) stays `Reviewed`: 9c took 44.8 to 90.3 s, and no step passed the 120 s cancel, but the time does not level off near 50 s.

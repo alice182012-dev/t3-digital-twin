@@ -31,7 +31,7 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
   it reads the real row count and size on the server.
   Read the size first. Measure the row count, the table size, and the rows per run on the server, and record them in
   [[core-output-contract]] before choosing N. The contract page already lists this table as having no retention.
-  Priority: P2. Status: Not started. Estimate: S. Sprint: 12. Dependencies: `US-073` (the task goes into
+  Priority: P2. Status: Reviewed. Estimate: S. Sprint: 12. Dependencies: `US-073` (the task goes into
   `routing_adapter`), done as `Reviewed` on `modular`, and `US-094` (the archive of D-016 must work before the 24-hour prune runs). The size reading is better after the storm replay of `US-089`,
   because a replay writes many runs quickly.
   Evidence: None yet.
@@ -53,7 +53,7 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
   command that works from the repository root.
   The earlier log line said the test "failed at `5e4a314` already". The cause is the missing path, not a change to the
   code under test, so check that the test body passes against a real PostGIS before the story closes.
-  Priority: P3. Status: Not started. Estimate: S. Sprint: 12. Dependencies: None. CI needs the repository's GitHub
+  Priority: P3. Status: Done. Estimate: S. Sprint: 12. Dependencies: None. CI needs the repository's GitHub
   Actions, which `java-module.yml` already uses.
   Evidence: None yet.
 
@@ -65,3 +65,6 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
   The next free ID was `US-086`.
 - **2026-10-08, draft.** Story 1 (`US-086`) prunes rows older than 24 hours instead of keeping N runs (D-017). The user decided this, after the raw 3Di output archive was chosen (D-016).
 - **2026-10-08, draft.** Story 1 (`US-086`) depends on `US-094` (archive `results_3di.nc` to D:, Sprint 10 in [[sprint-plan-3]]), because the 24-hour prune is safe only if the archive works (D-017). See [[US-094-095-archive-and-netcdf-retirement-stories]].
+
+- **2026-10-09, active.** `US-087` is `Done` (`be45e01`, test passes on the server PostGIS in a throwaway database). The workflow ran on GitHub Actions and passed (run 37869621614).
+- **2026-10-09, active.** `US-086` is `Reviewed`: built and merged, the first prune ran (368 runs and 13,749,316 rows deleted, 45 runs kept), evidence `us-086-prune-check-output.png`. It reaches `Done` after the task runs once inside Airflow.

@@ -312,6 +312,41 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Affects:** `US-095` (Sprint 11) in [[US-094-095-archive-and-netcdf-retirement-stories]], `US-066` and `US-069` (the storage check reads `netcdf_values`), [[3di-simulation-orchestration]], the architecture doc. Whether to retire the `timescaledb` container afterward is a separate decision and is not made here.
 - **Revisit if:** `US-094` does not hold a real storm before Sprint 11 ends.
 
+## D-019: Deploy the `flood_road_values` prune before `US-094` is proven
+
+- **Date:** 2026-10-09
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** `US-086` deploys on 2026-10-09, before the archive of `US-094` is proven on real rain.
+- **Why:** The growth of `9c` (44.8 to 90.3 s within a chain, `US-070`) points at this table, and `US-094` waits for a forecast above 5 mm/h that may not come for weeks.
+- **Alternatives:** Keep the deploy behind `US-094`, as D-017 assumed.
+- **Evidence:** the 9c readings of 2026-10-09 in `TODOS.md` (`US-070`).
+- **Affects:** `US-086`, `US-070`, [[9c-sampling-step-runs-over-770-seconds]]. Until the archive works, depth history older than 24 hours is gone from this table and not archived. The raw `netcdf_values` keeps 48 hours under its own policy.
+- **Revisit if:** a result older than 24 hours is needed before `US-094` runs.
+
+## D-020: The second replay runs after Sprint 12
+
+- **Date:** 2026-10-09
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** the second 12-hour replay, with `EDGE_TABLE_KEEP_RUNS` raised, runs after Sprint 12. `US-091` and `US-093` build their harness on the 3 tables copied on 2026-10-09 and report storm stages after the replay. `replay.ps1 stop` does not run before then.
+- **Why:** the 12-hour replay kept only 3 of 45 edge depth tables, and the storm stages need the whole storm.
+- **Alternatives:** Run the replay inside Sprint 12.
+- **Affects:** `US-091`, `US-092`, `US-093`, `US-069`, `US-089`, [[sprint-12-finish-the-routing]].
+- **Revisit if:** Sprint 12 ends with `US-091` and `US-093` unable to close without the storm stages.
+
+## D-021: Detour at half the vehicle limit and keep the hard-limit route as a second option
+
+- **Date:** 2026-10-09
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** each vehicle has a precaution depth of 50 percent of its hard limit (motorbike 10 cm, car 15 cm, truck 17.5 cm, foot 20 cm). The recommended route is planned with the precaution depth as the closing depth. The route planned with the hard limit stays available as a second option. If no route exists under the precaution depth, the hard-limit route is recommended and flagged as passing through water. The fraction is one setting.
+- **Why:** the flood model is not validated, so the app protects assets before the modelled depth reaches the limit, and it does not hide the route a driver may need.
+- **Alternatives:** a graded cost band (rejected: the engine has no cost term, the model is too uncertain to justify a curve, and the FIFO proof would need a recheck).
+- **Evidence:** none yet. The sweep of the fraction in `US-092` measures the detour and the share of pairs without a precaution route.
+- **Affects:** `US-097`, `US-098`, `US-092`, [[engine-has-no-depth-band-cost]], [[sticky-closure-proof]].
+- **Revisit if:** the sweep shows that 50 percent leaves many pairs without a precaution route, or the flood model is validated.
+
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and

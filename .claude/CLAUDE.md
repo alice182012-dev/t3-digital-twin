@@ -320,7 +320,9 @@ Epic, Thematic, SAFe).
    the file's `us_ids` frontmatter, and fills the `Item` column of its sprint-table
    row and the header of its `TODOS.md` item. A story keeps its ID when it changes
    sprint, and the parts of a split story get new IDs. Take the number before
-   writing the story, and raise the next free number in `Home.md`.
+   writing the story, and raise the next free number in `Home.md`. A user story file starts its name with the IDs it holds
+   (`US-094-095-archive-and-netcdf-retirement-stories.md`), so a search for an ID finds the file; see the
+   Conventions in `artifacts/Home.md`.
 
 ## Verification discipline for PRDs and cross-referencing documents
 

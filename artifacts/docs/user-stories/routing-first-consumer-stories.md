@@ -66,7 +66,7 @@ engine proof runs).
   (the limit of `US-045`), measured once on the server, and runs in a pool so it does not compete with depth for
   worker slots. The asset event is the "run X published" signal in the contract of Story C1.
   Fallback if the asset trigger gives trouble: a TaskGroup `routing_adapter` inside the same DAG.
-  Priority: P2. Status: Reviewed (built on `modular`, serialized by Airflow 3.1.7 on the server; trigger and the 9c limit not yet observed).. Estimate: M. Sprint: 11. Dependencies: Story C1 (the contract names the
+  Priority: P2. Status: Done (45 of 45 runs triggered on the server, 9c within the limit). Estimate: M. Sprint: 11. Dependencies: Story C1 (the contract names the
   signal), and `US-055` for the server timing, since the proof and the replay rely on today's DAG shape. Task ids
   move to a new `dag_id`, so `scripts/pipeline_margins`, the proof tooling and anything keyed on
   `flood_mapping_full` task ids must be checked first.
@@ -110,3 +110,4 @@ engine proof runs).
 - **2026-10-06, draft.** Written at the user's request after the discussion of making the system ready for other
   applications, with routing as the first customer. Placed in Sprint 11 of [[sprint-plan-3]].
 - **2026-10-06, draft.** Story C3 changed from a TaskGroup (S) to a separate DAG triggered by an asset event (M), at the user's request. The earlier reason for one DAG, the 9c timing limit, does not need it: 9c depends only on `9b_load_depth_raster`, so an asset trigger adds seconds. The TaskGroup stays as the fallback.
+- **2026-10-09, draft.** Story C3 (`US-073`) is `Done`. 45 of 45 simulating runs of the replay triggered `routing_adapter`, and 9c ended within 3.91 minutes of `3_calculate_depth`. A routing failure leaving the core run green was not observed. The user accepted the DAG structure and its tests as proof.
