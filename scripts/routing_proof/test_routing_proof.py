@@ -162,6 +162,22 @@ class CrossingsTest(unittest.TestCase):
             found = rp.check_crossings(a, Path(tmp), limits={"car": 30}, margin_s=600)
         self.assertEqual(len(found["p1|car"]), 1)
 
+    def test_the_route_is_walked_from_the_time_of_the_request_not_from_the_floored_step(self):
+        # Wet from the step at 1,800 s. Requested at 840 s, floored to 0 s, the road entered 1,000 s into the trip.
+        with tempfile.TemporaryDirectory() as tmp:
+            make_table(tmp, 4, 8, lambda e, s: 50 if e == 1 and s >= 2 else 0)
+            b = [result("p1", [0, 1], millis=[1_000_000, 60_000], td=self.td(int(T0.timestamp())), at=T0 + timedelta(seconds=840))]
+            found = rp.check_crossings(b, Path(tmp), limits={"car": 30}, margin_s=600)
+        self.assertEqual(found["p1|car"], [{"position": 1, "edge_id": 1, "arrival_s": T0.timestamp() + 1840, "closing_step": 2}])
+
+    def test_a_request_exactly_on_a_step_is_walked_from_that_step(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_table(tmp, 4, 8, lambda e, s: 50 if e == 1 and s >= 2 else 0)
+            on_step = int(T0.timestamp()) + 900
+            b = [result("p1", [0, 1], millis=[1_000_000, 60_000], td=self.td(on_step), at=T0 + timedelta(seconds=900))]
+            found = rp.check_crossings(b, Path(tmp), limits={"car": 30}, margin_s=600)
+        self.assertEqual(found["p1|car"], [{"position": 1, "edge_id": 1, "arrival_s": T0.timestamp() + 1900, "closing_step": 2}])
+
     def test_a_pair_with_no_route_is_skipped(self):
         with tempfile.TemporaryDirectory() as tmp:
             make_table(tmp, 4, 8, lambda e, s: 0)

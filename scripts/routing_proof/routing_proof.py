@@ -208,20 +208,24 @@ def _table_for(directory: Path, run: str | None):
 
 
 def check_crossings(records: Iterable[dict], table_dir: Path, limits: dict, margin_s: float = MARGIN_S) -> dict:
-    """For each route, the roads it entered while closed, by the rule of US-050 with the departure of the engine
-    (`td.departure`) or, when there is none, the step that contains the time of the request. {"name|vehicle": [crossing, ...]}."""
+    """For each route, the roads it entered while closed, by the rule of US-050. The window of steps starts at the
+    departure of the engine (`td.departure`, the step that contains the request) or, when there is none, at that step
+    worked out here. The route is walked from the time of the request, as the engine does (US-096).
+    {"name|vehicle": [crossing, ...]}."""
     found: dict[str, list] = {}
     for record in records:
         if record["status"] != 200 or not record["edge_ids"]:
             continue
         table = _table_for(Path(table_dir), record["td"].get("run"))
         steps = tuple(t.timestamp() for t in table.header.step_times)
-        departure = record["td"].get("departure")
-        if departure is None:
+        window_start = record["td"].get("departure")
+        if window_start is None:
             before = [s for s in steps if s <= record["requested_at"]]
-            departure = max(before) if before else record["requested_at"]
+            window_start = max(before) if before else record["requested_at"]
+        # The backend departs at the later of valid_time and now, so a step ahead of the request is the departure.
         rule = ref.StickyClosure(steps, lambda e, s, t=table: t.depth_cm(e, s) if 0 <= e < t.header.edge_count else 0,
-                                 limits[record["vehicle"]], departure_s=float(departure), margin_s=margin_s)
+                                 limits[record["vehicle"]], departure_s=max(float(record["requested_at"]), float(window_start)),
+                                 margin_s=margin_s, window_start_s=float(window_start))
         crossings = ref.find_crossings(record["edge_ids"], [m / 1000.0 for m in record["edge_times_ms"]], rule)
         found[f"{record['name']}|{record['vehicle']}"] = [
             {"position": c.position, "edge_id": c.edge_id, "arrival_s": c.arrival_s, "closing_step": c.closing_step} for c in crossings]
