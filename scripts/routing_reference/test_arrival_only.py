@@ -58,6 +58,11 @@ class SearchTest(unittest.TestCase):
         result = earliest_arrival_arrival_only(OVERTAKE, 2, 0, closure({}), 0)
         self.assertEqual(result, ArrivalOnlyResult(None, exact=True))
 
+    def test_a_destination_no_road_reaches_is_exact_on_a_cyclic_graph(self):
+        graph = Graph([Edge(0, 0, 1, 10), Edge(1, 1, 0, 10)])
+        result = earliest_arrival_arrival_only(graph, 0, 2, closure({}), 0, max_labels_per_node=2)
+        self.assertEqual(result, ArrivalOnlyResult(None, exact=True))
+
     def test_closed_for_every_arrival(self):
         result = earliest_arrival_arrival_only(OVERTAKE, 0, 2, closure({3: [30, 30, 30]}), 0)
         self.assertEqual(result, ArrivalOnlyResult(None, exact=True))
@@ -67,9 +72,9 @@ class SearchTest(unittest.TestCase):
         result = earliest_arrival_arrival_only(graph, 0, 2, closure({}), 0, max_labels_per_node=3)
         self.assertEqual(result, ArrivalOnlyResult(Route((0, 2), (0, 10), 20), exact=True))
 
-    def test_a_cycle_without_a_destination_terminates(self):
-        graph = Graph([Edge(0, 0, 1, 10), Edge(1, 1, 0, 10)])
-        result = earliest_arrival_arrival_only(graph, 0, 5, closure({}), 0, max_labels_per_node=4)
+    def test_a_cycle_in_front_of_a_closed_road_terminates_as_inexact(self):
+        graph = Graph([Edge(0, 0, 1, 10), Edge(1, 1, 0, 10), Edge(2, 1, 2, 10)])
+        result = earliest_arrival_arrival_only(graph, 0, 2, closure({2: [30, 30, 30]}), 0, max_labels_per_node=4)
         self.assertIsNone(result.route)
         self.assertFalse(result.exact)
 

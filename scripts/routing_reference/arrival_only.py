@@ -7,7 +7,9 @@ re-walk read the same step for the same arrival.
 This closure is not monotone in `a` and travellers do not wait, so an earlier arrival at a node is not always
 better: it can meet a road that a later arrival passes. The search keeps several arrival-time labels per node and
 expands them in time order. A cap on the labels per node keeps cyclic graphs finite. A label the cap drops can
-only matter when it is earlier than the answer, so the result is exact unless such a label was dropped.
+only matter when it is earlier than the answer, so the result is exact unless such a label was dropped. A
+destination that no road reaches, closed or not, is exact at once. A destination that roads reach but that every
+closed-road path misses can exhaust the cap on a cyclic graph, and the result is then inexact.
 """
 
 from __future__ import annotations
@@ -60,6 +62,8 @@ def earliest_arrival_arrival_only(
     departure_s: float,
     max_labels_per_node: int = 16,
 ) -> ArrivalOnlyResult:
+    if destination not in _reachable(graph, origin):
+        return ArrivalOnlyResult(None, exact=True)
     start = _Label(departure_s, origin, None, None)
     queue: list[tuple[float, int, int, _Label]] = [(departure_s, origin, 0, start)]
     seen: dict[int, set[float]] = {origin: {departure_s}}
@@ -87,6 +91,16 @@ def earliest_arrival_arrival_only(
     end = float("inf") if found is None else found.time
     exact = earliest_dropped >= end
     return ArrivalOnlyResult(None if found is None else _route(found), exact)
+
+
+def _reachable(graph: Graph, origin: int) -> set[int]:
+    reached, stack = {origin}, [origin]
+    while stack:
+        for edge in graph.out_edges(stack.pop()):
+            if edge.head not in reached:
+                reached.add(edge.head)
+                stack.append(edge.head)
+    return reached
 
 
 def _route(label: _Label) -> Route:
