@@ -9,10 +9,15 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-1. Monday 2026-10-12: sprint planning for Sprint 13 (4 hours at most).
-   The goal, the proposed picks, and the open decisions are in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]].
-2. Start the 12-hour replay ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]) on the first day, because it is the longest wait.
-   It needs your go.
+1. Sunday (Claude, Mac): fix the story text and three small code changes, then you push.
+   The changes are the `compose.yml` env var, the `US-102` check script, and the `replay.ps1` preview and `stop` line.
+   The list is in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], "How to close the proposed picks".
+2. Monday 2026-10-12, planning: decide the replay scope (A, full storm, or B, rebuild plus a short slice), the go, the pause time, and the other decisions listed in SPR-013.
+3. Monday, after the go: read-only server checks, `git pull --ff-only alice modular`, edit `.env`, run `replay.ps1 start`, and unpause `flood_mapping_full` about 10:45 +07 ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+4. During the replay: live sticky readings for [[US-091-measure-how-often-a-single-timestep-route|US-091]] and the `BL-028` reading at about 18:30 +07.
+5. Tuesday 00:15: pause the DAG, run the single-timestep step, copy the tables, run the `US-102` check, then `stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]).
+6. Wednesday: write the `US-091` result and decision, record the evidence, and resolve `BL-028`.
+   [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 13, 2026-10-12 to 2026-10-25
