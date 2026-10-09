@@ -2,10 +2,14 @@
 
 ## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
-## Next action: 
-1. Start US-092 and US-093 on the US-091 harness.
-2. Rebuild the graphhopper image from the server's own desktop session for US-096, then check a route with a departure between two steps.
-3. After Sprint 12, run the second replay with EDGE_TABLE_KEEP_RUNS raised, and take the US-069 readings on time.
+## Next action:
+1. Roll out the `graphhopper` image for `US-096` and `US-097` from the server's own desktop session (`docker build` over SSH fails). The server is at `5cb0aaa` on `modular`. `flood_mapping_full` is paused, which the script requires. In PowerShell, in `C:\Users\TECOTEC\airflow_new`:
+   1. `.\scripts\routing_proof\rollout.ps1 -Branch modular`. The default branch of the script is `front-end-according-to-mock-up`, so the flag is required. It builds the three images (the `graphhopper` build runs every module test), recreates the three services with `TIME_AWARE_ROUTING` off, runs every check once, and writes `C:\Users\TECOTEC\rollout-proof.log`. Add `-LeaveOn` only if you decide the flag goes on.
+   2. Check one route that crosses a road between the precaution depth and the limit. With the flag on, `POST /route` must return two paths and `td.kinds` must be `recommended,through_water`. The script does not check this. Take the screenshot for `US-097` and `US-096`, then move both rows to `Done` (rule 8).
+   3. Run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it.
+2. Start the real-graph run of `US-092` and `US-093` after step 1.3: load the node columns into a `Graph`, then run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
+3. Add a test for a via request with a shallow road (`TimeAwareRouterTest`), the one case `US-097` does not cover.
+4. After Sprint 12, run the second replay with `EDGE_TABLE_KEEP_RUNS` raised, and take the `US-069` readings on time.
 
 ### Active - US-070 Stop a slow sampling step from holding the database
 
