@@ -22,6 +22,22 @@ The cause is in the search, not in the data. The arrival-only closure is not mon
 
 The real graph breaks this condition. `real_graph.py` treats every road as open in both directions (the export has no one-way flag). A route can walk from node A to node B and back to A. That walk reaches A again at a later, different time and counts as a new label. A few such loops near the origin fill the 16 labels of the nearby nodes, and the search then drops labels that are earlier than the destination arrival. The search has no way to tell that those labels do not matter, so it reports the result as inexact.
 
+## Plain-language explanation
+
+**The game.** We want to know the fastest way to walk to school. Some streets flood, and the water goes up and down as time passes. A street is closed when it has too much water at the moment you reach it.
+
+**Two kinds of walkers.** The sticky walker looks at a street before leaving home and again on arrival, and avoids a street that might close. The arrival-only walker looks at a street only at the moment they reach it. We want to count how often the sticky walker does worse than the arrival-only walker. That count is the `US-093` result.
+
+**The trouble.** To be fair, the arrival-only walker must try every possible way to walk. On our map every street can be walked in both directions, so the walker can also go to the next corner and back, again and again. Each trip back and forth makes a new "walking story", and there are millions of them. The program keeps only 16 stories per corner, and the silly back-and-forth stories fill the space. The program then cannot be sure it found the best way, so it says "inexact", meaning "I am not sure". It said that every time. Keeping 64 or 256 stories did not help.
+
+**Why a decision is needed.** There are two ways to fix the program, and they give different answers. The paper has to say which one we used, so the choice is yours.
+
+- **Rule A, never visit the same corner twice.** No back and forth. This is the easiest to explain. The paper would say "earliest arrival over routes that visit no node twice".
+- **Rule B, ignore stories that are clearly worse.** The walker keeps the old rules, but the program needs a careful written proof that ignoring those stories is safe when the water goes down.
+- **Waiting by walking back and forth.** Under the old rules, the walker can pass time on purpose until a flooded street opens. Rule A forbids this. Rule B and the current search allow it.
+
+**How to answer.** Say which rule (A or B), or say "measure first" so that both are tried on 10 trips and the numbers are shown to you. Say whether waiting by walking back and forth is allowed. Give a number for "sure enough", for example "95 answers out of 100 must be certain". Give the longest run time, for example "2 hours". Give the sprint for the fix. The shortest useful answer is "measure first, Sprint 12".
+
 ## Why this matters
 
 `US-093` measures how often the sticky rule gives no route or a longer route than an arrival-only reference. Without an exact reference, the story has no result. `US-093` is part of the routing paper experiments in [[EP-14-routing-paper-experiments]], and the paper handoff needs its numbers.
@@ -90,3 +106,4 @@ The sticky side is not in question. A seeded test of 300 graphs in `scripts/rout
 ## Status history
 
 - **2026-10-09, open.** Found by the first real-graph run of `US-093` (all 2,520 comparisons inexact). Approach 1 (cap 16) and approach 2 (caps 64 and 256) failed. The blocker does not stop build in the next sprint (rule 11), and the fix waits for your decision on the definition of the reference.
+- **2026-10-09, open.** Added the "Plain-language explanation" section at the user's request.
