@@ -188,6 +188,29 @@ class FindCrossingsTest(unittest.TestCase):
 
         self.assertEqual(find_crossings((0, 1), (600, 600), rule(drains, departure_s=1800)), [])
 
+    def test_the_clock_runs_from_the_requested_departure_and_the_window_from_its_step(self):
+        floods_at_1800_s = {1: [0, 0, 50, 50, 50, 50, 50, 50, 50]}
+        floored = StickyClosure(STEPS, depth_table(floods_at_1800_s), 20, departure_s=840, window_start_s=0)
+
+        crossings = find_crossings((0, 1), (1000, 600), floored)
+
+        self.assertEqual(crossings, [Crossing(position=1, edge_id=1, arrival_s=1840, closing_step=2)])
+
+    def test_the_step_that_contains_the_departure_still_counts(self):
+        wet_at_step_0 = {1: [50, 0, 0, 0, 0, 0, 0, 0, 0]}
+        floored = StickyClosure(STEPS, depth_table(wet_at_step_0), 20, departure_s=840, window_start_s=0)
+
+        self.assertTrue(floored.is_closed(1, arrival_s=840))
+
+    def test_a_departure_on_a_step_gives_the_same_crossings_as_one_time(self):
+        floods_at_1800_s = {1: [0, 0, 50, 50, 50, 50, 50, 50, 50]}
+        on_step = StickyClosure(STEPS, depth_table(floods_at_1800_s), 20, departure_s=900, window_start_s=900)
+
+        self.assertEqual(find_crossings((0, 1), (1000, 600), on_step),
+                         find_crossings((0, 1), (1000, 600), rule(floods_at_1800_s, departure_s=900)))
+        self.assertEqual(find_crossings((0, 1), (1000, 600), on_step),
+                         [Crossing(position=1, edge_id=1, arrival_s=1900, closing_step=2)])
+
     def test_every_crossing_is_reported(self):
         crossings = find_crossings((0, 1), (600, 600), rule({0: [50] * 9, 1: [50] * 9}))
 

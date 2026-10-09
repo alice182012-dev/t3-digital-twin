@@ -53,13 +53,18 @@ class Graph:
 @dataclass(frozen=True)
 class StickyClosure:
     """step_seconds are the forecast step times in seconds from one fixed origin, the same origin as
-    departure_s and every arrival. depth_cm(edge_id, step) is the depth of an edge at a step index."""
+    departure_s and every arrival. depth_cm(edge_id, step) is the depth of an edge at a step index.
+
+    departure_s starts the clock of the trip. window_start_s starts the window of steps and defaults to
+    departure_s. The engine sets it to the step that contains the departure (US-096), so that step counts
+    while every arrival is still measured from the real departure."""
 
     step_seconds: tuple[float, ...]
     depth_cm: Callable[[int, int], int]
     limit_cm: int
     departure_s: float = 0
     margin_s: float = DEFAULT_MARGIN_S
+    window_start_s: float | None = None
 
     def __post_init__(self) -> None:
         if any(b <= a for a, b in zip(self.step_seconds, self.step_seconds[1:])):
@@ -67,13 +72,17 @@ class StickyClosure:
         if self.margin_s < 0:
             raise ValueError("the margin cannot be negative")
 
+    @property
+    def window_start(self) -> float:
+        return self.departure_s if self.window_start_s is None else self.window_start_s
+
     def closing_step(self, edge_id: int, arrival_s: float) -> int | None:
-        """The first step in the window [departure, arrival + margin] whose depth reaches the limit."""
+        """The first step in the window [window start, arrival + margin] whose depth reaches the limit."""
         end = arrival_s + self.margin_s
         for step, t in enumerate(self.step_seconds):
             if t > end:
                 return None
-            if t >= self.departure_s and self.depth_cm(edge_id, step) >= self.limit_cm:
+            if t >= self.window_start and self.depth_cm(edge_id, step) >= self.limit_cm:
                 return step
         return None
 
