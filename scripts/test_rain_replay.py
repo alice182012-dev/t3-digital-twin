@@ -137,7 +137,7 @@ class SimulatingSlotsTests(unittest.TestCase):
         self.assertEqual(
             lines,
             [
-                "gate 5 mm/h: 6 of 12 runs simulate, 2 chains",
+                "gate 5 mm/h: 6 of 12 runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), 2 chains",
                 "chain 1: 2025-10-06 05:30 to 2025-10-06 06:15 +07, 4 runs, cold start",
                 "chain 2: 2025-10-06 08:00 to 2025-10-06 08:15 +07, 2 runs, cold start",
             ],
@@ -199,7 +199,7 @@ class CheckTests(unittest.TestCase):
             lines,
             [
                 f"event {EVENT_FILE}: 97 rows, 246.8 mm, peak 56.5 mm/h",
-                "gate 5 mm/h: 104 of 192 runs simulate, 5 chains",
+                "gate 5 mm/h: 104 of 192 runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), 5 chains",
                 "chain 1: 2025-10-06 09:30 to 2025-10-06 15:45 +07, 26 runs, cold start",
                 "chain 2: 2025-10-07 00:30 to 2025-10-07 11:45 +07, 46 runs, cold start",
                 "chain 3: 2025-10-07 12:30 to 2025-10-07 14:45 +07, 10 runs, hotstart",
@@ -266,14 +266,14 @@ class StatusTests(unittest.TestCase):
                 "mode replay",
                 f"event {EVENT_FILE}: 97 rows, 246.8 mm, peak 56.5 mm/h",
                 "start 2025-10-05T22:30:00Z (2025-10-06 05:30 +07)",
-                "gate 5 mm/h: 104 of 192 runs simulate, first 2025-10-06 09:30 +07, last 2025-10-08 02:45 +07",
+                "gate 5 mm/h: 104 of 192 runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), first 2025-10-06 09:30 +07, last gate-passing run 2025-10-08 02:45 +07",
                 "slot 2025-10-06T03:00:00Z rate 1.76775 mm/h, next slot 2025-10-06T03:15:00Z",
             ],
         )
 
     def test_a_blank_gate_is_the_compose_default_of_5(self):
         lines = self.status({**REPLAY_ENV, "FLOOD_RAIN_THRESHOLD_MM_HR": ""})
-        self.assertEqual(lines[3], "gate 5 mm/h: 104 of 192 runs simulate, first 2025-10-06 09:30 +07, last 2025-10-08 02:45 +07")
+        self.assertEqual(lines[3], "gate 5 mm/h: 104 of 192 runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), first 2025-10-06 09:30 +07, last gate-passing run 2025-10-08 02:45 +07")
 
     def test_a_half_set_or_mixed_combination_is_rejected_like_the_pipeline_does(self):
         for env in (

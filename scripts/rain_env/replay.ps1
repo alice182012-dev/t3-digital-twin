@@ -136,6 +136,7 @@ function Stop-Replay {
         Remove-Item $stateFile
         "restored the four rain keys from $stateFile and deleted it"
         $expect = @()
+        if (-not $saved.FLOOD_TEST_RAIN_CSV -and -not $saved.FLOOD_TEST_RAIN_MM_HR) { $expect = @("--expect-mode", "live") }
     } else {
         $wasReplay = (Get-KeyValue $text "FLOOD_TEST_RAIN_CSV") -or (Get-KeyValue $text "FLOOD_TEST_RAIN_START")
         foreach ($key in $keys[0..2]) { $text = Set-KeyValue $text $key "" }

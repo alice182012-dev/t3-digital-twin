@@ -173,7 +173,7 @@ def describe(slots, event_start, threshold):
     """One summary line, then one line per chain with local start and end times."""
     local = lambda offset: (event_start + timedelta(minutes=offset)).astimezone(LOCAL_ZONE).strftime("%Y-%m-%d %H:%M")
     lengths = chain_lengths(slots)
-    lines = [f"gate {threshold:g} mm/h: {sum(s.simulates for s in slots)} of {len(slots)} runs simulate, {len(lengths)} chains"]
+    lines = [f"gate {threshold:g} mm/h: {sum(s.simulates for s in slots)} of {len(slots)} runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), {len(lengths)} chains"]
     starts = [s for s in slots if s.starts_chain]
     for number, (start, length) in enumerate(zip(starts, lengths), 1):
         last = start.offset_minutes + (length - 1) * (slots[1].offset_minutes - slots[0].offset_minutes)
@@ -263,8 +263,8 @@ def status_lines(mode, detail, now):
         "mode replay",
         _event_line(detail.event_path, event),
         f"start {_iso_z(detail.start)} ({_local(detail.start)} +07)",
-        f"gate {detail.gate_mm_hr:g} mm/h: {len(simulating)} of {len(slots)} runs simulate, "
-        f"first {_local(simulating[0])} +07, last {_local(simulating[-1])} +07",
+        f"gate {detail.gate_mm_hr:g} mm/h: {len(simulating)} of {len(slots)} runs pass the gate (at least this many simulate, US-101 adds runs while the flood stands), "
+        f"first {_local(simulating[0])} +07, last gate-passing run {_local(simulating[-1])} +07",
         f"slot {_iso_z(slot)} rate {rate:g} mm/h, next slot {_iso_z(slot + timedelta(minutes=SLOT_MINUTES))}",
     ]
 
