@@ -9,15 +9,14 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Scope A is decided, and the owner wants the replay stories finished this weekend.
-The code changes are pushed (`468e960`). The server is checked read-only and ready to fast-forward.
-1. Server, with the owner's permission (Claude's remote writes were denied): fix `.env.rain-replay.json`, pull, add three lines to `.env`, run `replay.ps1 start`, and unpause `flood_mapping_full`.
-   The commands are in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], "How to close the proposed picks".
-2. During the replay (about 13.5 hours): live sticky readings for [[US-091-measure-how-often-a-single-timestep-route|US-091]] at about +0:30, +1:30, and +3:30, and the `BL-028` reading when the first table after the former gap exists (offset 6h45).
-3. At the pause time: pause the DAG, run the single-timestep step, copy the tables, run `artifacts/docs/stories/evidence/us-102-replay-check.sh`, then `replay.ps1 stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]).
-4. Then: write the US-091 result and decision, record the evidence, and resolve `BL-028`.
-   [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h.
-5. Monday 2026-10-12, planning: confirm the picks, rewrite the story text of US-102, US-091, US-089, and US-094, and split US-094.
+The replay is running (scope A). `flood_mapping_full` was unpaused at 2026-10-10 04:02 +07, the first run was slot 04:00, and the replay rain starts at 04:45 +07.
+If a session ends, the DAG keeps running and the standing-flood rule never stops on its own. Pause it by hand: `docker --context remote-server exec airflow_new-airflow-scheduler-1 airflow dags pause flood_mapping_full`.
+1. Readings today (+07): 05:09 first table, 05:17 live sticky "cold", 06:17 sticky "1h", 07:47 BL-023 hour 3, 08:17 sticky "3h", 10:47 BL-023 hour 6 and the gap opens, 12:13 the BL-028 reading, 13:47 BL-023 hour 9, 16:17 hour 11.5.
+   Helpers are in `marie-curie/us-091/live_sticky.sh` and `marie-curie/us-102/`.
+2. 18:17: pause the DAG, run the [[US-091-measure-how-often-a-single-timestep-route|US-091]] single-timestep step on 60 pairs, copy the tables, run `artifacts/docs/stories/evidence/us-102-replay-check.sh`, run `replay.ps1 stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]), and unpause for live rain.
+3. Sunday: write the US-091 result and the decision in `decision-log.md`, take the screenshots, fill the evidence and details of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], and resolve `BL-028` if the 12:13 reading holds.
+   [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h. Its test-rain skip is already logged (`2b_archive_results`, slot 04:00).
+4. Monday 2026-10-12, planning: confirm the picks, rewrite the story text of US-102, US-091, US-089, and US-094, and split US-094. The owner accepts each `Done` at the review.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 13, 2026-10-12 to 2026-10-25
