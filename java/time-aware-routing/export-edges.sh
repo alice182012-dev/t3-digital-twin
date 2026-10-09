@@ -15,14 +15,20 @@ CONTEXT=${CONTEXT:-remote-server}
 CACHE_VOLUME=${CACHE_VOLUME:-airflow_new_graphhopper-graph-cache}
 EXPORT_DEST=${EXPORT_DEST:-}
 EXPECTED_EDGES=${EXPECTED_EDGES:-67833}   # the edge count that US-046 recorded in routing-not-time-aware.md
-IMAGE=graphhopper-time-aware:test
+IMAGE=${IMAGE:-graphhopper-time-aware:test}
+SKIP_BUILD=${SKIP_BUILD:-}   # set to 1 to use an image already on the server, for example IMAGE=graphhopper-time-aware:local
 
 d() { docker --context "$CONTEXT" "$@"; }
 
 cd "$(dirname "$0")" || exit 1
 
-echo "== 1. Build the image (runs the module tests in the test stage)"
-d build -t "$IMAGE" . || { echo "BUILD FAILED"; exit 1; }
+if [ -z "$SKIP_BUILD" ]; then
+    echo "== 1. Build the image (runs the module tests in the test stage)"
+    d build -t "$IMAGE" . || { echo "BUILD FAILED"; exit 1; }
+else
+    echo "== 1. Skip the build, use the image $IMAGE"
+    d image inspect "$IMAGE" >/dev/null 2>&1 || { echo "Image $IMAGE not found on the server"; exit 1; }
+fi
 
 echo "== 2. Check that the live graph cache volume exists"
 d volume inspect "$CACHE_VOLUME" >/dev/null 2>&1 || {
