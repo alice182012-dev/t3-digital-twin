@@ -226,6 +226,10 @@ class GraphTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             Graph([Edge(0, 0, 1, 1), Edge(0, 1, 2, 1)])
 
+    def test_lists_every_edge_in_insertion_order(self):
+        edges = [Edge(4, 0, 1, 1), Edge(2, 1, 0, 1)]
+        self.assertEqual(Graph(edges).edges(), edges)
+
     def test_a_negative_travel_time_is_refused(self):
         with self.assertRaises(ValueError):
             Edge(0, 0, 1, -1)

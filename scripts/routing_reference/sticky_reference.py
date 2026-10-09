@@ -46,6 +46,9 @@ class Graph:
     def edge(self, edge_id: int) -> Edge:
         return self._edges[edge_id]
 
+    def edges(self) -> list[Edge]:
+        return list(self._edges.values())
+
     def out_edges(self, node: int) -> list[Edge]:
         return self._out.get(node, [])
 
