@@ -53,6 +53,18 @@ class StickyCheckerTest {
     }
 
     @Test
+    void theWalkStartsAtTheDepartureAndNotAtTheFlooredStep(@TempDir Path dir) throws Exception {
+        // Wet from the step at 1,800 s. Requested at 840 s, floored to 0 s, the road entered 1,000 s into the trip.
+        // From 0 s the entry would be at 1,000 s with the window [0, 1600 s], and the road would pass.
+        StickyClosure rule = new StickyClosure(TimeAwareDijkstraTest.table(dir, 3, 1, 50, new int[][] {{30, 1000}}), 20,
+                T0, T0 + 840_000L, StickyClosure.DEFAULT_MARGIN_MS);
+
+        List<StickyChecker.Crossing> found = StickyChecker.findCrossings(List.of(0, 1), List.of(1_000_000L, MIN), rule);
+
+        assertEquals(List.of(new StickyChecker.Crossing(1, 1, T0 + 1_840_000L)), found);
+    }
+
+    @Test
     void everyCrossingIsReported(@TempDir Path dir) throws Exception {
         StickyClosure rule = new StickyClosure(
                 TestTables.table(dir, "t.bin", 3, TestTables.quarterHours(TimeAwareDijkstraTest.T0, 8), (e, s) -> e == 2 ? 0 : 50),

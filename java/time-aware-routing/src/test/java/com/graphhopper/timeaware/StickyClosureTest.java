@@ -102,6 +102,25 @@ class StickyClosureTest {
     }
 
     @Test
+    void theWindowCanStartAtTheStepBeforeTheDeparture(@TempDir Path dir) throws Exception {
+        // Departure at minute 14, floored to the step at minute 0. The step at 0 counts though it is before the departure.
+        EdgeDepthTable table = TestTables.table(dir, "t.bin", 1, TestTables.quarterHours(T0, 8), (e, s) -> s == 0 ? 50 : 0);
+        StickyClosure rule = new StickyClosure(table, 20, at(0), at(14), StickyClosure.DEFAULT_MARGIN_MS);
+
+        assertTrue(rule.closed(0, at(14)));
+        assertEquals(at(0), rule.windowStartEpochMs());
+        assertEquals(at(14), rule.departureEpochMs());
+    }
+
+    @Test
+    void oneTimeIsBothTheWindowStartAndTheDeparture(@TempDir Path dir) throws Exception {
+        StickyClosure rule = rule(dir, 20, 30, 50);
+
+        assertEquals(at(30), rule.windowStartEpochMs());
+        assertEquals(at(30), rule.departureEpochMs());
+    }
+
+    @Test
     void aNegativeMarginIsRefused(@TempDir Path dir) throws Exception {
         EdgeDepthTable table = TestTables.table(dir, "t.bin", 1, TestTables.quarterHours(T0, 2), (e, s) -> 0);
         assertThrows(IllegalArgumentException.class, () -> new StickyClosure(table, 20, 0, -1));

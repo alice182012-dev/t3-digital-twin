@@ -303,6 +303,21 @@ class TimeAwareRouterTest {
     }
 
     @Test
+    void arrivalsCountFromTheRequestedDepartureNotFromTheFlooredStep(@TempDir Path dir) throws Exception {
+        // Requested at 899 s, floored to 0 s, the corridor wet from the step at 900 s. The real entry is after 899 s, so
+        // the window reaches 900 s. Counted from 0 s it would reach 900 s only for a lead road of 300 s or more.
+        flood(dir, corridorEdge, 50, 15);
+        GHRequest request = request("car", true, ORIGIN, DESTINATION);
+        request.getHints().putObject(TimeAwareRouter.DEPARTURE_HINT, T0.getEpochSecond() + 899);
+
+        GHResponse r = hopper.route(request);
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertFalse(edgeIds(r).contains(corridorEdge));
+        assertEquals(T0.getEpochSecond(), hintLong(r, "td.departure"), "the hint still names the floored step");
+    }
+
+    @Test
     void aTripThatEndsAfterTheLastStepIsUnknown(@TempDir Path dir) throws Exception {
         flood(dir, corridorEdge, 0, 0);
         GHRequest request = request("car", true, ORIGIN, DESTINATION);

@@ -258,6 +258,42 @@ class TimeAwareDijkstraTest {
         assertFalse(search(g, plain(g), table, 20, 0, 1).isFound());
     }
 
+    @Test
+    void arrivalsCountFromTheRequestedDepartureNotFromTheFlooredStep(@TempDir Path dir) throws Exception {
+        // The corridor is wet from minute 30. Requested at minute 14, floored to minute 0, the corridor entered after 17
+        // minutes. From minute 0 the entry is at 17 and the window [0, 27] passes. The real entry at 31 closes it.
+        BaseGraph g = newGraph();
+        road(g, 0, 1, 17);
+        road(g, 1, 2, 1);
+        EdgeDepthTable table = table(dir, 2, 1, 50, new int[][] {{30, 1000}});
+        long t0 = T0.toEpochMilli();
+        StickyClosure floored = new StickyClosure(table, 20, t0, t0 + 14 * 60_000L, StickyClosure.DEFAULT_MARGIN_MS);
+        StickyClosure fromTheStep = new StickyClosure(table, 20, t0, StickyClosure.DEFAULT_MARGIN_MS);
+
+        assertFalse(new TimeAwareDijkstra(g, plain(g), TraversalMode.NODE_BASED, floored).calcPath(0, 2).isFound());
+        assertTrue(new TimeAwareDijkstra(g, plain(g), TraversalMode.NODE_BASED, fromTheStep).calcPath(0, 2).isFound());
+    }
+
+    @Test
+    void aDepartureOnAStepIsRoutedAsWithOneTime(@TempDir Path dir) throws Exception {
+        // Wet from minute 45. Leaving at minute 15, the corridor is entered at 32 and the window [15, 42] passes.
+        BaseGraph g = newGraph();
+        road(g, 0, 1, 17);
+        road(g, 1, 2, 1);
+        EdgeDepthTable table = table(dir, 2, 1, 50, new int[][] {{45, 1000}});
+        long onStep = T0.toEpochMilli() + 15 * 60_000L;
+        StickyClosure twoTimes = new StickyClosure(table, 20, onStep, onStep, StickyClosure.DEFAULT_MARGIN_MS);
+        StickyClosure oneTime = new StickyClosure(table, 20, onStep, StickyClosure.DEFAULT_MARGIN_MS);
+
+        var withTwo = new TimeAwareDijkstra(g, plain(g), TraversalMode.NODE_BASED, twoTimes).calcPath(0, 2);
+        var withOne = new TimeAwareDijkstra(g, plain(g), TraversalMode.NODE_BASED, oneTime).calcPath(0, 2);
+
+        assertTrue(withTwo.isFound());
+        assertTrue(withOne.isFound());
+        assertEquals(18 * 60_000L, withTwo.getTime());
+        assertEquals(withOne.getTime(), withTwo.getTime());
+    }
+
     // An exhaustive search over all simple paths is the oracle.
 
     @Test

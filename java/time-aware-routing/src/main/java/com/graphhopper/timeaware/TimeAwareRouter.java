@@ -83,9 +83,8 @@ public class TimeAwareRouter extends Router {
             return new Decision(null, tables.problem().orElse("no depth table is available"), 0);
         }
         long requestedMs = hints.getLong(DEPARTURE_HINT, 0) * 1000L;
-        long departureMs = floorToStep(table.get(), requestedMs);
-        return new Decision(new StickyClosure(table.get(), profile.getHints().getInt(LIMIT_HINT, -1), departureMs,
-                StickyClosure.DEFAULT_MARGIN_MS), null, requestedMs);
+        return new Decision(new StickyClosure(table.get(), profile.getHints().getInt(LIMIT_HINT, -1),
+                floorToStep(table.get(), requestedMs), requestedMs, StickyClosure.DEFAULT_MARGIN_MS), null, requestedMs);
     }
 
     /**
@@ -138,7 +137,7 @@ public class TimeAwareRouter extends Router {
                 && endsAfterLastStep(decision.requestedDepartureMs, response.getBest().getTime(), lastStepMs);
         response.getHints().putObject(STATUS_HINT, unknown ? "unknown" : "applied");
         response.getHints().putObject(RUN_HINT, table.runName());
-        response.getHints().putObject(DEPARTURE_RESPONSE_HINT, decision.closure.departureEpochMs() / 1000);
+        response.getHints().putObject(DEPARTURE_RESPONSE_HINT, decision.closure.windowStartEpochMs() / 1000);
         response.getHints().putObject(LAST_STEP_HINT, lastStepMs / 1000);
     }
 
