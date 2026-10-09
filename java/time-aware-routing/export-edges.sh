@@ -8,7 +8,7 @@
 # By default the files go into the throwaway container, so only the printed result is kept. To keep the export for
 # the Airflow edge depth table task (US-041), set EXPORT_DEST to a folder on the server that Airflow reads, which
 # is <DATA_HOST_PATH>\mapping\graph_export on the server, and create the folder first:
-#   EXPORT_DEST='D:\airflow-data\mapping\graph_export' java/time-aware-routing/export-edges.sh
+#   EXPORT_DEST='D:/airflow_new_data/data/mapping/graph_export' java/time-aware-routing/export-edges.sh
 set -u
 
 CONTEXT=${CONTEXT:-remote-server}
