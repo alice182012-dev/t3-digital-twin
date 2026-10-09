@@ -12,7 +12,7 @@ related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]"]
 
 # SPR-013 Sprint 13: prove the storm replay and finish the replay stories
 
-The first sprint under Scrum ([[decision-log|D-024]]). It runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25 ([[decision-log|D-026]]). Planning is on 2026-10-12. This file holds a proposal until the product owner confirms the goal and the picks.
+The first sprint under Scrum ([[decision-log|D-024]]). It runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25 ([[decision-log|D-026]]). Planning is on 2026-10-12. This file holds a proposal until the product owner confirms the goal and the picks. [[TODOS]] shows the sprint in the terminal.
 
 ## Sprint goal
 
