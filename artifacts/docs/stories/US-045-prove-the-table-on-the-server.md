@@ -21,7 +21,7 @@ Given a real run on the server, when the task runs, then the report gives the ed
 the build time for the run, and 20 edges match `ST_Value`. The story records the numbers in
 [[PRD-003-edge-depth-table|edge-depth-table]] and replaces the guessed size. If the build time exceeds the limit above, the
 story records a blocker.
-Priority: P0. Status: Done. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
+Dependencies: Stories E3, E4. Gate cleared: the user
 set the build-time limit on 2026-10-02. The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 
 ## Evidence and details

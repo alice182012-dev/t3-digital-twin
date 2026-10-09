@@ -22,7 +22,7 @@ Given the pool is at its ceiling of 10 connections (`FLOOD_DB_POOL_MAX`), when 3
 `Retry-After` header after the wait limit passes. None returns 400.
 Given a pooled connection whose database session has died, when its request ends, then the pool
 discards that connection and the slot is free for the next request.
-Priority: P0. Status: Done. Estimate: S. Sprint: 2. Dependencies: Story 4, and the pooling
+Dependencies: Story 4, and the pooling
 change from [[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]].
 Evidence: ![[pool-wait-and-503-server-check.png|420]]
 Details:

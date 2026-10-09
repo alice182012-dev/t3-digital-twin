@@ -21,7 +21,7 @@ Given the approved mockup and the shipped components, when `/design-consultation
 `DESIGN.md` lists the tokens (colors, type scale, spacing) extracted from the mockup, and each value the
 shipped `FloodLegend.module.css` and `PlaceDepthPopup.module.css` use either matches a token or is listed
 as a known divergence.
-Priority: P3. Status: Not started. Estimate: S. Sprint: none yet. It carries to plan 5 ([[SP-04-frontend-recheck|sprint-plan-4]], "Carried to plan 5"), because `US-083` is in Sprint 16, the last sprint of plan 4. It moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: `US-077` to `US-083`, so it extracts from the UI that they finish. Blocks nothing.
+Dependencies: `US-077` to `US-083`, so it extracts from the UI that they finish. Blocks nothing.
 
 ## Status history
 

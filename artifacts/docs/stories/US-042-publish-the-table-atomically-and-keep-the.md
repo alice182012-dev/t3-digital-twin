@@ -20,7 +20,7 @@ Given a reader that polls in a loop, when the task publishes a table, then the r
 the new one and never a partial file. Given four runs, when the fourth publishes, then the oldest is
 removed. A failed task leaves the previous `latest` in place and does not block the DAG.
 The story also picks the storage, a volume or MinIO, and records why.
-Priority: P0. Status: Done. Estimate: S. Sprint: 7. Dependencies: Story E3 (done).
+Dependencies: Story E3 (done).
 Storage decision: the Docker named volume `edge-depth-tables`, not MinIO and not a folder under `DATA_HOST_PATH`. The reasons are in [[edge-depth-table-publish]], decision 1.
 Evidence: ![[us-042-atomic-publish-server-output.png|700]]
 Details:

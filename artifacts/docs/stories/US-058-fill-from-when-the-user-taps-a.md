@@ -36,7 +36,7 @@ This story changes only the case of a set destination with an empty From.
 `App.tsx` decides today what a map tap does, and `destinationForPlace` in
 `floodmap/graphhopper-maps/src/floodmap/routeToPlace.ts` always moves the last query point. The story adds the rule
 that picks the point a tap fills.
-Priority: P2. Status: Done. Estimate: S. Sprint: 3 (follow-up to US-023, placed 2026-09-30). Dependencies: US-023.
+Dependencies: US-023.
 Evidence: ![[frontend-tap-fills-from-live-check.png|420]] ![[frontend-tap-arrow-empties-from-live-check.png|420]] ![[frontend-tap-fills-from-preview-check.png|420]] ![[frontend-tap-arrow-empties-from-preview-check.png|420]]
 Details:
 1. What: with a destination set and From empty, a tap in flood mode fills From at once. The popup still opens with the depth and the arrow. The arrow on that point moves it to To and empties From.
@@ -44,3 +44,7 @@ Details:
 3. Why: a user builds a route with taps alone and never types a place.
 4. Effect: checked on a preview build and then on the live site at `100.67.84.55:8082` (2026-09-30), with the destination tapped at 21.025484, 105.761959 and the start at 21.025003, 105.754921. From filled with "Đại đội 26", the popup showed the depth, and a 1.8 km route planned itself. The arrow then gave To "Đại đội 26" and an empty From. One side effect is logged as [[BL-016-no-safe-route-box-shown-with-empty-start|no-safe-route-box-shown-with-empty-start]] and Story 6: after the arrow, the panel shows the yellow "No safe route available" box although From is empty.  Test points: two points inside the model border, for example 21.0250, 105.7550 and 21.0255, 105.7620
 (`.claude/CLAUDE.md`, "Test points stay inside the model border").
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: sprint "3 (follow-up to US-023, placed 2026-09-30)".

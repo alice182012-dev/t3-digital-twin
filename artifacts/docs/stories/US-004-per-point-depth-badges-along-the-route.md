@@ -20,7 +20,7 @@ along the route, so I can spot flooded segments on the map itself, not just in a
 Given a route exists, when the route renders on the map, then the map shows depth badges at
 points along the route polyline where the depth changes, matching the four badges in mockup screen
 2e (not fewer, and not one badge per turn regardless of whether depth changed there).
-Priority: P0. Status: Done. Estimate: M. Sprint: 3. Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3, Story 4.
+Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3, Story 4.
 Evidence: ![[frontend-route-depth-badges-live-check.png|420]] ![[frontend-route-depth-badges-preview-check.png|420]]
 Details:
 1. What: the map shows depth badges at the stretches of the route where the depth band changes, at most 6, each a white pill with a band-colored dot and text such as "36 cm", with the deepest in bold, as in mockup screen 2e.

@@ -25,7 +25,7 @@ stored `peak_depth_m` equals the largest `depth` of the segment in `flood_road_v
 On 2026-09-30 the server held retained runs from 2026-09-29 15:00 to 16:30 and 2026-09-30 01:30 to 02:00, so the
 data exists today. `flood_mapping_full` is paused, so no new run arrives until it is unpaused. This story needs
 none. Story 4's scheduled load does need the DAG unpaused, and that stays with Story 4.
-Priority: P1. Status: Done. Estimate: XS. Sprint: 4 (added 2026-09-30). Dependencies: Story 3 (built, `Reviewed`),
+Dependencies: Story 3 (built, `Reviewed`),
 Story 2 (`US-019`, the TimescaleDB service). Story 3 moves to `Done` with this story's evidence.
 Test points: no coordinate is involved.
 Evidence: ![[us-060-extractor-check-output.png|700]]

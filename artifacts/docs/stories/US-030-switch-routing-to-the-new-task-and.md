@@ -20,7 +20,7 @@ path from depth rasters to routing data.
 Given the shadow comparison passes, when the DAG is rewritten, then tasks 4 to 8 no longer exist,
 `run_ts` comes from `flood_extent.stamp_key`, a full cycle succeeds on the server, and a graded
 `POST /route` returns a route built from the new table.
-Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: Story 3.
+Dependencies: Story 3.
 Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
 Details:
 1. What: the DAG no longer builds GeoJSON. It loads roads and computes flood on roads into `flood_road_values`, the table routing reads.

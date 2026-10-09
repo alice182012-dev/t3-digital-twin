@@ -18,7 +18,7 @@ title: "Add the `truck` and `foot` time-aware profiles"
 As a truck driver or a pedestrian, I want the same timing check for my mode, so the four modes behave alike.
 Given Story R5's engine, when `truck` and `foot` requests run on the synthetic scenarios, then each uses its
 own depth limit (35 cm and 40 cm) and passes the checker.
-Priority: P1. Status: Done. Estimate: S. Sprint: 9 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]). Dependencies: Story R5.
+Dependencies: Story R5.
 Built on 2026-10-05, tests first. `td_limit_cm` 35 for `truck` and 40 for `foot` in `config.yml`. The engine needed no change, because it reads the limit from the profile. Tests: each of the four vehicles at depths 15, 25, 32, 37, and 45 cm through `route()` and through the search, a depth equal to the limit closes the road, `ScenarioReport` now runs 32 runs (4 scenarios, 4 vehicles, with and without a detour) and passes, and a test in each language keeps `config.yml` equal to the report's limits and to `flood_utils.py`. The blocker that stopped a `foot` profile (`graphhopper-vehicle-profile-rejection`) was `resolved` on 2026-09-23 and the profile is in `config.yml`.
 Evidence: ![[us-051-scenario-check-2026-10-07.png]]
 Details:

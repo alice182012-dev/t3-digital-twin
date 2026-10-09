@@ -21,7 +21,7 @@ Given the thresholds, when the backend, `scripts/flood_metrics/extract_run.py` a
 `td_limit_cm` all read them, then there is one source, the existing test that compares `td_limit_cm` with
 `flood_utils` still passes, and the extractor's import works inside the Airflow container (the problem of
 [[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]] must not return).
-Priority: P2. Status: Done. Estimate: S. Sprint: 11. Dependencies: None.
+Dependencies: None.
 Evidence: ![[us-074-vehicle-limit-owner-2026-10-07.png]]
 Details:
 1. `VEHICLE_PROFILES` in `flood_utils.py` is the one owner of the vehicle depth thresholds.

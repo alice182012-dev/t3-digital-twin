@@ -21,7 +21,7 @@ needs a pre-computed lookup grid instead.
 Given the raster table loaded, when concurrent `ST_Value` queries run at a rate matching expected
 popup-tap traffic, then response times land within the same interactive latency budget the
 existing `GET /flood/areas` call already meets.
-Priority: P0. Status: Done. Estimate: S. Sprint: 2 (re-cut 2026-09-29). Dependencies: Story 3,
+Dependencies: Story 3,
 and the connection-reuse item in [[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]], which lands first.
 Evidence: ![[connection-pooling-and-forecast-verification.png|420]]
 Details:

@@ -23,4 +23,8 @@ and the backend passes GraphHopper's error body through in a shape `Api.ts` read
 This is todo 13 in [[frontend-todos-and-backend-dependencies]]. The user scheduled the same fix as
 [[EP-02-frontend-polish|frontend-polish]] Story 4 in [[SP-01-prd-and-backlog|sprint-plan]] Sprint 3 (2026-10-05 to 2026-10-11) on 2026-09-29, so this story is
 superseded by US-009 and left out of [[SP-02-routing-engine-foundations|sprint-plan-2]].
-Priority: P1. Status: Superseded by [[EP-02-frontend-polish|frontend-polish]] Story 4. Estimate: S. Sprint: none. Dependencies: None.
+Dependencies: None.
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: status "Superseded by [[EP-02-frontend-polish|frontend-polish]] Story 4".

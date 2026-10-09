@@ -20,7 +20,7 @@ routing data, TimescaleDB, and the route-forecast query all refer to the same ro
 Given `toa-do-duong-hanoi.geojson` (12,431 ways, each with a unique OSM id in `@id`), when the
 loader runs twice, then `road_segment` holds the same `segment_id` values both times, every way
 is present, and the pieces of each way add up to that way's length within 0.5 m.
-Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: None.
+Dependencies: None.
 Evidence: ![[road-segment-server-check.png|420]]
 Details:
 1. What: a `road_segment` table with one row per road piece, keyed by `segment_id` such as `way/11835354#0`.

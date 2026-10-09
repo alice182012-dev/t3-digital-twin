@@ -22,7 +22,7 @@ Given a run's critical path (trigger ~3.5 min, `3_calculate_depth` ~7 min, raste
 build ~6 min) sums to about 18.8 minutes against the 15-minute cycle, when the slowest steps are sped up
 or given more of the server's headroom, then four consecutive real runs publish step 1 before it becomes
 now, with a measured margin, not after.
-Priority: P2. Status: Done (re-closed 2026-10-05 on 137 runs, evidence waived by the user). Estimate: M. Sprint: 4, carried in the `TODOS.md` Backlog. Dependencies: Story 8 (`US-063`) for the retest. Independent of Sprint 3's
+Dependencies: Story 8 (`US-063`) for the retest. Independent of Sprint 3's
 frontend work. Candidate levers, to measure rather than assume: `3_calculate_depth`'s `MAX_WORKERS` is 8,
 set when two runs' depth-calc tasks could contend; the `depth_calc` pool now caps that to one at a time,
 so there may be headroom to raise it (12 logical cores available per
@@ -42,3 +42,7 @@ Details (re-closed on 137 runs, 2026-10-05):
 2. How: an analysis of the 136 completed runs (critical path from trigger start to tile build end) stayed under the 15-minute budget, with a maximum of 14.9 minutes. `scripts/pipeline_margins/report.py` was not run over the window.
 3. Why: the user judged 137 runs enough of a pattern, and wanted to start Sprint 6.
 4. Effect: `9_build_flood_tiles` grew 4.8 times over the window (90.9 s to 439.4 s). The lead is the unbounded growth of `flood_extent_polygon`, which `US-067` now prunes, and it is not verified. A later run or the replay now running can show whether the growth is gone. The blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] stays `monitoring`. Flagged for the human to confirm.
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: status "Done (re-closed 2026-10-05 on 137 runs, evidence waived by the user)".

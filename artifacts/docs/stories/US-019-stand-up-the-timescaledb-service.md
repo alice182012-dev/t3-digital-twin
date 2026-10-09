@@ -19,7 +19,7 @@ As an engineer, I want TimescaleDB running as its own Docker service, distinct f
 `storage-postgres`, so the metric extractor and population job have somewhere to write.
 Given the schema design from Story 1, when the service is added to `compose.yml` and deployed on
 the remote host, then it starts cleanly and accepts the designed schema's tables.
-Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: Story 1 (schema informs what the service needs
+Dependencies: Story 1 (schema informs what the service needs
 to support, though standing up the service itself has no hard technical blocker).
 Evidence: ![[timescaledb-service.png|420]]
 Details:

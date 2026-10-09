@@ -22,7 +22,7 @@ Given a completed run with `depth.tif` loaded for at least one `valid_time`, whe
 `GET /flood/points?lat=&lon=&valid_time=` is called for a point inside the flooded extent, then
 the response's depth value matches the value read directly from `depth.tif` at that pixel with
 `gdallocationinfo`, for one spot-checked point.
-Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: Story 1, Story 2.
+Dependencies: Story 1, Story 2.
 Evidence: ![[flood-points-endpoint.png|420]]
 Details:
 1. What: `GET /flood/points` returns the depth at a lat/lon and timestep.

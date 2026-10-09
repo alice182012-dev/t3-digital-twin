@@ -21,7 +21,6 @@ Given `marie-curie/arrival_only_simple_path.py` and the 3 depth tables in `marie
 The grid in `marie-curie/flood_scenario_grid.py` has four nodes, so it shows that option A and sticky closure differ, and it cannot show that option A scales. It produced 654 cases, with counts of 94 and 72 that `US-100` cites. If the real graph is much slower than the grid, that is a separate problem and goes to a new blocker page, not into this story.
 The result file states that one-way roads are open both ways and that travel time is length at 30 km/h (`real_graph.py`).
 `BL-027` and [[arrival-only-simple-path-reference-bl-027]] change only after this run: the blocker gets a third approach with the measured rate and runtime, and the plan gets a status entry. Both cite the grid's 654 cases and the 94 and 72 counts as evidence, labeled as grid evidence.
-Priority: P2. Status: Done. Estimate: S. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]).
 Dependencies: the option A search and its brute-force test in `marie-curie/` (written, not yet run on the real graph), `scripts/routing_experiments/real_graph.py`, and the 3 copied replay tables. The storm stages of `US-093` wait for the second replay (D-020), but this run needs only the tables that exist.
 Evidence: the verbatim summary rendered to an image, captured 2026-10-09 19:27 +07 on the Mac (`gods-macbook.local`).
 

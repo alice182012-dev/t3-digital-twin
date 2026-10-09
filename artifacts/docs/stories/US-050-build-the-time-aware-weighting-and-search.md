@@ -22,7 +22,7 @@ scenarios run for `motorbike` and `car`, with and without a detour, then the res
 from Story R2 and the checker finds no crossing of an impassable edge. The search carries the arrival time
 in its label, applies sticky closure from the departure step with a 10-minute margin, and reads the vehicle
 limit from the profile.
-Priority: P0. Status: Done. Estimate: L. Sprint: 8. Dependencies: Stories R2, R4, E2. Gate cleared: the user
+Dependencies: Stories R2, R4, E2. Gate cleared: the user
 confirmed the sticky-from-departure wording on 2026-10-02.
 Evidence: ![[us-050-scenario-check-server-output.png]]
 Details:

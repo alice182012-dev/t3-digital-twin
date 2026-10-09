@@ -19,6 +19,6 @@ As a user who drives a motorbike, a car, or a truck, I want the chart to show my
 route depth crosses it.
 Given a route and a selected mode, when the chart renders, then a second dashed line marks that mode's limit in
 centimetres, labelled, and it moves when the user selects another mode. The limits come from one owner (`US-074`).
-Priority: P3. Status: Not started. Estimate: S. Sprint: 15 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-28 to 2027-01-03), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: Story 2, and `US-074` for the limits.
+Dependencies: Story 2, and `US-074` for the limits.
 Covers the first "Try next" line of the mockup (G6).
 Evidence: None yet.

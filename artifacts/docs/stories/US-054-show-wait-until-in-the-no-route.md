@@ -22,7 +22,7 @@ the alert shows a loading line, then "The usual route is clear from HH:MM (forec
 route in the next 2 hours. Check again after the next forecast run." Given a clear route, then no advice
 appears. Given the fallback flag, then the alert shows "timing check unavailable". The alert keeps the
 existing advice to reach the safest location or stay put, and says "clear in the forecast", not "safe".
-Priority: P1. Status: Done. Estimate: S. Sprint: 10 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]). Dependencies: Story R8, and [[EP-02-frontend-polish|frontend-polish]] Story 4 in place of the superseded Story R3.
+Dependencies: Story R8, and [[EP-02-frontend-polish|frontend-polish]] Story 4 in place of the superseded Story R3.
 Built on 2026-10-05, tests first, in `floodmap/graphhopper-maps`. `NoSafeRouteMessage` asks `POST /route/departures` only when the failure was a missing connection (`SubRequest.noConnection`), and shows the loading line, then "The usual route is clear from HH:MM (forecast run HH:MM)", or "No safe route in the next 2 hours. Check again after the next forecast run.", or "Timing check unavailable" (the table is unavailable, the request fails, or no step could be judged). The base message and its advice stay. 25 new tests, 304 in all pass, `tsc` is clean, and the production build compiles. Plan: [[wait-until-alert]].
 Evidence: ![[us-054-wait-until-alert-browser-2026-10-07.png]]
 Details:

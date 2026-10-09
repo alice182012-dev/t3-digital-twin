@@ -23,7 +23,7 @@ p95 of `POST /route` are measured, then both are inside the factor. Given a fixe
 same pairs run against today's model and the reference, then the percentage of pairs whose route changes
 and the median detour ratio are recorded. The concept page [[graphhopper-backend]] and
 [[BL-011-routing-not-time-aware|routing-not-time-aware]] are updated, and the blocker moves to `resolved` only with this evidence.
-Priority: P0. Status: Done. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7.
+Dependencies: Stories R6, R7, R9, E7.
 Tooling built on 2026-10-05, tests first: `scripts/routing_proof/routing_proof.py` (25 tests, four changes make tests fail), `pairs.json` (24 pairs inside the model border), and `rollout.ps1` (untested, it needs the server). The evidence step is one run of `rollout.ps1` after the 48-hour replay ends, plus `scenario-check.sh` from the Mac. Plan: [[engine-server-proof-and-rollout]]. Gate cleared:
 the user set the latency factor of 2 on 2026-10-02, so the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1.
 

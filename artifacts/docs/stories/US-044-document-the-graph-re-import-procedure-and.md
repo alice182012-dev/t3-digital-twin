@@ -21,7 +21,7 @@ Given a re-imported graph, when a person follows the page, then the export, the 
 regenerated together. Given the old table, when a request arrives, then the reader refuses it before a
 route is served, and the log names the mismatch. The page is a concept page under
 `artifacts/docs/concepts/`.
-Priority: P1. Status: Done. Estimate: S. Sprint: 7. Dependencies: Story E3 (done).
+Dependencies: Story E3 (done).
 Split of the acceptance: the page, the Python guard, and the operator check are built here. The refusal at request time is in the Java reader, which is Story E5 (`US-043`, Sprint 8), whose acceptance already says "a table for a different graph hash is refused and both hashes are named", and the engine that serves requests comes with `US-050` and `US-052`. That half cannot be shown in Sprint 7. The user confirmed the split on 2026-10-05.
 Evidence: ![[us-044-stale-table-check-server-output.png|700]]
 Details:

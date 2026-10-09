@@ -23,7 +23,7 @@ values match the old `flood_road_values` rows, or each difference is explained (
 subsampled).
 Depth per piece is the deepest 1 m sample along the piece, stored in `depth` (decision D-006, which
 supersedes the mean and `depth_max`). The task writes `flood_road_values` in place.
-Priority: P0. Status: Done. Estimate: L. Sprint: 2. Dependencies: Story 1, Story 2.
+Dependencies: Story 1, Story 2.
 Evidence: ![[flood-on-roads-server-check.png|420]]
 Details:
 1. What: a task that computes each road piece's flood depth from the raster tiles into `flood_road_values`. `depth` is the deepest 1 m sample (D-006).

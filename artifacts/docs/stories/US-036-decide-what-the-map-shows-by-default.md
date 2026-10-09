@@ -21,7 +21,7 @@ Given the map shows the latest published step at or before now and captions it "
 user reviews [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] and [[five-minute-tile-freshness]], then the user records one
 decision on the blocker page: accept the caption and the 1.5 to 3 minute publish delay, or choose a
 freshness option and add its stories to a sprint.
-Priority: P2. Status: Done. Estimate: S for the decision. Sprint: 2. Dependencies: None.
+Dependencies: None.
 Evidence: ![[map-now-caption-as-of-0130.png|420]]
 Details:
 1. What: the map's "now" behavior (Option C, latest published step at or before now, captioned "As of
@@ -38,3 +38,7 @@ Details:
    with the legend caption "As of 30/09/2026 01:30", a step six minutes before the capture. The address bar is not
    in the image. Earlier that day the caption read 16:45, because `flood_mapping_full` was paused. The image shows the
    accepted behavior. It does not measure the publish delay, which Story 6 covers.
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: estimate "S for the decision".

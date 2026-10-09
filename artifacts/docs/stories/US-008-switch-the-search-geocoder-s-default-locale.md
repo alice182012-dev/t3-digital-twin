@@ -23,7 +23,6 @@ unrelated same-name places elsewhere. Verified live against `http://100.67.84.55
 directly (2026-09-28): "Hồ Gươm" returns only Hanoi results, ranked correctly, with Ottawa and
 Munich gone. Not yet re-verified through the actual browser UI at `100.67.84.55:8082`, only against
 the backend endpoint the frontend calls, so the story stays `Reviewed`, not `Done`.
-Priority: P2. Status: Reviewed. Estimate: S. Sprint: 1 (completed outside formal sprint tracking, 2026-09-23).
 Dependencies: None.
 Evidence: ![[frontend-vi-geocoder-check.png|420]]
 Details:
@@ -33,3 +32,7 @@ Details:
 3. Why: Vietnam-relevant suggestions, and no unsupported-locale 502.
 4. Effect: place search works on the live UI (locale fix) and now also ranks Vietnam results correctly
    (relevance fix). See [[BL-008-photon-rejects-vi-locale|photon-rejects-vi-locale]] (resolved).
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: sprint "1 (completed outside formal sprint tracking, 2026-09-23)".

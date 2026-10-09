@@ -18,7 +18,7 @@ title: "Fail a test when the backend reads a table outside the contract"
 As a maintainer, I want a guard so routing cannot grow a new hidden dependency on the core.
 Given the backend source, when the guard test scans its SQL for table names, then it passes only for tables
 listed in the contract, and a query on any other table fails it.
-Priority: P2. Status: Done. Estimate: S. Sprint: 11. Dependencies: Story C1.
+Dependencies: Story C1.
 Evidence: ![[us-075-contract-table-guard-2026-10-07.png]]
 Details:
 1. `test_backend_reads_contract_tables.py` reads the backend's SQL with `ast` and lists every table name it

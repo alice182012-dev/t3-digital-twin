@@ -20,6 +20,6 @@ for ever.
 Given a route request that gets no answer, when it has waited longer than a limit the story sets from the numbers of
 `US-035`, then the request is cancelled, the panel shows a retry message, and the loading bars stop. A request that
 answers in time is not affected.
-Priority: P2. Status: Not started. Estimate: S. Sprint: 13 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: None.
+Dependencies: None.
 Blocker tracking: [[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]]
 Evidence: None yet.

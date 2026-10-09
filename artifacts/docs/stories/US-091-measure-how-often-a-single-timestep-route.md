@@ -31,7 +31,6 @@ The sticky engine is run on the same pairs as a test. Its violation count must b
 the engine. Arrival times assume free flow, so the story adds one sensitivity case that slows travel on deep
 edges, labelled as a sensitivity case.
 Needs no new engine.
-Priority: P1. Status: In progress. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: `US-047` (the reference and the checker, `Done`), `US-050` and `US-052` (the engine behind the flag,
 `Done`), and the depth tables of the 12-hour replay of `US-089` (copied before retention removes them, see rule 5).
 The server run reads the engine proof of `US-055`, which is `In progress`. The sticky-engine check inside this story

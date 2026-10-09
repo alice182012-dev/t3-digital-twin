@@ -24,7 +24,7 @@ depth exceeds and routes the others. The limits are in `flood_utils.py`: motorbi
 truck 35 cm, and foot 40 cm. The set is built from real roads in `flood_road_values` whose depth lies
 between two limits, as the 2026-09-28 overpass did (`way/776941610#3`, 20.2 cm). The expected result of
 each road comes from the limits, not from another backend.
-Priority: P2. Status: Done (closed 2026-10-05 on 137 runs, evidence waived by the user). Estimate: M. Sprint: 5 ([[SP-02-routing-engine-foundations|sprint-plan-2]]; 2026-10-19 to 2026-10-25). Dependencies: None. The user set the soak
+Dependencies: None. The user set the soak
 length to 48 hours on 2026-10-01. The comparison with the earlier Valhalla backend is dropped (see the last
 history entry).
 Test points: inside the model border (`.claude/CLAUDE.md`).
@@ -37,3 +37,7 @@ Details (closed on 137 runs, 2026-10-05):
 2. How: the replay of `US-063` ran from 2026-10-02 16:00 +07 and stopped at 137 of 192 runs when the 2026-10-04 disk-full incident cut it. The first run on the real host (2026-10-02, 16:11 +07) passed the container check and the known-answer check (14 roads, 56 checks). The end check of `run_soak.sh` over the window was not run.
 3. Why: the user judged 137 runs enough of a pattern, and wanted to start Sprint 6.
 4. Effect: Sprint 6 can start. The 48-hour clean-logs result is not proven, and the story has no screenshot of an end check. Evidence waived by the user. The storage check `US-069` still reads the running replay. Flagged for the human to confirm.
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: status "Done (closed 2026-10-05 on 137 runs, evidence waived by the user)".

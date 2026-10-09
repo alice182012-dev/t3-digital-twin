@@ -29,7 +29,7 @@ table, and `dags/flood_mapping_dag.py`'s `9b_load_depth_raster` task runs beside
 because PostGIS disables every GDAL driver by default. `ST_Value` at one spot-checked point
 matched the source pixel of a real 9901x5656 `depth.tif` to float32 precision. Shipped in commit
 `118e04a`.
-Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
+Dependencies: None.
 Evidence: ![[depth-raster-postgis-load.png|420]]
 Details:
 1. What: each timestep's `depth.tif` becomes a row in `flood_depth_raster`.

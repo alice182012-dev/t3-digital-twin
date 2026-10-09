@@ -20,7 +20,7 @@ where I am.
 Given a viewport of 390x844, when a route result is open, then the profile row, the tabs, the chart, and the steps
 are all reachable without horizontal scroll, the legend is not covered, and the touch targets are at least 44 px.
 The mockup has no mobile design, so the story starts with a layout the user approves.
-Priority: P3. Status: Not started. Estimate: L. Sprint: 16 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2027-01-04 to 2027-01-10), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: Stories 2, 3, and 7, so the layout covers the
+Dependencies: Stories 2, 3, and 7, so the layout covers the
 final components. Covers the third "Try next" line (G6).
 Evidence: None yet.
 

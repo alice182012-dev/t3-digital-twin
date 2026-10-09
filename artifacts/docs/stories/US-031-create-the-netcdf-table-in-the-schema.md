@@ -19,7 +19,7 @@ As an operator, I want `3b_upload_netcdf_postgres` to stop failing, so a run is 
 `failed` when every other task succeeded.
 Given a database without `netcdf_files`, when `0b_ensure_schema` runs, then the table exists and
 task 3b succeeds.
-Priority: P2. Status: Done. Estimate: S. Sprint: 2. Dependencies: None.
+Dependencies: None.
 Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
 Details:
 1. What: the netcdf tables are created by the schema task.

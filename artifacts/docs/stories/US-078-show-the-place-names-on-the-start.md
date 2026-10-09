@@ -19,5 +19,5 @@ As a user looking at a route, I want the pins to carry their names, so I know wh
 panel.
 Given a route whose start and destination have names, when the map renders, then each pin shows its name next to it,
 as in screen 2e ("GO Thăng Long", "FPT Shop"). A point with only coordinates shows no label.
-Priority: P2. Status: Not started. Estimate: S. Sprint: 14 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-21 to 2026-12-27), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: Story 1. Covers G2.
+Dependencies: Story 1. Covers G2.
 Evidence: None yet.

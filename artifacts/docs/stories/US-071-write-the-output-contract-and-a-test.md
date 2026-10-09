@@ -23,7 +23,7 @@ key of a contract table differs from the page. The page covers `flood_depth_rast
 [[edge-depth-table-format]]) and the tiles in MinIO: schema, units, CRS, the time convention (UTC in the
 database, +07 in filenames), keys, retention (8 runs, 48 h for `netcdf_values`), and `flood_extent_step.published_at`
 as the readiness flag.
-Priority: P1. Status: Done. Estimate: M. Sprint: 11. Dependencies: None.
+Dependencies: None.
 Evidence: ![[us-071-live-schema-contract-2026-10-07.png]]
 Details:
 1. Built `core_contract.py` (the parser) and `test_core_contract.py` (the offline parser tests plus the live-schema

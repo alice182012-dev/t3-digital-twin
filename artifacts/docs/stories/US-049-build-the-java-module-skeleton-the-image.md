@@ -21,7 +21,7 @@ Given the pinned version and the revision from Story R1, when CI runs, then the 
 starts with the stock profiles unchanged, and a unit test reports whether a weighting that only raises
 weights keeps LM's lower bounds valid. If the test fails, the story records that the search must run
 without LM.
-Priority: P0. Status: Done. Estimate: L. Sprint: 6. Dependencies: Story R1.
+Dependencies: Story R1.
 Evidence: ![[us-049-image-smoke-test-output.png|700]]
 Details:
 1. What: a Java module in `java/time-aware-routing/` that builds against the pinned GraphHopper commit `d7dc1b06` (`12.0-SNAPSHOT`), an image that starts from the stock image's digest and runs the module, and a GitHub Actions job. `TimeAwareGraphHopper` returns the stock weighting for now.

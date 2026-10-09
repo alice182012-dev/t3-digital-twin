@@ -23,7 +23,7 @@ Given the frontend is rebuilt and running on the remote host, when each screen i
 off, screen 2c shows both empty inputs with the placeholder text, and screen 2d shows autofill
 suggestions for a query such as "C5" and for "Hồ Gươm" with no results from outside Vietnam. Any
 difference is logged as a new story or blocker.
-Priority: P2. Status: Done. Estimate: S. Sprint: 3, last row (re-cut 2026-09-29). Dependencies: Sprint 3's UI stories, so one pass checks the finished screens. Closes the
+Dependencies: Sprint 3's UI stories, so one pass checks the finished screens. Closes the
 `needs-revalidation` autofill item in `TODOS.md` and re-verifies the `vi` locale fix, which needs
 a rebuild and redeploy.
 Evidence: ![[live-2a-first-load-check.png|300]] ![[live-2c-empty-panel-check.png|300]] ![[live-2d-autofill-c5-check.png|300]] ![[live-2d-autofill-ho-guom-check.png|300]]

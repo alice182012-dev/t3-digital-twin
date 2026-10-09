@@ -21,7 +21,7 @@ Given the app is open with a route already showing on screen (any two points, an
 user taps a point on the map that isn't a query point, then a card opens at that point showing its
 name, its address, its coordinates (for example "20.992987, 105.773723"), and a "Water depth now:
 `N` cm" line, matching mockup screen 2b.
-Priority: P0. Status: Done. Estimate: M. Sprint: 3. Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3
+Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3
 (`GET /flood/points`), Story 4 (latency validation, not run, see Details). The reverse-geocoding source
 turned out to be a new backend endpoint, since the app's geocoder is forward only.
 Evidence: ![[frontend-place-depth-popup-wet.png|420]] ![[frontend-place-depth-popup-with-route.png|420]]

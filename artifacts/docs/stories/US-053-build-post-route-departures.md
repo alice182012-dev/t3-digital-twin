@@ -22,7 +22,7 @@ flood-free route with `edge_id` and `time` details, reads depth by edge id, appl
 candidate departure with a 10-minute margin, and returns each candidate as `clear`, `blocked`, or
 `unknown`, the earliest clear departure, the run, and the run's age. Candidates start at the step that
 contains now. The client sends no clock value, margin, or policy.
-Priority: P1. Status: Done. Estimate: M. Sprint: 9 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]). Dependencies: Stories E2, E3, E4, R7.
+Dependencies: Stories E2, E3, E4, R7.
 Built on 2026-10-05, tests first. `POST /route/departures` in `departures.py` (30 tests) and `edge_depth_reader.py` (21 tests, on the shared golden fixture), served by `server.py`. The route is requested with no flood model, the `edge_id` and `time` details, and the hint `td_info`, which makes the engine answer with `td.graph_hash` and `td.run` (Java, 123 module tests). Every candidate matches `sticky_reference.py` on 300 random routes and tables, and five changes make tests fail (the window end, the horizon edge, steps before the departure counted, candidates that ignore now, no hash guard). A table that is missing, damaged, or for another graph gives `status: unavailable` and a reason. The client's clock, margin, and limit are dropped. `test_server.py` passes the endpoint end to end against a stub GraphHopper. Compose mounts the table volume into `floodmap-backend`. Plan: [[route-departures-endpoint]].
 Evidence: ![[us-055-engine-server-proof-2026-10-07.png]]
 Details:

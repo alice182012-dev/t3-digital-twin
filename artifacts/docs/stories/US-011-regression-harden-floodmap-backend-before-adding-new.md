@@ -27,7 +27,7 @@ new endpoint work starts.
 against `postgis/postgis:15-3.4`. `artifacts/TODOS.md`'s broader hardening item (a soak period, a
 side-by-side comparison against the old Valhalla backend) is still open; this story covered only
 the regression-test half of that item.
-Priority: P0. Status: Done. Estimate: M. Sprint: 1. Dependencies: None.
+Dependencies: None.
 Evidence: ![[harden-floodmap-backend-tests.png|420]]
 Details:
 1. What: regression tests for `server.py` and `flood_areas.py`.

@@ -19,7 +19,7 @@ As the operator, I want task 9c to analyze the run's tiles first and cancel a st
 one slow query cannot starve the runs behind it (blocker [[BL-023-9c-sampling-step-runs-over-770-seconds|9c-sampling-step-runs-over-770-seconds]]).
 Given a step that runs past 120 s, when 9c samples it, then the build fails naming the step, no table is written,
 and the previous table stays published. Given a normal run, the table is the same as before.
-Priority: P1. Status: Done (2026-10-10). Estimate: S. Sprint: 10. Dependencies: Story E3.
+Dependencies: Story E3.
 - **2026-10-10, done.** The user approved closing the story on its own check (a step past 120 s is cancelled, a normal run gives the same table). Across all 92 runs of `9c` none went past 120 s, and all succeeded. [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] stays `monitoring`, because `9c` rose from 46 s to 96 s within chain 1 and no cause is known.
 - **2026-10-10, carried from the retired TODOS note.** On the server, run `20261006T104500` took 51.1 s and its `ANALYZE` ran.
 

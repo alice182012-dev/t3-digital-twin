@@ -19,7 +19,7 @@ As a user choosing between routes, I want each tab to show its time and its deep
 opening each.
 Given a route with alternatives, when the tabs render, then each tab shows the road name, the travel time, and the
 maximum depth along that route in centimetres.
-Priority: P3. Status: Not started. Estimate: M. Sprint: 15 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-28 to 2027-01-03), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: Story 2 (the tab text). The depth comes from
+Dependencies: Story 2 (the tab text). The depth comes from
 `POST /flood/profile` for each alternative, so check the cost of one request per tab first. Covers the second "Try
 next" line (G6).
 Evidence: None yet.

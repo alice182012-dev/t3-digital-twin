@@ -29,7 +29,7 @@ of the newest N runs are untouched, and a test with a table of N + 2 runs shows 
 it reads the real row count and size on the server.
 Read the size first. Measure the row count, the table size, and the rows per run on the server, and record them in
 [[core-output-contract]] before choosing N. The contract page already lists this table as having no retention.
-Priority: P2. Status: Done (2026-10-10). Estimate: S. Sprint: 12. Dependencies: `US-073` (the task goes into
+Dependencies: `US-073` (the task goes into
 `routing_adapter`), done as `Reviewed` on `modular`, and `US-094` (the archive of D-016 must work before the 24-hour prune runs). The size reading is better after the storm replay of `US-089`,
 because a replay writes many runs quickly.
 Evidence: None yet.

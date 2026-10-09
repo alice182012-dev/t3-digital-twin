@@ -19,7 +19,7 @@ As the operator, I want the backend to connect with a role that can only read th
 consumer cannot write into the core.
 Given the role, when the backend runs on it, then every endpoint works and an `INSERT` into any core table
 fails with a permission error.
-Priority: P1. Status: Done. Estimate: S. Sprint: 11. Dependencies: Story C1 (the table list), and
+Dependencies: Story C1 (the table list), and
 `US-055` for the server run.
 Evidence: ![[us-072-reader-role-2026-10-07.png]]
 Details:

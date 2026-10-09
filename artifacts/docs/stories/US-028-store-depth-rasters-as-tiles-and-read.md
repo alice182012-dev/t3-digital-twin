@@ -20,7 +20,7 @@ instead of unpacking a 209 MB raster, and old runs are removed.
 Given the real `depth_20260924_170639.tif`, when it is loaded as tiles, then `ST_Value` at three
 points matches `gdallocationinfo`, a lookup on the server is faster than the current 80 to 280 ms,
 and only the newest runs are kept (`FLOOD_RASTER_KEEP_RUNS`, default 8).
-Priority: P0. Status: Done. Estimate: M. Sprint: 2. Dependencies: None.
+Dependencies: None.
 Evidence: ![[raster-first-pipeline-sprint2-verification.png|420]]
 Details:
 1. What: each timestep's depth raster is stored as 256 by 256 tiles in `flood_depth_raster_tile`, read through a spatial index, and runs older than the newest `FLOOD_RASTER_KEEP_RUNS` are pruned.

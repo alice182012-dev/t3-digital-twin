@@ -21,7 +21,7 @@ Given a route exists between two points, when the route result renders, then eac
 icons in the profile row shows a travel time below it, and the selected mode's time is visually
 distinguished (bold, matching mockup screen 2e), without the user selecting each mode in turn to
 see its time.
-Priority: P2. Status: Done. Estimate: M. Sprint: 1. Dependencies: None. Known risk: four separate route
+Dependencies: None. Known risk: four separate route
 requests per query may add visible delay. Accepted for now since this isn't shown to real users
 yet (see [[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]'s Decisions).
 Evidence: ![[frontend-per-mode-travel-time.png|420]]

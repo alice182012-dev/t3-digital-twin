@@ -20,7 +20,7 @@ series, and depth history, so I can populate real data instead of guessing a sha
 Given the architecture doc's §4.9 describes the histogram split this schema must support, when the
 schema design is reviewed against that section, then it accounts for both `constant_cycle` and
 `background_cycle` data sources without needing a later migration.
-Priority: P1. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
+Dependencies: None.
 Evidence: ![[timescaledb-schema.png|420]]
 Details:
 1. What: three hypertables and a `simulation_cycle` enum.

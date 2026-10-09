@@ -20,7 +20,7 @@ know what to expect before I reach it.
 Given a route exists, when each turn-by-turn step in the expanded instructions list renders, then
 it shows its depth next to its distance on the same line ("320 m · 8 cm"), matching mockup screen
 2e.
-Priority: P0. Status: Done. Estimate: S. Sprint: 3. Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3, Story 4.
+Dependencies: [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 3, Story 4.
 Evidence: ![[frontend-per-step-depth-live-check.png|420]] ![[frontend-per-step-depth-preview-check.png|420]]
 Details:
 1. What: each step in the expanded instructions list shows the water depth at its start point after its distance, for example "134 m · 16 cm", in Flood mode. Map mode shows the distance only.

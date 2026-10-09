@@ -17,7 +17,7 @@ title: "Show the rain ingested into the simulation in the XCom of `1_trigger_sim
 
 As the pipeline owner, I want the XCom of the task `1_trigger_simulation` to show how much rain was sent to 3Di, so I can read a run's rain input in the Airflow UI without opening the log or the 3Di run.
 Given a run of `flood_mapping_full` that took the simulate branch, when `1_trigger_simulation` succeeds, then its XCom holds a key `rain_ingested` next to `sim_id`, with the run's slot, the source of the rain (Tomorrow.io, the replay file of `US-063`, or the fixed test rain), the interval count, the first and last offset in seconds, the maximum intensity in mm/h, and the total rain in mm. The numbers come from the same `[offset_seconds, m/s]` list that `run_forecast_process` sends to `simulations_events_rain_timeseries_create`, not from the forecast the rain gate saw. Given a run that fails before the rain is sent, then no `rain_ingested` is pushed.
-Priority: P2. Status: Done. Estimate: S. Sprint: 5 ([[SP-02-routing-engine-foundations|sprint-plan-2]]). Dependencies: None. Building it needs no server. Reading it on a real run needs the server.
+Dependencies: None. Building it needs no server. Reading it on a real run needs the server.
 Evidence: ![[us-068-rain-ingested-xcom.png]]
 Details:
 1. What: `1_trigger_simulation` now pushes an XCom `rain_ingested` next to `sim_id`, with the slot, the rain source (Tomorrow.io, the replay file, or the fixed test rain), the interval count, the first and last offset in seconds, the maximum mm/h, and the total mm of the series sent to 3Di.

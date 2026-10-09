@@ -19,7 +19,7 @@ As a user reading the flood legend, I want to know how current the flood-depth d
 judge whether the map reflects the latest simulation cycle.
 Given flood mode is on, when the legend renders, then it shows an "Updated" line below the color
 bands with the selected timestep's date and time.
-Priority: P2. Status: Done. Estimate: S. Sprint: 1. Dependencies: None.
+Dependencies: None.
 Evidence: ![[frontend-legend-updated-line.png|420]]
 Details:
 1. What: an "Updated" line under the legend bands.

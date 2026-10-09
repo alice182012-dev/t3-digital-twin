@@ -21,7 +21,7 @@ Given the place popup from [[EP-01-frontend-depth-features|frontend-depth-featur
 route button in the card header (or the route pill on the map pin), then the routing panel opens
 with that place's name pre-filled as the destination and the start field empty, matching mockup
 screen 2f.
-Priority: P1. Status: Done. Estimate: S. Sprint: 3. Dependencies: [[EP-01-frontend-depth-features|frontend-depth-features]]
+Dependencies: [[EP-01-frontend-depth-features|frontend-depth-features]]
 Story 1. The existing right-click menu (`floodmap/graphhopper-maps/src/map/ContextMenuContent.tsx`)
 already has a route-to action to reuse for the click handler.
 Evidence: ![[frontend-route-to-place-live-check.png|420]] ![[frontend-route-to-place-preview-check.png|420]]

@@ -20,7 +20,7 @@ be sampled per edge.
 Given the built graph on the server, when the export command runs, then it writes one row per edge with the
 edge id and its geometry in EPSG:4326, plus a hash of the graph build, and the row count equals the graph's
 edge count.
-Priority: P0. Status: Done. Estimate: M. Sprint: 6. Dependencies: Story R4 (`US-049`, done).
+Dependencies: Story R4 (`US-049`, done).
 Evidence: ![[us-039-edge-export-server-output.png|700]]
 Details:
 1. What: the export command `ExportEdges` in `java/time-aware-routing/`. It writes `edges.csv` (the header `edge_id,wkt`, then one row per edge in id order, a LINESTRING in EPSG:4326 with longitude first) and `graph.json` (the graph hash, the edge and node counts, and the GraphHopper commit), plus `export-edges.sh` to run it on the server.

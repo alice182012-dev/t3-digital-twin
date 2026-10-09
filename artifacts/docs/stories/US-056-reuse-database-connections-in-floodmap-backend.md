@@ -19,7 +19,7 @@ As a user tapping the map, I want `GET /flood/points` to answer without opening 
 so many taps stay fast.
 Given the backend pools its PostGIS connections, when requests arrive one after another and at once, then the
 median latency falls from the per-request connection cost to the lookup cost, with no error at any level tested.
-Priority: P1. Status: Done. Estimate: S. Sprint: 2. Dependencies: None. The tiled raster story it needed is deployed.
+Dependencies: None. The tiled raster story it needed is deployed.
 Recorded on 2026-09-30 from the Sprint 2 row and the blocker [[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]]. It began as a `TODOS.md` item and had no story
 in an epic file.
 Blocker tracking: [[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]]

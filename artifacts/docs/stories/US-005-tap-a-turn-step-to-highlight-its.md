@@ -22,7 +22,7 @@ expanded instructions list, then that step's segment is highlighted on the map a
 it, the same as the route-hint buttons do.
 Reuse the click handler of `RHButton` in `RoutingResults.tsx`, which dispatches `PathDetailsElevationSelected`
 and `SetBBox`.
-Priority: P3. Status: Done. Estimate: XS. Sprint: 3. Dependencies: Story 2 lands first, so there is a
+Dependencies: Story 2 lands first, so there is a
 depth to show for the highlighted segment.
 Evidence: ![[frontend-tap-step-highlight-live-check.png|420]] ![[frontend-tap-step-highlight-preview-check.png|420]]
 Details:

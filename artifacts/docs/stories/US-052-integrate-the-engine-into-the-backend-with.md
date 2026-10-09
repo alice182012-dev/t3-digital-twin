@@ -23,7 +23,7 @@ for the whole request, and returns `unknown` for a trip that ends after the last
 then the response body equals today's. Given a missing, stale, or mismatched table, then the backend routes
 with today's model and the response carries a fallback flag.
 Tests cover the flag off, a departure between steps, the horizon edge, run pinning, and the hash mismatch.
-Priority: P0. Status: Done. Estimate: M. Sprint: 9 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]). Dependencies: Stories R5, E5.
+Dependencies: Stories R5, E5.
 Built on 2026-10-05, tests first: in Java `TableProvider`, the once-per-request decision, the response hints, the departure floored to its step, and the table folder loaded after the graph (`TimeAwareRouter`, `TimeAwareGraphHopper`; 118 module tests); in Python `time_aware_route.py` (27 tests) and `server.py`; `td_limit_cm` for `motorbike` and `car` in `config.yml`; the compose `graphhopper` service on the time-aware image with the table volume mounted read-only, and `TIME_AWARE_ROUTING` (default off) on the backend. The flag-on path through the real handler passes `test_server.py` against a PostGIS and a stub GraphHopper. Plan: [[time-aware-backend-integration]].
 Evidence: ![[us-055-engine-server-proof-2026-10-07.png]]
 Details:

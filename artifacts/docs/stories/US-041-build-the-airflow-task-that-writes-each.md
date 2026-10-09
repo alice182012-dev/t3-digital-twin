@@ -21,7 +21,7 @@ Given a real run and the export from Story E1, when the task runs after `9b_load
 samples the raster tiles along each edge, stores the deepest 1 m sample in centimetres, tags the file with
 the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct
 `ST_Value` reading. An edge outside the model reads 0.
-Priority: P0. Status: Done. Estimate: L. Sprint: 7. Dependencies: Stories E1, E2 (both done).
+Dependencies: Stories E1, E2 (both done).
 Evidence: ![[us-041-edge-depth-table-server-output.png|700]]
 Details:
 1. What: task `9c_build_edge_depth_table` of `flood_mapping_full`, and the code in `scripts/edge_depth/`. For each run it writes `<run>.bin`: the deepest 1 m flood sample along every GraphHopper edge, in centimetres, at every step, in the `US-040` format, tagged with the graph hash of the export. It also has an export loader (`graph_edges.py`), a spot check (`spot_check.py`), and two server scripts.

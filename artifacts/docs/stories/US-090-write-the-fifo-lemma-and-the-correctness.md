@@ -38,7 +38,6 @@ Given the sketch in Question 3 of the reviewer-questions note, the closure rule 
 6. A plain list of what the proof does not say: it does not solve Kleff's problem with reopening windows, and it is
    exact for the sticky rule and not for the true arrival-time rule.
 The suite of `scripts/routing_reference/` passes after the new tests.
-Priority: P1. Status: Done. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: None. The user's confirmation of "sticky from departure" is already in place (2026-10-02).
 Evidence: None yet.
 

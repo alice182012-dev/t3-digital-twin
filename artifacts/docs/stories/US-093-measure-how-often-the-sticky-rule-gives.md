@@ -31,7 +31,6 @@ This is the backlog row "Measure how many routes arrival-only closure would chan
 into a story. The row said it needed the engine shipped first. The engine is deployed behind the flag (`US-052`,
 `Done`), and the sticky side can come from the reference with a real table, so only the arrival-only search and the
 depth tables are missing.
-Priority: P2. Status: In progress. Estimate: S. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: `US-047` (the reference), `US-050` (the engine, for a cross-check of the sticky side on a sample of
 pairs), the depth tables of the 12-hour replay (rule 5), and the pair sampler of `US-091` if it is ready. The sampler
 can be copied if not.

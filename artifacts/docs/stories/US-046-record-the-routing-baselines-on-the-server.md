@@ -21,7 +21,7 @@ Given the running stack on the server, when the measurements run, then the block
 p95 of `POST /route` (flexible mode with LM) for a short, a medium, and a long Hanoi trip, the edge count of
 `hanoi-model-area.osm.pbf`, the source revision of the pinned GraphHopper image, and the step length and
 count of one real run.
-Priority: P0. Status: Done. Estimate: S. Sprint: 5. Dependencies: None. The latency numbers waited for the `US-037` knob, which settled on 2026-10-02.
+Dependencies: None. The latency numbers waited for the `US-037` knob, which settled on 2026-10-02.
 Evidence: ![[us-046-baselines-check-output.png|700]]
 Details:
 1. What: the server's baselines are written in "Baselines on the server" of [[BL-011-routing-not-time-aware|routing-not-time-aware]]. The graph has 67,833 edges, the image's source is GraphHopper commit `d7dc1b06`, a run has 8 steps 15 minutes apart, and the p50 and p95 of `POST /route` are recorded for a short, a medium, and a long trip in four setups.

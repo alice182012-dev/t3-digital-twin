@@ -24,7 +24,7 @@ when the metric extractor runs against that run's `run_ts`, then querying its ou
 returns a row per road segment per vehicle type with a non-null time-to-peak, pre-closure time,
 and T+1h forecast depth, matching the values computable by hand from the same run's raw depth
 rasters for one spot-checked segment.
-Priority: P1. Status: Done. Estimate: L. Sprint: 4 (re-cut 2026-09-29). Dependencies: None (reads `calculate_depth.py`'s output
+Dependencies: None (reads `calculate_depth.py`'s output
 directly, independent of TimescaleDB).
 Evidence: ![[us-060-extractor-check-output.png|700]]
 Details:

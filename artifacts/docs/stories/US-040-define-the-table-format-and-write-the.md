@@ -21,7 +21,7 @@ Given a fixture of a few thousand edges and 9 steps, when the writer writes it a
 then every edge and step returns its value. The header holds a version, the graph hash, the run name, the
 step times, and the edge count. The reader refuses a file with a wrong version or a truncated body.
 A pointer file named `latest` names the current table.
-Priority: P0. Status: Done. Estimate: S. Sprint: 5. Dependencies: None.
+Dependencies: None.
 Evidence: ![[us-040-table-check-output.png|700]]
 Details:
 1. What: file format version 1 for one run's depth by edge id, a Python reader and writer, and the `latest` pointer file. The format is in [[edge-depth-table-format]].

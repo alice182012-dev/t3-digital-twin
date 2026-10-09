@@ -21,7 +21,7 @@ Given the shared fixture, when the Java reader reads it, then it returns the sam
 reader for every edge and step. Given a table for a different graph hash, then the reader refuses it and
 names both hashes. Given a new `latest` pointer, then the engine memory-maps the new table within 30
 seconds, and a request in flight finishes on the old table.
-Priority: P0. Status: Done. Estimate: M. Sprint: 8. Dependencies: Stories E2, R4.
+Dependencies: Stories E2, R4.
 Evidence: ![[us-043-java-reader-server-output.png]]
 Details:
 1. What: the Java reader of the edge depth table in `java/time-aware-routing/`: `EdgeDepthTable` (memory-mapped, read-only), `LatestTableSource` (follows `latest`), `GraphHash` (extracted from `ExportEdges`), `EdgeDepthTableTool`, and `reader-check.sh`.

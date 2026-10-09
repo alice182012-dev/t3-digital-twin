@@ -19,7 +19,7 @@ As a user, I want a route with a description to show its tab, so the app never g
 Given a route response whose `description` is a list of strings (for example `["Đường Hoàng Tùng"]`), when
 the route panel renders, then the tab is labeled with that text and the app stays up. A response with no
 description, an empty one, or one that is not text still labels the tab "Route N".
-Priority: P0. Status: Done. Estimate: XS. Sprint: 3 (found 2026-09-30). Dependencies: None.
+Dependencies: None.
 Blocker tracking: [[BL-017-route-description-list-blanks-app|route-description-list-blanks-app]]
 Evidence: ![[frontend-route-description-list-live-check.png|420]] ![[frontend-route-description-list-preview-check.png|420]]
 Details:
@@ -27,3 +27,7 @@ Details:
 2. How: `descriptionText` in `routingResultsView.ts` reads the description as text or a list of text. `buildRouteTabs` uses it in both places it read the field.
 3. Why: `.trim` on a list threw `trim is not a function` and blanked the whole app.
 4. Effect: four new tests failed with the exact production error before the fix. On a preview build on the server, a response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up. Deployed 2026-09-30 (`5d08b99`). On the live site the response with `["Đường Hoàng Tùng"]` shows the tab "Đường Hoàng Tùng" and the app stays up (`frontend-route-description-list-live-check.png`).
+
+## Status history
+
+- **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed. It also said: sprint "3 (found 2026-09-30)".

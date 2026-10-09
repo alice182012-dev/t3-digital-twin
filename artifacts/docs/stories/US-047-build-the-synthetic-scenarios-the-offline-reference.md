@@ -22,7 +22,7 @@ four scenarios of [[BL-011-routing-not-time-aware|routing-not-time-aware]] run t
 results match the sticky column of the test table. Given any returned route, when the checker re-walks it
 with per-edge times, then it reports whether the route crosses an edge that is impassable at its arrival
 step.
-Priority: P0. Status: Done. Estimate: M. Sprint: 5. Dependencies: None.
+Dependencies: None.
 Evidence: ![[us-047-reference-check-output.png|700]]
 Details:
 1. What: a slow reference search under sticky closure, a route checker, and the four scenarios of the blocker's test table ([[sticky-routing-reference]]).

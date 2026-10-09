@@ -21,7 +21,7 @@ Given the app is open with a route showing, when the user moves through the page
 toggle has `aria-pressed` and responds to Enter and Space, the route tabs have `role="tablist"` and
 `role="tab"` with `aria-selected` and move with the arrow keys, every control has a touch target of at
 least 44 px, and the legend text has a contrast ratio of at least 4.5:1 against its background.
-Priority: P2. Status: Done. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None. The components exist.
+Dependencies: None. The components exist.
 `PlainButton` likely covers baseline keyboard use already. The route tabs have no ARIA precedent in the
 codebase.
 Evidence: ![[frontend-route-tabs-keyboard-live-check.png|420]] ![[frontend-route-tabs-keyboard-preview-check.png|420]]

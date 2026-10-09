@@ -31,7 +31,7 @@ The news reports of the storm give station totals (about 200 mm at the heaviest 
 event file comes from the satellite series and not from those totals. IMERG averages a 0.1 degree grid over the
 model extent, so its total is lower than a station's. The story records both numbers and does not scale the series
 to match the stations.
-Priority: P1. Status: Done. Estimate: S. Sprint: 12. Dependencies: A NASA Earthdata login in `~/.netrc` on the
+Dependencies: A NASA Earthdata login in `~/.netrc` on the
 Mac, and the Python packages the scripts import (`earthaccess`, `h5py`, `fiona`, `pyproj`, `numpy`), which the Mac
 has. The story needs no server.
 Evidence: None yet.

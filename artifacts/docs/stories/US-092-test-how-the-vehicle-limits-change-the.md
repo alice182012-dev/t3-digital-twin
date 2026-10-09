@@ -28,7 +28,6 @@ The provenance of the four limits is already searched (`marie-curie/vehicle-limi
 does not repeat the search. It copies the verdicts into the result file: car 30 cm supported for a small passenger
 car, motorbike 20 cm partly supported, truck 35 cm no source, foot 40 cm partly supported and conservative.
 Copy the note out of `marie-curie/` first, because that folder is disposable.
-Priority: P2. Status: In progress. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: `US-091` (its harness and its pair set), so the two stories sit in one sprint and the second starts
 when the first has a working harness. If the harness slips, this story moves to Sprint 13 of [[SP-04-frontend-recheck|sprint-plan-4]]
 (the rule is in the Risks table of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]).

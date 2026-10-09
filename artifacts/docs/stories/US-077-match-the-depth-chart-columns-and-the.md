@@ -23,6 +23,6 @@ green, with the dashed line at its depth. Given a route with a road description,
 reads "Via `road`", and a tab with no unique description still reads "Route N".
 The pipeline publishes 15-minute steps, so the chart takes every second step. The PRD decision of 2026-09-23 ("30
 minutes, matching the mockup") stays true for the chart.
-Priority: P2. Status: Not started. Estimate: S. Sprint: 14 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-21 to 2026-12-27), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: Story 1 (screenshots of the chart and the
+Dependencies: Story 1 (screenshots of the chart and the
 tabs). Covers G1 and G3.
 Evidence: None yet.

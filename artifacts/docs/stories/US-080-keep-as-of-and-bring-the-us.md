@@ -22,5 +22,5 @@ Given the legend in flood mode, when it renders, then it reads "As of `time`" fo
 (`US-007`) say the same, and its screenshot is retaken from the live app.
 Decided by the user on 2026-10-07: keep "As of" ([[decision-log]] D-010). This settles the legend part of
 [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]. The blocker stays `monitoring` for the pipeline delay.
-Priority: P3. Status: Not started. Estimate: XS. Sprint: 13 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: None. Covers G5.
+Dependencies: None. Covers G5.
 Evidence: None yet.

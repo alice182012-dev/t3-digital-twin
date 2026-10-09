@@ -23,7 +23,7 @@ output for an institution, when its histogram table is queried directly for that
 hourly bars, then bars 1 through 6 return `constant_cycle` data and bars 7 through 24 return
 `background_cycle` data, per the architecture doc's §4.9 split. No serving endpoint exists yet.
 this checks the stored data directly.
-Priority: P1. Status: Dropped (2026-10-01, D-009 in [[decision-log]]). Estimate: M. Sprint: 4 (re-cut 2026-09-29). Dependencies: Story 2, Story 3, [[EP-06-raster-first-pipeline|raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
+Dependencies: Story 2, Story 3, [[EP-06-raster-first-pipeline|raster-first-pipeline-stories]] Story 1 (the `segment_id`), and
 [[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]].
 
 ## Status history

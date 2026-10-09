@@ -26,5 +26,5 @@ license and notice files to stay with the code. The settings box links to `graph
 imprint, privacy, and terms. They describe GraphHopper GmbH's service and not this app, so they go too.
 Decided by the user on 2026-10-07: delete "Powered by" if possible, and delete the settings links
 ([[decision-log]] D-010).
-Priority: P3. Status: Not started. Estimate: XS. Sprint: 13 ([[SP-04-frontend-recheck|sprint-plan-4]]; 2026-12-14 to 2026-12-20), moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: None. Covers G4.
+Dependencies: None. Covers G4.
 Evidence: None yet.

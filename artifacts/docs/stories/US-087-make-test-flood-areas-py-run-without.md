@@ -29,7 +29,7 @@ and `FLOOD_TEST_DSN`, and runs the test to a real pass. A test that skips in CI 
 command that works from the repository root.
 The earlier log line said the test "failed at `5e4a314` already". The cause is the missing path, not a change to the
 code under test, so check that the test body passes against a real PostGIS before the story closes.
-Priority: P3. Status: Done. Estimate: S. Sprint: 12. Dependencies: None. CI needs the repository's GitHub
+Dependencies: None. CI needs the repository's GitHub
 Actions, which `java-module.yml` already uses.
 Evidence: None yet.
 

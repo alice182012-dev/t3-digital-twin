@@ -26,7 +26,7 @@ Also measure the routing panel's wait for a pair with no connection. On the live
 kept its grey loading bars for more than 9 seconds before the yellow "No safe route available" box appeared
 ([[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]]). Record the seconds per mode, and whether the four per-mode requests of
 [[EP-02-frontend-polish|frontend-polish]] Story 1 add to it.
-Priority: P3. Status: Done. Estimate: S. Sprint: 4 (re-cut 2026-09-29). Dependencies: None.
+Dependencies: None.
 Evidence: ![[us-035-loading-check-output.png|700]]
 Details:
 1. What: the live app's load and the wait for a no-connection pair were measured. The app does not load slowly, so the item is closed.
