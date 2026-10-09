@@ -4,8 +4,8 @@
 
 ## Next action:
 1. Done on 2026-10-09 from the server's own desktop session: `rollout.ps1 -Branch modular` rebuilt and recreated the three images/services (log: `C:\Users\TECOTEC\rollout-proof.log`), every script check passed, and the shallow-road check (flag on, `POST /route` for the "long" trip with truck/foot) returned two paths with `td.kinds: "recommended,through_water"`. `US-097` moved to `Done`, evidence `us-097-through-water-route-output.png`. The flag is off again.
-2. Run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it. This step needs the Mac session, not the server.
-3. Start the real-graph run of `US-092` and `US-093` after step 2: load the node columns into a `Graph`, then run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
+2. Done on 2026-10-09 (`SKIP_BUILD=1 IMAGE=graphhopper-time-aware:local`, no build; blocker `resolved`). Original step: run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it. This step needs the Mac session, not the server.
+3. The loader exists (`scripts/routing_experiments/real_graph.py`) and a smoke sweep ran on the real graph. Still to do: run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
 4. Add a test for a via request with a shallow road (`TimeAwareRouterTest`), the one case `US-097` does not cover.
 5. After Sprint 12, run the second replay with `EDGE_TABLE_KEEP_RUNS` raised, and take the `US-069` readings on time.
 
@@ -176,4 +176,4 @@ The unresolved blockers are:
 5. [[place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
 6. [[sticky-closure-clock-anchored-at-floored-departure]], monitoring, fixed in code by `US-096`. It resolves after the next rollout rebuilds the `graphhopper` image. It blocks no build.
 7. [[engine-has-no-depth-band-cost]], `resolved` by D-021 on 2026-10-09.
-8. [[edge-export-has-no-node-ids]], open. It blocks a real-graph run of `US-092` and `US-093`, which also wait for the second replay.
+8. [[edge-export-has-no-node-ids]], `resolved` on 2026-10-09. The real-graph run of `US-092` and `US-093` waits only for the second replay.

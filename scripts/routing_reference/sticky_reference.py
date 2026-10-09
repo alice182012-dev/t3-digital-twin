@@ -34,7 +34,11 @@ class Edge:
 
 
 class Graph:
-    def __init__(self, edges: Iterable[Edge]) -> None:
+    """both_directions adds, for each edge, an arc from head to tail with the same id. GraphHopper edges are
+    bidirectional and one edge id covers both directions, as in the rows of the edge depth table. edge() and
+    edges() return each edge once, in the direction it was given."""
+
+    def __init__(self, edges: Iterable[Edge], *, both_directions: bool = False) -> None:
         self._edges: dict[int, Edge] = {}
         self._out: dict[int, list[Edge]] = {}
         for e in edges:
@@ -42,6 +46,8 @@ class Graph:
                 raise ValueError(f"edge id {e.id} appears twice")
             self._edges[e.id] = e
             self._out.setdefault(e.tail, []).append(e)
+            if both_directions:
+                self._out.setdefault(e.head, []).append(Edge(e.id, e.head, e.tail, e.seconds))
 
     def edge(self, edge_id: int) -> Edge:
         return self._edges[edge_id]
