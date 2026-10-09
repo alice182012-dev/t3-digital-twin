@@ -47,7 +47,7 @@ class CompareTest(unittest.TestCase):
 
     def test_an_inexact_arrival_only_search_is_recorded_as_inexact(self):
         graph = Graph([Edge(0, 0, 1, 10), Edge(1, 0, 1, 1000), Edge(5, 1, 2, 10)])
-        r = compare(graph, 0, 2, {5: [30, 0, 0]}, margin_s=0, max_labels_per_node=1)
+        r = compare(graph, 0, 2, {5: [30, 0, 0]}, margin_s=0, max_expansions=1)
         self.assertEqual((r.outcome, r.extra_s, r.exact), (Outcome.INEXACT, None, False))
 
     def test_a_departure_before_the_first_step_is_refused(self):
@@ -76,7 +76,7 @@ class ContainmentTest(unittest.TestCase):
             margin_s = rng.choice([0, 300, 600, 1200])
             with self.subTest(case=case):
                 r = sc.compare(graph, origin, destination, departure_s, departure_step_s, STEPS, table(by_edge), 20,
-                               margin_s, max_labels_per_node=64)
+                               margin_s)
                 if r.outcome is Outcome.INEXACT:
                     continue
                 exact_cases += 1

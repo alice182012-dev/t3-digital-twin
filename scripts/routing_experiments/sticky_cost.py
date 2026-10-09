@@ -23,7 +23,7 @@ _REFERENCE = str(HERE.parent / "routing_reference")
 if _REFERENCE not in sys.path:
     sys.path.insert(0, _REFERENCE)
 
-from arrival_only import ArrivalOnlyClosure, earliest_arrival_arrival_only  # noqa: E402
+from arrival_only import DEFAULT_MAX_EXPANSIONS, ArrivalOnlyClosure, earliest_arrival_arrival_only  # noqa: E402
 from sticky_reference import Graph, StickyClosure, earliest_arrival  # noqa: E402
 
 SAME_TOLERANCE_S = 1e-6
@@ -54,7 +54,7 @@ def compare(
     depth_cm: Callable[[int, int], int],
     limit_cm: int,
     margin_s: float,
-    max_labels_per_node: int = 16,
+    max_expansions: int = DEFAULT_MAX_EXPANSIONS,
 ) -> CompareRecord:
     if departure_s < step_seconds[0]:
         raise ValueError("the departure is before the first forecast step")
@@ -62,7 +62,7 @@ def compare(
         graph, origin, destination, StickyClosure(tuple(step_seconds), depth_cm, limit_cm, departure_s, margin_s, departure_step_time_s)
     )
     arrival_only = earliest_arrival_arrival_only(
-        graph, origin, destination, ArrivalOnlyClosure(step_seconds, depth_cm, limit_cm), departure_s, max_labels_per_node
+        graph, origin, destination, ArrivalOnlyClosure(step_seconds, depth_cm, limit_cm), departure_s, max_expansions
     )
     if not arrival_only.exact:
         return CompareRecord(Outcome.INEXACT, None, False)
