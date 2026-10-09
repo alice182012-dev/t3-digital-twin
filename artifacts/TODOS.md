@@ -3,7 +3,7 @@
 ## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
 ## Next action:
-1. Second replay after Sprint 12 (D-020). Before it starts, raise `EDGE_TABLE_KEEP_RUNS` (for example to 60), so the depth tables of the whole storm stay on disk. Take the hour-6 and hour-12 readings on time for `US-069`, then run `replay.ps1 stop`. This unblocks the storm stages of `US-091`, `US-092`, and `US-093`.
+1. The second replay is running (started on 2026-10-09 at your go, D-020). `EDGE_TABLE_KEEP_RUNS` is 60 in the server's `compose.yml` (a local edit there, not committed) and in the worker. Chain 1 runs 13:30 to 19:15 +07 on 2026-10-09 (24 runs), chain 2 runs 20:30 to 00:45 +07 on 2026-10-10 (18 runs). Take the hour-6 reading at about 19:30 +07 and the hour-12 reading after 00:45 +07 for `US-069`, copy the tables to `marie-curie/`, then run `replay.ps1 stop` and pause the DAG. This unblocks the storm stages of `US-091`, `US-092`, and `US-093`.
 2. Run the real-graph sweeps of `US-092` and `US-093` on the tables of that replay. The loader is `scripts/routing_experiments/real_graph.py`. The result file must say that one-way roads are open both ways and that travel time is length at 30 km/h.
 3. Read the `9c` durations of the next `routing_adapter` runs (`US-070`). The task `prune_flood_road_values` also runs inside Airflow for the first time, which moves `US-086` to `Done`.
 4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. `US-095` and the `netcdf_values` drop wait for it, and the drop needs your explicit go.
