@@ -2,7 +2,8 @@ import random
 import unittest
 
 import precaution as pc
-from precaution import PlanOptions
+from precaution import FractionRow, PlanOptions
+from sticky_cost import Distribution
 from sticky_reference import Edge, Graph
 
 STEPS = (0, 900, 1800)
@@ -94,6 +95,36 @@ class ContainmentTest(unittest.TestCase):
         self.assertGreater(both, 20)
         self.assertGreater(fallback, 5)
         self.assertGreater(skipped, 20)
+
+
+class SweepFractionTest(unittest.TestCase):
+    def test_counts_each_outcome_per_vehicle_and_fraction(self):
+        graph = Graph([Edge(0, 0, 1, 100), Edge(1, 1, 2, 100), Edge(2, 0, 2, 500), Edge(3, 3, 4, 100), Edge(4, 5, 6, 100)])
+        by_edge = {1: [15, 15, 15], 3: [15, 15, 15], 4: [30, 30, 30]}
+        pairs = [(0, 2), (3, 4), (5, 6), (6, 5), (0, 1)]
+        out = pc.sweep_fraction(graph, pairs, 0, 0, STEPS, table(by_edge), 600, {"car": 20}, [0.5])
+        self.assertEqual(
+            out[("car", 0.5)],
+            FractionRow(
+                n_routed=3,
+                n_no_route=2,
+                share_recommended_under_precaution=2 / 3,
+                share_flagged=1 / 3,
+                share_single_option=2 / 3,
+                share_search_skipped=1 / 3,
+                extra_s=Distribution(n=3, mean=100.0, median=0.0, p90=300.0, max=300.0),
+            ),
+        )
+
+    def test_a_vehicle_with_no_routed_pair_has_no_shares(self):
+        out = pc.sweep_fraction(NO_DETOUR, [(2, 0)], 0, 0, STEPS, table({}), 600, {"foot": 40}, [0.5])
+        self.assertEqual(out[("foot", 0.5)], FractionRow(0, 1, None, None, None, None, None))
+
+    def test_a_higher_limit_admits_the_shallow_road_and_cuts_the_extra_time(self):
+        out = pc.sweep_fraction(WITH_DETOUR, [(0, 2)], 0, 0, STEPS, table({1: [25, 25, 25]}), 600,
+                                {"car": 30, "motorbike": 20}, [0.5])
+        self.assertEqual(out[("car", 0.5)].extra_s.max, 300)
+        self.assertEqual(out[("motorbike", 0.5)].extra_s.max, 0)
 
 
 if __name__ == "__main__":

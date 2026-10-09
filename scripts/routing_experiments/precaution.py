@@ -12,13 +12,14 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable, Mapping, Sequence
 
 HERE = Path(__file__).resolve().parent
 _REFERENCE = str(HERE.parent / "routing_reference")
 if _REFERENCE not in sys.path:
     sys.path.insert(0, _REFERENCE)
 
+from sticky_cost import Distribution  # noqa: E402
 from sticky_reference import Graph, Route, StickyClosure, earliest_arrival, find_crossings  # noqa: E402
 
 DepthLookup = Callable[[int, int], int]
@@ -59,3 +60,58 @@ def plan_options(
     if precaution_route is None:
         return PlanOptions(limit_route, None, True, True)
     return PlanOptions(precaution_route, limit_route, False, True)
+
+
+@dataclass(frozen=True)
+class FractionRow:
+    """Shares are None when no pair has a route under the limit. extra_s is the recommended route's end minus the
+    limit route's end over every routed pair, so pairs with the same route are in it as zeros."""
+
+    n_routed: int
+    n_no_route: int  # pairs with no route under the limit, left out of every share
+    share_recommended_under_precaution: float | None
+    share_flagged: float | None
+    share_single_option: float | None
+    share_search_skipped: float | None
+    extra_s: Distribution | None
+
+
+def sweep_fraction(
+    graph: Graph,
+    pairs: Sequence[tuple[int, int]],
+    departure_s: float,
+    departure_step_time_s: float,
+    step_seconds: Sequence[float],
+    depth_cm: DepthLookup,
+    margin_s: float,
+    limits: Mapping[str, int],
+    fractions: Sequence[float],
+) -> dict[tuple[str, float], FractionRow]:
+    out = {}
+    for vehicle, limit_cm in limits.items():
+        for fraction in fractions:
+            options = [
+                plan_options(graph, o, d, departure_s, departure_step_time_s, step_seconds, depth_cm, limit_cm, fraction, margin_s)
+                for o, d in pairs
+            ]
+            routed = [x for x in options if x.recommended is not None]
+            out[(vehicle, fraction)] = _row(routed, len(options) - len(routed))
+    return out
+
+
+def _row(routed: list[PlanOptions], n_no_route: int) -> FractionRow:
+    n = len(routed)
+
+    def share(count: int) -> float | None:
+        return count / n if n else None
+
+    extra = [x.recommended.end_s - x.second.end_s if x.second else 0.0 for x in routed]
+    return FractionRow(
+        n,
+        n_no_route,
+        share(sum(not x.flagged_through_water for x in routed)),
+        share(sum(x.flagged_through_water for x in routed)),
+        share(sum(x.second is None for x in routed)),
+        share(sum(not x.ran_precaution_search for x in routed)),
+        Distribution.of(extra),
+    )
