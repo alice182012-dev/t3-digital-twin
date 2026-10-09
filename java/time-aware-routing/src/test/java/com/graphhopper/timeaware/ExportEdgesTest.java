@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphhopper.GraphHopperConfig;
 import com.graphhopper.config.Profile;
 import com.graphhopper.json.Statement;
+import com.graphhopper.routing.util.AllEdgesIterator;
+import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.util.CustomModel;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +64,7 @@ class ExportEdgesTest {
         assertEquals(4, result.edgeCount());
         assertEquals(5, result.nodeCount());
         List<String> lines = Files.readAllLines(tmp.resolve("out/edges.csv"));
-        assertEquals("edge_id,wkt", lines.get(0));
+        assertEquals("edge_id,wkt,base_node,adj_node", lines.get(0));
         assertEquals(result.edgeCount(), rows(tmp.resolve("out/edges.csv")).size());
     }
 
@@ -97,7 +99,7 @@ class ExportEdgesTest {
         List<Integer> pointCounts = new ArrayList<>();
         boolean sawShapePointEdge = false;
         for (String row : rows(tmp.resolve("out/edges.csv"))) {
-            String wkt = row.substring(row.indexOf(',') + 1).replace("\"", "");
+            String wkt = row.substring(row.indexOf('"') + 1, row.lastIndexOf('"'));
             assertTrue(wkt.startsWith("LINESTRING ("), wkt);
             String[] points = wkt.substring("LINESTRING (".length(), wkt.length() - 1).split(", ");
             pointCounts.add(points.length);
@@ -127,6 +129,32 @@ class ExportEdgesTest {
         assertEquals(4, json.get("edge_count").asInt());
         assertEquals(5, json.get("node_count").asInt());
         assertEquals("d7dc1b069d2d091c7cfdc007d99d1765c82e618d", json.get("graphhopper_commit").asText());
+        assertEquals(2, json.get("format_version").asInt());
+    }
+
+    /** The node ids are the GraphHopper ids that GraphHash reads, so a reader can join an edge to its nodes. */
+    @Test
+    void eachRowEndsWithTheBaseAndAdjacentNodeIdOfItsEdge(@TempDir Path tmp) throws Exception {
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
+
+        ExportEdges.export(graph, tmp.resolve("out"));
+
+        List<String> expected = new ArrayList<>();
+        BaseGraph opened = ExportEdges.openReadOnly(graph);
+        try {
+            AllEdgesIterator edges = opened.getAllEdges();
+            while (edges.next()) expected.add(edges.getEdge() + "," + edges.getBaseNode() + "," + edges.getAdjNode());
+        } finally {
+            opened.close();
+        }
+        List<String> actual = new ArrayList<>();
+        for (String row : rows(tmp.resolve("out/edges.csv"))) {
+            String[] tail = row.substring(row.lastIndexOf('"') + 2).split(",");
+            assertEquals(2, tail.length, row);
+            actual.add(row.substring(0, row.indexOf(',')) + "," + tail[0] + "," + tail[1]);
+        }
+        assertEquals(4, actual.size());
+        assertEquals(expected, actual);
     }
 
     @Test

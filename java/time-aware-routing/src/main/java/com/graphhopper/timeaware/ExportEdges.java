@@ -25,8 +25,8 @@ import java.nio.file.Path;
  * <p>
  * Writes two files into the output folder:
  * <ul>
- *   <li>{@code edges.csv}: the header {@code edge_id,wkt}, then one row per edge in edge-id order. {@code wkt} is a
- *   LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node.</li>
+ *   <li>{@code edges.csv}: the header {@code edge_id,wkt,base_node,adj_node}, then one row per edge in edge-id order. {@code wkt} is a
+ *   LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node. {@code base_node} and {@code adj_node} are the GraphHopper node ids of the edge, as GraphHash reads them.</li>
  *   <li>{@code graph.json}: the graph hash, the edge and node counts, and the GraphHopper commit.</li>
  * </ul>
  * The graph is opened read-only, so the folder can be a read-only mount.
@@ -38,7 +38,7 @@ import java.nio.file.Path;
 public final class ExportEdges {
 
     /** Bump when the columns, the geometry format, or the hash input change. */
-    static final int FORMAT_VERSION = 1;
+    static final int FORMAT_VERSION = 2;
 
     static final double SCALE = 1e7;
 
@@ -106,12 +106,13 @@ public final class ExportEdges {
         int edgeCount = graph.getEdges();
         int nodeCount = graph.getNodes();
         try (BufferedWriter csv = Files.newBufferedWriter(outputDir.resolve("edges.csv"), StandardCharsets.UTF_8)) {
-            csv.write("edge_id,wkt\n");
+            csv.write("edge_id,wkt,base_node,adj_node\n");
             AllEdgesIterator edges = graph.getAllEdges();
             int rows = 0;
             while (edges.next()) {
                 PointList points = edges.fetchWayGeometry(FetchMode.ALL);
-                csv.write(edges.getEdge() + ",\"" + lineString(points) + "\"\n");
+                csv.write(edges.getEdge() + ",\"" + lineString(points) + "\","
+                        + edges.getBaseNode() + "," + edges.getAdjNode() + "\n");
                 rows++;
             }
             if (rows != edgeCount) {
