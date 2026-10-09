@@ -42,6 +42,7 @@ class CompareRecord:
     outcome: Outcome
     extra_s: float | None  # sticky end minus arrival-only end, set when both routes exist
     exact: bool
+    extra_s_at_most: float | None = None  # set on an inexact record when sticky has a route
 
 
 def compare(
@@ -65,7 +66,14 @@ def compare(
         graph, origin, destination, ArrivalOnlyClosure(step_seconds, depth_cm, limit_cm), departure_s, max_expansions
     )
     if not arrival_only.exact:
-        return CompareRecord(Outcome.INEXACT, None, False)
+        if sticky is None:
+            return CompareRecord(Outcome.INEXACT, None, False)
+        # A sticky route is also an arrival-only route, so the arrival-only answer lies between the proven
+        # lower bound and the sticky end.
+        extra_at_most = sticky.end_s - arrival_only.lower_bound_s
+        if extra_at_most < -SAME_TOLERANCE_S:
+            raise ValueError("the arrival-only lower bound is later than the sticky end: the closed sets are not nested")
+        return CompareRecord(Outcome.INEXACT, None, False, max(extra_at_most, 0.0))
     if arrival_only.route is None:
         if sticky is not None:
             raise ValueError("sticky found a route that arrival-only cannot: the closed sets are not nested")
@@ -98,13 +106,15 @@ class Distribution:
 @dataclass(frozen=True)
 class Summary:
     """The shares use the exact records as their base. extra_s covers every exact record where both routes
-    exist, so cases with no extra time are in it as zeros."""
+    exist, so cases with no extra time are in it as zeros. inexact_extra_s_at_most covers the inexact records
+    where sticky has a route: each value is a proven upper bound on that record's extra time."""
 
     n: int
     n_inexact: int
     share_sticky_no_route: float | None
     share_sticky_longer: float | None
     extra_s: Distribution | None
+    inexact_extra_s_at_most: Distribution | None = None
 
 
 def summarize(records: Iterable[tuple[Hashable, CompareRecord]]) -> dict[Hashable, Summary]:
@@ -126,4 +136,5 @@ def _summary(group: list[CompareRecord]) -> Summary:
         share(Outcome.STICKY_NO_ROUTE),
         share(Outcome.STICKY_LONGER),
         Distribution.of([r.extra_s for r in exact if r.extra_s is not None]),
+        Distribution.of([r.extra_s_at_most for r in group if r.extra_s_at_most is not None]),
     )

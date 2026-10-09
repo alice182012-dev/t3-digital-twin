@@ -56,8 +56,12 @@ class ArrivalOnlyClosure:
 
 @dataclass(frozen=True)
 class ArrivalOnlyResult:
+    """lower_bound_s is set when the search ran out of budget. No route can end before it: the smallest bound of
+    any label still in the queue is at most the end of every route the search has not reached."""
+
     route: Route | None
     exact: bool
+    lower_bound_s: float | None = None
 
 
 @dataclass(frozen=True)
@@ -100,11 +104,11 @@ class SimplePathSearch:
         pushed = 0
         expansions = 0
         while queue:
-            _, _, _, label = heapq.heappop(queue)
+            bound_s, _, _, label = heapq.heappop(queue)
             if label.node == destination:
                 return ArrivalOnlyResult(_route(label), exact=True), expansions
             if expansions >= max_expansions:
-                return ArrivalOnlyResult(None, exact=False), expansions
+                return ArrivalOnlyResult(None, exact=False, lower_bound_s=bound_s), expansions
             expansions += 1
             for edge in self._graph.out_edges(label.node):
                 head = edge.head

@@ -50,6 +50,11 @@ class CompareTest(unittest.TestCase):
         r = compare(graph, 0, 2, {5: [30, 0, 0]}, margin_s=0, max_expansions=1)
         self.assertEqual((r.outcome, r.extra_s, r.exact), (Outcome.INEXACT, None, False))
 
+    def test_an_inexact_record_bounds_the_extra_time_from_above_by_the_sticky_end_minus_the_lower_bound(self):
+        graph = Graph([Edge(0, 0, 1, 100), Edge(1, 1, 2, 100), Edge(2, 0, 2, 1000)])
+        r = compare(graph, 0, 2, {1: [30, 0, 0]}, margin_s=0, max_expansions=1)
+        self.assertEqual((r.outcome, r.extra_s, r.exact, r.extra_s_at_most), (Outcome.INEXACT, None, False, 800.0))
+
     def test_a_departure_before_the_first_step_is_refused(self):
         with self.assertRaises(ValueError):
             sc.compare(FAST_AND_SLOW, 0, 2, -1, 0, STEPS, table({}), 20, 600)
@@ -107,6 +112,13 @@ class SummaryTest(unittest.TestCase):
             out[("truck", "peak")],
             Summary(n=1, n_inexact=0, share_sticky_no_route=0.0, share_sticky_longer=0.0, extra_s=None),
         )
+
+    def test_the_upper_bounds_of_inexact_records_with_a_sticky_route_are_summarised(self):
+        out = sc.summarize([("k", sc.CompareRecord(Outcome.INEXACT, None, False, 22.0)),
+                            ("k", sc.CompareRecord(Outcome.INEXACT, None, False, 10.0)),
+                            ("k", sc.CompareRecord(Outcome.INEXACT, None, False))])
+        self.assertEqual(out["k"].n_inexact, 3)
+        self.assertEqual(out["k"].inexact_extra_s_at_most, sc.Distribution(2, 16.0, 16.0, 22.0, 22.0))
 
     def test_a_group_with_only_inexact_records_has_no_shares(self):
         out = sc.summarize([("k", sc.CompareRecord(Outcome.INEXACT, None, False))])

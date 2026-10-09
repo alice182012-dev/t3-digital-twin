@@ -198,11 +198,31 @@ class NoLoopTest(unittest.TestCase):
         self.assertEqual(result, ArrivalOnlyResult(Route((), (), 250), exact=True))
 
 
+class LowerBoundTest(unittest.TestCase):
+    def test_an_inexact_result_never_claims_a_bound_later_than_the_true_answer(self):
+        inexact = 0
+        for seed in range(1500):
+            graph, origin, destination, rule, departure = wide_random_case(seed)
+            expected = oracle(graph, origin, destination, rule, departure)
+            result, _ = _counted(graph, origin, destination, rule, departure, max_expansions=2)
+            if result.exact:
+                self.assertIsNone(result.lower_bound_s)
+                continue
+            inexact += 1
+            self.assertIsNotNone(result.lower_bound_s)
+            if expected is not None:
+                self.assertLessEqual(result.lower_bound_s, expected, f"seed {seed}")
+        self.assertGreater(inexact, 100)
+
+
 class BudgetTest(unittest.TestCase):
     def test_a_budget_spent_before_the_destination_pops_is_inexact(self):
         graph = Graph(LOOP + DETOUR)
         rule = closure(A_TO_D_OPENS_AT_900, steps=(0, 900))
-        self.assertEqual(earliest_arrival_arrival_only(graph, O, D, rule, 0, max_expansions=1), ArrivalOnlyResult(None, exact=False))
+        self.assertEqual(
+            earliest_arrival_arrival_only(graph, O, D, rule, 0, max_expansions=1),
+            ArrivalOnlyResult(None, exact=False, lower_bound_s=510.0),
+        )
         self.assertEqual(
             earliest_arrival_arrival_only(graph, O, D, rule, 0, max_expansions=3),
             ArrivalOnlyResult(Route((3, 4), (0, 1000), 1600), exact=True),
