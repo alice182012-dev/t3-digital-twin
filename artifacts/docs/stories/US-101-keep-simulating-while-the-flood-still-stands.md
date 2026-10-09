@@ -28,7 +28,7 @@ Blocker tracking: [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stan
 
 - **2026-10-10, not started.** Written from the user's instruction to log the four skipped runs as a P0 blocker. The gate stops the simulation while the flood stands, and the next run starts cold. The fix waits for the user's choice among the three options in the blocker. The final runs of `US-092` and `US-093` wait for this story.
 - **2026-10-10, reviewed.** Built locally on `modular`, not committed and not on the server. `scripts/standing_flood.py` holds the rule, `task_check_forecast_rain` calls it when the forecast is under the threshold, and `FLOOD_DRY_DEPTH_M` (default 0.05 m) sets the depth floor. 12 unit tests and 3 gate tests pass, and the same 6 tests in `test/test_flood_rain_gate.py` fail as before the change. The story reaches `Done` after a replay of the storm with the fix, with the evidence named in the acceptance check. See the concerns in [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands]].
-- **2026-10-10, done.** Saved as `Done` at the user's request. Committed as `5f115f4` on `modular` (local, not pushed). The acceptance check names a replay of the storm with the fix, and that replay has not run, so the evidence here is the test output. `BL-028` stays `monitoring` until the replay.
+- **2026-10-10, done.** Saved as `Done` at the user's request. The acceptance check names a replay of the storm with the fix, and that replay has not run, so the evidence here is the test output. `BL-028` stays `monitoring` until the replay.
 
 ## Evidence and details
 

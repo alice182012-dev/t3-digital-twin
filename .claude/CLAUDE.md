@@ -348,6 +348,32 @@ the checkable rule to apply going forward.
   session against the new rule, not only files created after noticing the change. See
   [[recheck-existing-files-after-convention-changes]].
 
+## Write each fact once
+
+Added 2026-10-10 after a day in which one decision was copied into six files. A fact has one home, and every
+other file links to it. This applies to the vault below and to rules 8, 9, and 10 above.
+
+| Fact | Its one home |
+| --- | --- |
+| A story's status, evidence, numbers, and details | the story file (Status history, Evidence and details) |
+| A decision and its reason | `artifacts/docs/decisions/decision-log.md` |
+| A blocker's state and attempts | the blocker page |
+| What a subsystem is and how it works | the concept page |
+| The sprint of a story | the story's `sprint` field, read by queries |
+| A day's server facts, commands, and pickup list | that day's log |
+
+1. A story moving to `Done`, `Reviewed`, or `Blocked` is written in its story file only. The Status history of an
+   epic or a sprint plan records plan-level changes only: a story added, moved to another sprint, split, or
+   dropped, a sprint started or finished, and the blocker case of rule 11. The Dataview queries show the rest.
+2. A daily log is an index. Write one line per event with a link to the file that holds the detail. Do not
+   copy numbers, tables, or details that a story, blocker, or decision already holds. Keep in the log only what
+   has no other home.
+3. Write the vault once per work block. Finish the work, edit each file once, and make one vault commit. Do not
+   commit after each step.
+4. Do not put a commit hash in prose. Name a commit by its story ID or the first line of its message. The
+   "Evidence and details" of one story may hold a hash. A hash in prose breaks when a history rewrite, such as
+   removing an attribution line, changes it, and the fix touches every file that quoted it.
+
 ## artifacts/ is an Obsidian vault, maintained as a wiki
 
 `artifacts/` is a working knowledge base, not a folder of one-off notes. See
@@ -374,7 +400,9 @@ maintenance rule:
 - **Logs** (`artifacts/logs/`) and **plans** (`artifacts/docs/claude-plan/`)
   are the primary record: what happened, in the order it happened. Append-only,
   one file per day or per plan. Never rewritten after the fact except to add
-  a `related` link or close out a status.
+  a `related` link or close out a status. A daily log is an index (see "Write
+  each fact once"): one line per event, linking to the story, blocker, or
+  decision that holds the detail.
 - **Concept pages** (`artifacts/docs/concepts/`) are the standing reference,
   one page per subsystem (for example `graphhopper-backend.md`,
   `minio-flood-extent-pipeline.md`): what it is, how it works now, and its

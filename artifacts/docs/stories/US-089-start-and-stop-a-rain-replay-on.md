@@ -36,3 +36,4 @@ Priority: P1. Status: Reviewed. Estimate: M. Sprint: 12. Dependencies: None to b
 and the existing event `scripts/rain_events/hanoi_20251005_48h.csv` works until then. The server run needs no image
 build, so it can run while a replay is on.
 Evidence: None yet.
+- **2026-10-10, carried from the retired TODOS note.** `scripts/rain_replay.py` and `replay.ps1` start, stop, and report a replay, idempotently, and read the values back inside the worker.

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-092"
 story_label: "3"
 epic: "[[EP-14-routing-paper-experiments]]"
-status: Not started
+status: In progress
 priority: P2
 estimate: M
 sprint: 12
@@ -27,7 +27,7 @@ The provenance of the four limits is already searched (`marie-curie/vehicle-limi
 does not repeat the search. It copies the verdicts into the result file: car 30 cm supported for a small passenger
 car, motorbike 20 cm partly supported, truck 35 cm no source, foot 40 cm partly supported and conservative.
 Copy the note out of `marie-curie/` first, because that folder is disposable.
-Priority: P2. Status: Not started. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
+Priority: P2. Status: In progress. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: `US-091` (its harness and its pair set), so the two stories sit in one sprint and the second starts
 when the first has a working harness. If the harness slips, this story moves to Sprint 13 of [[SP-04-frontend-recheck|sprint-plan-4]]
 (the rule is in the Risks table of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]).
@@ -40,3 +40,4 @@ Evidence: None yet.
 - **2026-10-10, active.** The depth tables of the second replay are copied from the worker to `marie-curie/edge_tables_replay2_final_2026-10-10/` (48 files, 45 of the second replay `20261009T130000` to `20261010T010000` and 3 of the first, SHA-256 equal to the worker's). The four missing tables (`20261009T194500` to `20261009T203000`) are not a fault: the gate skipped those four runs (19:30 to 20:15 +07). The final full-table run uses these files.
 - **2026-10-10, correction.** The entry above calls the four missing tables "not a fault". The user corrected this: they are the P0 blocker [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], because the flood stands after the rain stops. The final run waits for `US-101`.
 - **2026-10-10, active.** The final run on the current tables started at 01:49 +07 on the Mac only, at the user's choice (next action 1, option a): `marie-curie/edge_tables_replay2_final_2026-10-10/`, the 45 tables of the second replay (`20261009T130000` to `20261010T010000`, with the 4 missing tables named in [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and a cold start at 20:30 +07), 30 pairs, departure steps 0 and 4, seed 1, 5 workers. Result file: `marie-curie/real_run_replay2_final_seed1.json`. The result must name the gap and the cold start.
+- **2026-10-10, carried from the retired TODOS note.** The cost band is replaced by the precaution fraction (D-021), swept at 0.25, 0.5, and 0.75 by `sweep_fraction` in `scripts/routing_experiments/precaution.py`.
