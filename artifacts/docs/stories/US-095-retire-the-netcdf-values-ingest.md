@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-095"
 story_label: "2"
 epic: "[[EP-15-archive-and-netcdf-retirement]]"
-status: Not started
+status: In progress
 priority: P1
 estimate: M
 sprint: 11
@@ -44,5 +44,9 @@ storage-check script no longer reads `netcdf_values`. Server facts: `netcdf_valu
 retention policy and 6-hour compression.
 Do this only after `US-094` is proven on real rain, so no data is lost.
 Estimate: M. About ten files change in one DAG, two test files and a script, and the server drop needs a deploy,
-a go, and two readings. Priority: P1. Status: Not started. Sprint: 11 (the user's choice). Dependencies: `US-094`.
+a go, and two readings. Priority: P1. Status: In progress. Sprint: 11 (the user's choice). Dependencies: `US-094`.
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-09, in progress.** The code removal is committed on the local branch `us-095-retire-netcdf-ingest` (`4a94b86`, not pushed, not deployed). Removed: task `3b_upload_netcdf_postgres`, `netcdf_to_pg.py`, `netcdf_variables.py`, `backfill_netcdf_values.py`, `create_netcdf_tables.py`, the `netcdf_*` and `mesh_elements` parts of `create_timescale_tables.py`, and the `netcdf_values` reading of `read_storage.ps1` (the `flood_metrics` total size stays). The DAG graph tests expect no `3b` task and the leaves `9_build_flood_tiles` and `9b_load_depth_raster`. Not done: the doc updates (concept pages, architecture doc, `US-066`), which follow the deploy, and the server drop. Finding: `create_netcdf_tables.py` also created a third table, `netcdf_values`, on `storage-postgres` (foreign key to `netcdf_files`, `ON DELETE CASCADE`). Read it before the drop and decide whether it goes with the other two.
