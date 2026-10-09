@@ -288,5 +288,55 @@ class ProfileLimitsTest(unittest.TestCase):
         self.assertEqual(self.limits_in_config(), {"motorbike": 20, "car": 30, "truck": 35, "foot": 40})
 
 
+class TwoOptionRouteTest(unittest.TestCase):
+    """D-021: the engine answers with a recommended path and the limit path. The proxy passes them on as they are."""
+
+    HINTS = {"td.status": "applied", "td.kinds": "recommended,through_water", "td.limit_cm": 30, "td.precaution_cm": 15}
+
+    def two_paths(self):
+        data = copy.deepcopy(ROUTE)
+        data["paths"] = [
+            {"distance": 910.0, "time": 120000, "points": "detour"},
+            {"distance": 620.0, "time": 80000, "points": "corridor"},
+        ]
+        data["hints"].update(self.HINTS)
+        return {"ok": True, "status": 200, "json": data}
+
+    def test_both_paths_and_every_hint_come_back_in_order(self):
+        post = FakePost(self.two_paths())
+
+        outcome = tar.route_request(request(), post=post, custom_model=areas([]), enabled=True, now=NOW)
+
+        self.assertEqual(len(post.bodies), 1, "an applied answer needs no second request")
+        self.assertEqual([p["points"] for p in outcome.data["paths"]], ["detour", "corridor"])
+        for key, value in self.HINTS.items():
+            self.assertEqual(outcome.data["hints"][key], value, key)
+
+    def test_a_single_through_water_path_comes_back_with_its_kind(self):
+        answer = self.two_paths()
+        answer["json"]["paths"] = answer["json"]["paths"][1:]
+        answer["json"]["hints"]["td.kinds"] = "through_water"
+
+        outcome = tar.route_request(request(), post=FakePost(answer), custom_model=areas([]), enabled=True, now=NOW)
+
+        self.assertEqual(len(outcome.data["paths"]), 1)
+        self.assertEqual(outcome.data["hints"]["td.kinds"], "through_water")
+
+    def test_the_client_cannot_set_the_fraction(self):
+        post = FakePost(self.two_paths())
+
+        tar.route_request(request(td_precaution_fraction=0.9), post=post, custom_model=areas([]), enabled=True, now=NOW)
+
+        self.assertNotIn("td_precaution_fraction", post.bodies[0])
+
+    def test_a_fallback_answer_carries_no_kinds(self):
+        post = FakePost(ok({"td.status": "fallback", "td.reason": "no table"}), ok())
+
+        outcome = tar.route_request(request(), post=post, custom_model=areas([]), enabled=True, now=NOW)
+
+        self.assertEqual(outcome.data["hints"]["td.status"], "fallback")
+        self.assertNotIn("td.kinds", outcome.data["hints"])
+
+
 if __name__ == "__main__":
     unittest.main()

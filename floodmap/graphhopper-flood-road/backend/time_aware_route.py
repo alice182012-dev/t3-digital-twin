@@ -13,7 +13,11 @@ that does not run the engine), the backend sends today's request, with the custo
 says so. An error answer passes through unchanged: when the table closes every route GraphHopper says "Connection not
 found", which is what the client's departure advice reacts to.
 
-The client never picks the departure, the margin, or the limit. Its `td_*` fields are removed.
+The client never picks the departure, the margin, the limit, or the precaution fraction. Its `td_*` fields are removed.
+
+An applied answer can carry two paths (D-021): path 0 is the recommended route under the precaution depth and path 1 is
+the limit route. The hints `td.kinds` (one kind per path, `recommended` or `through_water`), `td.limit_cm`, and
+`td.precaution_cm` come with them. The answer passes through as it is, so the order and the hints reach the client.
 """
 from __future__ import annotations
 
@@ -24,7 +28,7 @@ from typing import Any, Callable, Mapping, NamedTuple
 FLAG = "TIME_AWARE_ROUTING"
 STATUS_HINT = "td.status"
 REASON_HINT = "td.reason"
-CLIENT_TD_FIELDS = ("td_departure", "td_limit_cm")
+CLIENT_TD_FIELDS = ("td_departure", "td_limit_cm", "td_precaution_fraction")
 FLOOD_FIELDS = ("valid_time", "run", "vehicle_type", "buffer", "simplify", "min_area")
 NO_ENGINE_REASON = "the routing engine did not report time-aware routing (GraphHopper without the time-aware module)"
 

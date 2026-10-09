@@ -83,6 +83,8 @@ class TimeAwareRouterTest {
                         new Profile("car").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 30),
                         new Profile("truck").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 35),
                         new Profile("foot").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 40),
+                        new Profile("truck60").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 35)
+                                .putHint(TimeAwareRouter.PRECAUTION_FRACTION_HINT, 0.6),
                         new Profile("plain").setCustomModel(model)));
         hopper = new TimeAwareGraphHopper();
         hopper.init(config);
@@ -120,9 +122,11 @@ class TimeAwareRouterTest {
         return r;
     }
 
+    /** The edges of the last path, which is the route planned with the vehicle's limit (the only path when there is one). */
     static List<Integer> edgeIds(GHResponse response) {
         List<Integer> ids = new ArrayList<>();
-        for (PathDetail d : response.getBest().getPathDetails().get("edge_id")) ids.add((Integer) d.getValue());
+        var paths = response.getAll();
+        for (PathDetail d : paths.get(paths.size() - 1).getPathDetails().get("edge_id")) ids.add((Integer) d.getValue());
         return ids;
     }
 
@@ -446,5 +450,108 @@ class TimeAwareRouterTest {
         flood(dir, corridorEdge, 50, 0);
 
         assertFalse(hopper.route(request("car", true, ORIGIN, DESTINATION)).getHints().has("td.graph_hash"));
+    }
+
+    // The two-option plan of D-021: a recommended route under the precaution depth and the limit route.
+
+    /** The table with depth `cm` on each of `edges` at every step, and dry elsewhere. */
+    static void floodAll(Path dir, int cm, int... edges) throws Exception {
+        IntBinaryOperator depth = (e, s) -> {
+            for (int flooded : edges) if (e == flooded) return cm;
+            return 0;
+        };
+        current = TestTables.table(dir, "t" + System.nanoTime() + ".bin", hopper.getBaseGraph().getEdges(),
+                TestTables.quarterHours(T0, 8), depth);
+    }
+
+    @Test
+    void aDryRouteIsOnePathAndRecommended(@TempDir Path dir) throws Exception {
+        floodAll(dir, 0, corridorEdge);
+        int before = TimeAwareRouter.precautionSearches.get();
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(1, r.getAll().size());
+        assertEquals("recommended", hint(r, "td.kinds"));
+        assertEquals(30, hintLong(r, "td.limit_cm"));
+        assertEquals(15, hintLong(r, "td.precaution_cm"));
+        assertEquals(before, TimeAwareRouter.precautionSearches.get(), "no road reaches the precaution depth, so no second search");
+    }
+
+    @Test
+    void aRoadBetweenTheTwoDepthsGivesTheDryDetourFirstAndTheLimitRouteSecond(@TempDir Path dir) throws Exception {
+        floodAll(dir, 20, corridorEdge);
+        int before = TimeAwareRouter.precautionSearches.get();
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(2, r.getAll().size());
+        assertEquals("recommended,through_water", hint(r, "td.kinds"));
+        assertFalse(r.getAll().get(0).getPathDetails().get("edge_id").stream().anyMatch(d -> d.getValue().equals(corridorEdge)),
+                "path 0 is the detour");
+        assertTrue(r.getAll().get(1).getPathDetails().get("edge_id").stream().anyMatch(d -> d.getValue().equals(corridorEdge)),
+                "path 1 is the limit route through the corridor");
+        assertTrue(r.getAll().get(0).getDistance() > r.getAll().get(1).getDistance());
+        assertEquals("applied", hint(r, "td.status"));
+        assertEquals(before + 1, TimeAwareRouter.precautionSearches.get());
+    }
+
+    @Test
+    void withNoDetourTheLimitRouteIsTheOnlyPathAndIsThroughWater(@TempDir Path dir) throws Exception {
+        floodAll(dir, 20, corridorEdge, detourEdge);
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(1, r.getAll().size());
+        assertEquals("through_water", hint(r, "td.kinds"));
+        assertTrue(edgeIds(r).contains(corridorEdge));
+        assertEquals(30, hintLong(r, "td.limit_cm"));
+        assertEquals(15, hintLong(r, "td.precaution_cm"));
+    }
+
+    @Test
+    void aRoadAtTheLimitStillClosesTheLimitRoute(@TempDir Path dir) throws Exception {
+        floodAll(dir, 30, corridorEdge);
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertFalse(r.hasErrors(), r.getErrors().toString());
+        assertEquals(1, r.getAll().size());
+        assertEquals("recommended", hint(r, "td.kinds"));
+        assertFalse(edgeIds(r).contains(corridorEdge));
+    }
+
+    @Test
+    void theFractionComesFromTheProfile(@TempDir Path dir) throws Exception {
+        floodAll(dir, 20, corridorEdge);
+        // truck: limit 35, so 0.5 gives 18 cm and a 20 cm road is over it. 0.6 gives 21 cm and the road is under it.
+        assertEquals("recommended,through_water", hint(hopper.route(request("truck", true, ORIGIN, DESTINATION)), "td.kinds"));
+        assertEquals(18, hintLong(hopper.route(request("truck", true, ORIGIN, DESTINATION)), "td.precaution_cm"));
+        assertEquals(21, hintLong(hopper.route(request("truck60", true, ORIGIN, DESTINATION)), "td.precaution_cm"));
+        assertEquals("recommended", hint(hopper.route(request("truck60", true, ORIGIN, DESTINATION)), "td.kinds"));
+    }
+
+    @Test
+    void aFallbackCarriesNoKinds() {
+        provider.problem = "no table has been published";
+
+        GHResponse r = hopper.route(request("car", true, ORIGIN, DESTINATION));
+
+        assertEquals("fallback", hint(r, "td.status"));
+        assertFalse(r.getHints().has("td.kinds"));
+        assertEquals(1, r.getAll().size());
+    }
+
+    @Test
+    void aRequestWithoutADepartureCarriesNoKinds(@TempDir Path dir) throws Exception {
+        floodAll(dir, 20, corridorEdge);
+
+        GHResponse r = hopper.route(request("car", false, ORIGIN, DESTINATION));
+
+        assertFalse(r.getHints().has("td.kinds"));
+        assertEquals(1, r.getAll().size());
     }
 }
