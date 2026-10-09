@@ -32,7 +32,7 @@ No story has this sprint yet.
 
 ## Product backlog
 
-18 stories.
+19 stories.
 The top 10 by priority:
 
 - [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], P0, S, Ready.
