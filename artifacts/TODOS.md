@@ -3,13 +3,11 @@
 ## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
 ## Next action:
-1. Roll out the `graphhopper` image for `US-096` and `US-097` from the server's own desktop session (`docker build` over SSH fails). The server is at `5cb0aaa` on `modular`. `flood_mapping_full` is paused, which the script requires. In PowerShell, in `C:\Users\TECOTEC\airflow_new`:
-   1. `.\scripts\routing_proof\rollout.ps1 -Branch modular`. The default branch of the script is `front-end-according-to-mock-up`, so the flag is required. It builds the three images (the `graphhopper` build runs every module test), recreates the three services with `TIME_AWARE_ROUTING` off, runs every check once, and writes `C:\Users\TECOTEC\rollout-proof.log`. Add `-LeaveOn` only if you decide the flag goes on.
-   2. Check one route that crosses a road between the precaution depth and the limit. With the flag on, `POST /route` must return two paths and `td.kinds` must be `recommended,through_water`. The script does not check this. Take the screenshot for `US-097` and `US-096`, then move both rows to `Done` (rule 8).
-   3. Run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it.
-2. Start the real-graph run of `US-092` and `US-093` after step 1.3: load the node columns into a `Graph`, then run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
-3. Add a test for a via request with a shallow road (`TimeAwareRouterTest`), the one case `US-097` does not cover.
-4. After Sprint 12, run the second replay with `EDGE_TABLE_KEEP_RUNS` raised, and take the `US-069` readings on time.
+1. Done on 2026-10-09 from the server's own desktop session: `rollout.ps1 -Branch modular` rebuilt and recreated the three images/services (log: `C:\Users\TECOTEC\rollout-proof.log`), every script check passed, and the shallow-road check (flag on, `POST /route` for the "long" trip with truck/foot) returned two paths with `td.kinds: "recommended,through_water"`. `US-097` moved to `Done`, evidence `us-097-through-water-route-output.png`. The flag is off again.
+2. Run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it. This step needs the Mac session, not the server.
+3. Start the real-graph run of `US-092` and `US-093` after step 2: load the node columns into a `Graph`, then run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
+4. Add a test for a via request with a shallow road (`TimeAwareRouterTest`), the one case `US-097` does not cover.
+5. After Sprint 12, run the second replay with `EDGE_TABLE_KEEP_RUNS` raised, and take the `US-069` readings on time.
 
 ### Active - US-070 Stop a slow sampling step from holding the database
 
@@ -89,7 +87,9 @@
 
 **Status note:** `In progress`. The harness is built and merged on `modular` (`04c0288` to `245b90d`, package `scripts/routing_experiments/`, 41 tests pass, the server run is not done). The storm stages need the second replay, which runs after Sprint 12 (D-020), so this row cannot reach `Done` inside Sprint 12. Three things to know. First, the runner walks engine routes from the time of the request since `US-096` (`88c151c`). Second, the sticky engine cannot be checked on the old replay tables, because the backend departs at the later of the step time and now, so the sticky check needs live tables. Third, the single-timestep plan reads database flood areas and the re-walk reads the edge depth table of the same run, two depth sources, and the result file must say so.
 
-### Active - US-097 Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option
+### Done - US-097 Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option
+
+**Result:** the server rollout rebuilt the images from `modular` (`11f6373`), every script check passed, and `POST /route` for a trip with a shallow road returned two paths with `td.kinds: "recommended,through_water"`. Evidence: `us-097-through-water-route-output.png`.
 
 **What:** The engine plans with the hard limit first, and with 50 percent of it only when the first route touches a road at that depth. `POST /route` returns the recommended route and the through-water option ([[US-097-098-precaution-depth-routing-stories]] Story 1, D-021).
 
@@ -99,7 +99,7 @@
 
 **Sprint:** 12, [[US-097-098-precaution-depth-routing-stories]] Story 1 (US-097), in [[sprint-plan-3]].
 
-**Status note:** `Reviewed`. Built and merged on `modular`, not pushed (the combined state ran on branch `ci-modular-combined`: 137 Java tests passed on GitHub Actions, run 37885851481, and 31 backend tests pass). The Python reference is `scripts/routing_experiments/precaution.py`. The contract you approved on 2026-10-09: `POST /route` returns path 0 as the recommended route and path 1 as the through-water route. The hints are `td.kinds` (`recommended`, `recommended,through_water`, or `through_water`), `td.limit_cm`, and `td.precaution_cm`. The fraction is the profile hint `td_precaution_fraction` (default 0.5). The hard-limit search runs first and the second search runs only when that route touches the precaution depth. It reaches `Done` after the `graphhopper` image is rebuilt on the server and a route with a shallow road shows two paths, with a screenshot. A via request with a shallow road has no test.
+**Status note:** `Done`. Built and merged on `modular` (`11f6373`, the combined state ran on branch `ci-modular-combined`: 137 Java tests passed on GitHub Actions, run 37885851481, and 31 backend tests pass). The Python reference is `scripts/routing_experiments/precaution.py`. The contract: `POST /route` returns path 0 as the recommended route and path 1 as the through-water route. The hints are `td.kinds` (`recommended`, `recommended,through_water`, or `through_water`), `td.limit_cm`, and `td.precaution_cm`. The fraction is the profile hint `td_precaution_fraction` (default 0.5). The hard-limit search runs first and the second search runs only when that route touches the precaution depth. The `graphhopper` image was rebuilt on the server by `rollout.ps1` on 2026-10-09, and a route with a shallow road (the "long" trip, truck and foot profiles) showed two paths with `td.kinds: "recommended,through_water"`. Evidence: `us-097-through-water-route-output.png`. A via request with a shallow road still has no test (TODOS item 3).
 
 ### Active - US-092 Test how the vehicle limits change the result
 

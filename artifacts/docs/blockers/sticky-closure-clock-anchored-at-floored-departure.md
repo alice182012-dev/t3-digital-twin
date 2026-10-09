@@ -51,3 +51,4 @@ Approach 1 was built as planned (`US-096`). `StickyClosure` keeps the floored st
 
 - **2026-10-09, open.** Found by the subagent that wrote the proof page, confirmed by reading `TimeAwareRouter.java:86-88` and `TimeAwareDijkstra.java:94`. Story `US-096`, Sprint 12.
 - **2026-10-09, monitoring.** `US-096` fixed it in code (`66c9883`). 129 Java tests pass on GitHub Actions (run 37880057761) and the Python suites pass. The server still runs the old image until the next rollout. Evidence: `us-096-fix-check-output.png`.
+- **2026-10-09, monitoring.** `rollout.ps1` rebuilt the server's `graphhopper` image from `modular` (`11f6373`), meeting the first half of the resolve condition. The server was not separately checked with a departure between two forecast steps, so the blocker stays `monitoring` rather than moving to `resolved`.

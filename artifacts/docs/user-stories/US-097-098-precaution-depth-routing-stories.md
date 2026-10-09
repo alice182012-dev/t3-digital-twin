@@ -16,9 +16,9 @@ The flood model is not validated. D-021 therefore gives each vehicle a precautio
 - **Story 1 (US-097): Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option.**
   As a driver, I want the recommended route to stay out of water that is half as deep as my vehicle's limit, and I still want to see the route that crosses it, so I can decide for myself.
   Given a request with the time-aware flag on, when the backend plans, then it runs the sticky search with the hard limit first. If that route touches no road whose depth in the sticky window reaches the precaution depth, it is the only route and the second search is skipped. Otherwise the backend runs a second sticky search with the precaution depth. If that finds a route, it is the recommended route and the hard-limit route is the second option. If it finds none, the hard-limit route is the recommended route, flagged as passing through water. `POST /route` returns the options with their kind (`recommended`, `through_water`) and the depths that set them. The fraction is one setting, default 0.5, read from the vehicle profile owner of `US-074`.
-  Priority: P1. Status: Reviewed. Estimate: M. Sprint: 12 ([[sprint-plan-3]]).
+  Priority: P1. Status: Done. Estimate: M. Sprint: 12 ([[sprint-plan-3]]).
   Dependencies: `US-096` (`Done` in code), the offline sweep of `US-092` to confirm the fraction, and the user's go on the response contract.
-  Evidence: None yet.
+  Evidence: `us-097-through-water-route-output.png`.
 
 - **Story 2 (US-098): Show the recommended route and the through-water option in the app.**
   As a driver, I want to see both routes with a label that says the second one passes through water between the precaution depth and my limit.
@@ -31,3 +31,4 @@ The flood model is not validated. D-021 therefore gives each vehicle a precautio
 
 - **2026-10-09, draft.** Written at the user's request after the discussion of the cost band ([[engine-has-no-depth-band-cost]]). The user's rule: detour at 50 percent of the limit to protect assets, because the flood model is not validated, and still show the hard-limit route. IDs `US-097` and `US-098`. D-021.
 - **2026-10-09, reviewed.** The user approved the response contract. Built on `modular`: path 0 is the recommended route, path 1 the through-water route, hints `td.kinds`, `td.limit_cm`, `td.precaution_cm`, profile hint `td_precaution_fraction` (default 0.5), second search only when the limit route touches the precaution depth. 137 Java tests passed on GitHub Actions (run 37885851481). The server image is rebuilt at the next rollout, and the flag is off at rest. `US-098` can read the contract.
+- **2026-10-09, done.** The rollout rebuilt the server images from `modular` (`11f6373`) and every script check passed. With the flag on, `POST /route` for the "long" trip with the truck and foot profiles returned 2 paths and `td.kinds: "recommended,through_water"`; the same trip with motorbike and car returned 1 path, `td.kinds: "recommended"`. Evidence: `us-097-through-water-route-output.png`.
