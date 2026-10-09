@@ -384,9 +384,9 @@ is the maximum.
 ## D-024: Adopt the Scrum framework and retire the four-sprint plans and the PRDs
 
 - **Date:** 2026-10-10
-- **Status:** active. Decided by the user.
+- **Status:** active, except that the sprint length of one week is superseded by D-026. Decided by the user.
 - **Decided by:** the user.
-- **Decision:** The project follows Scrum with one-week sprints (Monday to Sunday), as described in [[scrum-framework]]. The user is the product owner. Claude sessions are the development team. A sprint is picked at sprint planning, one sprint at a time. Each sprint ends with a review and a retrospective. Velocity comes from the points of `Done` stories ([[Velocity]]). The 16 epics become 4 (`EP-17` to `EP-20`). PRDs are retired, and each epic holds its goal, reason, assumptions, and definition of done. Spikes (`kind: spike`) hold experiments, and they end with an answer and a decision.
+- **Decision:** The project follows Scrum with one-week sprints (Monday to Sunday, changed to two weeks by D-026), as described in [[scrum-framework]]. The user is the product owner. Claude sessions are the development team. A sprint is picked at sprint planning, one sprint at a time. Each sprint ends with a review and a retrospective. Velocity comes from the points of `Done` stories ([[Velocity]]). The 16 epics become 4 (`EP-17` to `EP-20`). PRDs are retired, and each epic holds its goal, reason, assumptions, and definition of done. Spikes (`kind: spike`) hold experiments, and they end with an answer and a decision.
 - **Why:** The old rules planned four sprints ahead and put stories in them by dependency. In practice sprints 5 to 12 started and ended early, so a sprint no longer meant a week, and there was no sprint review, no retrospective, no velocity, and several places that held the same fact. Atlassian's Scrum guide plans one sprint at a time from an ordered backlog, keeps the length fixed so estimates improve, and puts review and retrospective inside the sprint.
 - **Alternatives:** (1) Keep the four-sprint plans and add a review and a retrospective. It keeps the plan that the dates already broke. (2) Kanban, with no sprints. The project has a goal per week and an evidence rule per story, which suit sprints better. The user chose full Scrum.
 - **Evidence:** the readings in `docs/concepts/project-management/`, and the user's answers on 2026-10-10: "ok" to restart the calendar at a Monday, "fresh" for Sprint 13, and "yes and retire the prds" for the epics.
@@ -404,3 +404,15 @@ is the maximum.
 - **Evidence:** the readings "What are the Lean Principles?" and "What is Definition of Ready" in `docs/concepts/project-management/`.
 - **Affects:** `.claude/CLAUDE.md`, `Home.md`, `templates/daily-log.md`, `templates/user-story.md`, `scrum-framework`, the refresh-artifacts skill, and `US-021`.
 - **Revisit if:** a multi-day piece of work has no good home in a story, a spike, or a concept page.
+
+## D-026: Make the sprint two weeks and fill it by story points
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user ("our sprint will be for 2 weeks, and we will allocate stories based on story points not weeks").
+- **Decision:** A sprint is two weeks, from a Monday to the Sunday of the next week. Sprint planning is on the first Monday and takes 4 hours at most. A refinement is on the Friday of week 1. The review (1 hour) and the retrospective (30 minutes) are on the last Sunday. Planning picks `Ready` stories until the sum of their `estimate` points reaches the forecast from [[Velocity]]. The calendar sets the dates and not the number of stories. Sprint 13 runs 2026-10-12 to 2026-10-25, and Sprint 14 starts 2026-10-26.
+- **Why:** The user wants capacity measured by work and not by time. A story fits a sprint by its size, and a sprint holds as many points as the team's velocity shows. Atlassian's guide allows two weeks as the usual length and sets planning at 2 hours for each week of the sprint.
+- **Alternatives:** Keep one week (D-024). It left less room for the 12-hour replays and for work that waits on an outside event.
+- **Evidence:** the user's instruction on 2026-10-10, and the sprint-planning guide in `docs/concepts/project-management/`.
+- **Affects:** `.claude/CLAUDE.md` (rules 2, 3, and 11), `scrum-framework`, `Velocity`, `Home.md`, `TODOS.md`, `templates/sprint.md`, and `SPR-013`.
+- **Revisit if:** two sprints in a row end below half of the forecast, or the user wants another length.

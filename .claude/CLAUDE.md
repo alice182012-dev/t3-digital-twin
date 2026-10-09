@@ -185,11 +185,14 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
 1. **Roles.** The user is the product owner. They order the backlog, write the sprint goal, and accept or
    reject each `Done`. Claude sessions are the development team. Claude also does the duties of a Scrum master:
    keep the events on time and raise impediments as blocker pages.
-2. **Sprint.** A sprint is one week, Monday to Sunday, and the next sprint starts the next Monday. Its dates
-   and number never change after it starts. Sprint planning is on Monday and takes 2 hours at most. The review
-   and the retrospective are on Sunday. Refinement of the next backlog follows the review.
-3. **One sprint at a time.** A story gets a `sprint` number only at sprint planning, for the sprint that is
-   being planned. Never assign a story to a future sprint. A story with `sprint` empty and a status other than
+2. **Sprint.** A sprint is two weeks, Monday of week 1 to Sunday of week 2, and the next sprint starts the next
+   Monday. Its dates and number never change after it starts. Sprint planning is on the first Monday and takes
+   4 hours at most. A refinement of the backlog is in the middle of the sprint. The review (1 hour) and the
+   retrospective (30 minutes) are on the last Sunday. The calendar sets the dates only. Points set how much work
+   enters the sprint (rule 3).
+3. **One sprint at a time, sized in points.** A story gets a `sprint` number only at sprint planning, for the
+   sprint that is being planned. Planning picks `Ready` stories from the top of the backlog until their
+   `estimate` points reach the forecast from [[Velocity]]. Weeks do not decide how many stories enter. Never assign a story to a future sprint. A story with `sprint` empty and a status other than
    `Done` or `Superseded` is in the product backlog, ordered by `priority`. Ask the product owner when the
    pick is unclear, and do not guess.
 4. **Files.** A story is `docs/stories/US-nnn-<slug>.md`, from `templates/user-story.md`. An epic is
@@ -229,7 +232,7 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
     one action. Check the previous action first. An action becomes a story, a rule change, or an `L-nnn`
     lesson. Record the actual dates only in the sprint file's frontmatter, since a sprint's dates do not move.
 11. **Velocity.** `artifacts/Velocity.md` sums the points of `Done` stories by sprint. Plan a sprint from the
-    last three values. Capacity stays a forecast in points, not hours per person.
+    last three values. The forecast is in points per sprint, not weeks or hours per person.
 12. **A blocker is an impediment.** A blocker found in a sprint gets a blocker page the same day, from
     `templates/blocker.md`. Say on the page whether it blocks the sprint goal, and why. If it does, fix it
     first and put it first in the daily log. If it does not, it waits for planning, or a subagent in its own

@@ -17,9 +17,9 @@ GROUP BY sprint
 SORT sprint DESC
 ```
 
-## Baseline before the first real week
+## Baseline before the first two-week sprint
 
-Sprints 1 to 12 did not last a week each. They started and ended early, so their points measure how much the team finished between two planning moments, not in seven days. The values at the adoption of Scrum on 2026-10-10, computed from the story files with `python3 -I`, were:
+Sprints 1 to 12 lasted days, not two weeks. They started and ended early, so their points measure how much the team finished between two planning moments, not in 14 days. The values at the adoption of Scrum on 2026-10-10, computed from the story files with `python3 -I`, were:
 
 | Sprint | Points | Stories |
 | ------ | ------ | ------- |
@@ -29,4 +29,4 @@ Sprints 1 to 12 did not last a week each. They started and ended early, so their
 | 11 | 15 | 6 |
 | 12 | 25 | 11 |
 
-The last three sprints give 7, 15, and 25 points, an average of 16. The spread is wide, so Sprint 13 plans for 13 to 16 points. From Sprint 14 on, the forecast uses real weeks.
+The last three sprints give 7, 15, and 25 points, an average of 16. The spread is wide, and a two-week sprint is longer than any of these, so Sprint 13 plans between 16 points (the average) and 25 points (the best of the three). The product owner sets the number at planning. From Sprint 14 on, the forecast uses the points Done in real two-week sprints.

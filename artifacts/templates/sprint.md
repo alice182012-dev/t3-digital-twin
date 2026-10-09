@@ -18,7 +18,7 @@ One sentence, written by the product owner at planning. The goal does not change
 
 ## Planning
 
-- **Velocity.** Points Done in the last three sprints, from [[Velocity]]: A, B, C. Forecast: N points.
+- **Velocity.** Points Done in the last three sprints, from [[Velocity]]: A, B, C. Forecast: N points for the two weeks.
 - **Picked stories.** The sprint backlog below. The total of the picked estimates is N points.
 - **Open decisions.** Questions the product owner answers at planning. Remove each line when it is answered.
 
@@ -58,7 +58,8 @@ Sprint-level changes only: the sprint started, a story left the sprint to protec
 <!--
 - Name the file SPR-nnn-<slug>.md in artifacts/docs/sprints/. nnn is the sprint number with
   three digits. Take the slug from the sprint goal.
-- A sprint is one week, Monday to Sunday, and the next sprint starts the next Monday.
+- A sprint is two weeks, Monday to the Sunday of the next week, and the next sprint starts the next Monday.
+  Planning picks stories until their points reach the forecast. The calendar does not decide the count.
 - sprint: the number written in the `sprint` field of the picked stories.
 - status: planning, active, or done.
 - A story reaches this sprint only by planning. Setting `sprint` on a story is the pick.

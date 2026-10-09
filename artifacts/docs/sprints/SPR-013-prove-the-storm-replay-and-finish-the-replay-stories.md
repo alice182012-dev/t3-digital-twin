@@ -4,7 +4,7 @@ type: sprint
 sprint_id: "SPR-013"
 sprint: 13
 start_date: 2026-10-12
-end_date: 2026-10-18
+end_date: 2026-10-25
 status: planning
 tags: [sprint]
 related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]"]
@@ -12,7 +12,7 @@ related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]"]
 
 # SPR-013 Sprint 13: prove the storm replay and finish the replay stories
 
-The first sprint under Scrum ([[decision-log|D-024]]). It runs Monday 2026-10-12 to Sunday 2026-10-18. Planning is on 2026-10-12. This file holds a proposal until the product owner confirms the goal and the picks.
+The first sprint under Scrum ([[decision-log|D-024]]). It runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25 ([[decision-log|D-026]]). Planning is on 2026-10-12. This file holds a proposal until the product owner confirms the goal and the picks.
 
 ## Sprint goal
 
@@ -20,9 +20,9 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 
 ## Planning
 
-- **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). The forecast is 13 to 16 points.
+- **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). Those sprints lasted days, not two weeks, so they under-measure a two-week sprint. A planning range is 16 points (the average) to 25 points (the best of the three). The product owner sets the forecast on Monday, and Sprint 13 calibrates the next one.
 - **Proposed picks.** `US-102` (M, P0), `US-089` (M, P1), and `US-091` (M, P1) make 9 points. They share one 12-hour replay, so the replay is the critical path and starts on Monday.
-- **Room for about 4 to 7 more points.** The ready stories with no dependency on the replay are `US-076` (S), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
+- **Room for 7 to 16 more points.** The ready stories with no dependency on the replay are `US-076` (S), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows (6 points). Other `Ready` stories can fill the rest after refinement. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
 - **Work in progress.** At most two stories are `In progress` at once. `US-102` starts first on Monday, because the replay is the longest wait.
 - **Not picked.** `US-094` waits for real rain above 5 mm/h and cannot finish this sprint.
 
@@ -44,16 +44,17 @@ SORT priority ASC, file.name ASC
 
 ## Review
 
-Fill this on 2026-10-18.
+Fill this on 2026-10-25.
 
 ## Retrospective
 
-Fill this on 2026-10-18.
+Fill this on 2026-10-25.
 
 ## Refinement for the next sprint
 
-Fill this on 2026-10-18.
+Fill this on 2026-10-25.
 
 ## Status history
 
 - **2026-10-10, planning.** Created at the Scrum adoption ([[decision-log|D-024]]) so the first sprint has a home. Every story that was not `Done` returned to the backlog with `sprint` cleared. The old Sprint 13 to 16 placement of the frontend recheck ([[SP-04-frontend-recheck|sprint-plan-4]]) is dropped.
+- **2026-10-10, planning.** The sprint length changed from one week to two weeks, and stories enter by story points and not by weeks ([[decision-log|D-026]]). The end date moved from 2026-10-18 to 2026-10-25. The picks stay unset until planning on 2026-10-12.

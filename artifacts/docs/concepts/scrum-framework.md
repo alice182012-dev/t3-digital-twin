@@ -19,13 +19,15 @@ How this project plans and tracks work. It follows the Scrum framework as Atlass
 
 ## Cadence
 
-A sprint is one week, Monday to Sunday. The next sprint starts the next Monday. A sprint's dates never change after it starts, and the sprint number never skips. The sprint file is `docs/sprints/SPR-nnn-<slug>.md`, where nnn is the sprint number.
+A sprint is two weeks, from a Monday to the Sunday of the next week (14 days). The next sprint starts the next Monday. The calendar sets the dates only. Story points set how much work enters the sprint. A sprint's dates never change after it starts, and the sprint number never skips. The sprint file is `docs/sprints/SPR-nnn-<slug>.md`, where nnn is the sprint number.
 
 | Day | Event | Time limit |
 | --- | ----- | ---------- |
-| Monday | Sprint planning | 2 hours |
-| Tuesday to Saturday | Daily log | each day |
-| Sunday | Sprint review, retrospective, then refinement | about 1 hour 15 minutes |
+| First Monday | Sprint planning | 4 hours at most |
+| Every day | Daily log | each day |
+| Friday of week 1 | Refinement of the backlog | 30 minutes |
+| Last Sunday | Sprint review | 1 hour |
+| Last Sunday | Retrospective | 30 minutes |
 
 ## Hierarchy
 
@@ -86,13 +88,13 @@ Estimates are XS (1), S (2), M (3), and L (5). A story rated L is split before i
 
 ## The events
 
-**Refinement** (end of the previous sprint, about 30 minutes). Order the top of the backlog, split any story rated L, write the Given, when, then of each story near the top, and write unknowns as questions, not as vague words. A refined story becomes `Ready`.
+**Refinement** (Friday of week 1, about 30 minutes, and again after the review for the next sprint). Order the top of the backlog, split any story rated L, write the Given, when, then of each story near the top, and write unknowns as questions, not as vague words. A refined story becomes `Ready`.
 
-**Sprint planning** (Monday, 2 hours at most).
+**Sprint planning** (first Monday, 4 hours at most, which is 2 hours for each week of the sprint).
 
-1. Read [[Velocity]] and decide the forecast in points.
+1. Read [[Velocity]] and decide the forecast in points for the whole two-week sprint.
 2. The product owner writes the sprint goal in one sentence.
-3. Pick `Ready` stories from the top of the backlog until the points reach the forecast. Stories that threaten the goal come first.
+3. Pick `Ready` stories from the top of the backlog until the sum of their `estimate` points reaches the forecast. The calendar does not decide how many stories enter. Stories that threaten the goal come first.
 4. Set `sprint: N` on the picked stories.
 5. Create the sprint file from `templates/sprint.md`. Schedule the start of any long run (a 12-hour replay) now.
 
@@ -100,9 +102,9 @@ Estimates are XS (1), S (2), M (3), and L (5). A story rated L is split before i
 
 **Execution.** Take the top story that is not started and set it `In progress`. At most two stories are `In progress` at once (a Lean limit on work in progress). Start any long run, such as the 12-hour replay, on the first day, because waiting is the largest waste in this project. A story that waits on an event that may not happen this sprint (real rain above 5 mm/h) does not enter the sprint. New work found during the sprint goes to the backlog. It enters the sprint only if it threatens the goal, and then the product owner decides what leaves. A blocker found in the sprint gets a blocker page the same day.
 
-**Sprint review** (last day, 30 minutes). Walk through each `Done` story by its evidence. The product owner accepts or rejects it. Record the result in the sprint file's Review section.
+**Sprint review** (last Sunday, 1 hour). Walk through each `Done` story by its evidence. The product owner accepts or rejects it. Record the result in the sprint file's Review section.
 
-**Retrospective** (last day, 15 minutes). Write what worked, what did not, and one action. Check the last action first. An action becomes a story, a rule change, or an `L-nnn` lesson.
+**Retrospective** (last Sunday, 30 minutes). Write what worked, what did not, and one action. Check the last action first. An action becomes a story, a rule change, or an `L-nnn` lesson.
 
 ## Blockers
 
@@ -140,4 +142,4 @@ The Lean principles (Atlassian, "What are the Lean Principles?") shape three rul
 - The 16 epics became 4 (`EP-17` to `EP-20`). The old ones are in `archive/epics/`.
 - `TODOS.md` no longer holds state. It shows the current sprint.
 - The `claude-plan/` folder is retired ([[decision-log|D-025]]). Four plans became concept pages and the others are in `archive/plans/`.
-- Sprints 1 to 12 were not weeks. Their `sprint` values stay on `Done` stories for history. Sprint 13 starts on 2026-10-12, a Monday.
+- The sprint length became two weeks the same day ([[decision-log|D-026]]). Sprints 1 to 12 were not real sprints. Their `sprint` values stay on `Done` stories for history. Sprint 13 starts on 2026-10-12, a Monday.
