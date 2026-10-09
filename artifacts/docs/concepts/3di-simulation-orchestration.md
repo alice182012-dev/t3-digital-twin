@@ -195,6 +195,14 @@ transient error that might resolve on retry.
 (streaming, with retry) to save the first `.nc` result file under `RESULT_DIR`
 (`data/mapping/results`).
 
+Rana keeps a simulation's result files for one month (stated by the user on 2026-10-10).
+A past run can therefore be rebuilt without a new simulation until then.
+Take its `sim_id` from the `1_trigger_simulation` XCom, call `download_result.run_download`, and run `calculate_depth.run_calculate_depth` on the file.
+The local `depth.tif` files under `data/mapping/output_depths` are a cache, and the 24-hour cleanup of `9_build_flood_tiles` may delete them.
+A saved state is different.
+`create_simulation.py` registers each one with an expiry of one day, so a hotstart is possible only from a run less than a day old.
+A slot that never ran has no result to download, and only a new simulation can fill it.
+
 ## Turning the NetCDF into depth rasters
 
 `task_calculate_depth` calls `netcdf_input.calculate_depth_from_download`, which drives
