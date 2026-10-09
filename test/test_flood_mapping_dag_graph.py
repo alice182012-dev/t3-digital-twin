@@ -155,15 +155,34 @@ class FloodMappingDagGraphTests(unittest.TestCase):
             {"schedule": "*/15 * * * *", "catchup": False, "max_active_runs": 2},
         )
 
-    def test_a_dry_forecast_skips_every_downstream_task(self):
+    def gate(self, rain_should_run, max_mm_hr, standing):
         self.dag_module.create_simulation = MagicMock()
         self.dag_module.create_simulation.get_rain_forecast.return_value = [{"values": {}}]
         self.dag_module.create_simulation.evaluate_rain_gate.return_value = {
-            "should_run": False, "max_intensity_mm_hr": 0.4, "threshold_mm_hr": 5.0, "interval_count": 8
+            "should_run": rain_should_run, "max_intensity_mm_hr": max_mm_hr, "threshold_mm_hr": 5.0, "interval_count": 8
         }
-
+        self.dag_module.standing_flood = MagicMock()
+        self.dag_module.standing_flood.read_standing_flood.return_value = standing
+        self.dag_module.psycopg2 = MagicMock()
+        self.dag_module.DB_CONFIG = {}
         with patch("builtins.print"):
-            self.assertIsNone(self.dag_module.task_check_forecast_rain(ti=MagicMock()))
+            return self.dag_module.task_check_forecast_rain(ti=MagicMock())
+
+    DRY = {"stands": False, "reason": "no_run", "dry_runs_in_a_row": 0, "dry_runs_to_stop": 5, "newest_run_age_min": None}
+    WET = {"stands": True, "reason": "standing_flood", "dry_runs_in_a_row": 0, "dry_runs_to_stop": 5, "newest_run_age_min": 11.0}
+
+    def test_a_dry_state_with_a_dry_forecast_skips_every_downstream_task(self):
+        self.assertIsNone(self.gate(False, 0.4, self.DRY))
+
+    def test_a_forecast_at_the_threshold_runs_without_reading_the_flood(self):
+        self.assertEqual(self.gate(True, 5.2, self.DRY), "1_trigger_simulation")
+        self.dag_module.standing_flood.read_standing_flood.assert_not_called()
+
+    def test_a_standing_flood_keeps_the_simulation_going_under_the_threshold(self):
+        self.assertEqual(self.gate(False, 3.6, self.WET), "1_trigger_simulation")
+        self.dag_module.standing_flood.read_standing_flood.assert_called_once_with(
+            self.dag_module.psycopg2.connect.return_value, 3.6, self.dag_module.DRY_DEPTH_M
+        )
 
     def test_ensure_schema_creates_the_tables_its_downstream_tasks_write(self):
         database = MagicMock()

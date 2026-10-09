@@ -25,6 +25,7 @@ try:
     import archive_results
     import create_simulation
     import hotstart_policy
+    import standing_flood
     import download_result
     import calculate_depth
     import netcdf_input
@@ -69,6 +70,9 @@ EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_ex
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
+# The rain threshold only starts a simulation from a dry state. Once runs exist, the simulation continues until the
+# newest standing_flood.DRY_RUNS_TO_STOP runs of flood_road_values are all under this depth (metres) and no rain is forecast.
+DRY_DEPTH_M = float(os.getenv("FLOOD_DRY_DEPTH_M", "0.05"))
 # Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
 # states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
 # still find one of them and hotstart from a storm that kept growing. With this flag on, a run
@@ -94,7 +98,8 @@ def run_slot(kwargs):
 
 
 def task_check_forecast_rain(**kwargs):
-    """Choose the full pipeline only when any forecast window from the run's slot reaches the rain threshold."""
+    """Choose the full pipeline when a forecast window from the run's slot reaches the rain threshold, or when
+    an earlier run's flood still stands (standing_flood). Only a dry state skips the run."""
     ti = kwargs["ti"]
     intervals = create_simulation.get_rain_forecast(start=run_slot(kwargs))
     if not intervals:
@@ -111,7 +116,20 @@ def task_check_forecast_rain(**kwargs):
     )
     if decision["should_run"]:
         return "1_trigger_simulation"
-    print("✅ Dry cycle: skipping simulation, processing, and upload as a successful DAG run")
+
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        standing = standing_flood.read_standing_flood(conn, decision["max_intensity_mm_hr"], DRY_DEPTH_M)
+    finally:
+        conn.close()
+    ti.xcom_push(key="standing_flood", value=standing)
+    print(
+        f"🌊 Standing flood: {standing['reason']}, {standing['dry_runs_in_a_row']} of "
+        f"{standing['dry_runs_to_stop']} dry runs in a row, newest run {standing['newest_run_age_min']} min old"
+    )
+    if standing["stands"]:
+        return "1_trigger_simulation"
+    print("✅ Dry state: skipping simulation, processing, and upload as a successful DAG run")
     return None
 
 
