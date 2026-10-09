@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
 related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-09
 ---
 
 # Sticky routing reference and checker
@@ -56,6 +56,7 @@ On 2026-10-01 the pair above gives a route of 15 edges and 1,488 m on `roads.geo
 
 ## Open items
 
+- `scripts/routing_experiments/real_graph.py` builds the `Graph` of the real network from the format-2 export (`edge_id,wkt,base_node,adj_node`). Each road is open in both directions and its travel time is its length at 30 km/h, because the export has no one-way flag or speed. A smoke sweep ran on the server export on 2026-10-09.
 - The scenarios use a synthetic depth per edge. They do not read a real depth table. `US-045` proves the real table on the server.
 - The Java engine of `US-050` passes the same four scenarios on a hand-built corridor (`ScenarioReport`, and its random-graph test against an exhaustive search), but the reference and the engine have not yet been compared on real Hanoi roads. That is `US-055`.
 - The wording "sticky from the departure" waits for the user's confirmation before Sprint 8.
