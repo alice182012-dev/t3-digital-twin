@@ -45,6 +45,13 @@ the asset `FLOOD_DEPTH_FILES` (`dags/core_assets.py`). Task `3b_publish_depth_fi
 `publish_run` once for each run in the triggering events, oldest first. A failure in `flood_tiles` does
 not fail the core run.
 
+`FLOOD_TILES_INPUT` picks the input. `files` (the default) reads the announced `depth_*.tif` folder and starts
+when `3b_publish_depth_files` ends. `postgis` runs on `flood_depth_raster_tile` (the event of `9b`), exports the
+first `FLOOD_EXTENT_TILE_STEPS` steps with `scripts/flood_extent/raster_export.py` into a temporary folder in
+EPSG:4326, builds from it, and removes it. The task returns `input_seconds` and `build_seconds` for each run.
+The modes write the same bucket and rows, so run one at a time. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]
+measures which one to keep.
+
 The 24-hour cleanup of `RESULT_DIR` and `DEPTH_ROOT_DIR` is part of `publish_run`, so `flood_tiles` owns
 it. It deletes by file age, so it cannot take the files of a run that another consumer still reads. A
 later consumer of `FLOOD_DEPTH_FILES` must not delete the depth folder. The shared folder paths are in
