@@ -22,6 +22,8 @@ sys.path.append(SCRIPTS_PATH)
 sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
 # edge_depth/*.py import each other as top-level modules.
 sys.path.append(os.path.join(SCRIPTS_PATH, "edge_depth"))
+# prune_flood_road_values imports flood_on_roads as a top-level module.
+sys.path.append(os.path.join(SCRIPTS_PATH, "flood_roads"))
 
 try:
     import build_edge_depth
@@ -29,6 +31,7 @@ try:
     from db_config import DB_CONFIG
     from roads import load_road_segments
     from flood_roads import flood_on_roads
+    import prune_flood_road_values
 except ImportError as e:
     print(f"❌ Import error: {e}")
 
@@ -40,6 +43,8 @@ except ImportError as e:
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
 EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "3"))
+# Parsed when prune_flood_road_values runs, so a bad value fails that task and not the whole DAG file.
+FLOOD_ROAD_VALUES_KEEP_HOURS = os.getenv("FLOOD_ROAD_VALUES_KEEP_HOURS", "24")
 # One slot, so routing holds at most one of the worker's Celery slots and the core's depth and tile tasks keep the
 # rest. It also keeps two routing runs from writing road_segment at once. Airflow 3 forbids database access at
 # DAG-parse time, so the pool is created once by hand (README, "Create the Airflow pools").
@@ -159,6 +164,42 @@ def task_flood_on_roads(**kwargs):
     return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
 
 
+def flood_road_values_keep_hours():
+    try:
+        hours = int(FLOOD_ROAD_VALUES_KEEP_HOURS)
+    except ValueError:
+        hours = 0
+    if hours < 1:
+        raise ValueError(
+            f"❌ FLOOD_ROAD_VALUES_KEEP_HOURS must be a positive integer, got {FLOOD_ROAD_VALUES_KEEP_HOURS!r}"
+        )
+    return hours
+
+
+def task_prune_flood_road_values(**kwargs):
+    """Deletes the runs of flood_road_values older than FLOOD_ROAD_VALUES_KEEP_HOURS before its newest run
+    (US-086, D-017)."""
+    keep_hours = flood_road_values_keep_hours()
+
+    print(f"🧹 Pruning flood_road_values to the {keep_hours} h before its newest run")
+    conn = psycopg2.connect(**DB_CONFIG)
+    try:
+        result = prune_flood_road_values.prune(conn, keep_hours)
+    finally:
+        conn.close()
+    print(
+        f"✅ Deleted {result.runs_deleted} runs ({result.rows_deleted} rows) older than {result.cutoff}; "
+        f"{result.runs_kept} runs kept, newest {result.newest_run}"
+    )
+    return {
+        "newest_run": result.newest_run.isoformat() if result.newest_run else None,
+        "cutoff": result.cutoff.isoformat() if result.cutoff else None,
+        "runs_deleted": result.runs_deleted,
+        "rows_deleted": result.rows_deleted,
+        "runs_kept": result.runs_kept,
+    }
+
+
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -185,6 +226,9 @@ with DAG(
         inlets=[FLOOD_DEPTH_RASTER],
         pool=POOL_ROUTING,
     )
+    t_prune = PythonOperator(
+        task_id="prune_flood_road_values", python_callable=task_prune_flood_road_values, pool=POOL_ROUTING
+    )
     t9c = PythonOperator(
         task_id="9c_build_edge_depth_table",
         python_callable=task_build_edge_depth_table,
@@ -195,4 +239,4 @@ with DAG(
         priority_weight=10,
     )
 
-    t_roads >> t_flood_roads
+    t_roads >> t_flood_roads >> t_prune

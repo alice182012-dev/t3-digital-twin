@@ -39,11 +39,17 @@ class RoutingAdapterGraphTests(unittest.TestCase):
     def test_dag_id(self):
         self.assertEqual(self.dag.dag_id, "routing_adapter")
 
-    def test_holds_exactly_the_three_routing_tasks(self):
-        self.assertEqual(set(self.dag.tasks), {"load_road_segments", "flood_on_roads", "9c_build_edge_depth_table"})
+    def test_holds_exactly_the_four_routing_tasks(self):
+        self.assertEqual(
+            set(self.dag.tasks),
+            {"load_road_segments", "flood_on_roads", "prune_flood_road_values", "9c_build_edge_depth_table"},
+        )
 
-    def test_flood_on_roads_waits_for_the_road_pieces_and_9c_waits_for_nothing(self):
-        self.assertEqual(self.dag.edges, {("load_road_segments", "flood_on_roads")})
+    def test_the_road_tasks_run_in_order_and_9c_waits_for_nothing(self):
+        self.assertEqual(
+            self.dag.edges,
+            {("load_road_segments", "flood_on_roads"), ("flood_on_roads", "prune_flood_road_values")},
+        )
 
     def test_runs_on_the_asset_9b_emits(self):
         self.assertEqual(self.dag.kwargs["schedule"], [PUBLISHED])
@@ -64,13 +70,22 @@ class RoutingAdapterGraphTests(unittest.TestCase):
     def test_9c_takes_the_pool_slot_before_the_road_tasks(self):
         weights = {name: task.kwargs.get("priority_weight", 1) for name, task in self.dag.tasks.items()}
 
-        self.assertEqual(weights, {"load_road_segments": 1, "flood_on_roads": 1, "9c_build_edge_depth_table": 10})
+        self.assertEqual(
+            weights,
+            {"load_road_segments": 1, "flood_on_roads": 1, "prune_flood_road_values": 1, "9c_build_edge_depth_table": 10},
+        )
 
     def test_the_tasks_that_need_a_run_read_the_published_asset(self):
         inlets = {name: task.kwargs.get("inlets") for name, task in self.dag.tasks.items()}
 
         self.assertEqual(
-            inlets, {"load_road_segments": None, "flood_on_roads": [PUBLISHED], "9c_build_edge_depth_table": [PUBLISHED]}
+            inlets,
+            {
+                "load_road_segments": None,
+                "flood_on_roads": [PUBLISHED],
+                "prune_flood_road_values": None,
+                "9c_build_edge_depth_table": [PUBLISHED],
+            },
         )
 
 
@@ -202,6 +217,64 @@ class RoutingTaskTests(unittest.TestCase):
             self.dag_module.task_build_edge_depth_table(**self.context)
 
         self.ti.xcom_push.assert_not_called()
+
+    def pruned(self, **fields):
+        result = dict(
+            newest_run=datetime(2026, 10, 9, 16, 0), cutoff=datetime(2026, 10, 8, 16, 0),
+            runs_deleted=2, rows_deleted=70000, runs_kept=97,
+        )
+        result.update(fields)
+        return MagicMock(**result)
+
+    def test_prune_keeps_24_hours_by_default_and_reports_what_it_deleted(self):
+        prune = self.dag_module.prune_flood_road_values = MagicMock()
+        prune.prune.return_value = self.pruned()
+
+        with patch("builtins.print"):
+            result = self.dag_module.task_prune_flood_road_values(**self.context)
+
+        self.assertEqual(prune.prune.call_args.args[1:], (24,))
+        self.assertEqual(
+            result,
+            {"newest_run": "2026-10-09T16:00:00", "cutoff": "2026-10-08T16:00:00", "runs_deleted": 2,
+             "rows_deleted": 70000, "runs_kept": 97},
+        )
+
+    def test_prune_of_an_empty_table_reports_zero(self):
+        prune = self.dag_module.prune_flood_road_values = MagicMock()
+        prune.prune.return_value = self.pruned(newest_run=None, cutoff=None, runs_deleted=0, rows_deleted=0, runs_kept=0)
+
+        with patch("builtins.print"):
+            result = self.dag_module.task_prune_flood_road_values(**self.context)
+
+        self.assertEqual(
+            result, {"newest_run": None, "cutoff": None, "runs_deleted": 0, "rows_deleted": 0, "runs_kept": 0}
+        )
+
+    def test_the_prune_window_can_be_set_by_environment(self):
+        with patch.dict(os.environ, {"FLOOD_ROAD_VALUES_KEEP_HOURS": "6"}):
+            dag_module = load_routing_module()
+        dag_module.DB_CONFIG = {}
+        dag_module.prune_flood_road_values = MagicMock()
+        dag_module.prune_flood_road_values.prune.return_value = self.pruned()
+
+        with patch("builtins.print"):
+            dag_module.task_prune_flood_road_values(**self.context)
+
+        self.assertEqual(dag_module.prune_flood_road_values.prune.call_args.args[1:], (6,))
+
+    def test_a_prune_window_that_is_not_a_positive_integer_fails_the_task_and_deletes_nothing(self):
+        for value in ("0", "-3", "1.5", "abc", ""):
+            with self.subTest(value=value):
+                with patch.dict(os.environ, {"FLOOD_ROAD_VALUES_KEEP_HOURS": value}):
+                    dag_module = load_routing_module()
+                dag_module.DB_CONFIG = {}
+                dag_module.prune_flood_road_values = MagicMock()
+
+                with patch("builtins.print"), self.assertRaisesRegex(ValueError, "FLOOD_ROAD_VALUES_KEEP_HOURS"):
+                    dag_module.task_prune_flood_road_values(**self.context)
+
+                dag_module.prune_flood_road_values.prune.assert_not_called()
 
     def test_load_road_segments_loads_the_production_roads_file(self):
         loader = self.dag_module.load_road_segments = MagicMock(
