@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-08
+last_updated: 2026-10-10
 ---
 
 # Core output contract
@@ -58,7 +58,7 @@ One row is the dissolved polygon of one depth band at one forecast step of one r
 - **Unique columns.** `run_ts`, `valid_time_utc`, `dn_code`.
 - **Units.** `dn_code` names the band by its upper limit in centimetres. 10 is a depth over 0.05 m up to 0.1 m, and so on to 60, which ends at 0.6 m. 600 is any depth over 0.6 m. A depth of 0.05 m or less is dry and has no row (`BAND_TABLE` and `TOP_CODE` in `scripts/flood_extent/flood_extent.py:41-44`). `area_m2` is in square metres, measured in the model's projected CRS before the polygon is reprojected (`flood_extent.py:199-207`).
 - **CRS.** EPSG:4326.
-- **Writer.** Task `9_build_flood_tiles` calls `publish.publish_run` (`scripts/flood_extent/publish.py:49-76`). It writes only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, 2 by default (`dags/flood_mapping_dag.py:54`). A dry step has no rows.
+- **Writer.** Task `9_build_flood_tiles` of the DAG `flood_tiles` calls `publish.publish_run` (`scripts/flood_extent/publish.py:49-76`). It writes only the first `FLOOD_EXTENT_TILE_STEPS` steps of a run, 2 by default (`dags/flood_tiles_dag.py`). A dry step has no rows.
 - **Retention.** The newest 8 runs by `run_ts` (`prune_polygon_rows`, `publish.py:135-169`). `FLOOD_EXTENT_KEEP_RUNS` changes the number.
 
 ### flood_extent_step

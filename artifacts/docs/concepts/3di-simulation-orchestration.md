@@ -22,20 +22,20 @@ The section "The manual two-event test DAG" covers a DAG that runs the same step
         |
    (rain, or a flood still stands)
         v
-1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 9_build_flood_tiles
-        |                        |                      |
+1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 3b_publish_depth_files
+        |                        |                      |                  (asset event, starts flood_tiles)
         |                        v                      +--> 9b_load_depth_raster
         |               2b_archive_results --> 2c_archive_done
         v
 0b_ensure_schema
 ```
 
-The diagram leaves out the edges from `0b_ensure_schema` to `9_build_flood_tiles` and `9b_load_depth_raster`, and from `2c_archive_done` to `9_build_flood_tiles`. The DAG has 9 tasks. Task `3b_upload_netcdf_postgres` left the DAG on 2026-10-10 ([[US-095-retire-the-netcdf-values-ingest|US-095]]). Since 2026-10-07 (commit
+The diagram leaves out the edges from `0b_ensure_schema` to `3b_publish_depth_files` and `9b_load_depth_raster`, and from `2c_archive_done` to `3b_publish_depth_files`. The DAG has 9 tasks. The tile build `9_build_flood_tiles` left the DAG for `flood_tiles`, which runs on the asset `3b_publish_depth_files` emits ([[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]). Task `3b_upload_netcdf_postgres` left the DAG on 2026-10-10 ([[US-095-retire-the-netcdf-values-ingest|US-095]]). Since 2026-10-07 (commit
 `77169c3` on the branch `modular`) the routing tasks are in their own DAG, `routing_adapter`,
 described in the next section. `routing_adapter` is unpaused on the server (checked 2026-10-08), and
 `artifacts/TODOS.md` records it running there from 2026-10-07 16:00 +07.
 
-`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `9_build_flood_tiles` and
+`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_publish_depth_files` and
 `9b_load_depth_raster`, since each needs its PostGIS tables to exist
 first. It creates the three empty TimescaleDB tables, `flood_road_values` with its `segment_id` column, the flood
 extent tables, the depth raster tables, and `road_segment` and `graph_edge`, which only
@@ -46,7 +46,7 @@ outlet and sets `run_ts` in the event's `extra`. Airflow emits the event only wh
 succeeds, so a dry cycle emits none. The event is the signal that a run's depth tiles are in
 `flood_depth_raster_tile`. See [[core-output-contract]], "Readiness".
 
-Tasks `9_build_flood_tiles` and `9b_load_depth_raster` name the run with
+Tasks `3b_publish_depth_files` and `9b_load_depth_raster` name the run with
 `flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
 the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG, per the plan
 [[raster-first-flood-pipeline]].
@@ -198,7 +198,7 @@ transient error that might resolve on retry.
 Rana keeps a simulation's result files for one month (stated by the user on 2026-10-10).
 A past run can therefore be rebuilt without a new simulation until then.
 Take its `sim_id` from the `1_trigger_simulation` XCom, call `download_result.run_download`, and run `calculate_depth.run_calculate_depth` on the file.
-The local `depth.tif` files under `data/mapping/output_depths` are a cache, and the 24-hour cleanup of `9_build_flood_tiles` may delete them.
+The local `depth.tif` files under `data/mapping/output_depths` are a cache, and the 24-hour cleanup of `9_build_flood_tiles` (now in `flood_tiles`) may delete them.
 A saved state is different.
 `create_simulation.py` registers each one with an expiry of one day, so a hotstart is possible only from a run less than a day old.
 A slot that never ran has no result to download, and only a new simulation can fill it.

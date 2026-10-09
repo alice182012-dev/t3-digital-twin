@@ -26,7 +26,7 @@ EXPECTED_TASKS = {
     "2b_archive_results",
     "2c_archive_done",
     "3_calculate_depth",
-    "9_build_flood_tiles",
+    "3b_publish_depth_files",
     "9b_load_depth_raster",
 }
 
@@ -36,11 +36,11 @@ EXPECTED_EDGES = {
     ("2_download_results", "3_calculate_depth"),
     ("2_download_results", "2b_archive_results"),
     ("2b_archive_results", "2c_archive_done"),
-    ("2c_archive_done", "9_build_flood_tiles"),
-    ("3_calculate_depth", "9_build_flood_tiles"),
+    ("2c_archive_done", "3b_publish_depth_files"),
+    ("3_calculate_depth", "3b_publish_depth_files"),
     ("3_calculate_depth", "9b_load_depth_raster"),
     ("1_trigger_simulation", "0b_ensure_schema"),
-    ("0b_ensure_schema", "9_build_flood_tiles"),
+    ("0b_ensure_schema", "3b_publish_depth_files"),
     ("0b_ensure_schema", "9b_load_depth_raster"),
 }
 
@@ -200,7 +200,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         cannot turn the run red and break the next slot's hotstart (hotstart_policy)."""
         leaves = {t for t in self.dag.tasks if not any(up == t for up, _ in self.dag.edges)}
 
-        self.assertEqual(leaves, {"9_build_flood_tiles", "9b_load_depth_raster"})
+        self.assertEqual(leaves, {"3b_publish_depth_files", "9b_load_depth_raster"})
 
     def test_no_task_ingests_the_netcdf_into_a_database(self):
         self.assertFalse(any("netcdf" in task_id for task_id in self.dag.tasks))
@@ -208,14 +208,22 @@ class FloodMappingDagGraphTests(unittest.TestCase):
 
     def test_a_failed_archive_does_not_stop_the_tile_build(self):
         self.assertEqual(self.dag.tasks["2c_archive_done"].kwargs["trigger_rule"], "all_done")
-        self.assertNotIn("trigger_rule", self.dag.tasks["9_build_flood_tiles"].kwargs)
+        self.assertNotIn("trigger_rule", self.dag.tasks["3b_publish_depth_files"].kwargs)
+
+    def test_the_tile_build_is_not_a_task_of_this_dag(self):
+        self.assertNotIn("9_build_flood_tiles", self.dag.tasks)
+        self.assertFalse(hasattr(self.dag_module, "task_build_flood_tiles"))
 
     def test_load_depth_raster_declares_the_published_asset(self):
         self.assertEqual(
             self.dag.tasks["9b_load_depth_raster"].kwargs["outlets"], [FakeAsset("flood_depth_raster_tile")]
         )
         self.assertEqual(
-            [name for name, task in self.dag.tasks.items() if "outlets" in task.kwargs], ["9b_load_depth_raster"]
+            self.dag.tasks["3b_publish_depth_files"].kwargs["outlets"], [FakeAsset("flood_depth_files")]
+        )
+        self.assertEqual(
+            sorted(name for name, task in self.dag.tasks.items() if "outlets" in task.kwargs),
+            ["3b_publish_depth_files", "9b_load_depth_raster"],
         )
 
 
@@ -266,7 +274,7 @@ class ArchiveTaskTests(unittest.TestCase):
 
 
 class DepthRunTests(unittest.TestCase):
-    """Tasks 9 and 9b name the run from the depth folder, not from an XCom of a removed task."""
+    """Tasks 3b and 9b name the run from the depth folder, not from an XCom of a removed task."""
 
     def setUp(self):
         self.dag_module = load_dag_module()
@@ -297,22 +305,17 @@ class DepthRunTests(unittest.TestCase):
         self.assertEqual(args[1:3], (self.tmp.name, "20260924T170639"))
         self.assertEqual(event.extra, {"run_ts": "20260924T170639"})
 
-    def test_build_flood_tiles_uses_the_earliest_depth_file_as_run_ts(self):
-        publish = MagicMock()
-        publish.publish_run.return_value = {
-            "20260924T170639": MagicMock(is_empty=False),
-            "20260924T180639": MagicMock(is_empty=True),
-        }
-        self.dag_module.publish = publish
-        self.dag_module.DB_CONFIG = {}
-        env = {"MINIO_ENDPOINT": "http://minio:9000", "MINIO_ACCESS_KEY": "k", "MINIO_SECRET_KEY": "s"}
+    def test_publish_depth_files_announces_the_run_and_its_folder(self):
+        event = types.SimpleNamespace(extra={})
 
-        with patch.dict(os.environ, env), patch("builtins.print"):
-            result = self.dag_module.task_build_flood_tiles(ti=self.ti)
+        with patch("builtins.print"):
+            result = self.dag_module.task_publish_depth_files(
+                ti=self.ti, outlet_events={FakeAsset("flood_depth_files"): event}
+            )
 
-        self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "flooded_timesteps": 1})
-        self.assertEqual(publish.publish_run.call_args.args[:2], (self.tmp.name, "20260924T170639"))
-        self.assertIn("/opt/airflow/data/mapping/results", publish.publish_run.call_args.kwargs["cleanup_dirs"])
+        expected = {"run_ts": "20260924T170639", "depth_dir": self.tmp.name}
+        self.assertEqual(result, expected)
+        self.assertEqual(event.extra, expected)
 
     def test_a_missing_depth_folder_fails_the_task(self):
         self.ti.xcom_pull.side_effect = lambda task_ids, key=None: None

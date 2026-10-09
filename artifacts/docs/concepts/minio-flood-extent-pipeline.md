@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [minio, airflow, flood-tile]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
-last_updated: 2026-10-08
+last_updated: 2026-10-10
 ---
 
 # MinIO flood-extent tile pipeline
@@ -36,11 +36,19 @@ empty one rather than an error.
 
 ## The Airflow task
 
-`dags/flood_mapping_dag.py`'s `task_build_flood_tiles` (task 9 in the DAG, named
-`9_build_flood_tiles`) runs after `3_calculate_depth` and `0b_ensure_schema`. It reads the run's
-depth directory from task 3's XCom, takes `run_ts` from `flood_extent.run_ts_for_depth_dir` (the
-`stamp_key` of the earliest `depth_*.tif`), and calls `scripts/flood_extent/publish.py`'s
-`publish_run` once for the whole run.
+`dags/flood_tiles_dag.py`'s `task_build_flood_tiles` (named `9_build_flood_tiles`) is the only task of
+the `flood_tiles` DAG ([[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]). The DAG runs on
+the asset `FLOOD_DEPTH_FILES` (`dags/core_assets.py`). Task `3b_publish_depth_files` of
+`flood_mapping_full` emits it after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`, with
+`run_ts` and `depth_dir` in the event's `extra`. `run_ts` is the `stamp_key` of the earliest
+`depth_*.tif` (`flood_extent.run_ts_for_depth_dir`). The task calls `scripts/flood_extent/publish.py`'s
+`publish_run` once for each run in the triggering events, oldest first. A failure in `flood_tiles` does
+not fail the core run.
+
+The 24-hour cleanup of `RESULT_DIR` and `DEPTH_ROOT_DIR` is part of `publish_run`, so `flood_tiles` owns
+it. It deletes by file age, so it cannot take the files of a run that another consumer still reads. A
+later consumer of `FLOOD_DEPTH_FILES` must not delete the depth folder. The shared folder paths are in
+`dags/core_paths.py`.
 
 The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
 on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
@@ -94,7 +102,7 @@ arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polyg
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
 
-The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and takes the same `run_ts` from
+The `9b_load_depth_raster` task runs beside `3b_publish_depth_files` (which starts `9_build_flood_tiles`) and takes the same `run_ts` from
 `flood_extent.run_ts_for_depth_dir`, so both tables share one (run, valid time) key. The
 `flood_on_roads` task runs after `9b_load_depth_raster` and samples these tiles under the same
 `run_ts`. `raster_load.load_run` reprojects
