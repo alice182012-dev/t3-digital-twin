@@ -176,6 +176,22 @@ class VehicleLimitTest(unittest.TestCase):
         self.assertEqual(ex.vehicle_limits(), {"motorbike": 20, "car": 30, "truck": 35, "foot": 40})
 
 
+class UnlistedStepsTest(unittest.TestCase):
+    def test_a_step_the_backend_does_not_list_is_reported_with_its_run_and_time(self):
+        with GoldenTables() as table_set:
+            run = table_set.tables[0].header.run_name
+            steps = table_set.tables[0].header.step_times
+            listed = {(run, int(steps[0].timestamp())): "listed"}
+            missing = ex.unlisted_steps(listed, [table_set], (0, 1))
+        self.assertEqual(missing, [(run, steps[1].isoformat())])
+
+    def test_every_step_is_listed_when_the_backend_lists_it(self):
+        with GoldenTables() as table_set:
+            run = table_set.tables[0].header.run_name
+            listed = {(run, int(t.timestamp())): "x" for t in table_set.tables[0].header.step_times}
+            self.assertEqual(ex.unlisted_steps(listed, [table_set], (0, 1)), [])
+
+
 class DepartureStepsTest(unittest.TestCase):
     def test_the_default_is_every_step_but_the_last(self):
         with GoldenTables() as tables:

@@ -216,6 +216,12 @@ def backend_valid_times(backend: str, runs: Sequence[str]) -> dict[tuple[str, in
     return out
 
 
+def unlisted_steps(listed: dict, table_sets: Sequence[TableSet], steps: Sequence[int]) -> list[tuple[str, str]]:
+    """The (run, step time) pairs that a departure uses and the backend does not list."""
+    return [(t.header.run_name, t.header.step_times[i].isoformat()) for s in table_sets for t in s.tables
+            for i in steps if (t.header.run_name, int(t.header.step_times[i].timestamp())) not in listed]
+
+
 def _parse_table_set(text: str) -> TableSet:
     stage, _, paths = text.partition("=")
     if not stage or not paths:
@@ -255,15 +261,18 @@ def main(argv=None) -> int:
              else default_departure_steps(args.table_set))
     runs = [t.header.run_name for s in args.table_set for t in s.tables]
     listed = backend_valid_times(args.backend, runs)
-    missing = [(t.header.run_name, t.header.step_times[i].isoformat()) for s in args.table_set for t in s.tables
-               for i in steps if (t.header.run_name, int(t.header.step_times[i].timestamp())) not in listed]
-    if missing:
+    missing = unlisted_steps(listed, args.table_set, steps)
+    if missing and args.model == "single_timestep":
+        # The old model reads the flood areas, and the backend keeps only the first steps of each run.
         print(f"FAIL: the backend lists no step for {len(missing)} (run, step) pairs, first {missing[:3]}")
         return 1
+    if missing:
+        # The sticky engine reads the full edge table, so a step without flood areas still plans.
+        print(f"note: the backend lists no flood area for {len(missing)} (run, step) pairs, first {missing[:3]}. The engine reads the edge table, so the run goes on.")
     result = run_experiment(
         model=args.model, storm=args.storm, pairs=[Pair.from_json(d) for d in json.loads(Path(args.pairs).read_text())],
         table_sets=args.table_set, limits=vehicle_limits(), planner=http_planner(args.backend), departure_steps=steps,
-        slowdown=slowdown, valid_time=lambda run, t: listed[(run, int(t.timestamp()))],
+        slowdown=slowdown, valid_time=lambda run, t: listed.get((run, int(t.timestamp()))) or _iso(t),
     )
     write_result(Path(args.out), result)
     check, model_check = result["sticky_check"], result["model_check"]
