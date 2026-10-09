@@ -29,7 +29,7 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 **Open decisions for the product owner at planning:**
 
 1. Confirm the goal and the picks above. Setting `sprint: 13` on a story is the pick.
-2. Choose the replay scope and give the go (see "How to close the proposed picks").
+2. Give the go for the replay. The scope is decided: A, the full storm (the user, 2026-10-10).
 3. Set the pause time of the replay. The recommendation is 00:15 on Tuesday 2026-10-13.
 4. Accept the rewritten hotstart check and the wet-edge ratio band of 0.8 to 1.25 for `US-102`.
 5. Choose 30 or 60 pairs for `US-091`. The recommendation is 60, about 31 minutes.
@@ -184,3 +184,4 @@ Fill this on 2026-10-25.
 
 - **2026-10-10, planning.** Created at the Scrum adoption ([[decision-log|D-024]]) so the first sprint has a home. Every story that was not `Done` returned to the backlog with `sprint` cleared. The old Sprint 13 to 16 placement of the frontend recheck ([[SP-04-frontend-recheck|sprint-plan-4]]) is dropped.
 - **2026-10-10, planning.** The sprint length changed from one week to two weeks, and stories enter by story points and not by weeks ([[decision-log|D-026]]). The end date moved from 2026-10-18 to 2026-10-25. The picks stay unset until planning on 2026-10-12.
+- **2026-10-10, planning.** The user chose replay scope A, the full storm, over the rebuild plus a short slice. Open decision 2 is now only the go.

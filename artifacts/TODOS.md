@@ -9,14 +9,17 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-1. Sunday (Claude, Mac): fix the story text and three small code changes, then you push.
-   The changes are the `compose.yml` env var, the `US-102` check script, and the `replay.ps1` preview and `stop` line.
-   The list is in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], "How to close the proposed picks".
-2. Monday 2026-10-12, planning: decide the replay scope (A, full storm, or B, rebuild plus a short slice), the go, the pause time, and the other decisions listed in SPR-013.
-3. Monday, after the go: read-only server checks, `git pull --ff-only alice modular`, edit `.env`, run `replay.ps1 start`, and unpause `flood_mapping_full` about 10:45 +07 ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+Scope A is decided: one full replay of the 2026-09-16 storm closes US-102, US-091, and US-089.
+1. Before Monday (Claude, on the Mac): make three small code changes and commit them, then you push so the server can `git pull` them.
+   - `compose.yml` line 38 reads `EDGE_TABLE_KEEP_RUNS` from `.env`, so no one edits the file on the server.
+   - A read-only check script for [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] lists run times against the slots, counts wet edges per table, and searches the logs for `[Hotstart` and `[Coldstart`.
+   - `replay.ps1` says "at least N runs" in its preview, and `stop` checks that it restored mode `live`.
+2. Monday 2026-10-12, planning: you decide the go, the pause time (recommended 00:15 on Tuesday), the hotstart check with the wet-edge ratio of 0.8 to 1.25, 60 pairs for US-091, the 50 GB floor, and the split of US-094.
+   Then Claude rewrites the text of US-102, US-091, US-089, and US-094 to match.
+3. Monday, after the go: read-only server checks, `git pull --ff-only alice modular`, edit `.env`, run `replay.ps1 start`, and unpause `flood_mapping_full` about 10:45 +07.
 4. During the replay: live sticky readings for [[US-091-measure-how-often-a-single-timestep-route|US-091]] and the `BL-028` reading at about 18:30 +07.
-5. Tuesday 00:15: pause the DAG, run the single-timestep step, copy the tables, run the `US-102` check, then `stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]).
-6. Wednesday: write the `US-091` result and decision, record the evidence, and resolve `BL-028`.
+5. Tuesday 00:15: pause the DAG, run the single-timestep step, copy the tables, run the US-102 check, then `stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]).
+6. Wednesday: write the US-091 result and decision, record the evidence, and resolve `BL-028`.
    [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h.
 <!-- next-action:end -->
 
