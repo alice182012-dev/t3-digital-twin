@@ -3,11 +3,14 @@
 ## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
 ## Next action:
-1. Done on 2026-10-09 from the server's own desktop session: `rollout.ps1 -Branch modular` rebuilt and recreated the three images/services (log: `C:\Users\TECOTEC\rollout-proof.log`), every script check passed, and the shallow-road check (flag on, `POST /route` for the "long" trip with truck/foot) returned two paths with `td.kinds: "recommended,through_water"`. `US-097` moved to `Done`, evidence `us-097-through-water-route-output.png`. The flag is off again.
-2. Done on 2026-10-09 (`SKIP_BUILD=1 IMAGE=graphhopper-time-aware:local`, no build; blocker `resolved`). The files went to `D:\airflow-data\mapping\graph_export` by mistake. Airflow reads `D:/airflow_new_data/data/mapping/graph_export`, which still has the format-1 export. On your go the same day, the files were copied there (hashes match) and the wrong folder was deleted. Original step: run `java/time-aware-routing/export-edges.sh` from the Mac, with `EXPORT_DEST='D:\airflow-data\mapping\graph_export'`. The new image writes `base_node` and `adj_node` (format version 2). Then the blocker [[edge-export-has-no-node-ids]] can move to `resolved` once a `Graph` is built from it. This step needs the Mac session, not the server.
-3. The loader exists (`scripts/routing_experiments/real_graph.py`) and a smoke sweep ran on the real graph. Still to do: run `sweep_fraction` and `compare` (`scripts/routing_experiments/`). Storm stages wait for the second replay (D-020).
-4. Written on 2026-10-09 and committed locally (`f555e71`): a `TimeAwareRouterTest` case for a via request with a shallow road. It passed on GitHub Actions on 2026-10-09 (run 37889625407, 138 Java tests, 0 failures).
-5. After Sprint 12, run the second replay with `EDGE_TABLE_KEEP_RUNS` raised, and take the `US-069` readings on time.
+1. Second replay after Sprint 12 (D-020). Before it starts, raise `EDGE_TABLE_KEEP_RUNS` (for example to 60), so the depth tables of the whole storm stay on disk. Take the hour-6 and hour-12 readings on time for `US-069`, then run `replay.ps1 stop`. This unblocks the storm stages of `US-091`, `US-092`, and `US-093`.
+2. Run the real-graph sweeps of `US-092` and `US-093` on the tables of that replay. The loader is `scripts/routing_experiments/real_graph.py`. The result file must say that one-way roads are open both ways and that travel time is length at 30 km/h.
+3. Read the `9c` durations of the next `routing_adapter` runs (`US-070`). The task `prune_flood_road_values` also runs inside Airflow for the first time, which moves `US-086` to `Done`.
+4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. `US-095` and the `netcdf_values` drop wait for it, and the drop needs your explicit go.
+5. Decide `US-069`: accept the 0-hour and 63-hour readings, or take both readings on time in the second replay (item 1 does the second).
+6. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain. The flag is off now.
+
+Done on 2026-10-09 and removed from this list: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (copied to `D:/airflow_new_data/data/mapping/graph_export`, blocker [[edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road (`f555e71`, run 37889625407). Records are in [[sprint-plan-3]] and the log of 2026-10-09.
 
 ### Active - US-070 Stop a slow sampling step from holding the database
 
