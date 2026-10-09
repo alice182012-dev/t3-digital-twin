@@ -56,7 +56,7 @@ Under the blocker rules in `.claude/CLAUDE.md` (rule 11), the case is as follows
 
 ### Approach 1
 
-The user chose the rule (see the next section) and it is built on `modular` (commit `c9789ab`, local, not pushed): `scripts/standing_flood.py` (the rule and the query), `scripts/test_standing_flood.py` (12 tests), and a change to `task_check_forecast_rain` in `dags/flood_mapping_dag.py`, with 3 gate tests in `test/test_flood_mapping_dag_graph.py`. Results:
+The user chose the rule (see the next section) and it is built on `modular` (commit `5f115f4`, local, not pushed): `scripts/standing_flood.py` (the rule and the query), `scripts/test_standing_flood.py` (12 tests), and a change to `task_check_forecast_rain` in `dags/flood_mapping_dag.py`, with 3 gate tests in `test/test_flood_mapping_dag_graph.py`. Results:
 
 - All 12 tests in `scripts/test_standing_flood.py` pass, and the 3 gate tests pass. 6 tests in `test/test_flood_rain_gate.py` fail, and they failed the same way before the change (`git stash` comparison).
 - The query ran against the real tables of the second replay (read-only). At the first skipped slot (12:30 Z, forecast 4.52 mm/h) the newest runs hold a deepest value of about 6.5 m, so the rule says continue. The later skipped slots cannot be replayed from history, because the skipped runs never wrote the runs that keep the chain alive.
@@ -84,7 +84,7 @@ The tables that `flood_mapping_full` writes itself (`flood_extent_polygon`, `flo
 
 ### Conflict check with the netcdf retirement (US-095)
 
-`git merge-tree` of `modular` (with `c9789ab`) and the branch `us-095-retire-netcdf-ingest` has no conflict. In the merged tree the same 6 tests of `test/test_flood_rain_gate.py` fail as before, the DAG tests pass, and the DAG has no task `3b_upload_netcdf_postgres`. The fix reads `flood_road_file` and `flood_road_values` only, and `US-095` does not touch those tables.
+`git merge-tree` of `modular` (with `5f115f4`) and the branch `us-095-retire-netcdf-ingest` has no conflict. In the merged tree the same 6 tests of `test/test_flood_rain_gate.py` fail as before, the DAG tests pass, and the DAG has no task `3b_upload_netcdf_postgres`. The fix reads `flood_road_file` and `flood_road_values` only, and `US-095` does not touch those tables.
 
 ## Related topics
 
@@ -97,4 +97,4 @@ The tables that `flood_mapping_full` writes itself (`flood_extent_polygon`, `flo
 - **2026-10-10, monitoring.** The user decided the rule: the gate applies only from a dry state, and the simulation then runs until the newest 5 runs of `flood_road_values` are under 5 cm and the forecast rain is 0. Built locally (approach 1), tests pass, not yet run on the server. The blocker becomes `resolved` after a replay with a rain gap inside a storm shows no skipped slot and a hotstart after the gap.
 - **2026-10-10, open.** Logged at the user's request, as P0, after the second replay. First read as a gate working as designed ("not a fault", [[2026-10-10]]). The user corrected this: a storm still floods after the rain stops, so a gate that stops the simulation is the fault. The mechanism is in the Description, from `dags/flood_mapping_dag.py`, `scripts/create_simulation.py`, `scripts/hotstart_policy.py`, and the Airflow task logs of 2026-10-09. Story: [[US-101-keep-simulating-while-the-flood-still-stands]], Sprint 12.
 - **2026-10-10, monitoring.** The user accepted the two concerns: the simulation may stay on while the model keeps water above 5 cm (a model issue), and the check reads `flood_road_values` because it must look at roads only. No change to the code.
-- **2026-10-10, monitoring.** Committed locally as `c9789ab`. `flood_mapping_full` was paused at 01:29 +07 (no task was running). Merge check with the `US-095` branch is clean. `US-101` is saved as `Done` at the user's request, with tests as evidence. This blocker stays `monitoring` until a replay with a rain gap inside a storm shows no skipped slot and a hotstart after the gap.
+- **2026-10-10, monitoring.** Committed locally as `5f115f4`. `flood_mapping_full` was paused at 01:29 +07 (no task was running). Merge check with the `US-095` branch is clean. `US-101` is saved as `Done` at the user's request, with tests as evidence. This blocker stays `monitoring` until a replay with a rain gap inside a storm shows no skipped slot and a hotstart after the gap.
