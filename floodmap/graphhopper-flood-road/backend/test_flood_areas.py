@@ -5,26 +5,37 @@ validation for the GraphHopper flood-road backend" item asks for: derive_areas()
 place both GET /flood/areas (the map overlay) and POST /route (the routing gate) read flood
 geometry from, so a regression here would silently break both at once.
 
-Run it against a throwaway PostGIS (needs the postgis extension, not plain Postgres):
+Run it from the repository root against a throwaway PostGIS (needs the postgis extension,
+not plain Postgres):
 
     docker run -d --rm --name flood-verify-pg -e POSTGRES_PASSWORD=test \
         -e POSTGRES_DB=floodtest -p 55432:5432 postgis/postgis:15-3.4
-    PYTHONPATH=../scripts:../../../scripts/database \
-        FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
-        python test_flood_areas.py
+    FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
+        python3 floodmap/graphhopper-flood-road/backend/test_flood_areas.py
+
+Without FLOOD_TEST_DSN it prints "FLOOD_TEST_DSN unset; skipping" and exits 0. CI treats
+that line as a failure (.github/workflows/flood-areas-test.yml).
 
 flood_areas imports flood_utils, which the Dockerfile supplies by copying ../scripts
-alongside ../backend; PYTHONPATH stands in for that outside the image. The table comes from
-scripts/database/create_flood_road_tables.py, the same DDL the server runs, so a column the query
-needs but the deploy step lacks fails here first.
+alongside ../backend; the sys.path inserts below stand in for that outside the image. The table
+comes from scripts/database/create_flood_road_tables.py, the same DDL the server runs, so a
+column the query needs but the deploy step lacks fails here first.
 """
 
 from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 import psycopg2
+
+_HERE = Path(__file__).resolve().parent
+sys.path[:0] = [
+    str(_HERE),
+    str(_HERE.parent / "scripts"),
+    str(_HERE.parents[2] / "scripts" / "database"),
+]
 
 import create_flood_road_tables
 from flood_areas import build_custom_model, derive_areas
