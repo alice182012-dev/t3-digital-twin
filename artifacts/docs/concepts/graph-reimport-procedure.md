@@ -3,7 +3,7 @@ date: 2026-10-05
 type: concept
 status: active
 tags: [graphhopper, reimport, edge-depth-table, graph-hash, operations]
-related: ["[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[graph-reimport-procedure-and-stale-table-check]]", "[[graphhopper-backend]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]]"]
+related: ["[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[graph-reimport-procedure-and-stale-table-check]]", "[[graphhopper-backend]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]"]
 last_updated: 2026-10-05
 ---
 
@@ -40,7 +40,7 @@ The window is short if you do the steps in one go. The next DAG run builds a tab
 
 ## Procedure
 
-Run the commands from the Mac, in the repo root, unless a step says the server. Commands that start, recreate, or remove a service run on the server over SSH, with `--no-deps` ([[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]]). The server's shell is PowerShell, so use `;` and not `&&`, and its remote for this repository is `alice`.
+Run the commands from the Mac, in the repo root, unless a step says the server. Commands that start, recreate, or remove a service run on the server over SSH, with `--no-deps` ([[lessons#L-010|recreate-remote-services-on-the-remote-host]]). The server's shell is PowerShell, so use `;` and not `&&`, and its remote for this repository is `alice`.
 
 ### 0. Look at the starting state
 

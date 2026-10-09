@@ -47,7 +47,7 @@ Two things need to happen in sequence on `flood-tile-t6t7`:
    Part B (the polygon/DB/cleanup work) starts.
 4. `scripts/flood_extent/flood_extent.py` (GRASS + GDAL polygon pipeline) has
    a prior plan at
-   `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`
+   `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md`
    which got tiles working end-to-end on this laptop (measured ~110s/timestep,
    187 tiles for a real run) but stopped short of Airflow wiring, MinIO, and
    the nearest-timestep manifest. That plan is still the right shape for

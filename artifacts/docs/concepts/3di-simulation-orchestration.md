@@ -292,7 +292,7 @@ therefore opens in map mode, and the tester switches to flood mode by hand.
 ## Open items
 
 - `.env` on the Mac, read on 2026-10-08, sets `MAX_WORKERS=1` and no `AIRFLOW_WORKER_CONCURRENCY`, so
-  the `compose.yml` default of 1 applies (line 28). `artifacts/docs/claude-plan/calculate-depth-threedidepth-cli.md`
+  the `compose.yml` default of 1 applies (line 28). `artifacts/archive/plans/calculate-depth-threedidepth-cli.md`
   recorded `MAX_WORKERS=8` and `AIRFLOW_WORKER_CONCURRENCY=2` as checked in. The server's `.env` is
   unverified, so confirm it before relying on either concurrency figure.
 - `test/test_create_simulation_cycle.py` tests the hotstart and cold-start branching of

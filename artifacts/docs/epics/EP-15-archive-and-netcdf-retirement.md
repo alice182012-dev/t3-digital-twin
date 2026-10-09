@@ -34,9 +34,7 @@ Concept pages and the architecture doc are not edited now. They change when the 
 
 ## Status history
 
+Story-level progress lines up to 2026-10-10 are in [[EP-15-archive-and-netcdf-retirement-history|the archived history]]. This section keeps plan-level changes only.
+
 - **2026-10-08, draft.** Written at the user's request after decisions D-016 and D-018. The next free ID was `US-094`.
-- **2026-10-08, draft.** `US-094` is in Sprint 10, the earliest sprint that satisfies the dependency of `US-095`
-  (Sprint 11, the user's choice). This is a decision made by dependency under rule 3, and the user can override it.
 - **2026-10-08, draft.** The user asked for a free-space check in `US-094` and for `netcdf_files` and `netcdf_variables` to be dropped in `US-095`. Open question 4 (what proves `US-094` without real rain) is still unanswered.
-- **2026-10-08, draft.** The user decided a one-off real-rain run counts as the proof of `US-094`, so `US-095` does not wait for a storm. The one-off run must get past the rain gate, which is unsettled.
-- **2026-10-08, draft.** The user chose option 1 for the rain gate: the proof of `US-094` waits for a real forecast above the gate. No gate change and no override. `US-095` and `US-086` wait for it.

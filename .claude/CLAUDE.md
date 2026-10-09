@@ -1,31 +1,11 @@
-## gstack (REQUIRED — global install)
+## gstack (REQUIRED, global install)
 
-**Before doing ANY work, verify gstack is installed:**
-
-```bash
-_GS=""
-for _D in "${GSTACK_ROOT:-}" "$HOME/.claude/skills/gstack" "$HOME/.codex/skills/gstack" "$HOME/.factory/skills/gstack" "$HOME/.kiro/skills/gstack" "$HOME/.config/opencode/skills/gstack" "$HOME/.slate/skills/gstack" "$HOME/.cursor/skills/gstack" "$HOME/.openclaw/skills/gstack" "$HOME/.hermes/skills/gstack" "$HOME/.gbrain/skills/gstack" "$HOME/.gstack/repos/gstack"; do
-  [ -z "$_GS" ] && [ -n "$_D" ] && [ -d "$_D/bin" ] && _GS="$_D"
-done
-[ -n "$_GS" ] && echo "GSTACK_OK: $_GS" || echo "GSTACK_MISSING"
-```
-
-If GSTACK_MISSING: STOP. Do not proceed. Tell the user:
-
-> gstack is required for all AI-assisted work in this repo.
-> Install it:
-> ```bash
-> git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack
-> cd ~/.claude/skills/gstack && ./setup --team
-> ```
-> Then restart your AI coding tool.
-
-Do not skip skills, ignore gstack errors, or work around missing gstack.
-
-Using gstack skills: After install, skills like /qa, /ship, /review, /investigate,
-and /browse are available. Use /browse for all web browsing (Aside first, the bundled gstack browser as fallback).
-Use the resolved install path above for gstack file paths
-(default: ~/.claude/skills/gstack).
+The hook `.claude/hooks/check-gstack.sh` (registered in `.claude/settings.json`) blocks skill use when gstack
+is missing and prints the install steps. If it blocks, stop and tell the user to install it
+(`git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack`, then
+`cd ~/.claude/skills/gstack && ./setup --team`, then restart). Do not skip skills, ignore gstack errors, or work
+around a missing gstack. Use `/browse` for all web browsing (Aside first, the bundled gstack browser as
+fallback). gstack file paths use the install path, by default `~/.claude/skills/gstack`.
 
 ## Docker: check which machine you're on before touching it
 
@@ -162,12 +142,6 @@ Key routing rules:
 - Resume context → invoke /context-restore
 - Author a backlog-ready spec/issue → invoke /spec
 
-## Writing code — default to pstack
-
-When actually writing code (not just planning/reviewing), default to pstack's style
-and workflow (`pstack:poteto-mode` and its routed skills — e.g. `pstack:tdd`,
-`pstack:architect`) rather than an ad hoc approach, unless the user says otherwise.
-
 ## Combined gstack + pstack workflow
 
 gstack owns the lifecycle (idea → shipped); pstack owns how code gets written
@@ -179,7 +153,7 @@ within that lifecycle. Stage-by-stage:
    for "is this the right system-level approach" (eng-manager persona review);
    `pstack:architect` for the actual types/module-boundary design once the approach
    is committed. Run eng-review first, then architect on the approach it approved.
-3. **Implementation** — pstack owns this (see rule above). Enter via
+3. **Implementation** — pstack owns this (the global instructions require it before any code). Enter via
    `pstack:poteto-mode` for anything non-trivial; it routes to `pstack:tdd`
    (bug w/ repro), `pstack:how`/`pstack:why` (understanding existing code) as needed.
 4. **Review** — two different jobs. `pstack:interrogate` (multi-model diff review,
@@ -196,11 +170,12 @@ thing to build/safe to ship") and pstack's when it's engineering altitude
 
 ## Plans live in artifacts/docs/claude-plan
 
-Before starting any multi-step task, write its plan to
-`artifacts/docs/claude-plan/`. Name the file after what is being built, for
-example `flood-extent-polygon-tiles-airflow-minio.md`, not after the date or the
-session. Update the file as the plan changes, so a later session can pick up
-from it. Read the matching plan first when resuming work on that topic.
+Write a plan file in `artifacts/docs/claude-plan/` only for multi-day work that has no story file, and name it
+after what is being built (for example `flood-extent-polygon-tiles-airflow-minio.md`). Work that has a story
+file keeps its plan in that story: its acceptance check, its status history, and its details. A story is the
+one home of its plan (see "Write each fact once"). Update a plan file as the plan changes, and read the
+matching plan first when resuming that topic. When the work is done, set the plan's `status` to `done` and move
+it to `artifacts/archive/plans/`, so sessions stop reading it.
 
 ## User stories and sprint planning
 
@@ -328,25 +303,25 @@ the checkable rule to apply going forward.
 
 - Before ruling a data store out as a source for something, read the code that writes into it, not
   just a schema summary or the query that happens to read it today. See
-  [[verify-table-capability-against-write-path-not-summary-or-current-query]].
+  [[lessons#L-009|L-009]].
 - Record a user's short stated answer as a PRD Decision only after checking it actually resolves
   the question that was asked, not by transcribing it as-is. See
-  [[verify-decisions-resolve-the-stated-question]].
+  [[lessons#L-008|L-008]].
 - When a PRD's Goals section changes scope, re-read Problem, Non-goals, Dependencies and
   assumptions, Definition of done, and Rollback for sentences that assumed the old scope. See
-  [[propagate-scope-changes-through-every-prd-section]].
+  [[lessons#L-005|L-005]].
 - After editing a document, grep the vault for `[[wikilinks]]` to it and check whether every
   document that cross-references it still holds true. See
-  [[check-cross-referencing-documents-after-a-scope-change]].
+  [[lessons#L-001|L-001]].
 - Put "invoke `pstack:technical-writing` and `pstack:unslop` before writing" inside a subagent's
   own instructions when it's drafting a technical document, not just in a review pass afterward.
-  See [[load-writing-skills-before-delegating-not-after]].
+  See [[lessons#L-004|L-004]].
 - Test locale- or region-scoped behavior with a real target-language query (with its actual
   diacritics or script, chosen to be ambiguous with a same-name place elsewhere), not an
-  English-only placeholder. See [[test-with-real-target-language-input]].
+  English-only placeholder. See [[lessons#L-007|L-007]].
 - When a shared convention file changes mid-session, recheck files already created earlier in the
   session against the new rule, not only files created after noticing the change. See
-  [[recheck-existing-files-after-convention-changes]].
+  [[lessons#L-006|L-006]].
 
 ## Write each fact once
 
@@ -403,6 +378,11 @@ maintenance rule:
   a `related` link or close out a status. A daily log is an index (see "Write
   each fact once"): one line per event, linking to the story, blocker, or
   decision that holds the detail.
+- **Archive** (`artifacts/archive/`) holds retired documents: logs before 2026-10-01, finished plans, resolved
+  blockers, the story-level history lines of epics and sprint plans, and the research cut from long pages. It is
+  excluded from Obsidian search (`userIgnoreFilters`), no Dataview query reads it, and sessions do not open it
+  unless a link leads there. Wikilinks to an archived file still resolve by name. Move a file there with
+  `git mv` when its story or plan is `Done` and nothing reads it daily.
 - **Concept pages** (`artifacts/docs/concepts/`) are the standing reference,
   one page per subsystem (for example `graphhopper-backend.md`,
   `minio-flood-extent-pipeline.md`): what it is, how it works now, and its

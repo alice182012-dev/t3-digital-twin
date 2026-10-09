@@ -30,7 +30,7 @@ their live values, the worker is recreated, and the read-back shows no replay. A
 mode, the start, the next slot, the rate at this moment, and the first and last runs that simulate.
 Both commands are idempotent. Running start twice with the same event and slot leaves the same `.env`.
 The command is PowerShell for the server's shell (5.1, so `;` and not `&&`), run on the host as the lesson
-[[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]] requires. The checks that can run without Docker live in
+[[lessons#L-010|recreate-remote-services-on-the-remote-host]] requires. The checks that can run without Docker live in
 `scripts/rain_replay.py` as new subcommands, with tests on the Mac, so the PowerShell stays thin.
 Priority: P1. Status: Reviewed. Estimate: M. Sprint: 12. Dependencies: None to build. Story 1 supplies the storm,
 and the existing event `scripts/rain_events/hanoi_20251005_48h.csv` works until then. The server run needs no image

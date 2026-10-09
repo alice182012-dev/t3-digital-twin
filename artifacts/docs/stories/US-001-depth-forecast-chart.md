@@ -7,7 +7,7 @@ status: Done
 subsystem: floodmap-frontend
 sprint: 3
 source_ideas: []
-related: ["[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
+related: ["[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[lessons#L-009|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
 tags: [user-story, sprint-3]
 priority: P0
 estimate: M
@@ -67,7 +67,7 @@ Caption: the live frontend at `100.67.84.55:8082`, captured 2026-09-30 from a Ma
   `GET /flood/points`-dependent stories. Data source resolved: `flood_road_values` already holds a
   full per-segment forecast time series (see [[US-017-route-forecast-query|route-forecast-query]], Sprint 2), reversing the
   earlier "no data source" conclusion. See
-  [[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]]. Dependency:
+  [[lessons#L-009|verify-table-capability-against-write-path-not-summary-or-current-query]]. Dependency:
   [[US-017-route-forecast-query|route-forecast-query]] must land first, and its own open question (how to match a route's
   segments against `flood_road_values`'s rows) must resolve before this story starts.
 - **2026-09-26, draft.** Built on `fifteen-minute-cycle` and deployed to the server. The chart

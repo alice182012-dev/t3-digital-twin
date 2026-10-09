@@ -62,7 +62,7 @@ Verified read-only on the server.
 - Paper A may report these as server-proof results. It must not say time-aware routing serves users in production while the flag is off.
 - `flood_mapping_full` and `routing_adapter` are unpaused. The cycle is 15 minutes (D-014). The rain forecast is Tomorrow.io (D-013). The replay reads `hanoi_20260916_storm.csv` with start `2026-10-08T08:45:00Z`, gate 5 mm/h, lookahead 2 hours, simulation duration 7200 s, worker concurrency 4.
 - Retention: `FLOOD_EXTENT_KEEP_RUNS=8`, `EDGE_TABLE_KEEP_RUNS=3`, `FLOOD_EXTENT_TILE_STEPS=2`.
-- The worker still carries variables of the retired GeoJSON chain (`SAMPLE_RATE=20`, `UPDATE_INTERVAL`, `KEEP_LOCAL_GEOJSON`, `VALHALLA_PORT`). The `sample_rate_1_bottleneck` memory note describes that retired chain. Do not cite it as a limit of the current pipeline. Cite the current critical path from `artifacts/docs/claude-plan/us-037-narrow-the-per-run-critical-path.md` instead.
+- The worker still carries variables of the retired GeoJSON chain (`SAMPLE_RATE=20`, `UPDATE_INTERVAL`, `KEEP_LOCAL_GEOJSON`, `VALHALLA_PORT`). The `sample_rate_1_bottleneck` memory note describes that retired chain. Do not cite it as a limit of the current pipeline. Cite the current critical path from `artifacts/archive/plans/us-037-narrow-the-per-run-critical-path.md` instead.
 
 ## Results status on 2026-10-08
 
@@ -113,9 +113,9 @@ Hanoi model border for any coordinate used in a figure or test: longitude 105.70
 | Depth to cost model, `DEPTH_BANDS` | `artifacts/docs/concepts/routing-depth-threshold-model.md`, `floodmap/graphhopper-flood-road/backend/flood_areas.py` |
 | Graph edge ids change on re-import | `artifacts/docs/concepts/graph-reimport-procedure.md` |
 | Departure advice ("wait until") | `artifacts/docs/claude-plan/departure-time-advice-research.md`, `route-departures-endpoint.md`, `wait-until-alert.md` |
-| Plans and stories | `artifacts/docs/claude-plan/time-aware-weighting-and-search.md`, `time-aware-routing-prds-and-sprint-plan.md`, `engine-server-proof-and-rollout.md`, `artifacts/docs/epics/EP-09-time-aware-routing-engine.md`, `EP-08-edge-depth-table.md`, `EP-10-routing-first-consumer.md` |
+| Plans and stories | `artifacts/archive/plans/time-aware-weighting-and-search.md`, `time-aware-routing-prds-and-sprint-plan.md`, `engine-server-proof-and-rollout.md`, `artifacts/docs/epics/EP-09-time-aware-routing-engine.md`, `EP-08-edge-depth-table.md`, `EP-10-routing-first-consumer.md` |
 | Server proof tooling | `scripts/routing_proof/` (`routing_proof.py`, `pairs.json`, `rollout.ps1`), `scripts/backend_soak/` |
-| Java engine | `java/` (read its build notes in `artifacts/docs/claude-plan/sprint-6-java-toolchain-and-edge-export.md`) |
+| Java engine | `java/` (read its build notes in `artifacts/archive/plans/sprint-6-java-toolchain-and-edge-export.md`) |
 | Engine tests | `scripts/routing_reference/test_*.py`, `floodmap/graphhopper-flood-road/backend/test_core_contract.py` |
 
 ### Literature
@@ -159,7 +159,7 @@ Order of work from the note: P2 first (needs no new engine), then P1 and P4, the
 | Remove the `flood-results-full` bucket (D-004); two test events publish under one run name (D-007) | decision log |
 | `background_cycle` not run, stories dropped (D-009) | decision log |
 | Build Sprint 11 before the next server run and deploy once (D-011); a replay runs 12 hours (D-012) | decision log |
-| Raster tiles replaced by vector polygon tiles | `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`, `raster-first-flood-pipeline.md` |
+| Raster tiles replaced by vector polygon tiles | `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md`, `raster-first-flood-pipeline.md` |
 | Valhalla replaced by GraphHopper (ADR-002) | `artifacts/raw/T3-Digital-Twin_Architecture.md` working copy, section on ADRs |
 | Routing tasks moved to their own DAG `routing_adapter`, triggered by an Airflow asset event, so a routing failure leaves the core run green | `artifacts/TODOS.md` US-073, `dags/routing_adapter_dag.py` |
 | Rain-gated simulation with hot start from gauge levels | `artifacts/docs/concepts/3di-simulation-orchestration.md`, `scripts/hotstart_policy.py`, `test/test_flood_rain_gate.py` |
@@ -169,23 +169,23 @@ Order of work from the note: P2 first (needs no new engine), then P1 and P4, the
 | Topic | Source |
 | --- | --- |
 | Why native 1 m sampling was slow (a Python per-pixel loop, a cost model of 3.68 s plus 5.26e-5 s per valid cell) | Project memory file `sample_rate_1_bottleneck.md` (2026-09-08). It describes the retired GeoJSON chain, so cite it only as history that motivated the raster-first design, never as a current limit. |
-| Narrowing the per-run critical path, stage margins | `artifacts/docs/claude-plan/us-037-narrow-the-per-run-critical-path.md`, `scripts/pipeline_margins/`, `marie-curie/us-037/` (experiment CSVs and `experiment-results.txt`) |
+| Narrowing the per-run critical path, stage margins | `artifacts/archive/plans/us-037-narrow-the-per-run-critical-path.md`, `scripts/pipeline_margins/`, `marie-curie/us-037/` (experiment CSVs and `experiment-results.txt`) |
 | Soak and the 12-hour storm event construction | `artifacts/docs/claude-plan/us-063-realistic-rain-replay-for-us-037-and-us-034.md`, `rain-replay-test-environment.md`, `september-2026-storm-rain-replay.md`, `scripts/rain_replay.py`, `scripts/rain_events/`, `scripts/rain_env/`, `marie-curie/us-088/` |
 | Worker concurrency serialized the runs | `artifacts/docs/blockers/BL-013-flood-mapping-full-worker-concurrency-serializes-runs.md` |
 | Slow sampling step (9c over 770 s) and its cancel rule | `artifacts/docs/blockers/BL-023-9c-sampling-step-runs-over-770-seconds.md` |
-| Disk filled by Docker's VHDX twice | `artifacts/docs/blockers/BL-022-docker-data-vhdx-fills-c-drive-again.md`, `artifacts/logs/2026-10-04-docker-vhdx-disk-full.md`, `2026-10-02-disk-cleanup-and-d-drive-move.md`, `artifacts/docs/claude-plan/move-non-ssd-storage-to-d-drive.md` |
-| Hot-start state saved at the end of a run | `artifacts/docs/blockers/BL-009-hotstart-state-saved-at-end-of-run.md` |
+| Disk filled by Docker's VHDX twice | `artifacts/docs/blockers/BL-022-docker-data-vhdx-fills-c-drive-again.md`, `artifacts/logs/2026-10-04-docker-vhdx-disk-full.md`, `2026-10-02-disk-cleanup-and-d-drive-move.md`, `artifacts/archive/plans/move-non-ssd-storage-to-d-drive.md` |
+| Hot-start state saved at the end of a run | `artifacts/archive/blockers/BL-009-hotstart-state-saved-at-end-of-run.md` |
 | Edge ids drift on graph re-import | `artifacts/docs/concepts/graph-reimport-procedure.md` |
 | Point depth lookup speed, connection pooling, forecast verification | `artifacts/docs/epics/EP-03-point-depth-lookup-backend.md`, `artifacts/docs/blockers/BL-007-flood-points-connection-per-request.md`, `artifacts/docs/stories/evidence/connection-pooling-and-forecast-verification.png` |
 | Frontend (vendored GraphHopper Maps fork), mockup recheck | `artifacts/raw/frontend-mockups/`, `artifacts/docs/epics/EP-01-frontend-depth-features.md`, `EP-02-frontend-polish.md`, `EP-05-mockup-screen-coverage.md`, `EP-11-frontend-mockup-recheck.md`, `floodmap/graphhopper-maps/` |
-| NetCDF values storage redesign | `artifacts/docs/stories/US-066-netcdf-values-storage-redesign.md`, `artifacts/docs/claude-plan/netcdf-values-timescale-migration.md` |
+| NetCDF values storage redesign | `artifacts/docs/stories/US-066-netcdf-values-storage-redesign.md`, `artifacts/archive/plans/netcdf-values-timescale-migration.md` |
 | Screenshots of working stories | `artifacts/docs/stories/evidence/` (86 files) |
 
 ### Process material (optional, for a short "engineering lessons" section)
 
 - Eleven lessons in `artifacts/docs/lessons/`, each distilled from a resolved blocker.
 - The 23 blocker pages in `artifacts/docs/blockers/` (status in each frontmatter).
-- Daily logs `artifacts/logs/2026-09-13.md` to `2026-10-08.md` give the order of events. Each log opens with a summary of the previous day.
+- Daily logs `artifacts/archive/archive/logs/2026-09-13.md` to `2026-10-08.md` give the order of events. Each log opens with a summary of the previous day.
 - Sprint plans `artifacts/docs/sprints/SP-01-prd-and-backlog.md` to `SP-04-frontend-recheck.md`, the epics under `artifacts/docs/epics/`, and the stories under `artifacts/docs/stories/` (US-001 to US-093).
 
 ### Author decisions, confirmed 2026-10-08

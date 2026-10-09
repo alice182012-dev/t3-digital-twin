@@ -12,7 +12,7 @@ with graph_edge in place of road_segment. An edge that touches no wet pixel, or 
 The file is <out-dir>/<RUN_TS>.bin in the format of edge_depth_table.py, tagged with the graph hash of the
 export. It is written under a temporary name and renamed, so an interrupted build leaves no partial file and
 keeps the previous one. The latest pointer and the retention of old tables belong to US-042.
-The design is in artifacts/docs/claude-plan/edge-depth-table-airflow-task.md.
+The design is in artifacts/archive/plans/edge-depth-table-airflow-task.md.
 """
 
 from __future__ import annotations

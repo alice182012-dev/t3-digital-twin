@@ -3,12 +3,12 @@
 ## Current sprint: Sprints 9 to 12, 2026-10-05 to 2026-12-13
 
 ## Next action:
-1. Read the final runs of `US-092` and `US-093` (started 01:49 +07 on 2026-10-10, 45 tables). Each result must name the one-hour gap (19:30 to 20:15 +07) and the cold start at 20:30 +07.
+1. `US-092` and `US-093` have their final results (2026-10-10, 45 tables, in the story files). Decide whether to close them with a screenshot of the output each. The results name the one-hour gap and the cold start at 20:30 +07.
 2. **P0, `BL-028`:** replay the storm with the `US-101` fix (about 12 hours). Run `replay.ps1 stop`, raise `FLOOD_EXTENT_KEEP_RUNS` (about 60) so `US-091` can use the same replay, start again, and unpause `flood_mapping_full`. It needs your go.
 3. Decide what to do about the growth of `9c` within a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], 46 s to 96 s, cause unknown), or leave the blocker at `monitoring`.
 4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. Recreate the Airflow containers on the server first, so the archive mount exists.
 5. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain. The flag is off now.
-6. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]]: answer the cost limit and pair count (proposal: 30 pairs, 2 hours). The exact-enough bar is 97 percent per vehicle.
+6. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]] is `resolved` (2026-10-10): the final run is exact for 0.9935 of searches, and every vehicle is above 97 percent.
 
 ### Active - US-094 Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
 
@@ -32,15 +32,15 @@
 
 **Story:** [[US-092-test-how-the-vehicle-limits-change-the|US-092]], P2, Sprint 12 in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
 **Blocker tracking:** [[BL-024-edge-export-has-no-node-ids|BL-024]] and [[BL-025-engine-has-no-depth-band-cost|BL-025]], both `resolved`.
-**Status:** `In progress`. The final run on the 45 tables of the second replay started at 01:49 +07 on 2026-10-10.
-**Next:** next action 1.
+**Status:** `Reviewed`. The final run on the 45 tables is in the story (88 of 90 settings change the conclusion on the best limit).
+**Next:** close with a screenshot, next action 1.
 
 ### Active - US-093 Measure how often the sticky rule gives no route or a longer route than an arrival-only reference
 
 **Story:** [[US-093-measure-how-often-the-sticky-rule-gives|US-093]], P2, Sprint 12 in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
 **Blocker tracking:** [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]].
-**Status:** `In progress`. The final run on the 45 tables started at 01:49 +07 on 2026-10-10. The bar is 97 percent of searches exact per vehicle.
-**Next:** next action 1.
+**Status:** `Reviewed`. The final run is in the story: sticky gives a longer route in 3.95 percent of searches and no route in 0.12 percent.
+**Next:** close with a screenshot, next action 1.
 
 ### Done - US-070 Stop a slow sampling step from holding the database
 
@@ -71,11 +71,7 @@ The unresolved blockers are:
 
 1. [[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]], monitoring.
 2. [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]], monitoring.
-3. [[BL-011-routing-not-time-aware|routing-not-time-aware]], which `US-055` resolves.
-4. [[BL-023-9c-sampling-step-runs-over-770-seconds|9c-sampling-step-runs-over-770-seconds]], monitoring, fixed in code by `US-070`. It blocks no build.
-5. [[BL-021-place-name-slow-after-map-tap|place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
-6. [[BL-026-sticky-closure-clock-anchored-at-floored-departure|sticky-closure-clock-anchored-at-floored-departure]], monitoring, fixed in code by `US-096`. It resolves after the next rollout rebuilds the `graphhopper` image. It blocks no build.
-7. [[BL-025-engine-has-no-depth-band-cost|engine-has-no-depth-band-cost]], `resolved` by D-021 on 2026-10-09.
-8. [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]], `resolved` on 2026-10-09. The second replay is over, and the real-graph run of `US-092` and `US-093` waits for your choice in next action 1.
-9. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]], open. It blocks only `US-093` and blocks no build in Sprint 13. The fix waits for your decision on the definition of the reference.
-10. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|rain-gate-stops-simulation-while-the-flood-still-stands]], P0, monitoring, fixed in code by `US-101` and deployed on the server. It resolves after a replay of the storm with the fix. It blocks no build in Sprint 13.
+3. [[BL-023-9c-sampling-step-runs-over-770-seconds|9c-sampling-step-runs-over-770-seconds]], monitoring. `9c` still rises within a chain. It blocks no build.
+4. [[BL-021-place-name-slow-after-map-tap|place-name-slow-after-map-tap]], which blocks no build. Its story `US-061` has no sprint.
+5. [[BL-026-sticky-closure-clock-anchored-at-floored-departure|sticky-closure-clock-anchored-at-floored-departure]], monitoring, fixed in code by `US-096`. It blocks no build.
+6. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|rain-gate-stops-simulation-while-the-flood-still-stands]], P0, monitoring, fixed in code by `US-101`. It resolves after a replay of the storm with the fix. It blocks no build in Sprint 13.

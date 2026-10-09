@@ -119,10 +119,7 @@ SORT file.name ASC
 
 ## Lessons learned
 
-Short, checkable rules distilled from resolved blockers, one page per lesson. Start a new one from
-`templates/lesson-learned.md` when closing a blocker whose cause would generalize to other
-subsystems. A lesson links back to its source blocker for the full incident; it doesn't retell the
-approach-by-approach history itself.
+Short, checkable rules distilled from resolved blockers, one section per lesson in `docs/lessons/lessons.md`. Add a new `## L-nnn` section when closing a blocker whose cause would generalize to other subsystems. A section links to the archived original for the full incident.
 
 ```dataview
 TABLE status AS "Status", subsystem AS "Subsystem", date_captured AS "Captured"
@@ -150,6 +147,7 @@ FROM "designs"
   `shipped`/`abandoned` for a PRD; `draft`/`ready`/`in-progress`/`done` for a user story;
   `active`/`retired` for a lesson; `unexplored`/`exploring`/`go`/`needs-clarification`/`killed` for
   an idea), `tags`, and `related` (a list of `[[wikilinks]]` to what it's tied to).
+- `artifacts/archive/` holds retired documents (old logs, finished plans, resolved blockers, story-level history, cut research). It is excluded from Obsidian search and from every query here. Wikilinks to archived files still resolve by name.
 - A PRD (`docs/prds/`) states the problem, goals, and definition of done for a feature or change
   before its implementation plan (`docs/claude-plan/`) is written. Its **Dependencies and
   assumptions** section states every fact the design relies on that isn't visible from reading the
@@ -158,7 +156,7 @@ FROM "designs"
 - Every document kind has a code, and the code starts the file name, so a search for the code finds the file. The codes are `US-nnn` (user story, `docs/stories/`), `EP-nn` (epic, `docs/epics/`), `SP-nn` (sprint plan, `docs/sprints/`, equal to `plan_number`), `PRD-nnn` (`docs/prds/`), `BL-nnn` (blocker, `docs/blockers/`), and `L-nnn` (lesson, `docs/lessons/`). A code is assigned once from the next free number below, never reused, and never renumbered. Link a document by its full file name with the old or short name as an alias: `[[BL-023-9c-sampling-step-runs-over-770-seconds|9c sampling step]]`. Concept pages, logs, and plans keep topic or date names. The next free numbers are `US-102`, `EP-17`, `SP-05`, `PRD-005`, `BL-029`, and `L-012`. Raise the number when you assign one.
 - A PRD (`docs/prds/`) states the problem, goals, and definition of done for a feature or change before its implementation plan (`docs/claude-plan/`) is written. Its **Dependencies and assumptions** section states every fact the design relies on that isn't visible from reading the code cold, and **Definition of done** states an operational check rather than a proxy like "it compiles" or "no errors in the logs".
 - A user story (`docs/stories/US-nnn-<slug>.md`) breaks an approved PRD goal into sprint-sized work. Its frontmatter holds `us_id`, `title`, `epic`, `status`, `priority`, `estimate`, and `sprint`, and the file holds the story text, its evidence, and its numbered details. Nothing else keeps a second copy of those fields: the sprint plan, the board, and the epic read them with queries. Moving a story to another sprint is one edit to `sprint` in its frontmatter, plus a Status history line in the sprint plans it leaves and joins. An epic file links to its stories, a sprint plan never lists them by hand. Pick a story's shape from [[user-story-types]]. See `.claude/CLAUDE.md`, "User stories and sprint planning", for the full convention.
-- A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
+- A lesson (a `## L-nnn` section of `docs/lessons/lessons.md`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of
   copying its approach history.

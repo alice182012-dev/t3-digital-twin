@@ -52,7 +52,7 @@ Publish order gives safe updates. Upload all tiles first, write `latest.json` la
 
 ### 0. Housekeeping when plan mode ends
 
-1. Copy this plan to `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`.
+1. Copy this plan to `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md`.
 2. Add a rule to the project `.claude/CLAUDE.md`: write the plan of any multi-step task to `artifacts/docs/claude-plan/`, in a file whose name says what is being built, before starting the work.
 
 ### 1. Publish module

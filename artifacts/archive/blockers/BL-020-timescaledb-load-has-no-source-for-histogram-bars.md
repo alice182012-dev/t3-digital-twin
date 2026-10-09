@@ -8,7 +8,7 @@ subsystem: architecture-backend
 approaches_tried: 0
 approaches_remaining: 0
 tags: [blocker, timescaledb, histogram, institutions, background-cycle]
-related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[timescaledb-schema]]", "[[flood-metric-extractor]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[L-008-verify-decisions-resolve-the-stated-question|verify-decisions-resolve-the-stated-question]]"]
+related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[timescaledb-schema]]", "[[flood-metric-extractor]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[lessons#L-008|verify-decisions-resolve-the-stated-question]]"]
 last_updated: 2026-10-01
 ---
 
@@ -53,7 +53,7 @@ The user decided on 2026-10-01 that the pipeline does not run `background_cycle`
 - [[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]], Story 4
 - [[timescaledb-schema]]
 - [[flood-metric-extractor]]
-- [[L-008-verify-decisions-resolve-the-stated-question|verify-decisions-resolve-the-stated-question]]: Story 4 was written from the PRD's goal without checking that its inputs exist.
+- [[lessons#L-008|verify-decisions-resolve-the-stated-question]]: Story 4 was written from the PRD's goal without checking that its inputs exist.
 
 ## Status history
 

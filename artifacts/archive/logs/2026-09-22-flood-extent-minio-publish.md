@@ -87,7 +87,7 @@ to work there, and MinIO wasn't optional.
 
 ### Timestep discovery: reusing FloodStore instead of a second manifest
 
-A prior plan (`artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`)
+A prior plan (`artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md`)
 called for a `latest.json` manifest and a `pickExtentStep` function to find
 the timestep closest to now. Reading `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts`
 before building that found it already does this: `findNearestTimestepIndex`
@@ -216,9 +216,9 @@ extract: 51,328 nodes, 67,833 edges, all three vehicle profiles.
 
 ## See also
 
-- `artifacts/docs/claude-plan/calculate-depth-threedidepth-cli.md`: the
+- `artifacts/archive/plans/calculate-depth-threedidepth-cli.md`: the
   step-by-step plan and progress log this work followed.
-- `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md`:
+- `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md`:
   the earlier plan this session's MinIO design updates and supersedes in
   part (see that file's own status section).
 - `artifacts/SW Architecture.md` #8: why routing and map-display

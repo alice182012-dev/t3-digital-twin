@@ -18,6 +18,6 @@ The flood model is not validated. D-021 therefore gives each vehicle a precautio
 
 ## Status history
 
+Story-level progress lines up to 2026-10-10 are in [[EP-16-precaution-depth-routing-history|the archived history]]. This section keeps plan-level changes only.
+
 - **2026-10-09, draft.** Written at the user's request after the discussion of the cost band ([[BL-025-engine-has-no-depth-band-cost|engine-has-no-depth-band-cost]]). The user's rule: detour at 50 percent of the limit to protect assets, because the flood model is not validated, and still show the hard-limit route. IDs `US-097` and `US-098`. D-021.
-- **2026-10-09, reviewed.** The user approved the response contract. Built on `modular`: path 0 is the recommended route, path 1 the through-water route, hints `td.kinds`, `td.limit_cm`, `td.precaution_cm`, profile hint `td_precaution_fraction` (default 0.5), second search only when the limit route touches the precaution depth. 137 Java tests passed on GitHub Actions (run 37885851481). The server image is rebuilt at the next rollout, and the flag is off at rest. `US-098` can read the contract.
-- **2026-10-09, done.** The rollout rebuilt the server images from `modular` (`11f6373`) and every script check passed. With the flag on, `POST /route` for the "long" trip with the truck and foot profiles returned 2 paths and `td.kinds: "recommended,through_water"`; the same trip with motorbike and car returned 1 path, `td.kinds: "recommended"`. Evidence: `us-097-through-water-route-output.png`.

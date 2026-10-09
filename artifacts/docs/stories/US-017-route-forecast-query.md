@@ -7,7 +7,7 @@ status: Done
 subsystem: architecture-backend
 sprint: 2
 source_ideas: []
-related: ["[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
+related: ["[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[lessons#L-009|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
 tags: [user-story, backend, sprint-2]
 priority: P1
 estimate: M
@@ -68,7 +68,7 @@ replace the 30-minute buckets and `flood_road_values` of the first draft, see
   per run (`scripts/database/geojson_to_pg.py`'s `build_rows` writes one row per `(segment,
   forecast timestep)` pair), reversing an earlier "no data source" conclusion for
   [[US-001-depth-forecast-chart|depth-forecast-chart]]. See [[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]'s Goals and Dependencies and
-  assumptions, and [[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]].
+  assumptions, and [[lessons#L-009|verify-table-capability-against-write-path-not-summary-or-current-query]].
   Open dependency: the table has no stable segment ID, only `road_name` (which repeats) and
   `geom_4326`, so matching a route's segments against it needs either a GraphHopper path-detail or
   a spatial join, not yet decided.

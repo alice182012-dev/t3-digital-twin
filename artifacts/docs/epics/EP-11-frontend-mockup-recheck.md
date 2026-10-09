@@ -36,12 +36,9 @@ Each row carries Priority, Status, Estimate, Sprint, and Dependencies, as an ext
 
 ## Status history
 
+Story-level progress lines up to 2026-10-10 are in [[EP-11-frontend-mockup-recheck-history|the archived history]]. This section keeps plan-level changes only.
+
 - **2026-10-07, draft.** Written from the recheck of the frontend against the mockup. The user asked for every candidate to
   become a story in the sprint after Sprint 11, and for a browser comparison in Aside in the same sprint. The third
   candidate of the plan (the "Try next" lines) became three stories (6, 7, and 8), and the legend and "Powered by" questions
   became Stories 4 and 5 after the user's decisions (D-010).
-- **2026-10-08, draft.** All ten stories moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] to [[SP-04-frontend-recheck|sprint-plan-4]], at the user's request:
-  "the front end can be sprint 13. We need to finish the routing first." Sprint 13 starts a new plan, because
-  [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] ends with Sprint 12. By dependency (rule 3): Sprint 13 holds Stories 1, 4, 5, and 10. Sprint 14 holds
-  Stories 2, 3, and 9. Sprint 15 holds Stories 6 and 7. Sprint 16 holds Story 8. No story is `Done`, so the dates
-  of the plan are planned dates.

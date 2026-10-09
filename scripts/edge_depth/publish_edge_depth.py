@@ -11,7 +11,7 @@ build_edge_depth.py writes <run_ts>.bin into the table folder. This module then:
 
 A failure before step 2 leaves `latest` on the previous table. Readers see the old table or the new one.
 The tables live on a Docker volume that the Airflow worker writes and the readers mount read-only
-(artifacts/docs/claude-plan/edge-depth-table-publish.md, decision 1).
+(artifacts/archive/plans/edge-depth-table-publish.md, decision 1).
 """
 
 from __future__ import annotations

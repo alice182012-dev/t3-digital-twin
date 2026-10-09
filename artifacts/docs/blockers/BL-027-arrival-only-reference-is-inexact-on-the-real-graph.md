@@ -1,12 +1,12 @@
 ---
 date_open: 2026-10-09
-date_closed: 
+date_closed: 2026-10-10
 type: blocker
-status: open
+status: resolved
 severity: P2
 subsystem: time-aware-routing
 approaches_tried: 4
-approaches_remaining: 1
+approaches_remaining: 0
 tags: [blocker, routing, arrival-only, us-093, paper-experiments]
 related: ["[[US-100-decide-between-option-a-and-sticky-closure]]", "[[US-093-measure-how-often-the-sticky-rule-gives]]", "[[US-092-test-how-the-vehicle-limits-change-the]]", "[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout]]", "[[BL-024-edge-export-has-no-node-ids]]", "[[sticky-closure-proof]]", "[[sticky-routing-reference]]"]
 last_updated: 2026-10-10
@@ -36,7 +36,7 @@ The real graph breaks this condition. `real_graph.py` treats every road as open 
 - **The engine rule** stays sticky closure (the user, 2026-10-10, D-023). The user wants no chance of a vehicle being flooded halfway along a road. So the blocker never decides which rule the engine uses. It only affects how well the price of that rule is measured.
 - **The speed problem** is mostly solved. A pruned search (approach 4) makes the reference exact for 99.3 percent of 7,200 searches on the storm tables (motorbike 0.987, car 0.990, truck 0.997, foot 0.998). Every search that stays inexact has a proven limit on how much longer the sticky route can be.
 
-**What is still open.** Two answers, and only the first one can hold up the paper.
+**What was open, and how it ended.** Two answers were needed. Both are settled (see "What is still open").
 
 1. ~~Is 95 percent exact enough?~~ Answered on 2026-10-10: the bar is 97 percent of searches exact, per vehicle. The storm run is above that for every vehicle (lowest: motorbike, 0.987). The blocker closes once the final run on all 45 tables confirms the rate.
 2. How long may a full run take, and how many pairs? The proposal is the earlier one, 30 pairs and about 2 hours on the Mac. The final run in progress takes about 40 minutes.
@@ -168,22 +168,7 @@ Decided on 2026-10-09 by the user (definition only; questions 3 to 5 are still o
 
 ## What is still open
 
-Four of the six questions that this page asked are answered. The record:
-
-| Question | Answer |
-| --- | --- |
-| 1. Which definition of arrival-only? | Option A, simple paths only (2026-10-09) |
-| 2. Is loop-and-wait allowed? | No (2026-10-09) |
-| 3. What counts as exact enough? | 97 percent of searches exact, per vehicle (2026-10-10) |
-| 5. Which sprint? | Sprint 12. `US-099` and `US-100` sit there |
-| 6. May I measure first? | Not needed. Approach 3 and 4 measured it |
-| Which closure rule does the engine keep? | Sticky closure (2026-10-10, D-023, `US-100`) |
-
-One question remains, and it has a proposal. The exact-enough bar was answered on 2026-10-10: **97 percent of searches exact, per vehicle.** The storm-wide run meets it for every vehicle (0.987 to 0.998), and the inexact rest is reported with its proven bound.
-
-1. **What is the cost limit and the pair count?** The proposal is 30 pairs and at most 2 hours on the Mac. The final run (45 tables, 30 pairs, budget 3,000,000, 5 workers) started at 01:49 +07 on 2026-10-10, and it will show the actual time.
-
-A short answer is enough, for example "keep 30 pairs and 2 hours". After the answer and the final run (every vehicle at 97 percent or more), the blocker moves to `resolved`. If a vehicle falls under 97 percent on the 45 tables, the blocker stays `open` and approach 4 is extended with a stronger bound.
+Nothing. The blocker is `resolved` on 2026-10-10. The reference is option A (2026-10-09), the engine keeps sticky closure (2026-10-10, D-023), the exact-enough bar is 97 percent per vehicle (2026-10-10), and the final run on the 45 tables meets it for every vehicle (0.988 to 0.998). The cost limit was not answered. The run took 33 minutes for 30 pairs, inside the proposed 2 hours.
 
 ## Concerns
 
@@ -210,3 +195,4 @@ The sticky side is not in question. A seeded test of 300 graphs in `scripts/rout
 - **2026-10-10, open.** The user decided to keep sticky closure for the engine ([[decision-log|D-023]], `US-100` `Done`). This answers the question of which closure rule the engine and the paper use. The question of the exact-enough bar for the arrival-only reference is still open.
 - **2026-10-10, open.** Synced with `US-100`. The plain-language explanation, "Why this matters", and the open questions were rewritten for the settled state: reference is option A, engine rule is sticky closure (D-023), the pruned search is built. Only the exact-enough bar and the cost limit are open, each with a proposal. The final run on the 45 tables of the second replay is running.
 - **2026-10-10, open.** The user set the exact-enough bar at 97 percent of searches exact per vehicle (the proposal was 95). The storm-wide run on 30 tables meets it for every vehicle (motorbike 0.987, car 0.990, truck 0.997, foot 0.998). Only the cost limit and pair count remain, and the final run on 45 tables must confirm 97 percent per vehicle before the blocker moves to `resolved`.
+- **2026-10-10, resolved.** The final run on the 45 tables of the second replay (10,800 searches, 30 pairs, budget 3,000,000, 32.7 minutes on the Mac) is exact for 10,730 searches (0.9935). Every vehicle is above the 97 percent bar: motorbike 0.988, car 0.991, truck 0.997, foot 0.998. The 70 inexact searches are reported with their proven bound (62 have one). The cost limit was not answered, and the run (33 minutes, 30 pairs) is inside the proposed 2 hours and 30 pairs. Reopen if you want another limit. The numbers are in [[US-093-measure-how-often-the-sticky-rule-gives|US-093]].

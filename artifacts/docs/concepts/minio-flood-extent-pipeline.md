@@ -215,7 +215,7 @@ that has a raster for it. `from` defaults to now floored to 15 minutes, and `ste
 
 ## Open items
 
-- `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md` is the plan this
+- `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md` is the plan this
   pipeline was built from; the parts already shipped (per-timestep tiles, MinIO storage, the
   45-minute freshness window, the timezone conversion) are described above as built. Check that
   plan file's own status before assuming anything past what this page states is still open.
