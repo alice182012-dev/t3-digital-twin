@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-093"
 story_label: "4"
 epic: "[[EP-14-routing-paper-experiments]]"
-status: Reviewed
+status: Done
 priority: P2
 estimate: S
 sprint: 12
@@ -50,3 +50,17 @@ Blocker tracking: [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]]
 - **2026-10-10, active.** The exact-enough bar for the arrival-only reference is 97 percent of searches exact per vehicle ([[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]]). The storm-wide run on 30 tables meets it (lowest: motorbike 0.987). The final run on 45 tables must confirm it, and the result reports the inexact rest with its proven bound.
 - **2026-10-10, carried from the retired TODOS note.** The arrival-only search and the comparison with sticky closure have 24 tests in `scripts/routing_experiments/test_sticky_cost.py`. A seeded property test on 300 graphs shows that sticky closure never ends earlier than arrival-only.
 - **2026-10-10, final run on the 12-hour data (result).** `marie-curie/option_a_real_replay2_final_seed1.json`: the 45 tables of the second replay (the one-hour gap at 19:30 to 20:15 +07 and the cold start at 20:30 +07 are in the sample), 30 pairs (10 per length class, seed 1), departure steps 0 and 4, 4 vehicles, budget 3,000,000, 5 workers, 32.7 minutes, 10,800 searches. **Exact: 10,730 (0.9935), above the 97 percent bar for every vehicle** (motorbike 0.988, car 0.991, truck 0.997, foot 0.998). Outcomes: same route 9,830, sticky longer 405, sticky has no route where arrival-only has one 12, neither rule has a route 483, inexact 70 (62 of them with a proven upper bound on the extra time). Where arrival-only has a route (10,247 searches), sticky gives the same route in 95.9 percent, a longer route in 3.95 percent, and no route in 0.12 percent. Sticky longer, by vehicle: 5.1 percent (motorbike), 4.1 (truck), 3.5 (car), 3.2 (foot). By length class: 0 percent under 2 km, 4.0 from 2 to 5 km, 8.0 over 5 km. By chain: 4.5 percent in chain 1 and 3.1 in chain 2. The extra time of the 405 longer routes has a median of 9 s, a mean of 30 s, a 90th percentile of 102 s, and a maximum of 229 s. Limits: 30 pairs, free-flow travel time at 30 km/h, one-way roads open both ways, 3Di depths on a graph of the model and not measured depths, one storm. The result is read by the paper, which cites it as the price of sticky closure ([[decision-log|D-023]]).
+- **2026-10-10, done.** The user approved closing the story on the final run of the second replay. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]] is `resolved`.
+
+## Evidence and details
+
+**Evidence:** rendered output of `evidence/us-093-final-check.py`, which reads `marie-curie/option_a_real_replay2_final_seed1.json`.
+
+![[us-093-final-check-output.png|900]]
+
+**Details:**
+
+1. Built: the share of routes where the sticky rule gives no route or a longer route than an arrival-only reference, measured on the real graph of Hanoi. The code is `scripts/routing_experiments/sticky_cost.py` and `scripts/routing_reference/arrival_only.py`, run by `marie-curie/run_option_a_real.py`.
+2. How: 30 node pairs (10 per length class, seed 1) on the 45 tables of the second replay, 2 departure steps, 4 vehicles, 10,800 searches at a budget of 3,000,000 expansions each, in 32.7 minutes on the Mac with 5 workers. The reference is option A: the earliest arrival over routes that visit no node twice, with a fixed departure.
+3. Why: the paper has to state what the cautious rule costs. Where arrival-only has a route, sticky gives the same route in 95.9 percent of searches, a longer route in 3.95 percent (median 9 s, mean 30 s, at most 229 s), and no route in 0.12 percent. The extra cost is 0 under 2 km, 4.0 percent from 2 to 5 km, and 8.0 percent over 5 km. The reference is exact for 99.35 percent of searches, above the 97 percent bar for every vehicle.
+4. What it changes: the paper cites these shares as the price of sticky closure ([[decision-log|D-023]]). They hold for one storm, 30 pairs, free-flow travel time at 30 km/h, one-way roads open both ways, and 3Di depths on the model grid. The 70 inexact searches carry a proven upper bound (62 of them). The result names the one-hour gap (19:30 to 20:15 +07) and the cold start at 20:30 +07, which [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] explains.
