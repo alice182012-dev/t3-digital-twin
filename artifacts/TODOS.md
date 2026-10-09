@@ -5,14 +5,16 @@
 ## Next action:
 1. The second replay is over and `flood_mapping_full` is paused (since 01:29 +07 on 2026-10-10). The 48 depth tables are in `marie-curie/edge_tables_replay2_final_2026-10-10/`. The replay environment is still set, because `replay.ps1 stop` has not run. Decide between two ways to get the final `US-092` and `US-093` runs. (a) Run them now on these tables with `marie-curie/run_option_a_real.py` (30 pairs, steps 0 and 4, budget 3,000,000, seed 1, 5 workers, about 25 minutes), and name the one-hour gap and the cold start at 20:30 +07 in the result. (b) Replay the storm with the `US-101` fix first (about 12 hours), then run them on tables with no gap. A first run on the 30 tables up to 21:15 +07 is recorded in `US-093`.
 2. **P0, `BL-028` (`monitoring`):** the `US-101` fix (the 5 mm/h gate only from a dry state, then simulate until the newest 5 runs of `flood_road_values` are under 5 cm and no rain is forecast) is on the server at `9090cbe`, and its tests pass there. It has not run in a replay. To close the blocker, run `replay.ps1 stop`, start the storm replay again, unpause `flood_mapping_full`, and check that no slot is skipped and the run after a quiet stretch hotstarts. Say go when you want it.
-3. Read the `9c` durations of the next `routing_adapter` runs (`US-070`). The task `prune_flood_road_values` also runs inside Airflow for the first time, which moves `US-086` to `Done`. Both wait for `flood_mapping_full` to run again.
+3. `US-070` and `US-086` are done (2026-10-10). Decide what to do about the growth of `9c` within a chain (`BL-023`, 46 s to 96 s, cause unknown), or leave it at `monitoring`.
 4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. The archive mount of `US-094` in `compose.yml` needs the Airflow containers recreated on the server, which has not been done. No copy of the per-timestep values is kept until `US-094` runs on real rain (D-022).
 5. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain. The flag is off now.
 6. `BL-027`: you set the exact-enough bar at 97 percent per vehicle (2026-10-10). The storm run (30 tables) meets it for every vehicle (lowest 0.987). Still open: the cost limit and pair count (proposal: 30 pairs, 2 hours, the final run takes about 40 minutes). The blocker resolves when the final run on the 45 tables confirms 97 percent per vehicle.
 
-Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes), `US-095` (netcdf ingest retired and tables dropped), `US-101` (rain gate fix), and `US-097` and `US-099` from 2026-10-09. `US-100` is `Done` (2026-10-10) and leaves at the next rollover. Done on 2026-10-09 and removed earlier: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (blocker [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road. Records are in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]], the epic files, and the logs of [[2026-10-09]] and [[2026-10-10]].
+Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes), `US-095` (netcdf ingest retired and tables dropped), `US-101` (rain gate fix), and `US-097` and `US-099` from 2026-10-09. `US-100`, `US-070`, and `US-086` are `Done` (2026-10-10) and leave at the next rollover. Done on 2026-10-09 and removed earlier: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (blocker [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road. Records are in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]], the epic files, and the logs of [[2026-10-09]] and [[2026-10-10]].
 
-### Active - US-070 Stop a slow sampling step from holding the database
+### Done - US-070 Stop a slow sampling step from holding the database
+
+**Result (2026-10-10):** the cancel at 120 s is in place and no run of 92 reached it (longest 96 s). `BL-023` stays `monitoring`: `9c` still rises within a chain (46 s to 96 s), cause unknown. Evidence: `us-070-9c-in-airflow-check-output.png`.
 
 **What:** Task `9c` ran over 770 s in one sampling step during the replay. It now analyzes `flood_depth_raster_tile` first and cancels a step past 120 s ([[EP-08-edge-depth-table|edge-depth-table-stories]] Story E8).
 
@@ -42,7 +44,9 @@ Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes),
 
 **Status note:** `Reviewed`. Built on `modular` (not pushed, not deployed): `scripts/archive_results.py`, task `2b_archive_results`, a join task `2c_archive_done` so a full drive does not stop the tile build, and the `ARCHIVE_HOST_PATH` mount. 24 tests pass. The deploy waits for the end of the second replay, and the proof waits for a real forecast above 5 mm/h. It blocks `US-095`.
 
-### Active - US-086 Prune old rows of `flood_road_values`
+### Done - US-086 Prune old rows of `flood_road_values`
+
+**Result (2026-10-10):** the prune task ran 45 times inside Airflow, and the table holds 55 runs, exactly 24 hours (830 MB, 1,319,880 rows). Evidence: `us-086-prune-in-airflow-check-output.png`.
 
 **What:** Rows older than 24 hours leave the table (D-017), measured from the newest run in the table. The task goes in `routing_adapter` after `flood_on_roads`, with the window in a new variable. The size is read first and recorded in [[core-output-contract]] (6,955 MB on 2026-10-08, about 18 MB per run).
 
