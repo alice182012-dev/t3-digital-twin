@@ -9,7 +9,7 @@ approaches_tried: 4
 approaches_remaining: 1
 tags: [blocker, routing, arrival-only, us-093, paper-experiments]
 related: ["[[US-100-decide-between-option-a-and-sticky-closure]]", "[[US-093-measure-how-often-the-sticky-rule-gives]]", "[[US-092-test-how-the-vehicle-limits-change-the]]", "[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout]]", "[[BL-024-edge-export-has-no-node-ids]]", "[[sticky-closure-proof]]", "[[sticky-routing-reference]]"]
-last_updated: 2026-10-09
+last_updated: 2026-10-10
 ---
 
 # arrival-only-reference-is-inexact-on-the-real-graph
@@ -24,25 +24,28 @@ The real graph breaks this condition. `real_graph.py` treats every road as open 
 
 ## Plain-language explanation
 
-**The game.** We want to know the fastest way to walk to school. Some streets flood, and the water goes up and down as time passes. A street is closed when it has too much water at the moment you reach it.
+**What we want to know.** The engine routes a vehicle around flooded roads with the sticky rule (see [[US-100-decide-between-option-a-and-sticky-closure|US-100]]). That rule is cautious: it closes a road if the water reaches the vehicle's limit at any forecast step from the start of the trip up to 10 minutes after the vehicle enters, and it never reopens the road. The caution has a price. Sometimes the sticky route is longer, or there is no route at all. For the paper, `US-093` has to say how often that happens.
 
-**Two kinds of walkers.** The sticky walker looks at a street before leaving home and again on arrival, and avoids a street that might close. The arrival-only walker looks at a street only at the moment they reach it. We want to count how often the sticky walker does worse than the arrival-only walker. That count is the `US-093` result.
+**How we measure the price.** We compare the sticky route with a route found by a less cautious rule, the arrival-only rule, which looks at a road only at the moment the vehicle enters it. The arrival-only route is the reference, and the sticky route is never faster than it. The gap between the two is the price of the caution.
 
-**The trouble.** To be fair, the arrival-only walker must try every possible way to walk. On our map every street can be walked in both directions, so the walker can also go to the next corner and back, again and again. Each trip back and forth makes a new "walking story", and there are millions of them. The program keeps only 16 stories per corner, and the silly back-and-forth stories fill the space. The program then cannot be sure it found the best way, so it says "inexact", meaning "I am not sure". It said that every time. Keeping 64 or 256 stories did not help.
+**What went wrong.** The reference has to be exact. It must be the best arrival-only route, not a good one. On a map where every street can be walked both ways, the search could go to the next corner and back again and again, and it made millions of near-identical "walking stories". It ran out of room and said "inexact" every time (2,520 of 2,520). That is why the blocker exists.
 
-**Why a decision is needed.** There are two ways to fix the program, and they give different answers. The paper has to say which one we used, so the choice is yours.
+**What is settled.**
 
-- **Rule A, never visit the same corner twice.** No back and forth. This is the easiest to explain. The paper would say "earliest arrival over routes that visit no node twice".
-- **Rule B, ignore stories that are clearly worse.** The walker keeps the old rules, but the program needs a careful written proof that ignoring those stories is safe when the water goes down.
-- **Waiting by walking back and forth.** Under the old rules, the walker can pass time on purpose until a flooded street opens. Rule A forbids this. Rule B and the current search allow it.
+- **The reference** is the earliest arrival over routes that visit no node twice, with no looping to wait out a flood and a fixed departure time (the user, 2026-10-09). A vehicle that finds a flooded road is sent another way. It does not drive in circles until the road opens.
+- **The engine rule** stays sticky closure (the user, 2026-10-10, D-023). The user wants no chance of a vehicle being flooded halfway along a road. So the blocker never decides which rule the engine uses. It only affects how well the price of that rule is measured.
+- **The speed problem** is mostly solved. A pruned search (approach 4) makes the reference exact for 99.3 percent of 7,200 searches on the storm tables (motorbike 0.987, car 0.990, truck 0.997, foot 0.998). Every search that stays inexact has a proven limit on how much longer the sticky route can be.
 
-**How to answer.** Say which rule (A or B), or say "measure first" so that both are tried on 10 trips and the numbers are shown to you. Say whether waiting by walking back and forth is allowed. Give a number for "sure enough", for example "95 answers out of 100 must be certain". Give the longest run time, for example "2 hours". Give the sprint for the fix. The shortest useful answer is "measure first, Sprint 12".
+**What is still open.** Two answers, and only the first one can hold up the paper.
+
+1. Is 95 percent of searches exact, per vehicle, "exact enough"? The storm run is above that for every vehicle. If you agree, the blocker closes once the final run on all 45 tables confirms the rate.
+2. How long may a full run take, and how many pairs? The proposal is the earlier one, 30 pairs and about 2 hours on the Mac. The final run in progress takes about 40 minutes.
 
 ## Why this matters
 
 `US-093` measures how often the sticky rule gives no route or a longer route than an arrival-only reference. Without an exact reference, the story has no result. `US-093` is part of the routing paper experiments in [[EP-14-routing-paper-experiments]], and the paper handoff needs its numbers.
 
-The blocker does not stop build work in the next sprint. Sprint 13 in [[SP-04-frontend-recheck]] is the frontend recheck and reads none of this code. Under the blocker rules in `.claude/CLAUDE.md` (rule 11), this is the case where a subagent can fix the code while the next sprint continues. The fix still waits for a decision from you on the definition of the reference, because the definition changes what the paper claims.
+The blocker does not stop build work in the next sprint. Sprint 13 in [[SP-04-frontend-recheck]] is the frontend recheck and reads none of this code. Under the blocker rules in `.claude/CLAUDE.md` (rule 11), this is the case where a subagent could fix the code while the next sprint continues. The code fix is built (approach 4). Since 2026-10-10 the engine rule is settled as sticky closure ([[decision-log|D-023]]), so what is left is the exact-enough bar and the final run, and neither blocks a build.
 
 ## Approaches tried
 
@@ -128,6 +131,8 @@ Tests: the search matches a brute-force enumeration of every simple path on 1,90
 
 ## Options remaining
 
+Settled on 2026-10-09: option A is the reference, and option B is dropped. Option C (report the share of exact comparisons and the bound) is how the inexact rest is reported. The list stays as the record of the choice.
+
 Each option changes what "arrival-only" means. Option A and option B change the definition. Option C keeps the definition and gives up exactness.
 
 1. **A. Simple paths only.** A label may not visit a node that is already on its own path. This removes the loops, so the number of labels per node stays small. It answers the question "which route that does not repeat a node arrives first?". It is a defensible definition, because the sticky search is a shortest-path search, and a shortest-path search returns routes that do not repeat a node. It is no longer a lower bound that includes deliberate loops to burn time until a road opens. Measured on 2026-10-09 (approach 3): the exact rate is 0.475 at a budget of 3,000,000 expansions, with a cost of up to 27 s per search, so option A does not give an exact reference for every pair on the real graph.
@@ -161,22 +166,24 @@ Decided on 2026-10-09 by the user (definition only; questions 3 to 5 are still o
 
 **Assumption to confirm.** The departure time is fixed per trip and per forecast step. This follows from why 2 above, and the paper's method section has to say it.
 
-## What your input needs to include
+## What is still open
 
-A decision on this blocker lets me act when it answers the following questions. A short answer to each is enough.
+Four of the six questions that this page asked are answered. The record:
 
-1. **Which definition of arrival-only do you want?** Choose A (simple paths only), B (dominance rule, with a proof), or "measure first". If you choose A or B, say in one sentence how the paper should describe the reference, for example "the earliest arrival over routes that visit no node twice". The sentence is what ends up in the method section, so it has to be one you can defend to a reviewer.
-2. **Is loop-and-wait allowed in the reference?** In plain words: may the reference "waste time" on purpose by walking back and forth so that a road opens? If yes, only option B (or the current search) fits. If no, option A fits.
-3. **What counts as exact enough?** Give a number, for example "at least 95 percent of comparisons exact per vehicle and setting". If the exact rate is lower, say whether I should report the partial result with the share of exact comparisons, or stop and come back to you.
-4. **What is the cost limit?** Give the longest run time you accept for the full run, for example "under 2 hours on the Mac with 8 processes", and the pair count you want (the first run used 30 pairs). I use these to size the search and the sample.
-5. **Which sprint?** Give the sprint number for the fix. The current plan covers Sprints 9 to 12. `US-093` is in Sprint 12, and Sprint 13 is in [[SP-04-frontend-recheck]]. A new fix must exist as a story with a sprint before it appears in `TODOS.md`. If you do not name a sprint, I will propose Sprint 12 and ask again.
-6. **May I measure first?** If you are not sure about options A and B, answer "measure first". I then build both variants behind a switch, run them on 10 pairs of the first table, and report the exact rate and the time per pair for each. You choose after you see the numbers. This takes little work and changes no result file.
+| Question | Answer |
+| --- | --- |
+| 1. Which definition of arrival-only? | Option A, simple paths only (2026-10-09) |
+| 2. Is loop-and-wait allowed? | No (2026-10-09) |
+| 5. Which sprint? | Sprint 12. `US-099` and `US-100` sit there |
+| 6. May I measure first? | Not needed. Approach 3 and 4 measured it |
+| Which closure rule does the engine keep? | Sticky closure (2026-10-10, D-023, `US-100`) |
 
-A good input looks like this:
+Two questions remain, and the second one has a proposal.
 
-> Use option A. Describe it as "earliest arrival over routes that visit no node twice". Loops to wait are not allowed. Exact enough means 95 percent per vehicle. Allow 2 hours on the Mac with 8 processes and 30 pairs. Put the fix in Sprint 12.
+1. **What counts as exact enough?** The proposal is 95 percent of searches exact per vehicle, which the storm-wide run meets for every vehicle (0.987 to 0.998). The inexact rest is reported with its proven bound. Say "yes" to accept it, or give another number.
+2. **What is the cost limit and the pair count?** The proposal is 30 pairs and at most 2 hours on the Mac. The final run (45 tables, 30 pairs, budget 3,000,000, 5 workers) started at 01:49 +07 on 2026-10-10, and it will show the actual time.
 
-An input that only says "make it exact" is not enough, because "exact" is not defined without the choices above.
+A short answer is enough, for example "yes to 95 percent, keep 30 pairs and 2 hours". After the answer and the final run, the blocker moves to `resolved`.
 
 ## Concerns
 
@@ -201,3 +208,4 @@ The sticky side is not in question. A seeded test of 300 graphs in `scripts/rout
 - **2026-10-09, open.** Added a proven interval for inexact searches (`lower_bound_s` in the result, `extra_s_at_most` in `compare()` and the summary). Of the 5 inexact searches, 2 now carry a bound (sticky later by at most 14 s and 2 s) and 3 (one motorbike pair) stay unresolved. Tests: 78 in `routing_reference`, 85 in `routing_experiments`.
 - **2026-10-09, open.** Storm-wide run for `US-093` (7,200 searches, 30 pairs, 30 tables of the second replay, budget 3,000,000): 7,149 exact (0.993, motorbike 0.987, car 0.990, truck 0.997, foot 0.998). Every inexact search has a sticky route and a proven upper bound. Every vehicle is above the proposed 95 percent bar. The blocker can close when the user sets the bar and the final run after 00:45 +07 confirms the rate on the whole storm. Details in `US-093` Status history.
 - **2026-10-10, open.** The user decided to keep sticky closure for the engine ([[decision-log|D-023]], `US-100` `Done`). This answers the question of which closure rule the engine and the paper use. The question of the exact-enough bar for the arrival-only reference is still open.
+- **2026-10-10, open.** Synced with `US-100`. The plain-language explanation, "Why this matters", and the open questions were rewritten for the settled state: reference is option A, engine rule is sticky closure (D-023), the pruned search is built. Only the exact-enough bar and the cost limit are open, each with a proposal. The final run on the 45 tables of the second replay is running.
