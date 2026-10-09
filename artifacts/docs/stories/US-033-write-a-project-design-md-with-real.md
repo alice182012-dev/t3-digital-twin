@@ -6,7 +6,7 @@ story_label: "2"
 epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Not started
 priority: P3
-estimate: M
+estimate: S
 sprint: 
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]"]
@@ -21,4 +21,8 @@ Given the approved mockup and the shipped components, when `/design-consultation
 `DESIGN.md` lists the tokens (colors, type scale, spacing) extracted from the mockup, and each value the
 shipped `FloodLegend.module.css` and `PlaceDepthPopup.module.css` use either matches a token or is listed
 as a known divergence.
-Priority: P3. Status: Not started. Estimate: M. Sprint: none yet. It carries to plan 5 ([[SP-04-frontend-recheck|sprint-plan-4]], "Carried to plan 5"), because `US-083` is in Sprint 16, the last sprint of plan 4. It moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: `US-077` to `US-083`, so it extracts from the UI that they finish. Blocks nothing.
+Priority: P3. Status: Not started. Estimate: S. Sprint: none yet. It carries to plan 5 ([[SP-04-frontend-recheck|sprint-plan-4]], "Carried to plan 5"), because `US-083` is in Sprint 16, the last sprint of plan 4. It moved from Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] on 2026-10-08. Dependencies: `US-077` to `US-083`, so it extracts from the UI that they finish. Blocks nothing.
+
+## Status history
+
+- **2026-10-10, estimate M to S.** Compared with US-025 and US-026 (S each: match one screen to the mockup). Extracting tokens from one mockup and two CSS modules into one file is the same size, with no unknowns.

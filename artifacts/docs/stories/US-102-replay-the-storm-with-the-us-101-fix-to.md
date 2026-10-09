@@ -7,7 +7,7 @@ epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Ready
 kind: story
 priority: P0
-estimate: M
+estimate: S
 sprint: 
 subsystem: flood-pipeline
 source_ideas: []
@@ -26,6 +26,7 @@ Dependencies: none open. The product owner gives the go before the replay starts
 ## Status history
 
 - **2026-10-10, ready.** Written at the Scrum adoption ([[decision-log|D-024]]), because `US-101` reached `Done` without the replay its acceptance check names, and `BL-028` stays `monitoring` until the replay. Moves the open step "next action 2" of the old `TODOS.md` into a story.
+- **2026-10-10, estimate M to S.** Compared with US-063 and US-069 (S each: run a replay, read the result). The effort is small and the wait is long. The extra check of the gap tables and the hotstart line does not change the size.
 
 ## Evidence and details
 

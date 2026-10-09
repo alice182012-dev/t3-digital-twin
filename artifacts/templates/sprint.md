@@ -38,6 +38,7 @@ Fill this on the last day. Walk through each story that is `Done` by its evidenc
 - **Goal met:** yes or no, with one sentence.
 - **Points delivered:** N of N forecast.
 - **Not done:** each story that left the sprint, back to the backlog with `sprint` cleared.
+- **Estimate misses:** each `Done` story whose size was clearly wrong, with the number it should have had (1, 2, 3, or 5). Check that the reference stories in [[scrum-framework]] still fit.
 
 ## Retrospective
 

@@ -207,6 +207,9 @@ the rules that every session follows. The sources are Atlassian's Scrum guides, 
    check: independent (its dependencies are done or in the same sprint), negotiable, valuable (the user value or
    the question is stated), estimable (it has an estimate), small (not rated L, so it fits one sprint), and
    testable (the acceptance check names the environment). Planning takes only `Ready` stories.
+   **Estimating.** Compare a story with the reference stories in `artifacts/docs/concepts/scrum-framework.md`
+   (XS `US-059`, S `US-025`, M `US-001`, L `US-050`) and pick the nearest. Points mean complexity, effort, risk,
+   and unknowns, not hours.
 6. **Spikes.** An experiment or a proof is a story with `kind: spike`, a question, and a timebox of one sprint
    or less. It ends with an answer in the story and a `D-nnn` decision. It does not need a UI screenshot. An
    idea in `raw/ideas/` stays read-only. The spike links it in `source_ideas` and works in `marie-curie/`.

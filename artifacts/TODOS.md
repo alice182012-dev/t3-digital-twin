@@ -21,15 +21,15 @@ No story has this sprint yet.
 
 18 stories. The top 10 by priority:
 
-- US-102, P0, M, Ready. Replay the storm with the US-101 fix to close BL-028
-- US-076, P1, S, Not started. Compare the live app with the mockup in Aside at 1366x768
+- US-102, P0, S, Ready. Replay the storm with the US-101 fix to close BL-028
+- US-076, P1, M, Not started. Compare the live app with the mockup in Aside at 1366x768
 - US-089, P1, M, Reviewed. Start and stop a rain replay on the server with one command each
 - US-091, P1, M, In progress. Measure how often a single-timestep route meets a closed road on arrival
 - US-094, P1, M, Reviewed. Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
 - US-008, P2, S, Reviewed. Switch the search geocoder's default locale to `vi`
 - US-077, P2, S, Not started. Match the depth chart columns and the route tab text to screen 2e
 - US-078, P2, S, Not started. Show the place names on the start and destination pins
-- US-084, P2, S, Not started. Design the no-route and "wait until" states, then match the UI to the design
+- US-084, P2, M, Not started. Design the no-route and "wait until" states, then match the UI to the design
 - US-085, P2, S, Not started. Time out a route request in the client
 
 ## Open blockers

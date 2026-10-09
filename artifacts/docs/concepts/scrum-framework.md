@@ -84,7 +84,28 @@ Take the screenshot before changing the status. If the check fails, open a block
 
 ## Estimates and velocity
 
-Estimates are XS (1), S (2), M (3), and L (5). A story rated L is split before it enters a sprint. [[Velocity]] shows the points that were `Done` in each sprint. Sprint planning uses the last three values.
+Estimates are story points: XS (1), S (2), M (3), and L (5). This is the start of the Fibonacci scale that Atlassian describes in "What are story points" and "Ideas to optimize your planning poker sessions". A point measures complexity, effort, risk and unknowns, and dependencies together. It does not measure hours or days. A story rated L is split before it enters a sprint, so the scale stops at 5. [[Velocity]] shows the points that were `Done` in each sprint. Sprint planning uses the last three values.
+
+**Reference stories.** Estimate against these `Done` stories, not against memory. Compare the new story with each and pick the nearest.
+
+| Points | Reference | Why it fits |
+| ------ | --------- | ----------- |
+| XS (1) | `US-059` Show no result message while From or To is empty | one component, one condition, no unknowns |
+| S (2) | `US-025` Match the empty routing panel to screen 2c | one screen, a known method, one screenshot |
+| M (3) | `US-001` Depth-versus-time forecast chart | a new component, a data query, and a check on the server |
+| L (5) | `US-050` Build the time-aware weighting and search | new design, several parts, real unknowns. Split a story this size. |
+
+Choose new reference stories every few months, so they stay fresh. Replace a reference that no longer matches the work.
+
+**How a story is estimated.**
+
+1. The development team estimates alone first, then compares. Claude proposes a number with its reasoning. The product owner votes at refinement or planning.
+2. A vote far from the others is a signal. The person with the outlier vote explains it before the team settles, because the outlier often sees a problem that the others missed.
+3. A story in a part of the system that is new to the team is estimated from the reference stories, not from a similar story in another part. Experience in one area is a poor guide to another.
+4. Stop estimating when tired. After about an hour, or about 15 stories, stop and continue at the next refinement.
+5. Do not re-estimate a `Done` story. Record a miss at the retrospective instead.
+
+**Follow-up and calibration.** At each retrospective, list the `Done` stories whose size was clearly wrong, with the number they should have had (the nearest of 1, 2, 3, and 5). Write the list in the Review section of the sprint file as "Estimate misses". Then check whether the reference stories still fit. Elapsed days do not calibrate here. On 2026-10-10, 11 `Done` stories had usable dates, and the medians were 1 day for XS, 2 for S, and 1 for M, because stories were drafted and closed on the same day. Compare size, not duration.
 
 ## The events
 

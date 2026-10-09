@@ -21,8 +21,8 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 ## Planning
 
 - **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). Those sprints lasted days, not two weeks, so they under-measure a two-week sprint. A planning range is 16 points (the average) to 25 points (the best of the three). The product owner sets the forecast on Monday, and Sprint 13 calibrates the next one.
-- **Proposed picks.** `US-102` (M, P0), `US-089` (M, P1), and `US-091` (M, P1) make 9 points. They share one 12-hour replay, so the replay is the critical path and starts on Monday.
-- **Room for 7 to 16 more points.** The ready stories with no dependency on the replay are `US-076` (S), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows (6 points). Other `Ready` stories can fill the rest after refinement. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
+- **Proposed picks.** `US-102` (S, P0), `US-089` (M, P1), and `US-091` (M, P1) make 8 points. They share one 12-hour replay, so the replay is the critical path and starts on Monday.
+- **Room for 8 to 17 more points.** The ready stories with no dependency on the replay are `US-076` (M), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows (7 points). Other `Ready` stories can fill the rest after refinement. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
 - **Work in progress.** At most two stories are `In progress` at once. `US-102` starts first on Monday, because the replay is the longest wait.
 - **Not picked.** `US-094` waits for real rain above 5 mm/h and cannot finish this sprint.
 
