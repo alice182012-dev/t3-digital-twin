@@ -8,9 +8,9 @@
 3. Read the `9c` durations of the next `routing_adapter` runs (`US-070`). The task `prune_flood_road_values` also runs inside Airflow for the first time, which moves `US-086` to `Done`. Both wait for `flood_mapping_full` to run again.
 4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. The archive mount of `US-094` in `compose.yml` needs the Airflow containers recreated on the server, which has not been done. No copy of the per-timestep values is kept until `US-094` runs on real rain (D-022).
 5. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain. The flag is off now.
-6. Decide between option A and sticky closure (`US-100`). You chose option A as the reference on 2026-10-09 (`BL-027`). The pruned search is exact for 0.993 of 7,200 searches on the storm tables up to 21:15 +07, and every inexact search has a proven bound. `US-100` still needs your call on what each closure rule means for a vehicle already on the route, and `BL-027` needs your answer on the exact-enough bar.
+6. Answer the exact-enough bar for the arrival-only reference (`BL-027`). You decided on 2026-10-10 to keep sticky closure for the engine (`US-100`, D-023), and on 2026-10-09 to use option A as the reference. The pruned search is exact for 0.993 of 7,200 searches on the storm tables up to 21:15 +07, and every inexact search has a proven bound.
 
-Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes), `US-095` (netcdf ingest retired and tables dropped), `US-101` (rain gate fix), and `US-097` and `US-099` from 2026-10-09. Done on 2026-10-09 and removed earlier: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (blocker [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road. Records are in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]], the epic files, and the logs of [[2026-10-09]] and [[2026-10-10]].
+Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes), `US-095` (netcdf ingest retired and tables dropped), `US-101` (rain gate fix), and `US-097` and `US-099` from 2026-10-09. `US-100` is `Done` (2026-10-10) and leaves at the next rollover. Done on 2026-10-09 and removed earlier: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (blocker [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road. Records are in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]], the epic files, and the logs of [[2026-10-09]] and [[2026-10-10]].
 
 ### Active - US-070 Stop a slow sampling step from holding the database
 
@@ -106,7 +106,7 @@ Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes),
 
 **Status note:** `In progress`. The arrival-only search (`scripts/routing_reference/arrival_only.py`, label-correcting, `exact` flag) and the per-pair comparison with sticky closure (`scripts/routing_experiments/sticky_cost.py`) are merged on `modular` (`fc14d81` to `ae824ea`, 24 tests, a seeded 300-graph property test shows sticky never ends earlier than arrival-only). The estimate stays S. A first storm-wide run (7,200 searches, 30 tables up to 21:15 +07) is recorded in the story. The final run waits for the end of the second replay (D-020), see next action 1.
 
-### Active - US-100 Decide between option A closure and sticky closure for a vehicle already on the route
+### Done - US-100 Decide between option A closure and sticky closure for a vehicle already on the route
 
 **What:** Read what each closure rule means for a vehicle already on the route, then record the chosen rule. On the grid, sticky closure has no route in 128 cases where option A has one and arrives later in 64. If option A can send a vehicle into a segment that floods while it is still in it, sticky closure is the safer default ([[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]] Story 6).
 
@@ -118,7 +118,7 @@ Done on 2026-10-10 and removed from this list: `US-069` (storage check, passes),
 
 **Blocker tracking:** [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]].
 
-**Status note:** `Not started`. This is a product choice, not a correctness issue, and the call is yours.
+**Result (2026-10-10):** you decided to keep sticky closure ([[decision-log|D-023]]). Evidence: `us-100-closure-reading-output.png`. No code changes.
 
 ## Backlog
 

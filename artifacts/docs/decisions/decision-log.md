@@ -368,3 +368,15 @@ is the maximum.
 - **Affects:** `US-095`, `US-094`, `US-066`. Until the archive runs on real rain, no copy of the per-timestep 3Di values is kept, because the replay results are deleted by the 24-hour cleanup of task `9`.
 - **Revisit if:** a result of a replay run is needed after its raw output is deleted.
 
+## D-023: Keep sticky closure as the engine's rule
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** the engine keeps sticky closure. A road is closed for an arrival if any forecast step from the start of the window to 10 minutes after entry reaches the vehicle's limit, and it stays closed even if the water recedes later. The engine does not move to the arrival-only rule of option A.
+- **Why:** the user wants to protect the asset and the person conservatively and not risk any chance of a vehicle being flooded halfway along a road. Arrival-only reads the depth at the moment of entry only, so a vehicle can be inside a road when its depth reaches the limit (case 1 in `us-100-closure-reading-output.png`).
+- **Alternatives:** (1) Move to arrival-only. It finds more routes, but the vehicle can be on a road when it floods. (2) Arrival-only plus a check of every step during the traversal. It would handle case 1 and keep receding roads open, and it is not built or proven.
+- **Evidence:** `us-100-closure-reading-output.png` and [[sticky-closure-proof]]. On the four-node grid sticky closure has no route in 128 of 654 cases where option A has one, and it arrives later in 64.
+- **Affects:** `US-100` (`Done`), `US-093` (option A stays the comparison reference, and its sticky-longer rate is the price of this safety), [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]], and the paper's closure rule. No code changes.
+- **Revisit if:** the real-graph cost in `US-093` shows that sticky loses routes a traveller needs, or the interval check of alternative 2 is built and proven.
+
