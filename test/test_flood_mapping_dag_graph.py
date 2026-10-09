@@ -23,6 +23,8 @@ EXPECTED_TASKS = {
     "1_trigger_simulation",
     "0b_ensure_schema",
     "2_download_results",
+    "2b_archive_results",
+    "2c_archive_done",
     "3_calculate_depth",
     "3b_upload_netcdf_postgres",
     "9_build_flood_tiles",
@@ -33,6 +35,9 @@ EXPECTED_EDGES = {
     ("0_check_forecast_rain", "1_trigger_simulation"),
     ("1_trigger_simulation", "2_download_results"),
     ("2_download_results", "3_calculate_depth"),
+    ("2_download_results", "2b_archive_results"),
+    ("2b_archive_results", "2c_archive_done"),
+    ("2c_archive_done", "9_build_flood_tiles"),
     ("3_calculate_depth", "9_build_flood_tiles"),
     ("3_calculate_depth", "9b_load_depth_raster"),
     ("2_download_results", "3b_upload_netcdf_postgres"),
@@ -99,6 +104,9 @@ def load_dag_module(path="dags/flood_mapping_dag.py"):
         "airflow.providers": module("airflow.providers"),
         "airflow.providers.standard": module("airflow.providers.standard"),
         "airflow.providers.standard.operators": module("airflow.providers.standard.operators"),
+        "airflow.providers.standard.operators.empty": module(
+            "airflow.providers.standard.operators.empty", EmptyOperator=FakeOperator
+        ),
         "airflow.providers.standard.operators.python": module(
             "airflow.providers.standard.operators.python",
             BranchPythonOperator=FakeOperator,
@@ -178,6 +186,10 @@ class FloodMappingDagGraphTests(unittest.TestCase):
 
         self.assertEqual(leaves, {"3b_upload_netcdf_postgres", "9_build_flood_tiles", "9b_load_depth_raster"})
 
+    def test_a_failed_archive_does_not_stop_the_tile_build(self):
+        self.assertEqual(self.dag.tasks["2c_archive_done"].kwargs["trigger_rule"], "all_done")
+        self.assertNotIn("trigger_rule", self.dag.tasks["9_build_flood_tiles"].kwargs)
+
     def test_load_depth_raster_declares_the_published_asset(self):
         self.assertEqual(
             self.dag.tasks["9b_load_depth_raster"].kwargs["outlets"], [FakeAsset("flood_depth_raster_tile")]
@@ -185,6 +197,52 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         self.assertEqual(
             [name for name, task in self.dag.tasks.items() if "outlets" in task.kwargs], ["9b_load_depth_raster"]
         )
+
+
+class ArchiveTaskTests(unittest.TestCase):
+    def setUp(self):
+        self.dag_module = load_dag_module()
+        spec = importlib.util.spec_from_file_location("archive_results", ROOT / "scripts/archive_results.py")
+        self.dag_module.archive_results = importlib.util.module_from_spec(spec)
+        # dataclasses looks the module up by name while it builds a class.
+        sys.modules["archive_results"] = self.dag_module.archive_results
+        self.addCleanup(sys.modules.pop, "archive_results", None)
+        spec.loader.exec_module(self.dag_module.archive_results)
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.nc = Path(self.tmp.name) / "results" / "77" / "results_3di.nc"
+        self.nc.parent.mkdir(parents=True)
+        self.nc.write_bytes(b"nc")
+        self.dag_module.ARCHIVE_DIR = str(Path(self.tmp.name) / "archive")
+        self.dag_module.EDGE_EXPORT_DIR = str(Path(self.tmp.name) / "no_export")
+        self.dag_module.create_simulation = MagicMock()
+        self.dag_module.create_simulation.iso_utc.return_value = "2026-10-09T06:00:00Z"
+        self.dag_module.run_slot = MagicMock()
+
+    def ti(self, source):
+        values = {
+            ("1_trigger_simulation", "rain_ingested"): {"source": source, "total_mm": 3.0},
+            ("1_trigger_simulation", "sim_id"): 77,
+            ("2_download_results", "nc_path"): str(self.nc),
+        }
+        ti = MagicMock()
+        ti.xcom_pull.side_effect = lambda task_ids, key: values[(task_ids, key)]
+        return ti
+
+    def test_real_rain_archives_the_file_and_the_record(self):
+        with patch("builtins.print"):
+            self.dag_module.task_archive_results(ti=self.ti("tomorrow.io"))
+
+        archived = Path(self.dag_module.ARCHIVE_DIR) / "77"
+        self.assertEqual((archived / "results_3di.nc").read_bytes(), b"nc")
+        self.assertIn('"run_timestamp": "2026-10-09T06:00:00Z"', (archived / "run_record.json").read_text())
+
+    def test_test_rain_archives_nothing(self):
+        with patch("builtins.print") as printed:
+            self.dag_module.task_archive_results(ti=self.ti("fixed_test_rain"))
+
+        self.assertFalse(Path(self.dag_module.ARCHIVE_DIR).exists())
+        self.assertIn("Skipping the archive", printed.call_args[0][0])
 
 
 class DepthRunTests(unittest.TestCase):

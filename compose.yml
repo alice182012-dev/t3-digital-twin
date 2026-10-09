@@ -34,6 +34,7 @@ x-airflow-common: &airflow-common
     KEEP_LOCAL_GEOJSON: ${KEEP_LOCAL_GEOJSON:-false}
     FLOOD_EXTENT_WORKERS: ${FLOOD_EXTENT_WORKERS:-2}
     FLOOD_EXTENT_KEEP_RUNS: ${FLOOD_EXTENT_KEEP_RUNS:-8}
+    ARCHIVE_MIN_FREE_GB: ${ARCHIVE_MIN_FREE_GB:-50}
     EDGE_TABLE_KEEP_RUNS: 60
     FLOOD_EXTENT_TILE_STEPS: ${FLOOD_EXTENT_TILE_STEPS:-2}
     FLOOD_COLD_START_AFTER_BREAK: ${FLOOD_COLD_START_AFTER_BREAK:-1}
@@ -59,6 +60,8 @@ x-airflow-common: &airflow-common
     - ./plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
     - ${DATA_HOST_PATH:-./data}:/opt/airflow/data
+    # US-094: results_3di.nc and a run record of every real-rain run. On the server this is D:\airflow_new_data\archive.
+    - ${ARCHIVE_HOST_PATH:-./archive}:/opt/airflow/archive
     # The edge depth tables (US-041, US-042). The worker writes, and the routing readers mount this volume read-only.
     # A named volume, not a folder under DATA_HOST_PATH: replacing the `latest` pointer is a rename, and the rename
     # semantics of the Docker VM's own disk are the ones the readers can count on. See

@@ -40,7 +40,7 @@ Done on 2026-10-09 and removed from this list: the `graphhopper` rollout for `US
 
 **Sprint:** 10, [[EP-15-archive-and-netcdf-retirement|US-094-095-archive-and-netcdf-retirement-stories]] Story 1 (US-094), in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
 
-**Status note:** `Not started`. It blocks `US-095` and `US-086`.
+**Status note:** `Reviewed`. Built on `modular` (not pushed, not deployed): `scripts/archive_results.py`, task `2b_archive_results`, a join task `2c_archive_done` so a full drive does not stop the tile build, and the `ARCHIVE_HOST_PATH` mount. 24 tests pass. The deploy waits for the end of the second replay, and the proof waits for a real forecast above 5 mm/h. It blocks `US-095`.
 
 ### Active - US-095 Retire the `netcdf_values` ingest
 

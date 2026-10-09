@@ -1,5 +1,6 @@
 from airflow import DAG
 from airflow.exceptions import AirflowException
+from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 from datetime import datetime, timedelta, timezone
 import sys
@@ -21,6 +22,7 @@ sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
 sys.path.append(os.path.join(SCRIPTS_PATH, "flood_extent"))
 
 try:
+    import archive_results
     import create_simulation
     import hotstart_policy
     import download_result
@@ -57,6 +59,12 @@ FLOOD_EXTENT_TILE_STEPS = int(os.getenv("FLOOD_EXTENT_TILE_STEPS", "2"))
 FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")
 FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
 FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS", "24"))
+# 2b_archive_results copies results_3di.nc and a run record of every real-rain run here (compose.yml mounts
+# ARCHIVE_HOST_PATH) before the 24-hour cleanup in 9_build_flood_tiles deletes RESULT_DIR.
+ARCHIVE_DIR = os.getenv("ARCHIVE_DIR", os.path.join(BASE_PATH, "archive"))
+ARCHIVE_MIN_FREE_GB = float(os.getenv("ARCHIVE_MIN_FREE_GB", "50"))
+# graph.json of the graph export names the graph hash that the run record carries.
+EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 # scripts/flood_extent/raster_load.py's own scratch space for the EPSG:4326-reprojected copy of
 # each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
@@ -163,6 +171,31 @@ def task_download_result(**kwargs):
     if not saved_path:
         raise ValueError("❌ Download failed")
     ti.xcom_push(key="nc_path", value=saved_path)
+
+
+def task_archive_results(**kwargs):
+    ti = kwargs["ti"]
+    rain_ingested = ti.xcom_pull(task_ids="1_trigger_simulation", key="rain_ingested")
+    if not archive_results.is_real_rain(rain_ingested["source"]):
+        print(f"🗃️ 2b. Skipping the archive: the rain source is {rain_ingested['source']}, not real rain")
+        return
+    sim_id = ti.xcom_pull(task_ids="1_trigger_simulation", key="sim_id")
+    nc_path = ti.xcom_pull(task_ids="2_download_results", key="nc_path")
+    record = archive_results.build_record(
+        sim_id,
+        create_simulation.iso_utc(run_slot(kwargs)),
+        rain_ingested,
+        os.getenv("MODEL_ID", "83022"),
+        archive_results.read_graph_hash(EDGE_EXPORT_DIR),
+    )
+    print(f"🗃️ 2b. Archiving results of Sim {sim_id}...")
+    archive_results.archive_run(
+        sim_id=sim_id,
+        nc_path=nc_path,
+        archive_dir=ARCHIVE_DIR,
+        record=record,
+        floor_bytes=int(ARCHIVE_MIN_FREE_GB * 1024**3),
+    )
 
 
 def task_ensure_schema(**kwargs):
@@ -315,6 +348,9 @@ with DAG(
     t2 = PythonOperator(
         task_id="2_download_results", python_callable=task_download_result
     )
+    t2b = PythonOperator(task_id="2b_archive_results", python_callable=task_archive_results)
+    # Ends when 2b ends, failed or not, so a full archive drive turns 2b red without stopping the tile build.
+    t2c = EmptyOperator(task_id="2c_archive_done", trigger_rule="all_done")
     t3 = PythonOperator(
         task_id="3_calculate_depth",
         python_callable=task_calculate_depth,
@@ -333,6 +369,7 @@ with DAG(
     )
 
     t0 >> t1 >> t2 >> t3
+    t2 >> t2b >> t2c >> t9
     t3 >> t9
     t3 >> t9b
     t2 >> t3b

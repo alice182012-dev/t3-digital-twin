@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-094"
 story_label: "1"
 epic: "[[EP-15-archive-and-netcdf-retirement]]"
-status: Not started
+status: Reviewed
 priority: P1
 estimate: M
 sprint: 10
@@ -44,7 +44,11 @@ confirms the number with the user. Two design points to settle before building: 
 delete a file the archive failed to copy (the cleanup is age-based at 24 hours, so a failed copy has that long to be
 retried or fixed).
 Estimate: M. The code is one task plus a compose mount, but the story also needs a server deploy and a check that
-needs real rain, which the replay cannot give. Priority: P1. Status: Not started. Sprint: 10 (see the dependency
+needs real rain, which the replay cannot give. Priority: P1. Status: Reviewed. Sprint: 10 (see the dependency
 decision in the status history). Dependencies: none to build. It blocks `US-095` and `US-086`.
 Proof: a one-off run that reads the real Tomorrow.io forecast, with `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_MM_HR` unset, counts as the proof (the user, 2026-10-08). It does need the forecast to pass the rain gate (5 mm/h), so the proof waits for a forecast above it (the user chose this on 2026-10-08).
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-09, active.** Built on `modular`, not pushed and not deployed (no pull on the server during the second replay). `scripts/archive_results.py` copies `results_3di.nc` and `run_record.json` to `<ARCHIVE_DIR>/<sim_id>/` through a temporary file, so a second run gives the same archive. The record holds `sim_id`, `run_timestamp`, `rain_input`, `model_id` (from `MODEL_ID`), `graph_hash` (from `graph.json` of the graph export, null without it), `bytes`, and `sha256`. Task `2b_archive_results` runs after `2_download_results` and skips when the rain source is not `tomorrow.io`. A join task `2c_archive_done` with trigger rule `all_done` sits between it and `9_build_flood_tiles`, so a failed archive turns only `2b` red and the tile build still runs. `compose.yml` mounts `ARCHIVE_HOST_PATH` (default `./archive`) at `/opt/airflow/archive`, and `ARCHIVE_MIN_FREE_GB` defaults to 50. Tests: 9 in `scripts/test_archive_results.py` and 15 in `test/test_flood_mapping_dag_graph.py` pass. Still open: the deploy (set `ARCHIVE_HOST_PATH=D:\airflow_new_data\archive` in the server `.env`), the real-rain proof, the daily growth in GB, and your confirmation of the 50 GB floor.
