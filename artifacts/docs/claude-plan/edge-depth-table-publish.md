@@ -4,7 +4,7 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-7, edge-depth-table, us-042, atomic-publish, retention, storage]
-related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-airflow-task]]", "[[sprint-plan-2]]", "[[graphhopper-backend]]"]
+related: ["[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-airflow-task]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[graphhopper-backend]]"]
 ---
 
 # Plan: publish the edge depth table atomically and keep the newest three (US-042)
@@ -13,7 +13,7 @@ related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-
 
 `US-041` writes `<run_ts>.bin` and stops. This story makes a table visible to readers in one step, keeps the newest three, and picks where the tables live.
 
-Acceptance, from [[edge-depth-table-stories]] Story E4. Given a reader that polls in a loop, when the task publishes a table, then the reader sees the old table or the new one and never a partial file. Given four runs, when the fourth publishes, then the oldest is removed. A failed task leaves the previous `latest` in place and does not block the DAG. The story also picks the storage, a volume or MinIO, and records why.
+Acceptance, from [[EP-08-edge-depth-table|edge-depth-table-stories]] Story E4. Given a reader that polls in a loop, when the task publishes a table, then the reader sees the old table or the new one and never a partial file. Given four runs, when the fourth publishes, then the oldest is removed. A failed task leaves the previous `latest` in place and does not block the DAG. The story also picks the storage, a volume or MinIO, and records why.
 
 ## What is already there
 

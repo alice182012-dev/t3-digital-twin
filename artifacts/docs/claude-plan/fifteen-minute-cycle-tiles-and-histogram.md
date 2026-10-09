@@ -3,14 +3,14 @@ date: 2026-09-25
 type: plan
 status: active
 tags: [plan, tiles, forecast, histogram, frontend, airflow]
-related: ["[[map-shows-forecast-not-now]]", "[[hotstart-state-saved-at-end-of-run]]", "[[route-forecast-query]]", "[[depth-forecast-chart]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]"]
+related: ["[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[BL-009-hotstart-state-saved-at-end-of-run|hotstart-state-saved-at-end-of-run]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]"]
 ---
 
 # Fifteen-minute cycle: tiles and flood histogram
 
-Code for the proposed design in [[map-shows-forecast-not-now]]. The user makes the new 3Di template (900 s output
+Code for the proposed design in [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]. The user makes the new 3Di template (900 s output
 interval, 8 depth steps). This plan covers the code that reads its output. Routing is out of scope
-([[routing-not-time-aware]]), and so is `scripts/create_simulation.py` (start on the clock, state saved at 900 s),
+([[BL-011-routing-not-time-aware|routing-not-time-aware]]), and so is `scripts/create_simulation.py` (start on the clock, state saved at 900 s),
 because it follows the template.
 
 ## Data shape
@@ -73,12 +73,12 @@ tifs exist, raster load and flood on roads over all 8 steps, a 15-minute clock s
   columns in 1.5 s for a 5-point route). The map legend reads "As of 01:10" and the chart renders. Not measured: two
   overlapping runs (Stage 2, needs `flood_mapping_full` with `FLOOD_TEST_RAIN_MM_HR`).
 - **2026-09-26.** Motorbike profile icon fixed (`7290847`) and the chart label moved into a right-hand gutter
-  (`a107c78`), see [[motorbike-profile-icon-wrong]].
+  (`a107c78`), see [[BL-012-motorbike-profile-icon-wrong|motorbike-profile-icon-wrong]].
 - **2026-09-28, Stage 2 test.** Ran two genuinely overlapping runs under `FLOOD_TEST_RAIN_MM_HR=50`
   (risk 3, previously unmeasured). Both runs succeeded, but risk 3's contention is real and worse
   than expected: not same-run task contention, but a new run's simulation-trigger chain queuing
   behind the previous run's entire downstream pipeline, because no Airflow pool separates them.
   Runs under overlap took 20 to 35 minutes instead of ~14, and the delay compounded across
   successive overlapping runs. New blocker:
-  [[flood-mapping-full-worker-concurrency-serializes-runs]]. Not yet fixed; `flood_mapping_full`
+  [[BL-013-flood-mapping-full-worker-concurrency-serializes-runs|flood-mapping-full-worker-concurrency-serializes-runs]]. Not yet fixed; `flood_mapping_full`
   is paused again.

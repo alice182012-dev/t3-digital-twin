@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, sprint-9, routing, graphhopper, backend, flag, fallback, us-052]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[time-aware-weighting-and-search]]", "[[edge-depth-table-java-reader]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[sprint-plan-3]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[time-aware-weighting-and-search]]", "[[edge-depth-table-java-reader]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 ---
 
 # Plan: integrate the time-aware engine into the backend with a flag and a fallback (US-052)
 
 ## Context
 
-Acceptance, from [[time-aware-routing-engine-stories]] Story R7. With the flag on, `_handle_route` uses the table, takes `t0` as the later of `valid_time` and the server clock rounded to the containing step, pins one run for the whole request, and returns `unknown` for a trip that ends after the last step. With the flag off the body equals today's. A missing, stale, or mismatched table falls back to today's model, and the response carries a fallback flag. Tests cover the flag off, a departure between steps, the horizon edge, run pinning, and the hash mismatch.
+Acceptance, from [[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R7. With the flag on, `_handle_route` uses the table, takes `t0` as the later of `valid_time` and the server clock rounded to the containing step, pins one run for the whole request, and returns `unknown` for a trip that ends after the last step. With the flag off the body equals today's. A missing, stale, or mismatched table falls back to today's model, and the response carries a fallback flag. Tests cover the flag off, a departure between steps, the horizon edge, run pinning, and the hash mismatch.
 
 `US-050` built the engine and `US-043` the reader. Nothing connects them to a request yet: the table supplier is empty and no one sends `td_departure`. This story connects them. The proof on the server is `US-055`.
 

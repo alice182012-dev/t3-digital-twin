@@ -1,6 +1,6 @@
 """Reader and writer for the edge depth table: one file per run, flood depth by GraphHopper edge id.
 
-Story E2 (US-040) of artifacts/docs/user-stories/edge-depth-table-stories.md. The byte layout is
+Story E2 (US-040) of artifacts/docs/epics/EP-08-edge-depth-table.md. The byte layout is
 specified in artifacts/docs/concepts/edge-depth-table-format.md, and the Java reader must read the
 same bytes. Pure: no database, no GraphHopper. write_table writes straight to its path, because the build
 (build_edge_depth.py) writes under a temporary name and renames. write_latest replaces the pointer in one

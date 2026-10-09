@@ -3,13 +3,13 @@ date: 2026-10-02
 type: reference
 status: active
 tags: [research, requirements, refresh-interval, hanoi, flood-onset, us-062]
-related: ["[[map-refresh-requirement-research]]", "[[map-refresh-requirement-research-plan]]", "[[map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[2026-10-02]]"]
+related: ["[[US-062-map-refresh-requirement-research|map-refresh-requirement-research]]", "[[map-refresh-requirement-research-plan]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[2026-10-02]]"]
 last_updated: 2026-10-02
 ---
 
 # How fast must a user react to the flood map: findings
 
-Findings of the internet research for story `US-062` ([[map-refresh-requirement-research]]). The plan and its Revision 1 are in [[map-refresh-requirement-research-plan]]. The search ran on 2026-10-02, in English and Vietnamese. Every row below was opened and read, not taken from a search snippet. Times in Hanoi are UTC+7.
+Findings of the internet research for story `US-062` ([[US-062-map-refresh-requirement-research|map-refresh-requirement-research]]). The plan and its Revision 1 are in [[map-refresh-requirement-research-plan]]. The search ran on 2026-10-02, in English and Vietnamese. Every row below was opened and read, not taken from a search snippet. Times in Hanoi are UTC+7.
 
 ## The answer in short
 

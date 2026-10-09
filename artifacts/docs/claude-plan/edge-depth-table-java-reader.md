@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-8, java, edge-depth-table, us-043, hash-check, reload]
-related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graph-reimport-procedure]]", "[[graphhopper-backend]]", "[[sprint-plan-2]]"]
+related: ["[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graph-reimport-procedure]]", "[[graphhopper-backend]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
 ---
 
 # Plan: the Java reader of the edge depth table (US-043)
 
 ## Context
 
-Acceptance, from [[edge-depth-table-stories]] Story E5. Given the shared fixture, when the Java reader reads it, then it returns the same values as the Python reader for every edge and step. Given a table for a different graph hash, then the reader refuses it and names both hashes. Given a new `latest` pointer, then the engine memory-maps the new table within 30 seconds, and a request in flight finishes on the old table.
+Acceptance, from [[EP-08-edge-depth-table|edge-depth-table-stories]] Story E5. Given the shared fixture, when the Java reader reads it, then it returns the same values as the Python reader for every edge and step. Given a table for a different graph hash, then the reader refuses it and names both hashes. Given a new `latest` pointer, then the engine memory-maps the new table within 30 seconds, and a request in flight finishes on the old table.
 
 This is also where the request-time refusal that `US-044` handed over is built. The engine that serves requests (`US-050`, `US-052`) will call this reader.
 

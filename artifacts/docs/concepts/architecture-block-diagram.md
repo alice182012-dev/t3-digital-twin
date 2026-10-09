@@ -3,7 +3,7 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [architecture, diagram]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]", "[[netcdf-values-storage-redesign]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]", "[[core-output-contract]]", "[[edge-depth-table-format]]", "[[rain-replay-test-environment]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]", "[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[core-output-contract]]", "[[edge-depth-table-format]]", "[[rain-replay-test-environment]]"]
 last_updated: 2026-10-08
 ---
 # Block diagram: T3-Digital-Twin architecture
@@ -128,15 +128,15 @@ puts it back off unless run with `-LeaveOn`. At rest on 2026-10-08 the backend r
 used is unconfirmed. `US-045` (live timing of task 9c) is still open. The decision record for the engine is
 ADR-008 in the architecture document.
 
-TimescaleDB moved from Designed to Built on 2026-10-05 ([[netcdf-values-storage-redesign]],
+TimescaleDB moved from Designed to Built on 2026-10-05 ([[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]],
 `US-066`). The DAG's `3b_upload_netcdf_postgres` task (`netcdf_to_pg.py`) runs in parallel with
 `3_calculate_depth`, not downstream of it — both depend only on `2_download_results` and
 `0b_ensure_schema` finishing, per `dags/flood_mapping_dag.py`'s task graph. It writes the
 deduplicated mesh geometry and variable catalog (`mesh_elements`, `netcdf_variable_catalog`) and
 the per-timestep values onto a `netcdf_values` hypertable with a 6-hour compression policy and a
 48-hour retention policy, replacing a same-named table on `storage-postgres` that had no retention
-at all and reached 56 GB during a 48-hour soak test ([[docker-data-vhdx-fills-c-drive-again]]). That
+at all and reached 56 GB during a 48-hour soak test ([[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]). That
 old table is dropped. The dotted `PG -.-> TSDB` edge from the earlier diagram is gone with it: the
 DAG writes to TimescaleDB directly, never through `storage-postgres`. `flood_extent_polygon` on
-`storage-postgres` also got an automated prune the same week ([[prune-flood-extent-polygon-rows]],
+`storage-postgres` also got an automated prune the same week ([[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]],
 `US-067`), the other table the same incident found growing unbounded.

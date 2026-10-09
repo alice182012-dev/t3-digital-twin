@@ -3,7 +3,7 @@ date: 2026-09-23
 type: concept
 status: draft
 tags: [timescaledb, schema, histogram, sprint-1]
-related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[sprint-plan]]"]
+related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 last_updated: 2026-10-01
 ---
 

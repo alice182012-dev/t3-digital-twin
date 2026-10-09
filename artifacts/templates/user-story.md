@@ -41,7 +41,7 @@ each one fits. If this story grew out of a note in `raw/ideas/`, list it in
 dated bullet to "Status history" on every status change.
 
 Fill `sprint` with the sprint number this story is scheduled into once a sprint plan
-assigns one (see `sprint-plan-N.md` under `artifacts/docs/user-stories/`), and leave it
+assigns one (see `SP-nn-<slug>.md` under `artifacts/docs/sprints/`), and leave it
 empty for a story that is still in the backlog. An epic-shaped story spans several
 sprints, so it carries `Sprint: N` per row in its body instead of one frontmatter value;
 see [[user-story-types]].

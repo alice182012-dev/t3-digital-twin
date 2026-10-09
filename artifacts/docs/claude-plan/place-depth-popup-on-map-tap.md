@@ -3,12 +3,12 @@ date: 2026-09-29
 type: plan
 status: done
 tags: [plan, frontend, popup, flood-points, geocoding]
-related: ["[[frontend-depth-features]]", "[[frontend-todos-and-backend-dependencies]]", "[[point-depth-lookup-backend]]", "[[flood-routing-mockup-frontend-gap]]", "[[flood-points-connection-per-request]]", "[[mockup-screen-coverage]]"]
+related: ["[[EP-01-frontend-depth-features|frontend-depth-features]]", "[[frontend-todos-and-backend-dependencies]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]]", "[[EP-05-mockup-screen-coverage|mockup-screen-coverage]]"]
 ---
 
 # Place-depth popup on map tap
 
-Builds [[frontend-depth-features]] Story 1 (todo 3 in [[frontend-todos-and-backend-dependencies]]). Mockup
+Builds [[EP-01-frontend-depth-features|frontend-depth-features]] Story 1 (todo 3 in [[frontend-todos-and-backend-dependencies]]). Mockup
 screen 2b: a card at the tapped point with the place name, address, coordinates, and a bold "Water
 depth now: N cm" line.
 
@@ -30,8 +30,8 @@ depth now: N cm" line.
 | -------- | -------- | --- |
 | What does a plain click do? | In Flood mode it opens the popup. In Map mode it opens the context menu as before. Right-click and long touch always open the menu. | The mockup title is "Flood on", and a depth line means nothing without the flood layer. Map mode keeps click-to-set-start. |
 | Where does the place name come from? | A new `GET /places/reverse?lat=&lon=` that calls Photon `/reverse` and reuses `_normalize_feature` (Vietnam filter, name fallback, address). | One normalized shape with `search_places`, and no change to the forward `/geocode` contract. |
-| How is "now" worded? | "Water depth now" when the step is at or before now and within 45 minutes. "as of `time`" when older. "Forecast for `time`" when it is in the future. | The map can fall back to a future step or show a stale one, and "now" would then be wrong ([[map-shows-forecast-not-now]]). |
-| Route button on the card? | Not in this story. | It is [[mockup-screen-coverage]] Story 1 (todo 6). |
+| How is "now" worded? | "Water depth now" when the step is at or before now and within 45 minutes. "as of `time`" when older. "Forecast for `time`" when it is in the future. | The map can fall back to a future step or show a stale one, and "now" would then be wrong ([[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]). |
+| Route button on the card? | Not in this story. | It is [[EP-05-mockup-screen-coverage|mockup-screen-coverage]] Story 1 (todo 6). |
 
 ## Data shape
 
@@ -81,7 +81,7 @@ card. Check a wet point, a dry point, and a point in Map mode (context menu stil
   coordinates line always shows the tapped point.
 - The place lookup takes about 1.1 to 1.4 s and calls an outside service on every tap.
 - The route button on the card is todo 6. The concurrent-tap latency check
-  ([[point-depth-lookup-backend]] Story 4) has not run.
+  ([[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 4) has not run.
 - The depth line loads independently of the place name. The ordering was not observed on screen. A capture
   half a second after the click showed both still loading.
 - Building on the server over SSH fails on the Docker credential helper (`A specified logon session does not

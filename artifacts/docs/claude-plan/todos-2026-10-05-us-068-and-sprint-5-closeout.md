@@ -4,7 +4,7 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, sprint-5, sprint-6, us-068, us-034, us-037, us-049]
-related: ["[[sprint-plan-2]]", "[[carried-over-backlog]]", "[[sprint-5-baselines-reference-format-and-soak]]", "[[sprint-6-java-toolchain-and-edge-export]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[2026-10-05]]"]
+related: ["[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[sprint-5-baselines-reference-format-and-soak]]", "[[sprint-6-java-toolchain-and-edge-export]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[2026-10-05]]"]
 ---
 
 # Plan: 2026-10-05, build US-068 and settle what still blocks Sprint 6
@@ -13,10 +13,10 @@ related: ["[[sprint-plan-2]]", "[[carried-over-backlog]]", "[[sprint-5-baselines
 
 Sprint 5 started on 2026-10-01. Nine of its eleven rows are `Done`. The open ones are `US-034` and the new `US-068`, and a Sprint 4 carry-over, `US-037`, also gates Sprint 6.
 
-- `US-034` (the 48-hour soak) is `In progress`. Its window was 2026-10-02 16:00 +07 to 2026-10-04 16:00 +07. The replay behind it ([[us-063-realistic-rain-replay-for-us-037-and-us-034]]) stopped at 137 of 192 runs, and the last run began at 2026-10-03 19:00 UTC. The disk-full incident of 2026-10-04 cut the rest ([[docker-data-vhdx-fills-c-drive-again]], now `resolved`). No record shows that the end check of `run_soak.sh` ran.
+- `US-034` (the 48-hour soak) is `In progress`. Its window was 2026-10-02 16:00 +07 to 2026-10-04 16:00 +07. The replay behind it ([[us-063-realistic-rain-replay-for-us-037-and-us-034]]) stopped at 137 of 192 runs, and the last run began at 2026-10-03 19:00 UTC. The disk-full incident of 2026-10-04 cut the rest ([[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]], now `resolved`). No record shows that the end check of `run_soak.sh` ran.
 - `US-037` (the per-run critical path, a Sprint 4 carry-over) is `Active` in the Backlog. Its own pass check, `scripts/pipeline_margins/report.py`, has not run over the window. `9_build_flood_tiles` grew 4.8 times over the 48 hours, and the unverified lead is `flood_extent_polygon`, which had no retention until `US-067` landed today.
 
-`flood_mapping_full` is paused, and unpausing it is the user's decision. [[sprint-6-java-toolchain-and-edge-export]] says Sprint 6 starts when `US-034`, `US-037`, and `US-063` are `Done`, so these two items gate it. No blocker stops Sprint 6 build ([[routing-not-time-aware]] is the problem Sprints 6 to 10 solve).
+`flood_mapping_full` is paused, and unpausing it is the user's decision. [[sprint-6-java-toolchain-and-edge-export]] says Sprint 6 starts when `US-034`, `US-037`, and `US-063` are `Done`, so these two items gate it. No blocker stops Sprint 6 build ([[BL-011-routing-not-time-aware|routing-not-time-aware]] is the problem Sprints 6 to 10 solve).
 
 `US-068` (the `rain_ingested` XCom of `1_trigger_simulation`) is new today, in Sprint 5, size S, with no dependency.
 
@@ -39,12 +39,12 @@ Nothing is deployed to the server while the replay runs, because a rebuild or a 
 
 ## Added today
 
-`US-069`, the storage check, in Sprint 5 ([[carried-over-backlog]] Story 12). Readings at the start, at 24 hours, and at 48 hours. The pass mark of 10 percent growth between hour 24 and hour 48 is my proposal, not yet the user's.
+`US-069`, the storage check, in Sprint 5 ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 12). Readings at the start, at 24 hours, and at 48 hours. The pass mark of 10 percent growth between hour 24 and hour 48 is my proposal, not yet the user's.
 
 ## Not today
 
 - No `TODOS.md` edit. `US-068` is already there. Sprint 6 rows enter `TODOS.md` only when Sprint 6 starts (rule 9).
-- No item for [[place-name-slow-after-map-tap]] (`US-061` has no sprint) or the open frontend blockers.
+- No item for [[BL-021-place-name-slow-after-map-tap|place-name-slow-after-map-tap]] (`US-061` has no sprint) or the open frontend blockers.
 
 ## Status history
 

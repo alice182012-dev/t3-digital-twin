@@ -12,7 +12,7 @@ Commands:
   crossings   Walk every route over the depth table and list each road entered while closed (the checker of US-047).
   departures  Ask POST /route/departures for each trip and print the answer.
 
-The baseline is target C of "Latency of POST /route, 2026-10-02" in artifacts/docs/blockers/routing-not-time-aware.md, the
+The baseline is target C of "Latency of POST /route, 2026-10-02" in artifacts/docs/blockers/BL-011-routing-not-time-aware.md, the
 path the app takes (`POST /route` through floodmap-backend with the areas cached), and target B is kept for comparison. The
 user set the factor of 2 on 2026-10-02.
 """

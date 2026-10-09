@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-8, java, routing, graphhopper, us-050, sticky-c-lite]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[sticky-routing-reference]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[routing-not-time-aware]]", "[[sprint-plan-2]]", "[[edge-depth-table-java-reader]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[sticky-routing-reference]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[edge-depth-table-java-reader]]"]
 ---
 
 # Plan: the time-aware weighting and search for `motorbike` and `car` (US-050)
 
 ## Context
 
-Acceptance, from [[time-aware-routing-engine-stories]] Story R5. Given a synthetic depth table in the format of [[edge-depth-table-format]], when the four scenarios run for `motorbike` and `car`, with and without a detour, then the results match the reference of `US-047` ([[sticky-routing-reference]]) and the checker finds no crossing of an impassable edge. The search carries the arrival time in its label, applies sticky closure from the departure step with a 10-minute margin, and reads the vehicle limit from the profile.
+Acceptance, from [[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R5. Given a synthetic depth table in the format of [[edge-depth-table-format]], when the four scenarios run for `motorbike` and `car`, with and without a detour, then the results match the reference of `US-047` ([[sticky-routing-reference]]) and the checker finds no crossing of an impassable edge. The search carries the arrival time in its label, applies sticky closure from the departure step with a 10-minute margin, and reads the vehicle limit from the profile.
 
 Out of scope here, and in `US-052` (Sprint 9): the server flag, the request clock (`t0` is the later of `valid_time` and now), the `unknown` answer past the last step, the fallback response flag, and the table source wiring from the server config. `US-051` adds `truck` and `foot`.
 

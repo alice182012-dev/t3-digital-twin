@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, sprint-10, routing, rollout, latency, us-055]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[time-aware-backend-integration]]", "[[route-departures-endpoint]]", "[[wait-until-alert]]", "[[routing-not-time-aware]]", "[[graphhopper-backend]]", "[[sprint-plan-3]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[time-aware-backend-integration]]", "[[route-departures-endpoint]]", "[[wait-until-alert]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[graphhopper-backend]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 ---
 
 # Plan: prove the engine on the server and roll it out (US-055)
 
 ## Context
 
-Acceptance, from [[time-aware-routing-engine-stories]] Story R10. On the deployed image and a real run: the four scenarios pass the checker. The p50 and p95 of `POST /route` are within the factor of the baseline of `US-046` (the user set 2 on 2026-10-02). For a fixed set of pairs, run against today's model and the engine, the share of routes that change and the median detour ratio are recorded. [[graphhopper-backend]] and [[routing-not-time-aware]] are updated, and the blocker moves to `resolved` only with this evidence.
+Acceptance, from [[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R10. On the deployed image and a real run: the four scenarios pass the checker. The p50 and p95 of `POST /route` are within the factor of the baseline of `US-046` (the user set 2 on 2026-10-02). For a fixed set of pairs, run against today's model and the engine, the share of routes that change and the median detour ratio are recorded. [[graphhopper-backend]] and [[BL-011-routing-not-time-aware|routing-not-time-aware]] are updated, and the blocker moves to `resolved` only with this evidence.
 
 The user wants everything built first, then one test on the server, and then nothing more built. This story is therefore the tooling and the runbook, and the server run is its evidence step. No image is built on the server before the 48-hour replay ends.
 
@@ -34,7 +34,7 @@ The four synthetic scenarios on the deployed image are `java/time-aware-routing/
 
 ## Decisions
 
-1. **Baseline cell.** Target C of [[routing-not-time-aware]] ("Latency of POST /route, 2026-10-02"): `POST /route` through the backend, areas cached. It is the path the app takes, so it is what the traveller waits for. Target B (GraphHopper with the flood model) is kept in the tool for comparison. The baseline constants are checked against the vault's table by a test.
+1. **Baseline cell.** Target C of [[BL-011-routing-not-time-aware|routing-not-time-aware]] ("Latency of POST /route, 2026-10-02"): `POST /route` through the backend, areas cached. It is the path the app takes, so it is what the traveller waits for. Target B (GraphHopper with the flood model) is kept in the tool for comparison. The baseline constants are checked against the vault's table by a test.
 2. **Pairs.** The three trips of the baseline for all four vehicles, plus a second set of three trips shifted by about 100 to 200 m, 24 in all, all inside the model border. A pair with no route is listed and left out of the percentages, because the flood changes the routes from run to run.
 3. **Flag toggled by the script**, because the flag is a backend environment variable and the comparison needs both modes on the same graph and the same run.
 4. **Result files** go to `<data>\routing_proof` and the log to `C:\Users\TECOTEC\rollout-proof.log`.

@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[prune-flood-extent-polygon-rows]]", "[[docker-data-vhdx-fills-c-drive-again]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
 last_updated: 2026-10-08
 ---
 
@@ -89,7 +89,7 @@ duplicating it. `flood_extent_runs.list_runs` reads this table, and `list_timest
 `flood_depth_raster_tile` (`run_ts, valid_time_utc, tile_x, tile_y, rast`) holds each timestep's
 `depth.tif` as 256 x 256 pixel PostGIS raster tiles. Its primary key is
 `(run_ts, valid_time_utc, tile_y, tile_x)`, and a GIST index covers `ST_ConvexHull(rast)`. The table
-exists so `GET /flood/points` ([[point-depth-lookup-backend]]) can answer the exact depth at an
+exists so `GET /flood/points` ([[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]) can answer the exact depth at an
 arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges)
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
@@ -152,13 +152,13 @@ of 1,000 keys (the `DeleteObjects` API's per-call cap). Local scratch space
 age so a folder still being written is never mistaken for a stale one.
 
 `publish_run` also calls `prune_step_rows` and `prune_polygon_rows` (`US-067`,
-[[prune-flood-extent-polygon-rows]]) right after `prune_bucket_runs`, both with the same
+[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]) right after `prune_bucket_runs`, both with the same
 `keep_runs` and `always_keep`. Each deletes its own table's rows for every `run_ts` outside the
 newest `keep_runs`, computed from that table's own distinct `run_ts` values: `prune_step_rows` on
 `flood_extent_step`, `prune_polygon_rows` on `flood_extent_polygon`. Before `US-067`,
 `flood_extent_polygon` had no prune at all, unlike the bucket and `flood_extent_step`, and grew
 unbounded from 2026-09-24 to 13 GB by 2026-10-04
-([[docker-data-vhdx-fills-c-drive-again]]), almost all dead TOAST bloat behind a few thousand
+([[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]), almost all dead TOAST bloat behind a few thousand
 live rows. A one-off `DELETE` plus `VACUUM (FULL)` took it to 5 GB that day; `prune_polygon_rows`
 is the automated policy that stops it from happening again, deleting roughly one run's worth of
 rows on every publish instead of letting runs accumulate forever. No `VACUUM FULL` runs as part of

@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, storage-backend]
-related: ["[[minio-flood-extent-pipeline]]", "[[storage-backend-build-context-missing]]"]
+related: ["[[minio-flood-extent-pipeline]]", "[[BL-002-storage-backend-build-context-missing|storage-backend-build-context-missing]]"]
 last_updated: 2026-09-22
 ---
 
@@ -21,7 +21,7 @@ repository again as of 2026-09-22.
 the `minio_custom/` subproject, commit `0a166f0` ("Update flood pipeline scripts, add 3Di
 client/tests, remove minio_custom, add SW architecture doc") deleted it as one part of a commit
 whose message is mostly about an unrelated 3Di client change, and `minio_custom/` was restored from
-`dd9f3e4`'s tree on 2026-09-22 (see [[storage-backend-build-context-missing]]) once the user
+`dd9f3e4`'s tree on 2026-09-22 (see [[BL-002-storage-backend-build-context-missing|storage-backend-build-context-missing]]) once the user
 confirmed restoring, rather than removing, was the right call.
 
 `README.md` line 6 lists "`minio_custom`: MinIO plus Django/React storage UI" as part of the
@@ -51,4 +51,4 @@ used directly by the GraphHopper backend regardless of whether `storage-backend`
 
 ## Open items
 
-None. The build-context blocker is resolved: see [[storage-backend-build-context-missing]].
+None. The build-context blocker is resolved: see [[BL-002-storage-backend-build-context-missing|storage-backend-build-context-missing]].

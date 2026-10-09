@@ -92,7 +92,7 @@ ended 8.21 minutes after it, which one run cannot tell apart from the catch-up o
 stays open until the 12-hour replay of 2026-10-08 supplies more runs (`artifacts/TODOS.md`). See [[edge-depth-table-format]], "Build task".
 
 **Schedule.** The DAG runs on the cron `*/15 * * * *` with `catchup=False` and `max_active_runs=2`
-(`dags/flood_mapping_dag.py`), following the design in [[map-shows-forecast-not-now]] and decision D-014 in [[decision-log]]. The repository
+(`dags/flood_mapping_dag.py`), following the design in [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] and decision D-014 in [[decision-log]]. The repository
 has no `plugins/` directory and no custom timetable. A run can last about 15 minutes, so the next
 slot's run may start while the previous one finishes. The two runs share no files. Each download goes
 to `RESULT_DIR/<sim_id>/`, and each reprojected raster is named after its `run_ts`.
@@ -101,8 +101,8 @@ Each run starts at its 15-minute clock slot, not at `now()`. `create_simulation.
 time to the slot, and `run_forecast_process` sets the 3Di start time and the rain series from that slot
 (`dd78bcb`, `09e8650`, `00b42b0`). `choose_saved_state` hotstarts from the saved state whose `valid_at`
 equals the slot, or the newest state at most two cycles older, else it cold starts. See
-[[hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
-[[flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
+[[BL-009-hotstart-state-saved-at-end-of-run|hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
+[[BL-013-flood-mapping-full-worker-concurrency-serializes-runs|flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
 [[fifteen-minute-cycle-tiles-and-histogram]]. The user unpaused `flood_mapping_full` at about
 15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). Whether the DAG stays unpaused
 after the replay is unverified. The server also had the test DAGs `calculate_depth_manual_test` and

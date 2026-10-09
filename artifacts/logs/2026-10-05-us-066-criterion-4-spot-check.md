@@ -3,7 +3,7 @@ date: 2026-10-05
 type: log
 status: active
 tags: [log, infra, storage, timescaledb, postgres]
-related: ["[[netcdf-values-storage-redesign]]", "[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[sprint-plan-2]]"]
+related: ["[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
 ---
 
 # US-066 Done verification and the criterion 4 spot-check
@@ -23,8 +23,8 @@ Ran the three acceptance checks for US-066 again, live, against the real contain
 
 All three hold unchanged from the 2026-10-05 review. Rendered the verbatim `psql` output to
 `artifacts/docs/user-stories/evidence/us-066-netcdf-timescale-verify.png`, captured 03:42 UTC on
-this host, and moved [[netcdf-values-storage-redesign]] (`US-066`) to `Done` in that file,
-[[sprint-plan-2]], and `TODOS.md`.
+this host, and moved [[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]] (`US-066`) to `Done` in that file,
+[[SP-02-routing-engine-foundations|sprint-plan-2]], and `TODOS.md`.
 
 ## Criterion 4: does the old table hold anything that still matters
 
@@ -33,7 +33,7 @@ and value spot-check against the new tables. That check had never run, so this i
 
 The old table still holds 142,548,685 rows (56 GB) across `file_id` 131 to 242, timestamped
 2026-10-02 17:15 to 2026-10-03 21:00. Every one of those 112 file_ids is from the 48-hour soak test
-that caused [[docker-data-vhdx-fills-c-drive-again]], and all of it predates `file_id` 245, the
+that caused [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]], and all of it predates `file_id` 245, the
 first write that went through the new path. `netcdf_files` has no row for 245 in the old
 `netcdf_values`, which confirms the new path never touched the old table.
 
@@ -92,7 +92,7 @@ in the running system reads them.
 **Recommendation: drop.** The un-backfilled rows would not survive the new hypertable's own
 retention policy for more than another day or two even if copied, nothing reads them today, and
 leaving a 56 GB table around after confirming the new path works is the exact failure mode
-[[docker-data-vhdx-fills-c-drive-again]] already happened once from. The choice not to backfill the
+[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]] already happened once from. The choice not to backfill the
 remaining 110 file_ids is a deliberate call to let this soak data lapse under the new design, not a
 parity failure the migration still owes.
 

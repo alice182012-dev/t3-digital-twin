@@ -3,7 +3,7 @@ date: 2026-09-25
 type: decision
 status: active
 tags: [decisions, raster-first, routing, airflow]
-related: ["[[raster-first-flood-pipeline]]", "[[raster-first-pipeline-stories]]", "[[flood-on-roads]]", "[[graphhopper-backend]]", "[[sprint-plan]]"]
+related: ["[[raster-first-flood-pipeline]]", "[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[flood-on-roads]]", "[[graphhopper-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 ---
 # Decision log
 
@@ -25,7 +25,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   its meaning unchanged, so the reading side needs no change to accept the new rows.
 - **Alternatives:** Write a new table and change `flood_areas.py` to read it. Rejected because it touches
   routing for no gain.
-- **Affects:** [[raster-first-pipeline-stories]] Stories 3 and 4. New columns (`segment_id`, `depth_max`) are
+- **Affects:** [[EP-06-raster-first-pipeline|raster-first-pipeline-stories]] Stories 3 and 4. New columns (`segment_id`, `depth_max`) are
   added with `ADD COLUMN IF NOT EXISTS`, so the old pipeline keeps working until it is retired.
 - **Revisit if:** the comparison shows the new rows cannot share the table with old rows.
 
@@ -37,7 +37,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Decision:** `depth` holds the mean depth over the samples along a road piece, and dry samples count as 0.
   A second column, `depth_max`, holds the deepest sample.
 - **Why:** The user chose the mean. The vault records "mean" or "average" only for the route chart's
-  route-level value ([[route-forecast-query]]). The old pipeline did no averaging: it cut each road by the flood
+  route-level value ([[US-017-route-forecast-query|route-forecast-query]]). The old pipeline did no averaging: it cut each road by the flood
   cells, so each row carried one cell's depth. A mean over a 50 m piece can hide a short deep spot: 5 m at
   0.6 m depth inside a mostly dry 50 m piece averages about 0.06 m, under the motorbike's 0.2 m limit. Storing
   the maximum keeps both values, so the choice can be judged with data.
@@ -163,7 +163,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 
 - **Date:** 2026-09-30
 - **Status:** active. Decided by the user on 2026-09-30.
-- **Decided by:** the user, after the mockup screen check ([[mockup-screen-coverage]] Story 2) found that screen 2a opens
+- **Decided by:** the user, after the mockup screen check ([[EP-05-mockup-screen-coverage|mockup-screen-coverage]] Story 2) found that screen 2a opens
   with Map on and Flood off, and the app opens in Flood mode.
 - **Decision:** The app opens in Flood mode, with the flood layer and the legend, until the user says otherwise. It does not
   follow screen 2a's Map-first opening for now.
@@ -175,8 +175,8 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
   `userChoseMapMode: true`, commented as a demo default. Because `userChoseMapMode` is true, the first
   `FloodTimestepsReceived` does not recompute the mode, so `defaultMapMode` has no effect at load. On 2026-09-30 the live app
   opened in Flood mode with data from 02:15 while the clock read about 12:30, so the mode does not depend on how fresh the data is.
-- **Affects:** [[mockup-screen-coverage]] screen 2a, which now differs from the app on purpose. With old data the map still opens in
-  Flood mode, and the legend's "As of" line shows the age of the data. [[map-shows-forecast-not-now]] covers what the map
+- **Affects:** [[EP-05-mockup-screen-coverage|mockup-screen-coverage]] screen 2a, which now differs from the app on purpose. With old data the map still opens in
+  Flood mode, and the legend's "As of" line shows the age of the data. [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] covers what the map
   shows over time.
 - **Revisit if:** the user ends the building phase or asks for the mockup's opening. To follow the mockup, start `FloodStore`
   in Map mode. To choose by data recency, start with `userChoseMapMode: false`.
@@ -192,9 +192,9 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** The user said so on 2026-10-01. The pipeline runs one cycle, the 15-minute `flood_mapping_full`, and
   no DAG ever produced `background_cycle` data.
 - **Alternatives:** Build a forecast run every 3 to 6 hours with its own rain input (option C in
-  [[timescaledb-load-has-no-source-for-histogram-bars]]). Rejected by this decision.
+  [[BL-020-timescaledb-load-has-no-source-for-histogram-bars|timescaledb-load-has-no-source-for-histogram-bars]]). Rejected by this decision.
 - **Affects:** The 24-bar institution histogram of the architecture doc (section 4.9) cannot be built as
-  specified, because bars 7 to 24 come from `background_cycle`. [[t3-digital-twin-architecture-gaps]] Goal 2 and
+  specified, because bars 7 to 24 come from `background_cycle`. [[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]] Goal 2 and
   its second Definition of done bullet are removed. The `background_cycle` enum value, the
   `background_forecast_depth` table, and the bars 7 to 24 CHECK in `create_timescale_tables.py` stay in the
   schema and stay unused. The raw architecture doc still describes `background_cycle`, and it is read-only.
@@ -207,13 +207,13 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Decided by:** the user, after the frontend recheck against the mockup ([[frontend-mockup-recheck-and-sprint-11-start]], differences G4 and G5).
 - **Decision:** The legend keeps "As of `time`" for a step at or before now and "Forecast for `time`" for a later step. It does not
   return to the mockup's "Updated". The "Powered by GraphHopper" line is deleted from the empty routing panel if the license allows it. The settings box's links to `graphhopper.com` (info, imprint, privacy, terms) are deleted too, as the user confirmed the same day.
-- **Why:** The timestep shows when the data is valid, not when it was updated ([[map-shows-forecast-not-now]]). The mockup shows
+- **Why:** The timestep shows when the data is valid, not when it was updated ([[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]). The mockup shows
   neither a "Powered by" line nor GraphHopper's name.
 - **Alternatives:** Return to "Updated" to match the mockup. Keep "Powered by" as a credit.
 - **Evidence:** `timestepLabel.ts` produces "As of" and "Forecast for". `sidebar/PoweredBy.tsx` renders the line. The GraphHopper Maps
   source is Apache 2.0 (`floodmap/graphhopper-maps/NOTICE.md`), which does not require a badge in the UI. It does require the license and
   notice files to stay with the code, so `NOTICE.md` and `LICENSE.txt` stay. This is a reading of the license by Claude, not legal advice.
-- **Affects:** [[frontend-mockup-recheck-stories]] Stories 4 (`US-079`) and 5 (`US-080`). The legend part of [[map-shows-forecast-not-now]] is settled.
+- **Affects:** [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] Stories 4 (`US-079`) and 5 (`US-080`). The legend part of [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] is settled.
 - **Revisit if:** the project is published outside the team, or the user wants the mockup's "Updated" wording back.
 
 ## D-011: Build all of Sprint 11 before the next server run, and deploy once
@@ -225,7 +225,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** A 48-hour run costs a lot, and every story that needs the server can share one run. The ordering is in [[sprint-11-server-rollout]].
 - **Alternatives:** Deploy `US-055` alone on the old DAG shape and the Sprint 11 stories later. That costs a second deploy.
 - **Evidence:** `modular` holds `US-051` to `US-054` and `US-071` to `US-075`, each `Reviewed`. `rollout.ps1` only checks that the core DAG is paused, and `table_timing.ps1` was rewritten for `routing_adapter`, so the old shape is not required.
-- **Affects:** [[sprint-plan-3]] Sprints 9 to 11, and the stories that wait on `US-055`.
+- **Affects:** [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] Sprints 9 to 11, and the stories that wait on `US-055`.
 - **Revisit if:** the first run of `rollout.ps1` fails because of the role or the DAG move, which would argue for the two-deploy order.
 
 ## D-012: A rain replay runs for 12 hours
@@ -237,7 +237,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** Every simulating run is a real 3Di simulation, and the cost grows with the number of runs. The 12-hour event has 42 simulating runs at a gate of 5 mm/h.
 - **Alternatives:** Replay the full two-day series, or the 48-hour October event again. Both cost more runs.
 - **Evidence:** `scripts/rain_events/hanoi_20260916_storm.csv` has 24 rows, 53.88 mm, and a peak of 8.73 mm/h. `rain_replay.py check` at gate 5 lists 42 of 46 runs in 2 chains. The server read it back from inside the worker on 2026-10-08.
-- **Affects:** [[rain-replay-test-environment]], [[rain-replay-test-environment-stories]], and the stories that wait for a replay: `US-045`, `US-069`, `US-070`, and `US-073`. `US-069` names a 24-hour to 48-hour storage comparison that 12 hours cannot show.
+- **Affects:** [[rain-replay-test-environment]], [[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]], and the stories that wait for a replay: `US-045`, `US-069`, `US-070`, and `US-073`. `US-069` names a 24-hour to 48-hour storage comparison that 12 hours cannot show.
 - **Revisit if:** a story needs a longer window, such as the `US-069` pass condition.
 
 ## D-013: Rain forecast comes from Tomorrow.io, not NCHMF
@@ -273,7 +273,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** D-012 set a replay to 12 hours, so the 24-hour and 48-hour readings cannot exist.
 - **Alternatives:** Define the pass as "capped tables stop growing at their cap". That says nothing about the uncapped tables.
 - **Evidence:** the replay runs from about 15:05 +07 on 2026-10-08 to the last simulating run at 03:00 +07 on 2026-10-09. The only start reading is partial (15:17 +07 on 2026-10-08: C: free, `docker_data.vhdx`, `minio_custom`, `flood_extent_polygon`), so the pass rests on hour 6 against hour 12.
-- **Affects:** [[carried-over-backlog]] Story 12 (`US-069`), `TODOS.md`. The user confirmed the pass mark on 2026-10-08: growth of 10 percent or less per database object between hour 6 and hour 12.
+- **Affects:** [[EP-07-carried-over-backlog|carried-over-backlog]] Story 12 (`US-069`), `TODOS.md`. The user confirmed the pass mark on 2026-10-08: growth of 10 percent or less per database object between hour 6 and hour 12.
 - **Revisit if:** the server cannot be read at hour 6 (about 21:05 +07).
 
 ## D-016: Archive `results_3di.nc` to the D: drive on the server, only with real rain
@@ -285,7 +285,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** After a storm, the system keeps rasters and tiles for about 2 hours, `netcdf_values` for 48 hours, and the NetCDF files for 24 hours. No store holds the storm for later analysis. The NetCDF file is the source of truth: the depth rasters, polygons, and road depths can be rebuilt from it and the model.
 - **Alternatives:** Keep `flood_road_values` (about 18 MB per run). Re-download results from 3Di by `sim_id`, which is unverified because the local 3Di docs do not state how long 3Di keeps results.
 - **Evidence:** `results` holds 14 files of 98 MB in total on the worker, about 7 MB per run. `flood_road_values` is 6,955 MB for 377 run timestamps.
-- **Affects:** `dags/flood_mapping_dag.py` (the 24-hour `cleanup_dirs` that now deletes `RESULT_DIR`), `compose.yml` (a D: mount), [[3di-simulation-orchestration]], Paper B. A run record (`sim_id`, rain input, model revision, graph hash, run timestamp) is part of the archive. Stories: `US-094` (Sprint 10) in [[US-094-095-archive-and-netcdf-retirement-stories]], and `US-086` depends on it.
+- **Affects:** `dags/flood_mapping_dag.py` (the 24-hour `cleanup_dirs` that now deletes `RESULT_DIR`), `compose.yml` (a D: mount), [[3di-simulation-orchestration]], Paper B. A run record (`sim_id`, rain input, model revision, graph hash, run timestamp) is part of the archive. Stories: `US-094` (Sprint 10) in [[EP-15-archive-and-netcdf-retirement|US-094-095-archive-and-netcdf-retirement-stories]], and `US-086` depends on it.
 - **Revisit if:** D: free space falls, or 3Di is found to keep results long enough to re-download.
 
 ## D-017: `flood_road_values` is pruned after 24 hours
@@ -296,7 +296,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Decision:** `US-086` removes rows of `flood_road_values` older than 24 hours, in place of keeping the newest N runs.
 - **Why:** The table grows about 18 MB per run with no cap (6,955 MB on 2026-10-08), and the raw archive of D-016 keeps the storm for analysis.
 - **Alternatives:** Keep the newest N runs, which would hold less than 24 hours during dense runs.
-- **Evidence:** the size reading in [[core-output-hygiene-stories]] Story 1.
+- **Evidence:** the size reading in [[EP-12-core-output-hygiene|core-output-hygiene-stories]] Story 1.
 - **Affects:** `US-086`, [[core-output-contract]], and anything that reads `flood_road_values` older than 24 hours (the flood metric extractor, if it is ever scheduled).
 - **Revisit if:** the archive of D-016 is not working when the first prune runs.
 
@@ -309,7 +309,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** `netcdf_values` is 2,428 MB with a 48-hour retention policy, and `3b` takes about 81 s per run. The archived NetCDF file of D-016 is the source of truth, so the ingest holds nothing the archive lacks.
 - **Alternatives:** Keep the ingest beside the archive. Rejected by the user.
 - **Evidence:** dependency check of 2026-10-08. The only foreign key is `netcdf_values.variable_id` to `netcdf_variable_catalog(id)`, so drop `netcdf_values` first. No views or continuous aggregates exist. The code references are listed in `US-095`.
-- **Affects:** `US-095` (Sprint 11) in [[US-094-095-archive-and-netcdf-retirement-stories]], `US-066` and `US-069` (the storage check reads `netcdf_values`), [[3di-simulation-orchestration]], the architecture doc. Whether to retire the `timescaledb` container afterward is a separate decision and is not made here.
+- **Affects:** `US-095` (Sprint 11) in [[EP-15-archive-and-netcdf-retirement|US-094-095-archive-and-netcdf-retirement-stories]], `US-066` and `US-069` (the storage check reads `netcdf_values`), [[3di-simulation-orchestration]], the architecture doc. Whether to retire the `timescaledb` container afterward is a separate decision and is not made here.
 - **Revisit if:** `US-094` does not hold a real storm before Sprint 11 ends.
 
 ## D-019: Deploy the `flood_road_values` prune before `US-094` is proven
@@ -321,7 +321,7 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** The growth of `9c` (44.8 to 90.3 s within a chain, `US-070`) points at this table, and `US-094` waits for a forecast above 5 mm/h that may not come for weeks.
 - **Alternatives:** Keep the deploy behind `US-094`, as D-017 assumed.
 - **Evidence:** the 9c readings of 2026-10-09 in `TODOS.md` (`US-070`).
-- **Affects:** `US-086`, `US-070`, [[9c-sampling-step-runs-over-770-seconds]]. Until the archive works, depth history older than 24 hours is gone from this table and not archived. The raw `netcdf_values` keeps 48 hours under its own policy.
+- **Affects:** `US-086`, `US-070`, [[BL-023-9c-sampling-step-runs-over-770-seconds|9c-sampling-step-runs-over-770-seconds]]. Until the archive works, depth history older than 24 hours is gone from this table and not archived. The raw `netcdf_values` keeps 48 hours under its own policy.
 - **Revisit if:** a result older than 24 hours is needed before `US-094` runs.
 
 ## D-020: The second replay runs after Sprint 12
@@ -344,13 +344,13 @@ who decided, and how to revisit it. Number entries in order (`D-001`, `D-002`, a
 - **Why:** the flood model is not validated, so the app protects assets before the modelled depth reaches the limit, and it does not hide the route a driver may need.
 - **Alternatives:** a graded cost band (rejected: the engine has no cost term, the model is too uncertain to justify a curve, and the FIFO proof would need a recheck).
 - **Evidence:** none yet. The sweep of the fraction in `US-092` measures the detour and the share of pairs without a precaution route.
-- **Affects:** `US-097`, `US-098`, `US-092`, [[engine-has-no-depth-band-cost]], [[sticky-closure-proof]].
+- **Affects:** `US-097`, `US-098`, `US-092`, [[BL-025-engine-has-no-depth-band-cost|engine-has-no-depth-band-cost]], [[sticky-closure-proof]].
 - **Revisit if:** the sweep shows that 50 percent leaves many pairs without a precaution route, or the flood model is validated.
 
 ## Open decisions
 
 1. What the map shows by default: the situation now, or the nearest forecast timestep. No t0 raster exists today, and routing and
-   the histogram do not yet handle the forecast side. The options and questions are in the blocker [[map-shows-forecast-not-now]].
+   the histogram do not yet handle the forecast side. The options and questions are in the blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]].
    Decide this before the route-forecast query and the chart are built, because it changes both.
 
 The question of which depth the flood metric extractor and TimescaleDB metrics use is settled by D-006: they read `depth`, which

@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: complete
 tags: [plan, infra, storage, postgres, timescaledb]
-related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[netcdf-values-storage-redesign]]", "[[minio-flood-extent-pipeline]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
+related: ["[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[minio-flood-extent-pipeline]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
 ---
 
 # Plan: narrow and compress netcdf_values onto TimescaleDB
 
 ## Context
 
-[[docker-data-vhdx-fills-c-drive-again]] traced C: filling to ~250 MB free back to two tables in
+[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]] traced C: filling to ~250 MB free back to two tables in
 `storage-postgres` with no retention policy at all: `flood_extent_polygon` and `netcdf_values`.
 [[2026-10-04-docker-vhdx-disk-full]] records the same-day emergency cleanup: a one-off
 `DELETE ... WHERE valid_time_utc < now() - interval '48 hours'` plus `VACUUM FULL` took
@@ -127,7 +127,7 @@ ran, so the old table stays until the new path is proven, not until the new path
    (`task_upload_netcdf_postgres`) writes through it cleanly once the DAG is unpaused.
 6. Only after step 5 is confirmed on a real run: drop the old `netcdf_values` table on
    `storage-postgres` and reclaim that space (the same `VACUUM FULL` consideration as
-   [[docker-data-vhdx-fills-c-drive-again]] Approach 4, since dropping a table is immediate but
+   [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]] Approach 4, since dropping a table is immediate but
    the freed space still needs a vhdx compaction to show up on the Windows host).
 
 ## Rollback
@@ -140,7 +140,7 @@ gated on step 5's real-run verification specifically so that it is not taken on 
 ## Status history
 
 - **2026-10-04, active.** Drafted from this session's design discussion, directly following the
-  disk-full incident on [[docker-data-vhdx-fills-c-drive-again]]. Not yet implemented.
+  disk-full incident on [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]. Not yet implemented.
 - **2026-10-05, active.** Implemented and verified on branch `us-066-netcdf-values-timescale`
   (merged into `front-end-according-to-mock-up`), three commits: the schema and catalog, the
   `netcdf_to_pg.py` write path, and a resumable `backfill_netcdf_values.py`. Two corrections to
@@ -188,4 +188,4 @@ gated on step 5's real-run verification specifically so that it is not taken on 
   actually unique to the old table once its retention window passed. On the user's go,
   `DROP TABLE netcdf_values;` ran clean on `storage-postgres`: `minio_custom` 70 GB to 14 GB. Full
   finding in [[2026-10-05-us-066-criterion-4-spot-check]]. This plan is complete; the story
-  [[netcdf-values-storage-redesign]] (`US-066`) is `Done`.
+  [[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]] (`US-066`) is `Done`.

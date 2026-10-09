@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, sprint-9, routing, backend, departures, us-053]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[time-aware-backend-integration]]", "[[sticky-routing-reference]]", "[[edge-depth-table-format]]", "[[departure-time-advice-research]]", "[[sprint-plan-3]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[time-aware-backend-integration]]", "[[sticky-routing-reference]]", "[[edge-depth-table-format]]", "[[departure-time-advice-research]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 ---
 
 # Plan: `POST /route/departures`, the earliest clear departure (US-053)
 
 ## Context
 
-Acceptance, from [[time-aware-routing-engine-stories]] Story R8. Given a real depth table and a route between two points, the endpoint requests the flood-free route with the `edge_id` and `time` details, reads depth by edge id, applies sticky closure from each candidate departure with a 10-minute margin, and returns each candidate as `clear`, `blocked`, or `unknown`, the earliest clear departure, the run, and the run's age. Candidates start at the step that contains now. The client sends no clock value, margin, or policy.
+Acceptance, from [[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R8. Given a real depth table and a route between two points, the endpoint requests the flood-free route with the `edge_id` and `time` details, reads depth by edge id, applies sticky closure from each candidate departure with a 10-minute margin, and returns each candidate as `clear`, `blocked`, or `unknown`, the earliest clear departure, the run, and the run's age. Candidates start at the step that contains now. The client sends no clock value, margin, or policy.
 
 The alert of `US-054` calls this when `POST /route` fails with no connection, and shows "The usual route is clear from HH:MM" or "No safe route in the next 2 hours".
 

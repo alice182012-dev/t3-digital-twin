@@ -4,16 +4,16 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, sprint-10, frontend, alert, departures, us-054]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[route-departures-endpoint]]", "[[frontend-polish]]", "[[departure-time-advice-research]]", "[[sprint-plan-3]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[route-departures-endpoint]]", "[[EP-02-frontend-polish|frontend-polish]]", "[[departure-time-advice-research]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 ---
 
 # Plan: show "wait until" in the no-route alert (US-054)
 
 ## Context
 
-Acceptance, from [[time-aware-routing-engine-stories]] Story R9. Given a failed route request with no connection, the client asks `POST /route/departures`, and the alert shows a loading line, then "The usual route is clear from HH:MM (forecast run HH:MM)", or "No safe route in the next 2 hours. Check again after the next forecast run." Given a clear route, no advice appears. Given the fallback flag, the alert shows "timing check unavailable". The alert keeps its advice to reach the safest location or stay put, and says "clear in the forecast", not "safe".
+Acceptance, from [[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R9. Given a failed route request with no connection, the client asks `POST /route/departures`, and the alert shows a loading line, then "The usual route is clear from HH:MM (forecast run HH:MM)", or "No safe route in the next 2 hours. Check again after the next forecast run." Given a clear route, no advice appears. Given the fallback flag, the alert shows "timing check unavailable". The alert keeps its advice to reach the safest location or stay put, and says "clear in the forecast", not "safe".
 
-The alert is `NoSafeRouteMessage`, the box of [[frontend-polish]] Story 4 (`US-009`), shown when the route view is `empty`.
+The alert is `NoSafeRouteMessage`, the box of [[EP-02-frontend-polish|frontend-polish]] Story 4 (`US-009`), shown when the route view is `empty`.
 
 ## Design
 

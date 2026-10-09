@@ -3,7 +3,7 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[graphhopper-vehicle-profile-rejection]]", "[[flood-route-missing-geom-column]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]", "[[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-10-08
 ---
 
@@ -157,9 +157,9 @@ service's `command` in `compose.yml` (`run-time-aware.sh` takes the same `-c` an
 the real, persistent volume using whatever `graph.encoded_values` `config.yml` declares.
 `graphhopper/config.yml` now registers a fourth profile, `foot`, backed by `foot_custom.json`
 (`foot_priority` stays trimmed out; see that file's own comment for why). See
-[[graphhopper-vehicle-profile-rejection]] for the full investigation. `truck` was a separate
+[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]] for the full investigation. `truck` was a separate
 config gap: GraphHopper already served it, but `config-local.js.example`'s `profiles` object did
-not list it. It does since 2026-09-29 (see [[truck-routing-profile]]).
+not list it. It does since 2026-09-29 (see [[US-022-truck-routing-profile|truck-routing-profile]]).
 
 ## Flood areas grade each road piece on its deepest stretch
 
@@ -187,11 +187,11 @@ a road piece becomes impassable for each vehicle: motorbike 20 cm, car 30 cm, tr
 All four limits apply, because a GraphHopper `foot` profile exists to use the `foot` entry.
 `FloodStore` no longer sends `vehicle_type` (`18d1c42`, 2026-09-28), so `server.py` uses each
 request's own `profile` and each vehicle gets its own limit. See
-[[flood-routing-vehicle-type-always-motorbike]] (resolved).
+[[BL-005-flood-routing-vehicle-type-always-motorbike|flood-routing-vehicle-type-always-motorbike]] (resolved).
 
 ## Soak and known-answer check
 
-`scripts/backend_soak/run_soak.sh` gives the verdict of the soak (`US-034`). It reads the state of the three containers, scans their logs since the soak start, and runs `soak_checks.py roads` inside `airflow_new-floodmap-backend-1`. It exits with 0 only if every Docker call answered, no container started inside the window or was OOM killed, no log holds a 5xx response or an error line, and no check failed. A log with no timestamped line fails, because a failed read leaves only error text (`US-064`). `soak_checks.py` also has a `latency` command, which `US-046` used for the baselines in [[routing-not-time-aware]], and tests in `scripts/backend_soak/` (42).
+`scripts/backend_soak/run_soak.sh` gives the verdict of the soak (`US-034`). It reads the state of the three containers, scans their logs since the soak start, and runs `soak_checks.py roads` inside `airflow_new-floodmap-backend-1`. It exits with 0 only if every Docker call answered, no container started inside the window or was OOM killed, no log holds a 5xx response or an error line, and no check failed. A log with no timestamped line fails, because a failed read leaves only error text (`US-064`). `soak_checks.py` also has a `latency` command, which `US-046` used for the baselines in [[BL-011-routing-not-time-aware|routing-not-time-aware]], and tests in `scripts/backend_soak/` (42).
 
 The `roads` check reads one run of `flood_road_values` and picks road pieces in five depth buckets: below every limit, between the motorbike and car limits, between the car and truck limits, between the truck and foot limits, and past every limit. The pick is deterministic (`md5` of the segment id). A piece is a candidate only if its two neighbours on the same way exist and are no deeper than the next limit, and no piece that would block an allowed vehicle lies within about 170 m. For each piece, each profile, and both directions, the check routes from the neighbour before the piece to the neighbour after it. It sends the request once with the flood fields and once without, the dry control. `expected_outcome` takes the promise from the bands of `DEPTH_BANDS`.
 
@@ -213,7 +213,7 @@ The cause fits the way GraphHopper applies an area. It blocks a whole edge when 
 
 ## Log volume
 
-GraphHopper writes the whole custom model of each flood-graded `/route` request on one log line. The longest line seen on 2026-10-02 was 454,252 characters. The container's `json-file` log has no size limit (`LogConfig.Config` is empty). The raw log of `airflow_new-graphhopper-1` reached at least 271 MB in 1,558 lines between 00:45 and about 03:10 +07 on 2026-10-02, nearly all of it from test traffic. The fetch of the raw log stopped at that point, because it did not finish within 280 s. A page load sends 13 route requests ([[carried-over-backlog]] Story 4), so real use can write several megabytes per load. Whether this threatens the disk of the server was not checked. `run_soak.sh` filters the log on the host with `gh_log_filter.ps1` to avoid copying it. Setting the `RouteResource` logger to `WARN` in `config.yml` would remove these lines, and it needs a GraphHopper restart.
+GraphHopper writes the whole custom model of each flood-graded `/route` request on one log line. The longest line seen on 2026-10-02 was 454,252 characters. The container's `json-file` log has no size limit (`LogConfig.Config` is empty). The raw log of `airflow_new-graphhopper-1` reached at least 271 MB in 1,558 lines between 00:45 and about 03:10 +07 on 2026-10-02, nearly all of it from test traffic. The fetch of the raw log stopped at that point, because it did not finish within 280 s. A page load sends 13 route requests ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 4), so real use can write several megabytes per load. Whether this threatens the disk of the server was not checked. `run_soak.sh` filters the log on the host with `gh_log_filter.ps1` to avoid copying it. Setting the `RouteResource` logger to `WARN` in `config.yml` would remove these lines, and it needs a GraphHopper restart.
 
 ## The time-aware module (US-049, skeleton)
 
@@ -223,7 +223,7 @@ GraphHopper writes the whole custom model of each flood-graded `/route` request 
 - `com.graphhopper.http.GraphHopperManaged` is a shadow copy of the stock class. `GraphHopperBundle` calls `new GraphHopperManaged(...)`, and the web server has no setting to pick another class. The image puts the module's jar before `graphhopper-web.jar`, so the JVM loads the copy. The log line `TimeAwareGraphHopper active` proves which class loaded. The copy drops the GTFS branch.
 - The stock `graphhopper.sh` runs `java -jar`, which ignores the classpath. The image's entrypoint is `run-time-aware.sh`, which takes the same `-c` and `-o` options and starts `GraphHopperApplication` from a classpath.
 - `ExportEdges` writes `edges.csv` and `graph.json` (the graph hash) from the graph cache, opened read-only. At this GraphHopper commit `BaseGraph` opens the `geometry` file for writing when the default `DAType` is a storing one, `DAType.MMAP_RO` included, so the export uses its own non-storing read-only type. Run on the server graph on 2026-10-05: 67,833 edges. Since format version 2 (2026-10-09) `edges.csv` also has `base_node` and `adj_node`, with 51,328 nodes. `export-edges.sh` accepts `SKIP_BUILD=1` and `IMAGE=<name>` to use an image already on the server. `java/time-aware-routing/export-edges.sh` repeats it.
-- A weighting that only raises weights keeps the LM lower bounds valid ([[routing-not-time-aware]], 2026-10-05).
+- A weighting that only raises weights keeps the LM lower bounds valid ([[BL-011-routing-not-time-aware|routing-not-time-aware]], 2026-10-05).
 - 12.0-SNAPSHOT is not on Maven Central. CI and the `Dockerfile` both build the pinned commit first. CI is `.github/workflows/java-module.yml`.
 
 Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on a small OSM extract with the repo's four profiles: 20 routes, the same distance and time from both. On the server (2026-10-05) the image started beside the live service with the `TimeAwareGraphHopper active` log line, and 12 routes (4 profiles, 3 pairs inside the model border) matched the live service. `java/time-aware-routing/smoke-test.sh` repeats the check. Since `US-052`, `compose.yml` builds the `graphhopper` service from this image.
@@ -238,7 +238,7 @@ Checked on 2026-10-05 on the Mac side with the stock jar and the module jar, on 
 - A snap in the middle of a road gives virtual edges with ids past the graph's. `VirtualEdgeIterator` is not a `VirtualEdgeIteratorState`, so the search detaches the edge to read `getOriginalEdgeKey()`. A test fails without that mapping.
 - In the tests, `SpeedWeighting` takes millis as distance over speed times 1000 and weighs a minute as 600, so test roads get their length from that.
 
-Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. On the server on 2026-10-07 (`US-055`, from `artifacts/TODOS.md`), `latency` stayed within 2 times the `US-046` baseline in all 6 cells, `compare` on 24 real pairs changed 37.5% of routes with a median detour ratio of 0.94, `crossings` found 0, and `scenario-check.sh` matched 32 of 32. `US-055` stays `In progress`, because `US-045` is open.
+Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `ScenarioReport` (4 scenarios, motorbike and car, with and without a detour) all match the sticky column of [[BL-011-routing-not-time-aware|routing-not-time-aware]] with no crossing. The plain shortest route crosses the closed road in the 8 blocked runs. On the server (2026-10-05) `java/time-aware-routing/scenario-check.sh` gave the same 16 of 16. On the server on 2026-10-07 (`US-055`, from `artifacts/TODOS.md`), `latency` stayed within 2 times the `US-046` baseline in all 6 cells, `compare` on 24 real pairs changed 37.5% of routes with a median detour ratio of 0.94, `crossings` found 0, and `scenario-check.sh` matched 32 of 32. `US-055` stays `In progress`, because `US-045` is open.
 
 ## The engine in the backend (US-052)
 
@@ -270,14 +270,14 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
   request, for every vehicle profile, whenever a `valid_time` was attached — which is always,
   since `TimeSlider` supplies one on mount. Root cause was a missing `geom_4326` column on
   `flood_road_values`; fixed 2026-09-23 by running the migration that was supposed to add and
-  backfill it. See [[flood-route-missing-geom-column]] for the full investigation. The GeoJSON
+  backfill it. See [[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]] for the full investigation. The GeoJSON
   ingestion chain that also wrote that column left `flood_mapping_full` on 2026-09-24, and
   `flood_on_roads` in `routing_adapter` now writes `flood_road_values`.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface
   with a real PostGIS and a stub GraphHopper. The soak of `US-034`
-  ([[carried-over-backlog]] Story 3) closed on 2026-10-05 on the 137 runs of the replay that ran
+  ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 3) closed on 2026-10-05 on the 137 runs of the replay that ran
   (2026-10-02 to 2026-10-04), not on 48 hours. The user waived the evidence screenshot, and the end
   check of `run_soak.sh` over the window was not run (`sprint-plan-2`).
   "Soak and known-answer check" below describes the tooling. The comparison with the old Valhalla
@@ -285,7 +285,7 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
 - GraphHopper's log has no size limit and each flood-graded `/route` request writes one line of up to
   about 450 KB. See "Log volume".
 - `GET /flood/points` has no measured latency on the server since it moved to tiles, and none
-  under concurrent popup taps. Story 4 of [[point-depth-lookup-backend]] covers that check.
+  under concurrent popup taps. Story 4 of [[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] covers that check.
   `backend/test_server.py` checks its depth against `gdallocationinfo` on a synthetic `depth.tif`.
   The real `depth_20260924_170639.tif` matched `gdallocationinfo` at three points on a local
   PostGIS, not on the server.

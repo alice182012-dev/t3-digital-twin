@@ -1,7 +1,7 @@
 """Offline reference for sticky C-lite routing, and a checker for routes it or GraphHopper returns.
 
 Story R2 (US-047) of artifacts/docs/user-stories/time-aware-routing-engine-stories.md. The closure rule
-is the one in artifacts/docs/prds/time-aware-routing-engine.md, goal 1: an edge is impassable for a
+is the one in artifacts/docs/prds/PRD-004-time-aware-routing-engine.md, goal 1: an edge is impassable for a
 traveller who enters it at time `a` when its depth reaches the vehicle's limit at any forecast step in
 [departure, a + margin]. Closures only grow with `a`, so an earlier arrival is never worse and a plain
 Dijkstra over arrival times is exact. Edge ids are the ids of the GraphHopper edge_id path detail and

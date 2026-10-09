@@ -3,7 +3,7 @@ date: 2026-09-24
 type: plan
 status: active
 tags: [plan, airflow, postgis, raster, routing, timescaledb]
-related: ["[[raster-first-pipeline-stories]]", "[[sprint-plan]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[minio-flood-extent-pipeline]]", "[[3di-simulation-orchestration]]", "[[airflow-cannot-import-flood-utils]]", "[[timescaledb-and-flood-metrics]]"]
+related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[minio-flood-extent-pipeline]]", "[[3di-simulation-orchestration]]", "[[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]]", "[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]"]
 ---
 
 # Raster-first flood pipeline
@@ -129,7 +129,7 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   stored), so the raster load works in production. Do not edit task ids in the DAG while a run is in
   progress.
 - **The `vi` locale bug is deferred.** Place search is broken on the live UI, tracked in
-  [[photon-rejects-vi-locale]].
+  [[BL-008-photon-rejects-vi-locale|photon-rejects-vi-locale]].
 
 ## Status
 

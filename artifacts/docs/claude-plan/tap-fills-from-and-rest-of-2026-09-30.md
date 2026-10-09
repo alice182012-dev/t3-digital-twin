@@ -3,7 +3,7 @@ date: 2026-09-30
 type: plan
 status: done
 tags: [plan, frontend, us-058, us-038, sprint-3]
-related: ["[[mockup-screen-coverage]]", "[[carried-over-backlog]]", "[[sprint-plan]]", "[[2026-09-30]]", "[[documentation-and-config-drift-after-graphhopper]]"]
+related: ["[[EP-05-mockup-screen-coverage|mockup-screen-coverage]]", "[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[2026-09-30]]", "[[BL-015-documentation-and-config-drift-after-graphhopper|documentation-and-config-drift-after-graphhopper]]"]
 ---
 
 # Plan: the rest of 2026-09-30
@@ -16,15 +16,15 @@ Nothing else is scheduled for Sprint 3. Every coordinate in a test stays inside 
 1. `US-038`, the acceptance check. It takes minutes and closes the last `Reviewed` row that is not a build.
 2. `US-058`, the build. It is the main work of the afternoon.
 
-## 1. US-038: check the drift fix ([[carried-over-backlog]] Story 7)
+## 1. US-038: check the drift fix ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 7)
 
 1. Compare the variables in `.env.example` with the ones `compose.yml` reads. The lists must match, with `THREEDI_API_PERSONAL_API_TOKEN` present and `VALHALLA_PORT` and `FLOODMAP_FRONTEND_PORT` absent.
 2. Search the repository outside `artifacts/raw/` for `[[SW Architecture]]`. No match may remain.
 3. Confirm the 3Di orchestration page states `*/15` and `max_active_runs=2` once.
 4. Confirm every file that `PINNED_COMMIT.md` lists exists.
-5. Render the command output to an image with its capture time and host, save it under `artifacts/docs/user-stories/evidence/`, and move `US-038` and [[documentation-and-config-drift-after-graphhopper]] to `Done` and `resolved`.
+5. Render the command output to an image with its capture time and host, save it under `artifacts/docs/user-stories/evidence/`, and move `US-038` and [[BL-015-documentation-and-config-drift-after-graphhopper|documentation-and-config-drift-after-graphhopper]] to `Done` and `resolved`.
 
-## 2. US-058: the second tap fills From ([[mockup-screen-coverage]] Story 5)
+## 2. US-058: the second tap fills From ([[EP-05-mockup-screen-coverage|mockup-screen-coverage]] Story 5)
 
 The rules are in the story. In short: with a set destination and an empty From, a tap fills From and still opens the popup. The arrow then moves that point to To and empties From.
 

@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, frontend, accessibility, us-032, sprint-4]
-related: ["[[carried-over-backlog]]", "[[sprint-plan]]", "[[2026-10-01]]", "[[mockup-screen-coverage]]"]
+related: ["[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[2026-10-01]]", "[[EP-05-mockup-screen-coverage|mockup-screen-coverage]]"]
 ---
 
 # Plan: US-032 keyboard and screen reader access
 
 ## Context
 
-`US-032` ([[carried-over-backlog]] Story 1, Sprint 4, S, P2) asks that the Map or Flood toggle, the route tabs, and the flood legend work by keyboard and screen reader. It waited for the Sprint 3 UI stories, which are done, so it checks the final components.
+`US-032` ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 1, Sprint 4, S, P2) asks that the Map or Flood toggle, the route tabs, and the flood legend work by keyboard and screen reader. It waited for the Sprint 3 UI stories, which are done, so it checks the final components.
 
 ## Facts that shape the design
 

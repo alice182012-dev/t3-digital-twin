@@ -3,7 +3,7 @@ date: 2026-10-04
 type: log
 status: active
 tags: [log, infra, storage, docker]
-related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup-and-d-drive-move]]", "[[move-non-ssd-storage-to-d-drive]]"]
+related: ["[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup-and-d-drive-move]]", "[[move-non-ssd-storage-to-d-drive]]"]
 ---
 
 # C: fills up again, this time with Postgres down
@@ -21,18 +21,18 @@ related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup
    was written to describe from the Mac's side, so the local engine is this project's real Docker
    host, not unused cruft. A subagent rewrote that CLAUDE.md section to cover both cases (on the
    Mac, or directly on this server) and give a cheap check for which one applies. Full detail in
-   [[docker-data-vhdx-fills-c-drive-again]], Approach 2.
+   [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]], Approach 2.
 3. Followed the recovery from [[2026-10-02-disk-cleanup-and-d-drive-move]]: stopped Docker
    Desktop's processes, ran `wsl --shutdown`, and tried to compact the vhdx with `diskpart` while
    it sat offline and unlocked. The compaction failed with "The requested operation requires
    elevation"; this session isn't running as Administrator, the same limit the 2026-10-02 session
-   hit. Full detail in [[docker-data-vhdx-fills-c-drive-again]], Approach 3.
+   hit. Full detail in [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]], Approach 3.
 4. User asked why this filled up again so soon after this week's `docker prune`, and whether it's
    tied to `depth.tif`. Read [[2026-10-02-disk-cleanup-and-d-drive-move]], `scripts/flood_extent/raster_load.py`,
    [[minio-flood-extent-pipeline]], and `artifacts/logs/2026-10-02.md`, and found that the user
    unpaused `flood_mapping_full` on 2026-10-02 at about 15:54 +07 for a 48-hour continuous soak
    test (`US-034`) that runs through today. That's the likely cause, laid out as a hypothesis
-   (not yet checked against live numbers) in [[docker-data-vhdx-fills-c-drive-again]]'s Concerns
+   (not yet checked against live numbers) in [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]'s Concerns
    section: 192 insert-then-delete cycles against a large raster column, over two days, can bloat
    `storage-postgres-data`'s on-disk size past what its 8-run retention policy would suggest,
    because Postgres doesn't shrink a table file on `DELETE` until `VACUUM` runs. `docker system
@@ -47,7 +47,7 @@ related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup
 - C: free space: about 250 MB, unchanged. Docker Desktop's processes are stopped and WSL is shut
   down, so the vhdx is unlocked, but the `diskpart` compaction that would reclaim space hasn't run.
 - `.claude/CLAUDE.md`'s Docker section is rewritten in the working tree, not yet committed.
-- Open items, tracked in [[docker-data-vhdx-fills-c-drive-again]]: the user needs to run `diskpart`
+- Open items, tracked in [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]: the user needs to run `diskpart`
   in an elevated shell; once the stack is back up, whether `flood_depth_raster_tile` is actually
   bloated, and whether the 48-hour soak finished cleanly, both still need checking against real
   numbers.
@@ -69,7 +69,7 @@ related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup
    `file_id` on re-upload; it does nothing to the file before it. Both tables had been
    accumulating since they were created, back to 2026-09-24, and the 48-hour soak just hit the
    accumulated total hard enough to fill the disk. Full writeup in
-   [[docker-data-vhdx-fills-c-drive-again]], Approach 4.
+   [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]], Approach 4.
 8. Paused `flood_mapping_full`. Found and ignored a false alarm: `task_instance` rows for
    `9_build_flood_tiles` and `9b_load_depth_raster` showed `running` from a stale DAG run, but
    `celery inspect active` showed no live task. The worker container had restarted underneath
@@ -93,7 +93,7 @@ related: ["[[docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-02-disk-cleanup
     `element_type`, and one of 8 `variable_name` values, and only `timestamp` and `value` change,
     proposed normalizing `netcdf_values` into dimension tables plus a narrow fact table on a
     TimescaleDB hypertable with compression and a retention policy. Written up as
-    [[netcdf-values-timescale-migration]], tracked as [[netcdf-values-storage-redesign]]
+    [[netcdf-values-timescale-migration]], tracked as [[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]
     (`US-066`, Sprint 5 of `sprint-plan-2`).
 
 ## State now

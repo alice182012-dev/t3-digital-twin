@@ -3,7 +3,7 @@ date: 2026-10-08
 type: reference
 status: draft
 tags: [paper, arxiv, handoff, routing, system]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[sticky-c-lite-routing]]", "[[time-aware-routing-engine]]", "[[sticky-routing-reference]]", "[[3di-simulation-orchestration]]", "[[core-output-contract]]", "[[decision-log]]", "[[sprint-plan-3]]", "[[sprint-plan-4]]", "[[US-090-093-routing-paper-experiments-stories]]", "[[flood-map-reaction-time-findings]]"]
+related: ["[[T3-Digital-Twin_Architecture]]", "[[sticky-c-lite-routing]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[sticky-routing-reference]]", "[[3di-simulation-orchestration]]", "[[core-output-contract]]", "[[decision-log]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[SP-04-frontend-recheck|sprint-plan-4]]", "[[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]]", "[[flood-map-reaction-time-findings]]"]
 ---
 
 # Handoff for two arXiv papers: flood routing and the end-to-end system
@@ -69,13 +69,13 @@ Verified read-only on the server.
 | Result | Used by | Status | Where it will land |
 | --- | --- | --- | --- |
 | 12-hour rain replay (event `hanoi_20260916_storm.csv`, gate 5 mm/h, 42 runs in 2 chains, last run 2026-10-09 03:00 +07) | B | Running on the server | `artifacts/TODOS.md` US-045 update, then a log |
-| Edge depth table build time, file size, edge count (US-045); unloaded numbers so far 42.0 s and 1,085,48x edges (read the exact figure from TODOS.md) | B | Needs live runs of task `9c` | `artifacts/docs/concepts/edge-depth-table-format.md`, `artifacts/docs/prds/edge-depth-table.md` |
+| Edge depth table build time, file size, edge count (US-045); unloaded numbers so far 42.0 s and 1,085,48x edges (read the exact figure from TODOS.md) | B | Needs live runs of task `9c` | `artifacts/docs/concepts/edge-depth-table-format.md`, `artifacts/docs/prds/PRD-003-edge-depth-table.md` |
 | Routing latency: p50 and p95 of `POST /route` within 2 times the US-046 baseline | A, B | In progress (US-055) | `artifacts/TODOS.md` US-055, `scripts/routing_proof/` |
 | Four scenarios times four vehicles pass the checker on the deployed image | A | In progress (US-055) | `scripts/routing_proof/routing_proof.py`, `scripts/routing_reference/scenarios.py` |
 | Question 1, violation rate of single-timestep routing | A | Planned, nothing run as of 2026-10-02. Confirm in the logs. | To be created from `scripts/routing_reference/` |
 | Question 2, sensitivity of the limits and a regret table | A | Planned, same note | Same |
 | Question 3, proof and conservatism measurement | A | Planned, same note | Same |
-| 9c sampling-step time under load (US-070; run `20261006T104500` took 51.1 s) | B | Monitoring | `artifacts/docs/blockers/9c-sampling-step-runs-over-770-seconds.md` |
+| 9c sampling-step time under load (US-070; run `20261006T104500` took 51.1 s) | B | Monitoring | `artifacts/docs/blockers/BL-023-9c-sampling-step-runs-over-770-seconds.md` |
 | Storage growth over the replay (US-069) | B | Open. D-012 shortens the window to 12 hours, so the 24-to-48-hour reading is not possible. | `artifacts/TODOS.md` US-069 |
 
 The author chose to hold the writing until the 12-hour replay and the routing experiments have produced numbers. Re-read this table, `artifacts/TODOS.md`, and the newest logs at the start of the writing job, then update the table.
@@ -97,7 +97,7 @@ Hanoi model border for any coordinate used in a figure or test: longitude 105.70
 
 ### Story the paper tells
 
-1. Today's backend builds one GraphHopper `custom_model` from a single forecast timestep, so every road on a route is judged at one moment. A road that is dry now and floods in 10 minutes passes. Source: `artifacts/docs/blockers/routing-not-time-aware.md` (status open), scenario table.
+1. Today's backend builds one GraphHopper `custom_model` from a single forecast timestep, so every road on a route is judged at one moment. A road that is dry now and floods in 10 minutes passes. Source: `artifacts/docs/blockers/BL-011-routing-not-time-aware.md` (status open), scenario table.
 2. The design: sticky C-lite. Each edge closes at its first flooded step at or after departure and stays closed to the end of the horizon. Source: `artifacts/raw/ideas/sticky-c-lite-routing/sticky-c-lite-routing.md`, "Idea" and "Why we choose it".
 3. Why it is exact and cheap: with closures that only grow, the arrival function is non-decreasing (FIFO), so waiting never helps and a forward time-dependent Dijkstra is exact. Sketch in `marie-curie/idea-routing-paper-reviewer-questions.md`, Question 3.
 4. Why it does not contradict the hardness result: Kleff et al. (SEA 2020) show NP-hardness when waiting is allowed only at dedicated places and closures reopen. Sticky closure forbids reopening inside a query.
@@ -107,13 +107,13 @@ Hanoi model border for any coordinate used in a figure or test: longitude 105.70
 
 | Topic | File |
 | --- | --- |
-| Requirements | `artifacts/docs/prds/time-aware-routing-engine.md` (draft, has Decisions and open questions) |
-| Edge depth table requirements and format | `artifacts/docs/prds/edge-depth-table.md`, `artifacts/docs/concepts/edge-depth-table-format.md`, `scripts/edge_depth/edge_depth_table.py` |
+| Requirements | `artifacts/docs/prds/PRD-004-time-aware-routing-engine.md` (draft, has Decisions and open questions) |
+| Edge depth table requirements and format | `artifacts/docs/prds/PRD-003-edge-depth-table.md`, `artifacts/docs/concepts/edge-depth-table-format.md`, `scripts/edge_depth/edge_depth_table.py` |
 | Reference implementation and checker | `artifacts/docs/concepts/sticky-routing-reference.md`, `scripts/routing_reference/` (`sticky_reference.py`, `corridor.py`, `scenarios.py`, `run_scenarios.py`) |
 | Depth to cost model, `DEPTH_BANDS` | `artifacts/docs/concepts/routing-depth-threshold-model.md`, `floodmap/graphhopper-flood-road/backend/flood_areas.py` |
 | Graph edge ids change on re-import | `artifacts/docs/concepts/graph-reimport-procedure.md` |
 | Departure advice ("wait until") | `artifacts/docs/claude-plan/departure-time-advice-research.md`, `route-departures-endpoint.md`, `wait-until-alert.md` |
-| Plans and stories | `artifacts/docs/claude-plan/time-aware-weighting-and-search.md`, `time-aware-routing-prds-and-sprint-plan.md`, `engine-server-proof-and-rollout.md`, `artifacts/docs/user-stories/time-aware-routing-engine-stories.md`, `edge-depth-table-stories.md`, `routing-first-consumer-stories.md` |
+| Plans and stories | `artifacts/docs/claude-plan/time-aware-weighting-and-search.md`, `time-aware-routing-prds-and-sprint-plan.md`, `engine-server-proof-and-rollout.md`, `artifacts/docs/epics/EP-09-time-aware-routing-engine.md`, `EP-08-edge-depth-table.md`, `EP-10-routing-first-consumer.md` |
 | Server proof tooling | `scripts/routing_proof/` (`routing_proof.py`, `pairs.json`, `rollout.ps1`), `scripts/backend_soak/` |
 | Java engine | `java/` (read its build notes in `artifacts/docs/claude-plan/sprint-6-java-toolchain-and-edge-export.md`) |
 | Engine tests | `scripts/routing_reference/test_*.py`, `floodmap/graphhopper-flood-road/backend/test_core_contract.py` |
@@ -139,13 +139,13 @@ All in `marie-curie/lit-review-flood-routing/`. Copy it before use (rule 5).
 | P5 | Done, no story | Open the Vu 2024 report and the Manila paper's citation of it, or label the motorbike limit an assumption. Replaced by the source search of 2026-10-08 (`marie-curie/vehicle-limit-sources.md`) | Question 2 |
 | P6 | None | Confirm with the author the wording "sticky from the departure step" (open question in the PRD) | `time-aware-routing-engine.md` |
 
-Order of work from the note: P2 first (needs no new engine), then P1 and P4, then P3. The stories are in [[US-090-093-routing-paper-experiments-stories]], all in Sprint 12 of [[sprint-plan-3]] (scheduled 2026-10-08). The frontend recheck waits for [[sprint-plan-4]] so the routing finishes first.
+Order of work from the note: P2 first (needs no new engine), then P1 and P4, then P3. The stories are in [[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]], all in Sprint 12 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] (scheduled 2026-10-08). The frontend recheck waits for [[SP-04-frontend-recheck|sprint-plan-4]] so the routing finishes first.
 
 ## Paper B: end-to-end system
 
 ### Story the paper tells
 
-1. The problem: Hanoi streets flood within minutes of a burst, and a static map is "too late". Evidence table E1 to E12 in `artifacts/docs/concepts/flood-map-reaction-time-findings.md`, which also states its limits. Related blocker: `artifacts/docs/blockers/map-shows-forecast-not-now.md`.
+1. The problem: Hanoi streets flood within minutes of a burst, and a static map is "too late". Evidence table E1 to E12 in `artifacts/docs/concepts/flood-map-reaction-time-findings.md`, which also states its limits. Related blocker: `artifacts/docs/blockers/BL-010-map-shows-forecast-not-now.md`.
 2. The pipeline, stage by stage, with the design decisions that shaped it (see the table below).
 3. Operating it: concurrency, storage, retention, and failure handling, told through resolved blockers and lessons.
 4. Measured behavior: cycle time, the critical path, stage timings, storage growth, and the replay.
@@ -171,22 +171,22 @@ Order of work from the note: P2 first (needs no new engine), then P1 and P4, the
 | Why native 1 m sampling was slow (a Python per-pixel loop, a cost model of 3.68 s plus 5.26e-5 s per valid cell) | Project memory file `sample_rate_1_bottleneck.md` (2026-09-08). It describes the retired GeoJSON chain, so cite it only as history that motivated the raster-first design, never as a current limit. |
 | Narrowing the per-run critical path, stage margins | `artifacts/docs/claude-plan/us-037-narrow-the-per-run-critical-path.md`, `scripts/pipeline_margins/`, `marie-curie/us-037/` (experiment CSVs and `experiment-results.txt`) |
 | Soak and the 12-hour storm event construction | `artifacts/docs/claude-plan/us-063-realistic-rain-replay-for-us-037-and-us-034.md`, `rain-replay-test-environment.md`, `september-2026-storm-rain-replay.md`, `scripts/rain_replay.py`, `scripts/rain_events/`, `scripts/rain_env/`, `marie-curie/us-088/` |
-| Worker concurrency serialized the runs | `artifacts/docs/blockers/flood-mapping-full-worker-concurrency-serializes-runs.md` |
-| Slow sampling step (9c over 770 s) and its cancel rule | `artifacts/docs/blockers/9c-sampling-step-runs-over-770-seconds.md` |
-| Disk filled by Docker's VHDX twice | `artifacts/docs/blockers/docker-data-vhdx-fills-c-drive-again.md`, `artifacts/logs/2026-10-04-docker-vhdx-disk-full.md`, `2026-10-02-disk-cleanup-and-d-drive-move.md`, `artifacts/docs/claude-plan/move-non-ssd-storage-to-d-drive.md` |
-| Hot-start state saved at the end of a run | `artifacts/docs/blockers/hotstart-state-saved-at-end-of-run.md` |
+| Worker concurrency serialized the runs | `artifacts/docs/blockers/BL-013-flood-mapping-full-worker-concurrency-serializes-runs.md` |
+| Slow sampling step (9c over 770 s) and its cancel rule | `artifacts/docs/blockers/BL-023-9c-sampling-step-runs-over-770-seconds.md` |
+| Disk filled by Docker's VHDX twice | `artifacts/docs/blockers/BL-022-docker-data-vhdx-fills-c-drive-again.md`, `artifacts/logs/2026-10-04-docker-vhdx-disk-full.md`, `2026-10-02-disk-cleanup-and-d-drive-move.md`, `artifacts/docs/claude-plan/move-non-ssd-storage-to-d-drive.md` |
+| Hot-start state saved at the end of a run | `artifacts/docs/blockers/BL-009-hotstart-state-saved-at-end-of-run.md` |
 | Edge ids drift on graph re-import | `artifacts/docs/concepts/graph-reimport-procedure.md` |
-| Point depth lookup speed, connection pooling, forecast verification | `artifacts/docs/user-stories/point-depth-lookup-backend.md`, `artifacts/docs/blockers/flood-points-connection-per-request.md`, `artifacts/docs/user-stories/evidence/connection-pooling-and-forecast-verification.png` |
-| Frontend (vendored GraphHopper Maps fork), mockup recheck | `artifacts/raw/frontend-mockups/`, `artifacts/docs/user-stories/frontend-*.md`, `mockup-screen-coverage.md`, `floodmap/graphhopper-maps/` |
-| NetCDF values storage redesign | `artifacts/docs/user-stories/netcdf-values-storage-redesign.md`, `artifacts/docs/claude-plan/netcdf-values-timescale-migration.md` |
-| Screenshots of working stories | `artifacts/docs/user-stories/evidence/` (86 files) |
+| Point depth lookup speed, connection pooling, forecast verification | `artifacts/docs/epics/EP-03-point-depth-lookup-backend.md`, `artifacts/docs/blockers/BL-007-flood-points-connection-per-request.md`, `artifacts/docs/stories/evidence/connection-pooling-and-forecast-verification.png` |
+| Frontend (vendored GraphHopper Maps fork), mockup recheck | `artifacts/raw/frontend-mockups/`, `artifacts/docs/epics/EP-01-frontend-depth-features.md`, `EP-02-frontend-polish.md`, `EP-05-mockup-screen-coverage.md`, `EP-11-frontend-mockup-recheck.md`, `floodmap/graphhopper-maps/` |
+| NetCDF values storage redesign | `artifacts/docs/stories/US-066-netcdf-values-storage-redesign.md`, `artifacts/docs/claude-plan/netcdf-values-timescale-migration.md` |
+| Screenshots of working stories | `artifacts/docs/stories/evidence/` (86 files) |
 
 ### Process material (optional, for a short "engineering lessons" section)
 
 - Eleven lessons in `artifacts/docs/lessons/`, each distilled from a resolved blocker.
 - The 23 blocker pages in `artifacts/docs/blockers/` (status in each frontmatter).
 - Daily logs `artifacts/logs/2026-09-13.md` to `2026-10-08.md` give the order of events. Each log opens with a summary of the previous day.
-- Sprint plans `artifacts/docs/user-stories/sprint-plan.md`, `sprint-plan-2.md`, `sprint-plan-3.md`, `sprint-plan-4.md` and the other files under `artifacts/docs/user-stories/` (US-001 to US-093).
+- Sprint plans `artifacts/docs/sprints/SP-01-prd-and-backlog.md` to `SP-04-frontend-recheck.md`, the epics under `artifacts/docs/epics/`, and the stories under `artifacts/docs/stories/` (US-001 to US-093).
 
 ### Author decisions, confirmed 2026-10-08
 

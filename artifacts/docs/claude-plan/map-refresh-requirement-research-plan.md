@@ -4,12 +4,12 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, research, requirements, refresh-interval, us-062]
-related: ["[[map-refresh-requirement-research]]", "[[sprint-plan-2]]", "[[map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[2026-10-02]]"]
+related: ["[[US-062-map-refresh-requirement-research|map-refresh-requirement-research]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[2026-10-02]]"]
 ---
 
 # Plan: how fast must a user react to the flood map
 
-This is Phase 1 (scoping) of the `academic-research-skills:deep-research` skill, for story `US-062` ([[map-refresh-requirement-research]]). The skill's rule is that Phase 2 (investigation) starts only after the user confirms this page.
+This is Phase 1 (scoping) of the `academic-research-skills:deep-research` skill, for story `US-062` ([[US-062-map-refresh-requirement-research|map-refresh-requirement-research]]). The skill's rule is that Phase 2 (investigation) starts only after the user confirms this page.
 
 ## Context
 

@@ -3,14 +3,14 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
-related: ["[[timescaledb-and-flood-metrics]]", "[[t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
+related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-10-01
 ---
 
 # Flood metric extractor
 
 The flood metric extractor turns one run's per-segment depth series into flood-impact metrics for
-each road segment and vehicle type. It is Story 3 of [[timescaledb-and-flood-metrics]], and it
+each road segment and vehicle type. It is Story 3 of [[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]], and it
 implements the metrics that section 4.4 of [[T3-Digital-Twin_Architecture]] lists. No DAG task
 runs it yet.
 
@@ -96,7 +96,7 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
   flattening of metrics into rows.
 - Resolved 2026-09-28: `compose.yml` mounts `floodmap/graphhopper-flood-road/scripts` read-only into
   the Airflow containers at `/opt/airflow/floodmap/graphhopper-flood-road/scripts` (`245fe66`), so
-  `impassable_from_m()` imports. See [[airflow-cannot-import-flood-utils]].
+  `impassable_from_m()` imports. See [[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]].
 - The PRD acceptance asks for a non-NULL pre-closure time on every row. That is not possible for a
   vehicle whose threshold the segment never reaches. For those rows, pre-closure time is NULL by
   design.

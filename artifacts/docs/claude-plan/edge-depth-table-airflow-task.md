@@ -4,16 +4,16 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-7, airflow, edge-depth-table, us-041, postgis, raster]
-related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[flood-on-roads]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[routing-not-time-aware]]"]
+related: ["[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[flood-on-roads]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]"]
 ---
 
 # Plan: the Airflow task that writes each run's edge depth table (US-041)
 
 ## Context
 
-Sprint 7 of [[sprint-plan-2]] has three rows. `US-041` (Story E3, P0, L) is the one the other two wait for. `US-042` publishes the table atomically and keeps the newest three. `US-044` documents the re-import procedure. This plan covers `US-041` only.
+Sprint 7 of [[SP-02-routing-engine-foundations|sprint-plan-2]] has three rows. `US-041` (Story E3, P0, L) is the one the other two wait for. `US-042` publishes the table atomically and keeps the newest three. `US-044` documents the re-import procedure. This plan covers `US-041` only.
 
-Acceptance, from [[edge-depth-table-stories]] Story E3. Given a real run and the export from `US-039`, when the task runs after `9b_load_depth_raster`, then it samples the raster tiles along each edge, stores the deepest 1 m sample in centimetres, tags the file with the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct `ST_Value` reading. An edge outside the model reads 0.
+Acceptance, from [[EP-08-edge-depth-table|edge-depth-table-stories]] Story E3. Given a real run and the export from `US-039`, when the task runs after `9b_load_depth_raster`, then it samples the raster tiles along each edge, stores the deepest 1 m sample in centimetres, tags the file with the graph hash, and reports its duration and size. For 20 hand-picked edges the values equal a direct `ST_Value` reading. An edge outside the model reads 0.
 
 The build-time limit (user, 2026-10-02): the task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
 

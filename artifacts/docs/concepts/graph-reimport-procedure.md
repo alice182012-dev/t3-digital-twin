@@ -3,7 +3,7 @@ date: 2026-10-05
 type: concept
 status: active
 tags: [graphhopper, reimport, edge-depth-table, graph-hash, operations]
-related: ["[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[graph-reimport-procedure-and-stale-table-check]]", "[[graphhopper-backend]]", "[[edge-depth-table-stories]]", "[[recreate-remote-services-on-the-remote-host]]"]
+related: ["[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[graph-reimport-procedure-and-stale-table-check]]", "[[graphhopper-backend]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]]"]
 last_updated: 2026-10-05
 ---
 
@@ -34,13 +34,13 @@ A restart that finds a graph in `/data/graph-cache` loads it and changes nothing
 
 ## What is stale in between, and what happens to it
 
-From the end of step 1 until step 3 is done, `latest` names a table of the old graph. Nothing breaks today, because nothing in routing reads the table yet. Once the Java reader exists (`US-043`), it refuses that table, names both hashes in the log, and the engine falls back to today's model with the flag set ([[edge-depth-table]], Rollback). Python readers use `read_latest_table_for_graph`, which raises `StaleTableError` with both hashes and logs it at ERROR.
+From the end of step 1 until step 3 is done, `latest` names a table of the old graph. Nothing breaks today, because nothing in routing reads the table yet. Once the Java reader exists (`US-043`), it refuses that table, names both hashes in the log, and the engine falls back to today's model with the flag set ([[PRD-003-edge-depth-table|edge-depth-table]], Rollback). Python readers use `read_latest_table_for_graph`, which raises `StaleTableError` with both hashes and logs it at ERROR.
 
 The window is short if you do the steps in one go. The next DAG run builds a table from whatever export is in the folder, so a run that starts before step 2 builds a table of the old graph again, and `check_tables.py` says so.
 
 ## Procedure
 
-Run the commands from the Mac, in the repo root, unless a step says the server. Commands that start, recreate, or remove a service run on the server over SSH, with `--no-deps` ([[recreate-remote-services-on-the-remote-host]]). The server's shell is PowerShell, so use `;` and not `&&`, and its remote for this repository is `alice`.
+Run the commands from the Mac, in the repo root, unless a step says the server. Commands that start, recreate, or remove a service run on the server over SSH, with `--no-deps` ([[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]]). The server's shell is PowerShell, so use `;` and not `&&`, and its remote for this repository is `alice`.
 
 ### 0. Look at the starting state
 
@@ -60,7 +60,7 @@ docker --context remote-server exec airflow_new-graphhopper-1 sh -c 'rm -rf /dat
 ssh tecotec@100.67.84.55 "cd C:\Users\TECOTEC\airflow_new; docker compose up -d --force-recreate --no-deps graphhopper"
 ```
 
-The import takes minutes, and routing is down until the service is healthy. Wait for `docker --context remote-server ps` to show `graphhopper` as healthy, and check `/info` lists the four profiles. This is the same wipe-and-recreate that resolved [[graphhopper-vehicle-profile-rejection]].
+The import takes minutes, and routing is down until the service is healthy. Wait for `docker --context remote-server ps` to show `graphhopper` as healthy, and check `/info` lists the four profiles. This is the same wipe-and-recreate that resolved [[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]].
 
 ### 2. Write the new export
 

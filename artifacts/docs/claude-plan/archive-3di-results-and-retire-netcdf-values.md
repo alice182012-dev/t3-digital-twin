@@ -3,13 +3,13 @@ date: 2026-10-08
 type: plan
 status: active
 tags: [plan, archive, netcdf, retention, storage]
-related: ["[[US-094-095-archive-and-netcdf-retirement-stories]]", "[[sprint-plan-3]]", "[[decision-log]]", "[[move-non-ssd-storage-to-d-drive]]", "[[netcdf-values-storage-redesign]]", "[[3di-simulation-orchestration]]"]
+related: ["[[EP-15-archive-and-netcdf-retirement|US-094-095-archive-and-netcdf-retirement-stories]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[decision-log]]", "[[move-non-ssd-storage-to-d-drive]]", "[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[3di-simulation-orchestration]]"]
 ---
 
 # Plan: archive the 3Di results, then retire `netcdf_values`
 
 Planning only. No code, DAG, or compose file changes in this pass. The stories are `US-094` (Sprint 10) and `US-095`
-(Sprint 11) in [[US-094-095-archive-and-netcdf-retirement-stories]]. The decisions are D-016 and D-018 in [[decision-log]].
+(Sprint 11) in [[EP-15-archive-and-netcdf-retirement|US-094-095-archive-and-netcdf-retirement-stories]]. The decisions are D-016 and D-018 in [[decision-log]].
 
 ## Order
 

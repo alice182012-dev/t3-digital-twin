@@ -3,13 +3,13 @@ date: 2026-10-07
 type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
-related: ["[[routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
+related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
 last_updated: 2026-10-08
 ---
 
 # Core output contract
 
-The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read. This page lists what it publishes: five PostgreSQL tables, the edge depth files, and the vector tiles in MinIO. Routing is the first consumer. The story is `US-071` ([[routing-first-consumer-stories]] Story C1).
+The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read. This page lists what it publishes: five PostgreSQL tables, the edge depth files, and the vector tiles in MinIO. Routing is the first consumer. The story is `US-071` ([[EP-10-routing-first-consumer|routing-first-consumer-stories]] Story C1).
 
 The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the five column tables on this page and compares them with the live database. It fails when a column name, type, nullability, or position differs, or when a primary key or unique constraint differs. The `Primary key columns` and `Unique columns` bullets are its input for keys. The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema. Type is the text of PostgreSQL's `format_type(atttypid, atttypmod)`.
 

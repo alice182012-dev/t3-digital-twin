@@ -3,13 +3,13 @@ date: 2026-10-01
 type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
-related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[sprint-plan-2]]", "[[time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
+related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
 last_updated: 2026-10-08
 ---
 
 # Edge depth table format
 
-The edge depth table holds the flood depth of every GraphHopper edge at every forecast step of one run. One file is one run. The Java engine and the Python departure timeline read the same bytes. The requirements are in [[edge-depth-table]], and the story that defines the format is `US-040` ([[edge-depth-table-stories]] Story E2).
+The edge depth table holds the flood depth of every GraphHopper edge at every forecast step of one run. One file is one run. The Java engine and the Python departure timeline read the same bytes. The requirements are in [[PRD-003-edge-depth-table|edge-depth-table]], and the story that defines the format is `US-040` ([[EP-08-edge-depth-table|edge-depth-table-stories]] Story E2).
 
 The Python reader and writer are `scripts/edge_depth/edge_depth_table.py`, with tests in `scripts/edge_depth/test_edge_depth_table.py`. The test `test_writer_produces_the_documented_bytes` pins the layout on this page to a literal byte string.
 
@@ -36,7 +36,7 @@ The fixed part of the header is the first 16 bytes. The body starts at `16 + has
 
 - The unit is centimetres. The largest value is 65,535, which is 655.35 m.
 - The value is the deepest 1 m sample along the edge at that step, the same statistic as `flood_on_roads` (D-006).
-- An edge with no model coverage reads 0. The file has no coverage flag (decision of 2026-09-29 in [[edge-depth-table]]).
+- An edge with no model coverage reads 0. The file has no coverage flag (decision of 2026-09-29 in [[PRD-003-edge-depth-table|edge-depth-table]]).
 - The table holds no vehicle limit. Each reader applies its own.
 
 ## Order of the body
@@ -61,7 +61,7 @@ A table directory holds the table files and one text file named `latest`. It con
 
 ## Measured
 
-The real graph has 67,833 edges and a run has 8 steps, so a real table is about 1.1 MB ([[routing-not-time-aware]], "Baselines on the server"). As a stress test, on 2026-10-01, on a Mac, a table of 2,000,000 edges and 9 steps is 36.0 MB. The Python writer wrote it in 0.7 s, and the reader opened it in 0.01 s. These are not server numbers. `US-045` measures the server build time and is open. The one real `routing_adapter` run read so far built in 60.1 s, and the gap from the end of `3_calculate_depth` to the end of 9c was 8.21 minutes against the 5-minute limit. One run cannot separate that gap from the catch-up of a new DAG (`artifacts/TODOS.md`).
+The real graph has 67,833 edges and a run has 8 steps, so a real table is about 1.1 MB ([[BL-011-routing-not-time-aware|routing-not-time-aware]], "Baselines on the server"). As a stress test, on 2026-10-01, on a Mac, a table of 2,000,000 edges and 9 steps is 36.0 MB. The Python writer wrote it in 0.7 s, and the reader opened it in 0.01 s. These are not server numbers. `US-045` measures the server build time and is open. The one real `routing_adapter` run read so far built in 60.1 s, and the gap from the end of `3_calculate_depth` to the end of 9c was 8.21 minutes against the 5-minute limit. One run cannot separate that gap from the catch-up of a new DAG (`artifacts/TODOS.md`).
 
 ## Build task (US-041)
 

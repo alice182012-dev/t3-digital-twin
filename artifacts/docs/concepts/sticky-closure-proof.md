@@ -3,14 +3,14 @@ date: 2026-10-09
 type: concept
 status: active
 tags: [routing, sticky-c-lite, proof, fifo, paper, sprint-12]
-related: ["[[US-090-093-routing-paper-experiments-stories]]", "[[sticky-routing-reference]]", "[[graphhopper-backend]]", "[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[routing-not-time-aware]]", "[[paper-handoff-routing-and-system]]"]
+related: ["[[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]]", "[[sticky-routing-reference]]", "[[graphhopper-backend]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[paper-handoff-routing-and-system]]"]
 last_updated: 2026-10-09
 ---
 
 # Sticky-closure proof
 
 This page proves that the sticky-closure forward search is exact. It is Story 1 (`US-090`) of
-[[US-090-093-routing-paper-experiments-stories]]. It turns the sketch in Question 3 of
+[[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]]. It turns the sketch in Question 3 of
 `marie-curie/idea-routing-paper-reviewer-questions.md` into a definition, a lemma, and two theorems, and it
 ties each step to the code that implements it.
 

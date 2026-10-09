@@ -3,7 +3,7 @@ date: 2026-09-24
 type: concept
 status: active
 tags: [postgis, raster, roads, routing, raster-first, sprint-2]
-related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[flood-metric-extractor]]", "[[decision-log]]"]
+related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[flood-metric-extractor]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -12,7 +12,7 @@ last_updated: 2026-09-25
 `scripts/flood_roads/flood_on_roads.py` computes the flood depth on every road piece from one run's
 raster tiles and writes it to `flood_road_values`, the table that routing reads through
 `floodmap/graphhopper-flood-road/backend/flood_areas.py`. It is Story 3 of
-[[raster-first-pipeline-stories]], and it replaces the GeoJSON chain (`scripts/mapping/*` and
+[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]], and it replaces the GeoJSON chain (`scripts/mapping/*` and
 `scripts/database/geojson_to_pg.py`). The DAG task `flood_on_roads` calls `compute` after
 `9b_load_depth_raster` and `load_road_segments`, with the run name from
 `flood_extent.run_ts_for_depth_dir`.

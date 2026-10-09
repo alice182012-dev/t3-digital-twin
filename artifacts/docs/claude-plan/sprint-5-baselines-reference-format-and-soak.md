@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-5, routing, edge-depth-table, us-040, us-046, us-047, us-034]
-related: ["[[sprint-plan-2]]", "[[sprint-plan]]", "[[2026-10-01]]", "[[time-aware-routing-engine-stories]]", "[[edge-depth-table-stories]]", "[[carried-over-backlog]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[edge-depth-table]]", "[[edge-depth-table-format]]"]
+related: ["[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[2026-10-01]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[PRD-003-edge-depth-table|edge-depth-table]]", "[[edge-depth-table-format]]"]
 ---
 
 # Plan: Sprint 5, baselines, reference, table format, and the backend soak
 
 ## Context
 
-Sprint 5 of [[sprint-plan-2]] has four rows and no dependency on another sprint. The user started it on 2026-10-01, 18 days before its planned start of 2026-10-19, while `US-037` of Sprint 4 was still measuring ([[us-037-narrow-the-per-run-critical-path]]). The sprint goal is that every later story has a real baseline and a reference to compare against, the depth-table format is fixed, and the current backend has soaked before the engine builds on it.
+Sprint 5 of [[SP-02-routing-engine-foundations|sprint-plan-2]] has four rows and no dependency on another sprint. The user started it on 2026-10-01, 18 days before its planned start of 2026-10-19, while `US-037` of Sprint 4 was still measuring ([[us-037-narrow-the-per-run-critical-path]]). The sprint goal is that every later story has a real baseline and a reference to compare against, the depth-table format is fixed, and the current backend has soaked before the engine builds on it.
 
 ## Does US-037 block Sprint 5?
 
@@ -47,7 +47,7 @@ The module is `scripts/edge_depth/table.py`, next to `scripts/flood_metrics/`, w
 ## Steps
 
 1. Write the failing tests for `US-040`, then the module, then the format page.
-2. Record the Sprint 5 start in [[sprint-plan-2]], the `TODOS.md` rollover, and the epic files.
+2. Record the Sprint 5 start in [[SP-02-routing-engine-foundations|sprint-plan-2]], the `TODOS.md` rollover, and the epic files.
 3. Build `US-047`, then the load-independent part of `US-046`.
 4. After `US-037` is `Done`, record the latency baselines for `US-046` and start the `US-034` soak.
 
@@ -56,6 +56,6 @@ The module is `scripts/edge_depth/table.py`, next to `scripts/flood_metrics/`, w
 - **2026-10-01, active.** Plan written. Sprint 5 started on 2026-10-01 at the user's request. `US-037` is the one open Sprint 4 row and blocks no Sprint 5 row.
 - **2026-10-01, active.** `US-040` and `US-047` are `Done`. `US-047` lives in `scripts/routing_reference/` and not in `marie-curie/`, so the engine stories can reuse it. It uses no PostGIS, since the scenarios assign depth per edge. Next is the load-independent part of `US-046`.
 - **2026-10-01, active.** `US-046` is `In progress`: edge count, source revision, and step length and count are recorded. The graph has 67,833 edges and a run has 8 steps, so two PRD assumptions were corrected and the reference's scenarios use 8 steps. The latency numbers and the `US-034` clock wait for the `US-037` knob.
-- **2026-10-02, active.** `US-037` is `Done`, so both held rows moved. `US-046` is `Done`: the p50 and p95 of `POST /route` are in [[routing-not-time-aware]], measured on the server after the knob settled. `US-034` is `In progress`. The user gave the soak start as 2026-10-02 00:45 +07, which is the first on-time run after the cold start, so the 48 hours end on 2026-10-04 00:45 +07. `scripts/backend_soak/` holds the tooling and `run_soak.sh` gives the verdict. Next is that verdict after the window ends.
+- **2026-10-02, active.** `US-037` is `Done`, so both held rows moved. `US-046` is `Done`: the p50 and p95 of `POST /route` are in [[BL-011-routing-not-time-aware|routing-not-time-aware]], measured on the server after the knob settled. `US-034` is `In progress`. The user gave the soak start as 2026-10-02 00:45 +07, which is the first on-time run after the cold start, so the 48 hours end on 2026-10-04 00:45 +07. `scripts/backend_soak/` holds the tooling and `run_soak.sh` gives the verdict. Next is that verdict after the window ends.
 - **2026-10-02, active.** The user stopped the pipeline, because the 50 mm/h test rain is not a real event. The `US-034` window of 2026-10-02 00:45 +07 is void, and `US-037` is `In progress` again. `US-063` was added to run both under a replay of a recorded 48-hour rain. Plan: [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 - **2026-10-05, done.** Sprint 5 ended on 2026-10-05, with `US-034` and `US-037` closed on 137 runs at the user's decision and `US-068` carried to the Backlog. The plan is closed.

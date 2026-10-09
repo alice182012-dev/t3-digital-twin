@@ -78,7 +78,7 @@ One page per feature or change big enough to need a stated problem, goals, and a
 done before work starts. Start a new one from `templates/prd.md`. A PRD comes before its
 `docs/claude-plan/` entry: the PRD says what and why, the plan says how. Its **Dependencies and
 assumptions** section exists because of blockers such as
-[[graphhopper-vehicle-profile-rejection]] and [[storage-backend-build-context-missing]], both
+[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]] and [[BL-002-storage-backend-build-context-missing|storage-backend-build-context-missing]], both
 caused by a dependency nothing had written down. When a PRD grew out of a note in `raw/ideas/`,
 its `source_ideas` frontmatter field links back to that note instead of retyping its argument.
 

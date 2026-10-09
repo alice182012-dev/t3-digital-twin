@@ -4,7 +4,7 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, architecture, contract, routing, sprint-11]
-related: ["[[routing-first-consumer-stories]]", "[[sprint-plan-3]]", "[[architecture-block-diagram]]", "[[graphhopper-backend]]", "[[edge-depth-table-format]]"]
+related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[architecture-block-diagram]]", "[[graphhopper-backend]]", "[[edge-depth-table-format]]"]
 ---
 
 # Plan: routing as the first consumer of the core output
@@ -14,7 +14,7 @@ related: ["[[routing-first-consumer-stories]]", "[[sprint-plan-3]]", "[[architec
 The user wants the system ready for other applications (finance analysis, multi-stakeholder decision analysis) if
 the opportunity arises, without building them. The 3Di pipeline is the core and does not change. Routing is the
 first customer. The scratch note with the cost and benefit of the options is `marie-curie/modular-core-platform-idea.md`
-(untracked). Stories: [[routing-first-consumer-stories]], Sprint 11 of [[sprint-plan-3]].
+(untracked). Stories: [[EP-10-routing-first-consumer|routing-first-consumer-stories]], Sprint 11 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
 
 ## What routing reads from the core today (read on 2026-10-06)
 
@@ -46,7 +46,7 @@ US-074 any time.
 - The 9c limit (end within 5 minutes of `3_calculate_depth`) needs one measurement on the server with the asset trigger. A pool keeps routing tasks from taking depth's worker slots.
 - The routing DAG needs the run id from the asset event, or must query the newest published run.
 - The read-only role needs a server change. It waits for `US-055` and the end of the replay.
-- Sprint 11 held `US-033` (M) when this plan was written. It moved to Sprint 12 on 2026-10-07 (see [[sprint-plan-3]] Status history).
+- Sprint 11 held `US-033` (M) when this plan was written. It moved to Sprint 12 on 2026-10-07 (see [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] Status history).
 
 ## Status history
 

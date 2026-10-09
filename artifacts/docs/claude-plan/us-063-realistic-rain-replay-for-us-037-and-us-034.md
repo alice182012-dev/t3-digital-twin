@@ -4,7 +4,7 @@ type: plan
 branch: front-end-according-to-mock-up
 status: active
 tags: [plan, pipeline, rain, us-037, us-034, us-063, sprint-5]
-related: ["[[carried-over-backlog]]", "[[sprint-plan-2]]", "[[sprint-plan]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[map-shows-forecast-not-now]]", "[[3di-simulation-orchestration]]", "[[graphhopper-backend]]", "[[2026-10-02]]"]
+related: ["[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[us-037-narrow-the-per-run-critical-path]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[3di-simulation-orchestration]]", "[[graphhopper-backend]]", "[[2026-10-02]]"]
 ---
 
 # Plan: replay a realistic 48-hour rain for US-037 and US-034
@@ -46,7 +46,7 @@ The user keeps the server untouched for now, although Docker works again. Everyt
 1. `US-063`, schedule preview. Add `simulating_slots` to `scripts/rain_replay.py`. It lists the 192 slots of the window that pass the rain gate and marks each slot that starts a new chain after a dry gap. A test pins 104, 156, and 174 simulating runs at 5, 2, and 1 mm/h, and chains of 26, 46, 10, 10, and 12 runs at 5 mm/h. The user reads the list to choose the replay start and to see which slots to watch.
 2. `US-064`, a soak check that fails loudly. Today `run_logs` exits with 0 for a log with no requests, and `run_soak.sh` writes SSH errors into the log files. Tests first: an empty log, a log of SSH error text only, and a fake `docker` on the path that exits with 1. Then `run_logs` exits with 1 for a log with no request lines or no timestamps, and `run_soak.sh` exits with 1 and names the failed call.
 3. `US-065`, a margin report for every run. Move `run_margins.sh` from `marie-curie/us-037/`, which git does not track, to `scripts/pipeline_margins/`. Write `report.py` to read its rows and the slot list of step 1. It prints the run count, the worst, median, and best margin, the late runs, the missing runs, and the slope of the margin per run inside each chain. It exits with 0 only if no run is late and none is missing. The fixture is the four runs of 2026-10-02 (+1.9, +4.1, +2.7, +2.4 minutes).
-4. Server runbook. Write the exact commands for the later server steps, in the PowerShell form the lesson [[recreate-remote-services-on-the-remote-host]] requires, and do not run them. The steps are `git pull` on the server, the three variables in `.env`, `docker compose up -d --no-deps` for the worker, unpausing `flood_mapping_full`, and the two verdict commands.
+4. Server runbook. Write the exact commands for the later server steps, in the PowerShell form the lesson [[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]] requires, and do not run them. The steps are `git pull` on the server, the three variables in `.env`, `docker compose up -d --no-deps` for the worker, unpausing `flood_mapping_full`, and the two verdict commands.
 5. Local commits in small units, when the user asks: the replay module and event file, the compose and `.env.example` change, the soak fix, the margin report, and the vault edits. Nothing is pushed.
 
 ## Work that waits for the server
@@ -64,7 +64,7 @@ None of these needs the server.
 2. The rain gate for the replay. The plan keeps 5 mm/h. Lower values simulate more runs (156 at 2 mm/h and 174 at 1 mm/h) and add flood area to every run.
 3. The replay start time, on a 15-minute slot. The suggestion is the first slot at least 30 minutes after the worker is recreated.
 4. The refresh interval for `US-062`. The research recommends keeping 15 minutes and showing the age of the map.
-5. Three gates of [[routing-not-time-aware]] that stay open: the sticky-from-departure wording for `US-050`, the build-time limit for `US-045`, and the latency factor for `US-055`. Also whether a trip that ends between minute 105 and minute 120 of a run returns `unknown`.
+5. Three gates of [[BL-011-routing-not-time-aware|routing-not-time-aware]] that stay open: the sticky-from-departure wording for `US-050`, the build-time limit for `US-045`, and the latency factor for `US-055`. Also whether a trip that ends between minute 105 and minute 120 of a run returns `unknown`.
 
 ## Offline work from later sprints
 

@@ -3,14 +3,14 @@ date: 2026-09-29
 type: plan
 status: draft
 tags: [routing, forecast, departure-time, graphhopper, safety, research]
-related: ["[[routing-not-time-aware]]", "[[graphhopper-backend]]", "[[flood-on-roads]]", "[[map-shows-forecast-not-now]]"]
+related: ["[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[graphhopper-backend]]", "[[flood-on-roads]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]"]
 last_updated: 2026-09-29
 ---
 
 # Departure-time advice: how to answer "when should I go?"
 
 This page is research and a proposal. Nothing here is built, and no number in it was measured unless it says so.
-It answers question 8 in [[routing-not-time-aware]]. Every tier in that blocker answers "which route, if I leave
+It answers question 8 in [[BL-011-routing-not-time-aware|routing-not-time-aware]]. Every tier in that blocker answers "which route, if I leave
 at `t0`?". A traveller asks the reverse: "given where I am going, which `t0` is safe?".
 
 Each claim carries one of three labels. **Verified** means read in the repo or a cited source. **Inference**
@@ -70,7 +70,7 @@ tails ([Yuan et al., PVLDB 2019](http://www.vldb.org/pvldb/vol12/p1058-yuan.pdf)
 summary, not read in full). All of these assume an engine that carries time in its labels.
 
 - **Verified.** GraphHopper's `Weighting` and `SPTEntry` carry no arrival time
-  ([[routing-not-time-aware]], "Can GraphHopper see arrival time?"). No off-the-shelf engine in the
+  ([[BL-011-routing-not-time-aware|routing-not-time-aware]], "Can GraphHopper see arrival time?"). No off-the-shelf engine in the
   2026-09-29 survey supports flood closure windows. So a profile query needs the custom Java module of Tier
   C-lite or a research engine such as CATCHUp.
 - **Inference (mine, not from a paper).** Under sticky closure and constant travel times, the latest
@@ -186,7 +186,7 @@ users pick nearby points in the same run. Skip it until load shows a need.
   [issue 5183](https://github.com/valhalla/valhalla/issues/5183),
   [issue 5616](https://github.com/valhalla/valhalla/issues/5616),
   [PR 2660](https://github.com/valhalla/valhalla/pull/2660)). I recall a reverse time-dependent search for
-  arrive-by, but did not verify it. Per [[routing-not-time-aware]], Valhalla's flood closures stay static per
+  arrive-by, but did not verify it. Per [[BL-011-routing-not-time-aware|routing-not-time-aware]], Valhalla's flood closures stay static per
   request, so `arrive_by` would not solve this.
 - **Verified from the blocker.** GraphHopper and OSRM have no per-request time-dependent closures.
 - **Verified.** Emergency management already uses the "latest departure" idea. A hurricane evacuation start
@@ -311,7 +311,7 @@ Algorithm:
 
 1. Get one route from the router with no flood `custom_model`, so a flooded network still returns a route
    to walk. The regular flood-aware request fails with a `ConnectionNotFoundException` (HTTP 400) when every road is
-   blocked, as [[failed-route-shows-previous-mode-route]] records, and that is the case this endpoint exists for. Read the per-piece arrival offsets from `details.time`. **Inference.**
+   blocked, as [[BL-014-failed-route-shows-previous-mode-route|failed-route-shows-previous-mode-route]] records, and that is the case this endpoint exists for. Read the per-piece arrival offsets from `details.time`. **Inference.**
    A request without `custom_model` returns the normal route. This exact request was not run.
 2. Set the start: the later of `depart_from` and the request time, rounded to the containing step. Steps
    before it are the past and are not read. In one SQL statement, read for each piece the `depth` at every

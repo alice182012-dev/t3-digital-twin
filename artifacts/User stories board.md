@@ -2,12 +2,12 @@
 type: reference
 status: active
 tags: [user-story, dataview]
-related: ["[[sprint-plan]]", "[[Home]]"]
+related: ["[[SP-01-prd-and-backlog|sprint-plan]]", "[[Home]]"]
 ---
 
 # User stories board
 
-Every story, one row each, read from the sprint tables in [[sprint-plan]]. That file is the single
+Every story, one row each, read from the sprint tables in [[SP-01-prd-and-backlog|sprint-plan]]. That file is the single
 source for sprint, priority, and status, so this page needs no edits when a story changes. Story
 bodies live in the epic files under `docs/user-stories/`.
 

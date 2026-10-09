@@ -4,7 +4,7 @@ type: plan
 branch: modular
 status: active
 tags: [plan, rain, replay, test-environment, us-088, us-089, sprint-12]
-related: ["[[rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[sprint-plan-3]]", "[[recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]"]
+related: ["[[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[L-010-recreate-remote-services-on-the-remote-host|recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]"]
 ---
 
 # Plan: a rain test environment

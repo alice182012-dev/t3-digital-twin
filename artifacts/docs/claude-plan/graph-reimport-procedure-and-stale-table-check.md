@@ -4,14 +4,14 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, sprint-7, edge-depth-table, us-044, graph-hash, reimport]
-related: ["[[edge-depth-table]]", "[[edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graphhopper-backend]]", "[[sprint-plan-2]]"]
+related: ["[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[graphhopper-backend]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
 ---
 
 # Plan: the graph re-import page and the stale-table check (US-044)
 
 ## Context
 
-Acceptance, from [[edge-depth-table-stories]] Story E6. Given a re-imported graph, when a person follows the page, then the export, the table, and the hash are regenerated together. Given the old table, when a request arrives, then the reader refuses it before a route is served, and the log names the mismatch. The page is a concept page under `artifacts/docs/concepts/`.
+Acceptance, from [[EP-08-edge-depth-table|edge-depth-table-stories]] Story E6. Given a re-imported graph, when a person follows the page, then the export, the table, and the hash are regenerated together. Given the old table, when a request arrives, then the reader refuses it before a route is served, and the log names the mismatch. The page is a concept page under `artifacts/docs/concepts/`.
 
 GraphHopper edge ids change on every re-import, so a table built for the old graph points depth at the wrong roads on the new one. The graph hash in the table header is the guard.
 

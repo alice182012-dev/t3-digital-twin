@@ -4,12 +4,12 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [frontend, backend, sprint-3, depth-badges]
-related: ["[[frontend-depth-features]]", "[[sprint-plan]]", "[[point-depth-lookup-backend]]", "[[depth-forecast-chart]]"]
+related: ["[[EP-01-frontend-depth-features|frontend-depth-features]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]"]
 ---
 
 # Per-point depth badges along the route
 
-Story: [[frontend-depth-features]] Story 3. Mockup screen 2e shows four white pills on the route,
+Story: [[EP-01-frontend-depth-features|frontend-depth-features]] Story 3. Mockup screen 2e shows four white pills on the route,
 each with a dot in the depth-band color and text such as "8 cm", "22 cm", "5 cm", and "0 cm". The pills
 mark where the depth changes, and they are not one per turn.
 

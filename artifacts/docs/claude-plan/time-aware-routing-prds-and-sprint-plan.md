@@ -3,7 +3,7 @@ date: 2026-09-29
 type: plan
 status: active
 tags: [plan, prd, user-story, sprint-plan, routing]
-related: ["[[routing-not-time-aware]]", "[[sticky-c-lite-routing]]", "[[departure-time-advice-research]]", "[[time-aware-routing-engine]]", "[[edge-depth-table]]", "[[sprint-plan-2]]"]
+related: ["[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[sticky-c-lite-routing]]", "[[departure-time-advice-research]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[PRD-003-edge-depth-table|edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
 ---
 
 # Turn the sticky C-lite decision into PRDs, stories, and a sprint plan
@@ -14,13 +14,13 @@ This plan lists the documents that turn those two decisions into schedulable wor
 
 ## Steps
 
-1. Write [[time-aware-routing-engine]] (PRD). Scope: the engine, the profiles, the backend switch and
+1. Write [[PRD-004-time-aware-routing-engine|time-aware-routing-engine]] (PRD). Scope: the engine, the profiles, the backend switch and
    fallback, the request-time rule, and the "wait until" advice.
-2. Write [[edge-depth-table]] (PRD). Scope: the edge export, the table format, the Airflow task, the
+2. Write [[PRD-003-edge-depth-table|edge-depth-table]] (PRD). Scope: the edge export, the table format, the Airflow task, the
    publish and retention rules, and the readers.
 3. Write one epic file of user stories for each PRD, with Priority, Estimate, and Sprint on each row.
-4. Write [[sprint-plan-2]], a new planning pass, with sprint count set by dependencies.
-5. Add a status line to [[routing-not-time-aware]] that links the new pages.
+4. Write [[SP-02-routing-engine-foundations|sprint-plan-2]], a new planning pass, with sprint count set by dependencies.
+5. Add a status line to [[BL-011-routing-not-time-aware|routing-not-time-aware]] that links the new pages.
 
 ## Input facts
 

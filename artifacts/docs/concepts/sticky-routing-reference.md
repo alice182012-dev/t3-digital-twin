@@ -3,13 +3,13 @@ date: 2026-10-01
 type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
-related: ["[[time-aware-routing-engine]]", "[[time-aware-routing-engine-stories]]", "[[routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
+related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
 last_updated: 2026-10-09
 ---
 
 # Sticky routing reference and checker
 
-The reference is a slow, readable implementation of sticky C-lite routing. The checker re-walks a route and lists every road it entered while closed. The fast engine (`US-050`) is compared against the reference, and the server proof (`US-055`) uses the checker on the routes that `POST /route` returns. The requirements are goal 1 of [[time-aware-routing-engine]], and the story is `US-047` ([[time-aware-routing-engine-stories]] Story R2).
+The reference is a slow, readable implementation of sticky C-lite routing. The checker re-walks a route and lists every road it entered while closed. The fast engine (`US-050`) is compared against the reference, and the server proof (`US-055`) uses the checker on the routes that `POST /route` returns. The requirements are goal 1 of [[PRD-004-time-aware-routing-engine|time-aware-routing-engine]], and the story is `US-047` ([[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]] Story R2).
 
 The code is in `scripts/routing_reference/`, with tests beside it. It is pure Python with no database and no GraphHopper.
 
@@ -36,7 +36,7 @@ To check a GraphHopper route, take the `edge_id` path detail as `edge_ids` and t
 
 ## The scenarios
 
-`SCENARIOS` in `scenarios.py` holds the four rows of the test table in [[routing-not-time-aware]], with the result of the sticky column. A scenario floods one road of the route and sets the traveller's speed so the road is entered at exactly the table's minute. A scenario has the 8 steps of a real run, 15 minutes apart, so the last step is 105 minutes after the first ([[routing-not-time-aware]], "Baselines on the server"). The flood depth is 50 cm by default.
+`SCENARIOS` in `scenarios.py` holds the four rows of the test table in [[BL-011-routing-not-time-aware|routing-not-time-aware]], with the result of the sticky column. A scenario floods one road of the route and sets the traveller's speed so the road is entered at exactly the table's minute. A scenario has the 8 steps of a real run, 15 minutes apart, so the last step is 105 minutes after the first ([[BL-011-routing-not-time-aware|routing-not-time-aware]], "Baselines on the server"). The flood depth is 50 cm by default.
 
 Each scenario runs for `motorbike` and `car`, with a detour and without one. With a detour, a blocked scenario must route around the road. Without one, it must return no route. A scenario that passes must use the road in both cases. The returned route must also have no crossing.
 

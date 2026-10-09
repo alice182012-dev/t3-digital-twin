@@ -3,7 +3,7 @@ date: 2026-09-24
 type: concept
 status: active
 tags: [postgis, roads, routing, raster-first, sprint-2]
-related: ["[[raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[flood-metric-extractor]]", "[[graphhopper-backend]]", "[[route-forecast-query]]", "[[timescaledb-and-flood-metrics]]", "[[flood-on-roads]]", "[[decision-log]]"]
+related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[flood-metric-extractor]]", "[[graphhopper-backend]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[flood-on-roads]]", "[[decision-log]]"]
 last_updated: 2026-09-25
 ---
 
@@ -11,7 +11,7 @@ last_updated: 2026-09-25
 
 `road_segment` holds the Hanoi road network as short pieces, one row per piece, each with a
 `segment_id` that stays the same across loads of the same roads file. It is Story 1 of
-[[raster-first-pipeline-stories]]. Flood-on-roads (Story 3), the flood metric extractor, and the
+[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]. Flood-on-roads (Story 3), the flood metric extractor, and the
 route-forecast query are meant to key their rows by `segment_id` instead of by road name or by a
 hash of the geometry.
 

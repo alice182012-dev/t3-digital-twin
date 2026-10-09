@@ -4,20 +4,20 @@ type: plan
 branch: front-end-according-to-mock-up
 status: done
 tags: [plan, frontend, performance, us-035, sprint-4]
-related: ["[[carried-over-backlog]]", "[[sprint-plan]]", "[[2026-10-01]]", "[[route-panel-stuck-on-loading-bars]]", "[[sample_rate_1_bottleneck]]"]
+related: ["[[EP-07-carried-over-backlog|carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[2026-10-01]]", "[[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]]", "[[sample_rate_1_bottleneck]]"]
 ---
 
 # Plan: US-035 revalidate "loading is very slow"
 
 ## Context
 
-`US-035` ([[carried-over-backlog]] Story 4, Sprint 4, S, P3) asks whether the live app loads slowly and why. The note is from 2026-09-08, before the polygon tiles and the raster-first pipeline. It also asks for the routing panel's wait on a pair with no connection, which was 9 seconds or more on 2026-09-30 ([[route-panel-stuck-on-loading-bars]]). The result closes the item or opens a blocker with a measured cause.
+`US-035` ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 4, Sprint 4, S, P3) asks whether the live app loads slowly and why. The note is from 2026-09-08, before the polygon tiles and the raster-first pipeline. It also asks for the routing panel's wait on a pair with no connection, which was 9 seconds or more on 2026-09-30 ([[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]]). The result closes the item or opens a blocker with a measured cause.
 
 ## Facts that shape the design
 
 1. The vault does not say who wrote the 2026-09-08 note or what it meant. The old `SAMPLE_RATE=1` bottleneck ([[sample_rate_1_bottleneck]]) was a pipeline speed in the GeoJSON chain, which was retired. So this plan measures the page load and treats the pipeline reading as closed.
 2. The live app is `http://100.67.84.55:8082`. Test points stay inside the model border (`.claude/CLAUDE.md`).
-3. The panel waits for both route requests of a pair (a fast one and one for alternatives), and the per-mode travel times send one request per profile ([[frontend-polish]] Story 1).
+3. The panel waits for both route requests of a pair (a fast one and one for alternatives), and the per-mode travel times send one request per profile ([[EP-02-frontend-polish|frontend-polish]] Story 1).
 
 ## Decisions already made
 

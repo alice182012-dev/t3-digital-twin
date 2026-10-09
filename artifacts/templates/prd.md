@@ -30,14 +30,14 @@ What this deliberately doesn't cover, so scope doesn't creep back in mid-build.
 Every fact this design relies on that isn't visible from reading the code cold: a build context
 that has to exist, a flag an entrypoint has to receive, a volume that has to be the one actually
 mounted, a service another component silently depends on. State each as a fact that could turn
-out false, not a hope. This is the section [[graphhopper-vehicle-profile-rejection]] and
-[[storage-backend-build-context-missing]] would have needed to exist before either blocker did.
+out false, not a hope. This is the section [[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]] and
+[[BL-002-storage-backend-build-context-missing|storage-backend-build-context-missing]] would have needed to exist before either blocker did.
 
 ## Definition of done
 
 An operational check, not a proxy. "The container starts with no errors" is a proxy. "A real
 `POST /route?profile=foot` request between two snapped points returns a route" is the check that
-actually closed [[graphhopper-vehicle-profile-rejection]]. State what to run and what result
+actually closed [[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]. State what to run and what result
 confirms it. Given/When/Then is a useful shape for this, as plain prose, not as a separate syntax:
 given the starting state, when this action runs, then this is the result that confirms it worked.
 

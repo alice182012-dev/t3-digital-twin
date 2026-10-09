@@ -3,7 +3,7 @@ date: 2026-09-29
 type: plan
 status: active
 tags: [plan, frontend, todos, backend-dependency]
-related: ["[[flood-routing-mockup-frontend-gap]]", "[[frontend-depth-features]]", "[[frontend-polish]]", "[[mockup-screen-coverage]]", "[[truck-routing-profile]]", "[[depth-forecast-chart]]", "[[route-forecast-query]]", "[[point-depth-lookup-backend]]", "[[flood-points-connection-per-request]]", "[[routing-not-time-aware]]", "[[map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[sprint-plan]]"]
+related: ["[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[EP-01-frontend-depth-features|frontend-depth-features]]", "[[EP-02-frontend-polish|frontend-polish]]", "[[EP-05-mockup-screen-coverage|mockup-screen-coverage]]", "[[US-022-truck-routing-profile|truck-routing-profile]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 ---
 
 # Frontend todos and their backend dependencies
@@ -18,7 +18,7 @@ file. Nothing here replaces the sprint plan. Where the two disagree, the code ch
 - **The depth chart is built.** `DepthForecastChart.tsx` is wired into `RoutingResults.tsx:70` and
   calls `POST /flood/forecast`, which reads the raster tiles in 15-minute columns
   (`backend/flood_forecast.py`, up to 2,000 route points and 96 steps). Two stories still read
-  `Not started`: [[depth-forecast-chart]] and [[route-forecast-query]]. Both were written for
+  `Not started`: [[US-001-depth-forecast-chart|depth-forecast-chart]] and [[US-017-route-forecast-query|route-forecast-query]]. Both were written for
   30-minute columns over `flood_road_values`. The work went a different way, so both files need a
   status and design update, not new code.
 - **No frontend code calls `GET /flood/points`.** A search of `src/` finds no caller. The endpoint
@@ -44,16 +44,16 @@ file. Nothing here replaces the sprint plan. Where the two disagree, the code ch
 | 10 | Check place search through the browser UI | XS | Ready. | Nothing. | 1 (Reviewed) |
 | 11 | Accessibility pass on the toggle, legend, and route tabs | S | None needed. | Nothing. | 4 |
 | 12 | Write a project `DESIGN.md` | M | None needed. | Nothing. | 11 (plan 3) |
-| 13 | Show no route and a clear message when a mode has none (added 2026-09-29, deferred) | S | A small backend change: pass GraphHopper's error body through. | [[failed-route-shows-previous-mode-route]] | 3 |
+| 13 | Show no route and a clear message when a mode has none (added 2026-09-29, deferred) | S | A small backend change: pass GraphHopper's error body through. | [[BL-014-failed-route-shows-previous-mode-route|failed-route-shows-previous-mode-route]] | 3 |
 
 ### 1. Show the truck routing profile
 
-Done 2026-09-29. `truck: {}` is in the config, the frontend is rebuilt and recreated on the server, and the live UI shows four modes with a 918 m truck route ([[truck-routing-profile]], evidence `frontend-truck-profile.png`).
+Done 2026-09-29. `truck: {}` is in the config, the frontend is rebuilt and recreated on the server, and the live UI shows four modes with a 918 m truck route ([[US-022-truck-routing-profile|truck-routing-profile]], evidence `frontend-truck-profile.png`).
 
 Add `truck: {}` to `profiles` in `config-local.js.example`, rebuild `flood-routing-frontend` on the
 remote host, and confirm the profile row shows four modes and a truck route returns. See
-[[truck-routing-profile]]. The known risk in that story is gone: routing now sends each request's
-own profile ([[flood-routing-vehicle-type-always-motorbike]], resolved). The per-mode travel time
+[[US-022-truck-routing-profile|truck-routing-profile]]. The known risk in that story is gone: routing now sends each request's
+own profile ([[BL-005-flood-routing-vehicle-type-always-motorbike|flood-routing-vehicle-type-always-motorbike]], resolved). The per-mode travel time
 row sends one request per mode, so a fourth mode adds a fourth request per query. The story keeps
 that as an accepted cost.
 
@@ -75,9 +75,9 @@ Backend dependency:
 
 - `GET /flood/points?lat=&lon=&valid_time=` is done and matched `gdallocationinfo` at three points
   on the server. It returns `wet`, `dry`, or `no_data`.
-- The latency check ([[point-depth-lookup-backend]] Story 4) has not run. The endpoint opens a new
+- The latency check ([[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]] Story 4) has not run. The endpoint opens a new
   database connection on every request, which costs about 58 ms locally
-  ([[flood-points-connection-per-request]], open, P2). A single tap is fine at that cost. Todos 4
+  ([[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]], open, P2). A single tap is fine at that cost. Todos 4
   and 5 are not (see todo 9).
 - The place name and address need a reverse geocoder. `NavBar.ts` already calls
   `reverseGeocode(...)` on the Nominatim-backed client, so start there. Photon is what
@@ -100,7 +100,7 @@ not a depth per point, so it does not answer this.
 ### 6. "Route to" button on the popup
 
 Set the popup's place as the destination and leave the start empty (mockup 2f). Reuse the route-to
-action in `ContextMenuContent.tsx`. No backend work. See [[mockup-screen-coverage]] Story 1.
+action in `ContextMenuContent.tsx`. No backend work. See [[EP-05-mockup-screen-coverage|mockup-screen-coverage]] Story 1.
 
 ### 7. Tap a turn step to highlight its segment
 
@@ -112,18 +112,18 @@ gives each step a depth to show. Backlog item, P3.
 
 Open each screen at 1366x768 and compare it with the mockup. Log each difference as a new story or
 blocker. This also closes the `needs-revalidation` autofill item in `TODOS.md`. See
-[[mockup-screen-coverage]] Story 2. It needs a rebuilt frontend on the remote host.
+[[EP-05-mockup-screen-coverage|mockup-screen-coverage]] Story 2. It needs a rebuilt frontend on the remote host.
 
 ### 9. Decide how the frontend reads many point depths
 
-Decided 2026-09-29 (option 2) and scheduled as the first two rows of Sprint 3 in [[sprint-plan]]: reuse database connections, then run the latency check on a 40-point route. The batch endpoint is built only if that check fails the budget, which the user still has to set. The options are kept below for the record.
+Decided 2026-09-29 (option 2) and scheduled as the first two rows of Sprint 3 in [[SP-01-prd-and-backlog|sprint-plan]]: reuse database connections, then run the latency check on a 40-point route. The batch endpoint is built only if that check fails the budget, which the user still has to set. The options are kept below for the record.
 
 This is the one open backend question that blocks the frontend. `GET /flood/points` takes one
 point. Todos 4 and 5 need tens of points per route, and todo 3 needs one. Three ways to close it:
 
 1. Call the endpoint once per point in parallel. It needs no backend change. Each call opens a
    database connection, so the cost grows with route length unless
-   [[flood-points-connection-per-request]] is fixed first.
+   [[BL-007-flood-points-connection-per-request|flood-points-connection-per-request]] is fixed first.
 2. Fix the connection cost, then call per point. The backlog already has this as a P2 item.
 3. Add a batch endpoint that takes a list of points and returns one depth each. It needs a new
    backend story.
@@ -134,7 +134,7 @@ The user needs to pick it.
 
 ### 10. Check place search through the browser UI
 
-[[frontend-polish]] Story 3 is `Reviewed`. The backend returns only Hanoi results for "Hồ Gươm",
+[[EP-02-frontend-polish|frontend-polish]] Story 3 is `Reviewed`. The backend returns only Hanoi results for "Hồ Gươm",
 checked against `/geocode` directly. Type the query in the live UI at `100.67.84.55:8082`, then
 move the story to `Done` with a screenshot.
 
@@ -153,16 +153,16 @@ None of these can start. The frontend part is small once the decision lands.
 
 | Item | What the frontend does | What it waits on |
 | ---- | ---------------------- | ---------------- |
-| Time-aware routing ([[routing-not-time-aware]], P1) | Shows "This road floods at 21:40" on the route. Possibly sends the origin to `GET /flood/areas`. | The user's choice of approach, the trip-time bound, and the overlay question (one timestep on the map, or the same window as the route). No approach is built. |
-| What the map shows by default ([[map-shows-forecast-not-now]], monitoring) | Reword the legend caption. The map already picks the latest step at or before now, and the legend reads "As of". | The user's wording decision against the mockup, and the tile latency work below. |
+| Time-aware routing ([[BL-011-routing-not-time-aware|routing-not-time-aware]], P1) | Shows "This road floods at 21:40" on the route. Possibly sends the origin to `GET /flood/areas`. | The user's choice of approach, the trip-time bound, and the overlay question (one timestep on the map, or the same window as the route). No approach is built. |
+| What the map shows by default ([[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]], monitoring) | Reword the legend caption. The map already picks the latest step at or before now, and the legend reads "As of". | The user's wording decision against the mockup, and the tile latency work below. |
 | Map tile within 5 minutes of now ([[five-minute-tile-freshness]], idea) | Nothing, unless the team picks query-time interpolation for point depths. | Pipeline latency. Tiles publish 1.5 to 3 minutes after their target moment today. |
 | Second dashed depth-limit line, route tabs with time and maximum depth, mobile version of 2e | Builds them. | A decision to build them. The mockup lists them as "Try next", so no story exists. |
 
 ## Vault upkeep
 
-Done on 2026-09-29. [[depth-forecast-chart]] and [[route-forecast-query]] now describe the
-raster-based, 15-minute design and read `Reviewed`. [[sprint-plan]] carries the same status, the
-point-depth rows name todo 9 as a dependency, and its risks table has a latency row. [[frontend-polish]]
+Done on 2026-09-29. [[US-001-depth-forecast-chart|depth-forecast-chart]] and [[US-017-route-forecast-query|route-forecast-query]] now describe the
+raster-based, 15-minute design and read `Reviewed`. [[SP-01-prd-and-backlog|sprint-plan]] carries the same status, the
+point-depth rows name todo 9 as a dependency, and its risks table has a latency row. [[EP-02-frontend-polish|frontend-polish]]
 Story 2 has a history entry about the "As of" caption.
 
 Still open: a server screenshot of the chart and of the `POST /flood/forecast` response, one
@@ -174,12 +174,12 @@ either story reaches `Done`.
 - **2026-09-29, active.** Written after a vault refresh and a code check. No frontend change made.
 - **2026-09-29, active.** Updated the stale stories and the sprint plan.
 - **2026-09-29, active.** Todo 1 (truck profile) done.
-- **2026-09-29, active.** Added todo 13 from [[failed-route-shows-previous-mode-route]]. Deferred by the user.
+- **2026-09-29, active.** Added todo 13 from [[BL-014-failed-route-shows-previous-mode-route|failed-route-shows-previous-mode-route]]. Deferred by the user.
 - **2026-09-29, active.** Todo 2 (default zoom) done.
 - **2026-09-29, active.** Todo 3 (place-depth popup) done.
 - **2026-09-29, active.** Todo 9 scheduled: connection reuse and the latency check open Sprint 3.
 - **2026-09-29, active.** Added a Sprint column. The failed-route item (todo 13) and tap-a-turn-step (todo 7) are in Sprint 3.
-  Accessibility (11) and `DESIGN.md` (12) are in Sprint 2, in [[carried-over-backlog]].
+  Accessibility (11) and `DESIGN.md` (12) are in Sprint 2, in [[EP-07-carried-over-backlog|carried-over-backlog]].
 - **2026-09-29, active.** Re-cut by dependency and need. Todo 9 (connection reuse and the latency check) is Sprint 2, todo 8
   moved to the end of Sprint 3, accessibility (11) to Sprint 4, and `DESIGN.md` (12) to the next plan.
-- **2026-09-29, active.** `DESIGN.md` (todo 12) is in Sprint 11 of [[sprint-plan-3]], and the backend soak in Sprint 5 of [[sprint-plan-2]].
+- **2026-09-29, active.** `DESIGN.md` (todo 12) is in Sprint 11 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]], and the backend soak in Sprint 5 of [[SP-02-routing-engine-foundations|sprint-plan-2]].
