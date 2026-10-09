@@ -42,9 +42,10 @@ class GoldenTables:
         self._tmp.cleanup()
 
 
-def run(table_set, planner=single_timestep_planner, model="single_timestep", slowdown=None, pairs=None, steps=(1,)):
+def run(table_set, planner=single_timestep_planner, model="single_timestep", slowdown=None, pairs=None, steps=(1,), now=lambda: 0.0):
     return ex.run_experiment(model=model, storm="golden fixture", pairs=pairs or [P_SHORT_A, P_SHORT_B, P_LONG],
-                             table_sets=[table_set], limits=LIMITS, planner=planner, departure_steps=steps, slowdown=slowdown)
+                             table_sets=[table_set], limits=LIMITS, planner=planner, departure_steps=steps, slowdown=slowdown,
+                             now=now)
 
 
 def row(result, **key):
@@ -127,6 +128,13 @@ class StickyEngineTest(unittest.TestCase):
         with GoldenTables() as tables:
             check = run(tables, pairs=[P_SHORT_A])["sticky_check"]
         self.assertEqual((check["sticky_crossings"], check["violations_by_rule"]["at_or_before"], check["passed"]), (1, 1, False))
+
+    def test_an_engine_route_is_walked_from_the_time_of_the_request_not_from_the_floored_step(self):
+        with GoldenTables() as tables:
+            step_1 = tables.tables[0].header.step_times[1].timestamp()
+            result = run(tables, planner=lambda r: planned(PATH_A, {"status": "applied", "departure": step_1}), model="sticky",
+                         pairs=[P_SHORT_A], now=lambda: step_1 + 840)
+        self.assertEqual({r["departure_s"] for r in result["routes"]}, {step_1 + 840})
 
     def test_a_route_from_the_engine_in_a_single_timestep_run_is_counted(self):
         with GoldenTables() as tables:

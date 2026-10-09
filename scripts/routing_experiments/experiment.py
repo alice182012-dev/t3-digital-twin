@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
 import statistics
 import sys
 import urllib.request
@@ -79,17 +80,21 @@ def _walk_json(walk) -> dict:
                             "depth_cm": v.depth_cm} for v in walk.violations]}
 
 
-def _plan_and_walk(planner, request, table, step, limit, slowdown, margin_s) -> dict:
+def _plan_and_walk(planner, request, table, step, limit, slowdown, margin_s, now) -> dict:
     step_seconds = tuple(t.timestamp() for t in table.header.step_times)
     record = {"pair": request.pair.name, "length_class": request.pair.length_class, "vehicle": request.vehicle,
               "run": table.header.run_name, "departure_step": step, "valid_time": request.valid_time}
+    sent_at = now()
     outcome = planner(request)
     if isinstance(outcome, PlanFailure):
         record.update(status=outcome.status, message=outcome.message, cannot_find_point=outcome.cannot_find_point)
         return record
-    departure = float(outcome.engine.get("departure", step_seconds[step]))
+    # The engine reports the step that holds the departure as td.departure, and travels from the time of the request
+    # (US-096). The window of steps starts at the first, the clock at the second.
+    window_start = float(outcome.engine.get("departure", step_seconds[step]))
+    departure = max(sent_at, window_start) if "departure" in outcome.engine else window_start
     sticky = ref.StickyClosure(step_seconds, lambda e, s: _depth_or_dry(table, e, s), limit, departure_s=departure,
-                               margin_s=margin_s)
+                               margin_s=margin_s, window_start_s=window_start)
     record.update(
         status=200, distance_m=outcome.distance_m, engine=outcome.engine, departure_s=departure,
         edge_ids=list(outcome.route.edge_ids), edge_seconds=list(outcome.route.edge_seconds),
@@ -166,6 +171,7 @@ def run_experiment(
     slowdown: SlowDown | None = None,
     margin_s: float = MARGIN_S,
     valid_time: Callable[[str, datetime], str] = lambda run, t: _iso(t),
+    now: Callable[[], float] = time.time,
 ) -> dict:
     """valid_time(run, step time) gives the string the backend expects for a step, so the server run can use the
     exact strings /flood/timesteps lists."""
@@ -179,7 +185,7 @@ def run_experiment(
                     for step in departure_steps:
                         request = PlanRequest(pair, vehicle, valid_time(table.header.run_name, table.header.step_times[step]),
                                               table.header.run_name)
-                        record = _plan_and_walk(planner, request, table, step, limit, slowdown, margin_s)
+                        record = _plan_and_walk(planner, request, table, step, limit, slowdown, margin_s, now)
                         records.append({"stage": table_set.stage, **record})
     return {
         "story": "US-091", "written_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
