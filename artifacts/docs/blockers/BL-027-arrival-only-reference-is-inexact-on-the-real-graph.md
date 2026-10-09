@@ -114,6 +114,16 @@ Diagnosis of the 3 pairs that stay inexact (2026-10-09, budget 10,000,000 expans
 
 A sticky route is also an arrival-only route, because the sticky closed set contains the arrival-only closed set. So the arrival-only answer for the first two pairs lies between the lower bound and the sticky end, and the extra time of sticky is at most 22 s and 10 s. These two searches are stuck on a plateau: many simple paths have a bound just below the answer, and best-first search has to expand all of them. The third pair is different. Sticky has no route, so the open question is whether arrival-only has one, and proving that it has none means exhausting the simple paths. The memory figures make a budget of 30,000,000 impractical on a 16 GB Mac (my estimate from the linear growth, not an observed failure).
 
+Proven interval for an inexact search (2026-10-09). When the budget runs out, the search now returns `lower_bound_s`, the smallest bound of any label still in the queue, and no route can end before it. `compare()` subtracts it from the sticky end and records `extra_s_at_most`, an upper bound on the extra time of sticky. On the same 240 searches (budget 3,000,000, `marie-curie/us-099/option_a_interval_seed1.json`) the 4 inexact searches with a sticky route or without one split as follows.
+
+| Pair | Vehicle | Lower bound on the end | Sticky is later by at most |
+| ---- | ------- | ---------------------- | -------------------------- |
+| 4518 to 28381 | foot | 1,221 s | 14 s |
+| 13281 to 50745 | car | 1,331 s | 2 s |
+| 29891 to 2808 | motorbike (3 searches) | 866 s | no interval, sticky has no route |
+
+The intervals are tighter than the static bounds of the diagnosis (22 s and 10 s). The motorbike pair stays unresolved. Whether arrival-only has a route there is the open question, and no interval can answer it.
+
 Tests: the search matches a brute-force enumeration of every simple path on 1,900 seeded random graphs (the new 1,500-case set has roads that close and reopen). A destination shut off by a closed road ends with 0 expansions on a 6 by 6 grid. A separate run of 6,000 cases found 0 mismatches.
 
 ## Options remaining
@@ -188,3 +198,4 @@ The sticky side is not in question. A seeded test of 300 graphs in `scripts/rout
 - **2026-10-09, open.** The user chose option A as the definition of the reference: the earliest arrival over routes that visit no node twice. Loop-and-wait is not allowed, and the departure time is fixed per trip. Option B is dropped. The exact-enough bar, the cost limit, and the sprint are still open, so the blocker stays `open`. The cost of option A (0.475 exact) is the remaining problem. `approaches_remaining` goes from 2 to 1.
 - **2026-10-09, open.** Approach 4 (pruned option A, now in `scripts/routing_reference/arrival_only.py`) raised the exact rate from 0.475 to 0.979 (235 of 240) and cut the wall time from 618 s to 76 s. Option B is not needed. The blocker stays `open` until the user sets the exact-enough bar (question 3). If the bar is 95 percent per vehicle, every vehicle meets it (motorbike 0.95, car 0.98, truck 1.00, foot 0.98). `approaches_remaining` stays 1: a stronger bound for the 3 pairs left.
 - **2026-10-09, open.** Diagnosis of the 3 inexact pairs at a budget of 10,000,000 (3.3 times more): none finished, and peak memory was 3.7 to 4.5 GB. Two pairs have a sticky route within 1.8% and 0.7% of the lower bound, so the extra time of sticky is bounded there. One pair has no sticky route and stays open. A larger budget is not the fix.
+- **2026-10-09, open.** Added a proven interval for inexact searches (`lower_bound_s` in the result, `extra_s_at_most` in `compare()` and the summary). Of the 5 inexact searches, 2 now carry a bound (sticky later by at most 14 s and 2 s) and 3 (one motorbike pair) stay unresolved. Tests: 78 in `routing_reference`, 85 in `routing_experiments`.
