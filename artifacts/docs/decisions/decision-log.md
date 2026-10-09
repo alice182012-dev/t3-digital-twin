@@ -428,3 +428,15 @@ is the maximum.
 - **Evidence:** [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] and the tests `test/test_flood_tiles_dag.py` and `test/test_flood_mapping_dag_graph.py`. The server check is open.
 - **Affects:** `dags/flood_mapping_dag.py`, `dags/flood_tiles_dag.py`, `dags/core_assets.py`, `dags/core_paths.py`, `minio-flood-extent-pipeline`, `3di-simulation-orchestration`, `core-output-contract`, and the README.
 - **Revisit if:** a second consumer of the depth files needs the files after the 24-hour cleanup, or the worker and the tile build move to different hosts.
+
+## D-028: Keep the latest forecast of each road piece and moment, for years
+
+- **Date:** 2026-10-10
+- **Status:** active for the rule. The drop age and the way a consumer tells dry from unknown wait for [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+- **Decided by:** the user ("no lets do first row"), after the development team showed the sizing of three options.
+- **Decision:** The flood history for the industry applications is `depth_history` in TimescaleDB, one row per road piece and moment, where the run with the later `issued_at` wins. It is kept for several years, with TimescaleDB compression and a policy that drops old data. No table keeps every forecast of every run. The history is the model's own forecast values, since no gauge observation enters the pipeline.
+- **Why:** The latest-wins series is about 278,000 rows on a storm day, about 13 GB a year uncompressed even if every day were a storm day. Keeping every forecast is about 2.2 million rows a day, and no analysis asked for it. One month, the retention of 3Di results, is too short for a history of past floods.
+- **Alternatives:** (1) Keep every forecast for 30 days in a second table, for analyses of forecast error and lead time. Rejected for now, and a new story adds it if such an analysis is asked for. (2) Keep one month of the latest-wins series, like 3Di results. Rejected, because the series is small enough to keep for years.
+- **Evidence:** the sizing in `US-105`, read on the server on 2026-10-10. The row size and the compression ratio are estimates until `US-106` measures them.
+- **Affects:** `US-105`, `US-106`, [[EP-21-industry-analysis-on-the-flood-data|EP-21]], and [[timescaledb-schema]].
+- **Revisit if:** an industry application needs forecast error or lead time, if compression on the real TimescaleDB server is far below 10 times, or if the gauge hot start adds observed depth.

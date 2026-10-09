@@ -34,6 +34,7 @@ The facts below were read from the code and the contract on the branch `modular`
 
 - Proposed, not decided. An industry application is a read-only consumer of the contract tables. It writes only to its own schema. The pipeline stays the only writer of the contract tables. [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] ends with the decision that confirms or changes this.
 - A run forecasts about the next 2 hours (`SIMULATION_DURATION` 7200 s) and a run starts every 15 minutes (`UPDATE_INTERVAL` 900 s, `compose.yml`). A moment in time therefore has several forecasts, one per run that covers it.
+- [[decision-log|D-028]] keeps the latest forecast of each road piece and moment for several years, and no other forecast.
 - No gauge observations enter the pipeline. The gauge hot start is designed and not built ([[architecture-block-diagram]]). In this epic, history means the model's own forecast values.
 - `flood_road_values` has no row for a road piece that was dry at every step of a run ([[core-output-contract]]). A missing row is not proof that the piece was dry at that time.
 - Size reference. After the first prune on 2026-10-09 the table held 1,087,512 rows for 45 runs, about 24,000 rows per run. A day has at most 96 runs.

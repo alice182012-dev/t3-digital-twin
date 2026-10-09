@@ -19,7 +19,7 @@ tags: [user-story]
 
 As an analyst, I want the depth of each road piece to stay on record after the pipeline prunes its own tables, so I can study past floods.
 
-The default design follows [[timescaledb-schema]] and changes if [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] decides otherwise.
+The design follows [[timescaledb-schema]] and [[decision-log|D-028]]. [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] sets the grain, the drop age, and how a consumer tells dry from unknown.
 A new asset `FLOOD_ROAD_VALUES` in `dags/core_assets.py` is emitted by task `flood_on_roads` of `routing_adapter`.
 A new DAG `flood_history` runs on that asset and copies the run's per-piece depths into `depth_history`.
 The loader converts `forecast_time` (Vietnam time, no offset) to a UTC `valid_time`, writes `cycle` as `constant_cycle`, and keeps the row with the later `issued_at` when two runs cover the same moment.
@@ -29,6 +29,7 @@ The `timescaledb-data` volume moves to a host path on D: before the first load, 
 
 Given a replay run on the server, when `flood_history` finishes, then `depth_history` has one row per wet road piece and step of that run, a count query on `flood_road_values` for the same run gives the same number, and the hypertable exists on the real TimescaleDB server (`SELECT * FROM timescaledb_information.hypertables`).
 Given the same run loaded twice, then the row count does not change.
+Given `depth_history` with a compression policy and a drop policy (`timescaledb_information.jobs`), when the compression job has run on the replay data, then `hypertable_compression_stats` gives the real compression ratio, and the story records it so [[decision-log|D-028]] can be checked against the estimate of 10 times.
 Given a second run that overlaps the first by one step, then that step keeps the later run's depth.
 
 Dependencies: US-105.
