@@ -3,7 +3,7 @@ date_drafted: 2026-09-29
 type: user-story
 us_id: "US-033"
 story_label: "2"
-epic: "[[EP-07-carried-over-backlog]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Not started
 priority: P3
 estimate: M

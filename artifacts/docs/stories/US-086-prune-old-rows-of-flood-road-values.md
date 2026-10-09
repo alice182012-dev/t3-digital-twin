@@ -3,7 +3,7 @@ date_drafted: 2026-10-07
 type: user-story
 us_id: "US-086"
 story_label: "1"
-epic: "[[EP-12-core-output-hygiene]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 priority: P2
 estimate: S

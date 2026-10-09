@@ -3,11 +3,11 @@ date_drafted: 2026-10-08
 type: user-story
 us_id: "US-094"
 story_label: "1"
-epic: "[[EP-15-archive-and-netcdf-retirement]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Reviewed
 priority: P1
 estimate: M
-sprint: 10
+sprint: 
 subsystem: core-output
 related: ["[[EP-15-archive-and-netcdf-retirement]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 title: "Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain"

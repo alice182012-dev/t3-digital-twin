@@ -3,6 +3,7 @@ date_drafted: 2026-10-05
 type: user-story
 us_id: "US-067"
 us_ids: ["US-067"]
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 subsystem: minio-flood-extent-pipeline, storage-postgres
 sprint: 5

@@ -7,12 +7,12 @@ related: ["[[Home]]"]
 
 # User stories board
 
-Every story, one row each, read from the frontmatter of the story files in `docs/stories/`. A story file is the single source for its sprint, priority, estimate, and status, so this page needs no edits when a story changes. To move a story to another sprint, change `sprint` in that story's frontmatter.
+Every story, one row each, read from the frontmatter of the story files in `docs/stories/`. A story file is the single source for its sprint, priority, estimate, and status, so this page needs no edits when a story changes. A story gets a sprint only at sprint planning, by setting `sprint` in its frontmatter. See [[scrum-framework]].
 
 ## All stories
 
 ```dataview
-TABLE title AS "Story", sprint AS "Sprint", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+TABLE title AS "Story", kind AS "Kind", sprint AS "Sprint", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
 FROM "docs/stories"
 WHERE type = "user-story"
 SORT sprint ASC, priority ASC, file.name ASC
@@ -39,7 +39,7 @@ GROUP BY status
 ## Epics
 
 ```dataview
-TABLE us_ids AS "Stories", status AS "Status", subsystem AS "Subsystem"
+TABLE theme AS "Theme", status AS "Status", subsystem AS "Subsystem"
 FROM "docs/epics"
 SORT file.name ASC
 ```

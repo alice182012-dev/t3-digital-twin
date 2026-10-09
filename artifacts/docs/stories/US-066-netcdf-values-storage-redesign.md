@@ -3,6 +3,7 @@ date_drafted: 2026-10-04
 type: user-story
 us_id: "US-066"
 us_ids: ["US-066"]
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 subsystem: infra, storage-postgres, timescaledb
 sprint: 5

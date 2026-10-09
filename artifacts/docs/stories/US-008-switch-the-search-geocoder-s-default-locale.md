@@ -3,11 +3,11 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-008"
 story_label: "3"
-epic: "[[EP-02-frontend-polish]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Reviewed
 priority: P2
 estimate: S
-sprint: 1
+sprint: 
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 title: "Switch the search geocoder's default locale to `vi`"

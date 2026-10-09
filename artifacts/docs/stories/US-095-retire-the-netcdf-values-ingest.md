@@ -3,7 +3,7 @@ date_drafted: 2026-10-08
 type: user-story
 us_id: "US-095"
 story_label: "2"
-epic: "[[EP-15-archive-and-netcdf-retirement]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 priority: P1
 estimate: M

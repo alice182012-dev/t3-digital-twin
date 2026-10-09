@@ -3,7 +3,7 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-007"
 story_label: "2"
-epic: "[[EP-02-frontend-polish]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Done
 priority: P2
 estimate: S

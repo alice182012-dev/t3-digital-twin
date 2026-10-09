@@ -3,7 +3,7 @@ date_drafted: 2026-09-29
 type: user-story
 us_id: "US-039"
 story_label: "E1"
-epic: "[[EP-08-edge-depth-table]]"
+epic: "[[EP-18-time-aware-routing-engine]]"
 status: Done
 priority: P0
 estimate: M

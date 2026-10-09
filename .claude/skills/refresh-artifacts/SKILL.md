@@ -2,8 +2,8 @@
 name: refresh-artifacts
 description: >
   Re-reads the artifacts/ Obsidian vault in this repo (t3-digital-twin) to refresh Claude's
-  understanding of current project state: active plans, open blockers, recent logs, draft or
-  in-progress PRDs, the current sprint plan, and captured lessons. Use this whenever the user asks
+  understanding of current project state: active plans, open blockers, recent logs, the
+  current sprint file, the product backlog, and captured lessons. Use this whenever the user asks
   to "catch up on the project", "refresh context", "what's the current state", "resume work",
   "what's blocked", "what's in progress", or starts a new session on this project after a gap.
   Also use it proactively at the start of a session on this repo if the vault hasn't been read yet
@@ -39,9 +39,10 @@ already settled.
    Conventions section for the current rules), and following stale conventions produces files that
    don't match what's actually there anymore.
 
-2. **Read `artifacts/TODOS.md` in full.** It's the project backlog, kept in prose with inline
-   `Status:: active` fields rather than as a Dataview-only table, so it needs a full read rather
-   than a query approximation.
+2. **Read `artifacts/TODOS.md` in full.** It shows the current sprint and the top of the product
+   backlog through Dataview queries, so approximate them by hand with the story frontmatter (see the
+   sprint step below). Read `artifacts/docs/concepts/scrum-framework.md` once per session too, since it
+   defines the process.
 
 3. **For each of Home.md's dataview-backed sections, approximate the query and read only the
    matches.** Home.md's queries filter by `status`; a plain directory listing doesn't apply that
@@ -55,21 +56,22 @@ already settled.
    - **Active plans** (`docs/claude-plan/`): read in full any page with `status: active`. Skip
      anything else in that folder.
    - **Recent logs** (`logs/`): read the two or three most recent dated files in full (sort by
-     filename, which is `YYYY-MM-DD.md`). Skip older logs unless a blocker, plan, or PRD you're
+     filename, which is `YYYY-MM-DD.md`). Skip older logs unless a blocker, plan, or epic you're
      reading directly references one by date, in which case follow that specific link.
-   - **PRDs** (`docs/prds/`): read in full any page with `status: draft`, `approved`, or
-     `in-progress`. Skip the body of a `shipped` or `abandoned` PRD; note its title only.
-   - **Sprint plans and stories** (`docs/sprints/`, `docs/stories/`): find the sprint-plan file with the
-     highest `plan_number` in its frontmatter (`SP-01-...`, `SP-02-...`, and so on; the highest number is the
-     current planning pass) and read it in full. Its story lists are queries over the story frontmatter, so
-     list the stories with `sprint` in that plan's sprints and a `status` other than `Done` or `Superseded`
-     (grep the `status:` and `sprint:` lines of `docs/stories/US-*.md`), and read those story files in full.
-     Skip a finished story's body; note its title only. Epics (`docs/epics/`) are read only when a story
-     links to one and the task needs its shared intro.
+   - **Sprint and stories** (`docs/sprints/`, `docs/stories/`): find the sprint file with the highest
+     `sprint` number in its frontmatter (`SPR-013-...`, and so on) and read it in full, including its
+     Review and Retrospective if filled. Its story list is a query over the story frontmatter, so list the
+     stories with that `sprint` and read those story files in full when their status is not `Done` or
+     `Superseded` (grep the `status:` and `sprint:` lines of `docs/stories/US-*.md`). Skip a finished
+     story's body and note its title only. The product backlog is every story with `sprint` empty and a
+     status other than `Done` or `Superseded`. Note its top few by `priority`, and read a story only when
+     the task needs it.
+   - **Epics** (`docs/epics/`): list titles and `status` only. Read an epic in full when a story links to
+     it and the task needs its goal, assumptions, or definition of done, which replaced the retired PRDs.
    - **Concepts** (`docs/concepts/`): list titles and `last_updated` dates only, don't read bodies
      by default. Concepts are standing reference, not recent activity, so they don't belong in an
      initial refresh. Read a specific concept page in full only when something else you just read
-     (an active plan, an open blocker, a draft PRD) links to it and the task at hand needs that
+     (an active plan, an open blocker, an epic) links to it and the task at hand needs that
      subsystem's detail.
    - **Lessons** (`docs/lessons/`): read all of them in full, regardless of `status`. They're
      short, checkable rules by design (the template caps them at three short sections), so the
@@ -89,9 +91,9 @@ already settled.
 ## Reporting back
 
 End with a short status summary, not a transcript of everything read. Cover, in a few sentences
-each: what's actively in progress (from Active plans and in-progress PRDs), what's blocked (from
+each: what's actively in progress (from Active plans and the current sprint), what's blocked (from
 open or monitoring blockers, one line each), what the most recent log entry actually accomplished,
-and what's drafted but not yet approved (from draft PRDs and their sprint plan, if any). A wall of
+and what the sprint goal and the top of the backlog are. A wall of
 restated file contents is not a refresh; the point is to load the state into context, not to prove
 every file was opened.
 

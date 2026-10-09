@@ -3,7 +3,7 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-019"
 story_label: "2"
-epic: "[[EP-04-timescaledb-and-flood-metrics]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 priority: P1
 estimate: S

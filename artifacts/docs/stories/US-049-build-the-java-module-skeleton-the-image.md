@@ -3,7 +3,7 @@ date_drafted: 2026-09-29
 type: user-story
 us_id: "US-049"
 story_label: "R4"
-epic: "[[EP-09-time-aware-routing-engine]]"
+epic: "[[EP-18-time-aware-routing-engine]]"
 status: Done
 priority: P0
 estimate: L

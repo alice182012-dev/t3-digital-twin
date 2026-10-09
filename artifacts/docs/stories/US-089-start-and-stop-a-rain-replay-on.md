@@ -3,11 +3,11 @@ date_drafted: 2026-10-07
 type: user-story
 us_id: "US-089"
 story_label: "2"
-epic: "[[EP-13-rain-replay-test-environment]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Reviewed
 priority: P1
 estimate: M
-sprint: 12
+sprint: 
 subsystem: rain-replay
 related: ["[[EP-13-rain-replay-test-environment]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 title: "Start and stop a rain replay on the server with one command each"

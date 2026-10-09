@@ -3,7 +3,7 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-002"
 story_label: "1"
-epic: "[[EP-01-frontend-depth-features]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Done
 priority: P0
 estimate: M

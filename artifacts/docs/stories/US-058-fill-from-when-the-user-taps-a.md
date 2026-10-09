@@ -3,7 +3,7 @@ date_drafted: 2026-09-24
 type: user-story
 us_id: "US-058"
 story_label: "5"
-epic: "[[EP-05-mockup-screen-coverage]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Done
 priority: P2
 estimate: S

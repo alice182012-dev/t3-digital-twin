@@ -3,8 +3,9 @@ date_drafted: 2026-10-08
 type: user-story
 us_id: "US-093"
 story_label: "4"
-epic: "[[EP-14-routing-paper-experiments]]"
+epic: "[[EP-20-routing-paper-experiments]]"
 status: Done
+kind: spike
 priority: P2
 estimate: S
 sprint: 12

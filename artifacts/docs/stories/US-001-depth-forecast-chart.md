@@ -3,6 +3,7 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-001"
 us_ids: ["US-001"]
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Done
 subsystem: floodmap-frontend
 sprint: 3

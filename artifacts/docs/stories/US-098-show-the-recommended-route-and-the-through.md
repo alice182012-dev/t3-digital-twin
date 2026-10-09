@@ -3,11 +3,11 @@ date_drafted: 2026-10-09
 type: user-story
 us_id: "US-098"
 story_label: "2"
-epic: "[[EP-16-precaution-depth-routing]]"
+epic: "[[EP-18-time-aware-routing-engine]]"
 status: Not started
 priority: P2
 estimate: S
-sprint: 14
+sprint: 
 subsystem: routing, frontend
 related: ["[[EP-16-precaution-depth-routing]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Show the recommended route and the through-water option in the app"

@@ -3,11 +3,11 @@ date_drafted: 2026-10-07
 type: user-story
 us_id: "US-085"
 story_label: "10"
-epic: "[[EP-11-frontend-mockup-recheck]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Not started
 priority: P2
 estimate: S
-sprint: 13
+sprint: 
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Time out a route request in the client"

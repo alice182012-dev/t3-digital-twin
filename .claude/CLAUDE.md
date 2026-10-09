@@ -177,138 +177,84 @@ one home of its plan (see "Write each fact once"). Update a plan file as the pla
 matching plan first when resuming that topic. When the work is done, set the plan's `status` to `done` and move
 it to `artifacts/archive/plans/`, so sessions stop reading it.
 
-## User stories and sprint planning
+## Scrum: sprints, epics, and stories
 
-Once a PRD's goals are settled, break it into user stories, one file per story under
-`artifacts/docs/stories/` (`US-nnn-<slug>.md`), following `artifacts/templates/user-story.md` and
-`artifacts/docs/templates/user-story-types.md` for shape selection (Simple,
-Epic, Thematic, SAFe).
+Adopted 2026-10-10 (`D-024` in `artifacts/docs/decisions/decision-log.md`). The full process, with the
+events and the Definition of done, is in `artifacts/docs/concepts/scrum-framework.md`. This section holds
+the rules that every session follows. The sources are Atlassian's Scrum guides, kept in
+`artifacts/docs/concepts/project-management/`.
 
-1. Default to the Epic shape for a PRD-derived feature area: one epic file
-   under `artifacts/docs/epics/` (`EP-nn-<slug>.md`) that links to its stories,
-   and one story file per story, each still a story you could pull out and
-   start on its own.
-2. Every story file carries `priority`, `estimate`, `sprint`, `status`, and `epic`
-   in its frontmatter. This is a deliberate extension on top of
-   `user-story-types.md`'s documented shapes, which have no per-story scheduling
-   field outside Thematic. The story file is the only place these values are
-   recorded. Leave `sprint` empty for a story still in the backlog.
-3. A sprint plan has four sprints (rule 10). Real dependencies decide which of
-   the four a story lands in, not how many sprints there are. Read each source
-   PRD's Dependencies and assumptions and Definition of done sections, and let
-   a story that reads another story's output land in a later sprint than the one
-   that produces it. A story with no unresolved dependency can go in the
-   earliest sprint that has room.
-4. A story whose PRD marks its data source or design as an open risk (its
-   Risks and open questions section) gets no sprint number and stays in a
-   backlog table instead, cross-linked to the blocking risk. Scheduling a
-   blocked story just to fill a sprint hides its real state.
-5. Write one sprint-plan file per planning pass under
-   `artifacts/docs/sprints/`, holding the goal and dates of each sprint, a "why
-   these four sprints" explanation, and a Risks table. Each sprint section lists
-   its stories with a Dataview query over the story frontmatter
-   (`WHERE sprint = N`), never by hand. Update the plan, don't replace it, when
-   stories are added to the sprint it already covers. Start a new planning pass
-   (new sprints, not an addition to the current one) as a new file instead:
-   `SP-nn-<slug>.md` with `plan_number: nn`, so multiple plans can coexist as a
-   dated record instead of overwriting one another.
-6. Invoke the `product-management:sprint-planning` skill for the planning
-   methodology (capacity framing, sprint goal, risk table shape) when
-   creating or revising a sprint plan. This project has no connected team
-   roster or calendar, so capacity stays qualitative (relative estimate,
-   dependency order), not tracked hours or points per person, until real
-   velocity data exists.
-7. A user story's `related` frontmatter links back to its epic and its source
-   PRD. A sprint plan's own `related` links every epic file it schedules.
-8. A story reaches `Done` only with evidence and details, recorded in its story
-   file under "Evidence and details". The sprint plan shows the status through its
-   query, so nothing else is edited. A story without both stays
-   `Reviewed` (built and read through, acceptance check not yet passed) or
-   `Blocked`.
-   - **Evidence** is a screenshot of that story working, saved under
-     `artifacts/docs/stories/evidence/` and embedded with `![[name.png]]`.
-     A UI story gets a screenshot of the running UI. A backend story with no
-     UI gets a screenshot of the real output: the endpoint's response in a
-     browser, or the verbatim command output rendered to an image whose
-     caption says it is rendered output and gives the capture time and host.
-     Capture it in the environment the acceptance criteria name. When they say
-     server, a screenshot from a laptop does not count.
-   - **Details** are a numbered list of a few plain sentences: 1. what was
-     built, 2. how, 3. why, 4. what it changes for dependent stories or open
-     blockers, and more numbered points if needed. Write it as a real numbered
-     list in the story file.
-   - Take the screenshot before changing the status. If the check fails, log
-     the failure as a blocker and leave the story off `Done`.
-9. `TODOS.md` follows the sprint plan strictly. Any new fix or feature, including
-   one that comes up mid-task, is first written as a story and given a sprint in
-   the current sprint plan (or in a new plan if it starts a new pass), by setting
-   `sprint` in its story file. Only after that does it appear in `TODOS.md`,
-   and its item carries a `**Sprint:**` line linking to the plan. Never add a
-   `TODOS.md` item directly, and never leave a story unscheduled without a
-   Status history entry that says what blocks it (see rule 4). A bug found while
-   working goes to a blocker page and a story with a sprint first, and `TODOS.md`
-   second. Ask which sprint if the right one is unclear, instead of guessing.
-   `TODOS.md` follows the template the user set on 2026-09-30, with no extra
-   text. It has three sections: the current sprint, a "Backlog" (the unfinished
-   items carried over from the sprint before), and "Blockers for the next
-   sprint". Items of later sprints stay in the sprint plans. Each story is a
-   heading `### <Status> - US-nnn <title>` (Active or Done), with no `Status::`
-   line and no item numbers. The current-sprint heading runs from the
-   sprint's actual start date to its planned end date. When an item finishes, change the status in its
-   heading in the same pass that moves its story to `Done`, and add a one-line
-   result. Done items stay until the next day's rollover, then they are deleted.
-   When a sprint ends, move its unfinished items to the Backlog.
-10. A sprint is one week, and a sprint plan covers four sprints, so four weeks.
-   Every story in a plan lands in one of those four sprints. Work that does not
-   fit in the four weeks goes to the next plan (`SP-nn-<slug>.md`, whose sprint
-   numbers continue where the last plan stopped) or, if a risk blocks it, to a
-   backlog table with the blocking reason (rule 4). Never add a fifth sprint to a
-   plan. Size each sprint to what fits in one week, by relative estimate until
-   real velocity exists (rule 6). When a sprint looks too full, move rows to a
-   later sprint or the next plan and record the move in the plan's Status
-   history. Ask before moving a row the user placed.
-   Every plan records `start_date` and `end_date` in its frontmatter, starts on
-   a Monday, and gives each sprint a `**Dates:**` line (`YYYY-MM-DD to
-   YYYY-MM-DD`, Monday to Sunday). The next plan starts on the Monday after the
-   last sprint ends, so sprint dates never overlap or leave a gap.
-   When a sprint starts or finishes, record its actual date in the timeline table
-   of its sprint plan (the "Actual start" and "Actual end" columns) and add a
-   Status history line. The planned "Start" and "End" columns do not change.
-11. A blocker found in a sprint is settled before a new sprint starts, by whether
-   it blocks further build:
-   - If it blocks build in the next sprint, fix it first. Do not touch a story of
-     the next sprint until the blocker is `resolved`.
-   - If it does not block further build, spin a subagent to fix it and continue
-     with the next sprint in the meantime. Give the subagent its own worktree and
-     a brief that points to the blocker page. Review its diff before it lands.
-   Say which case a blocker is, and why, on the blocker page and in the sprint
-   plan's Status history, when it is logged. A blocker in a sprint that is
-   unscheduled or not yet started stays with rule 9 (ask which sprint).
-12. Every user story has one global ID, `US-nnn`, assigned once from the next free
-   number in the Conventions of `artifacts/Home.md`, and never reused or renumbered.
-   The ID starts the story's file name (`US-094-archive-results-3di-nc-and-a-run.md`),
-   is the `us_id` in its frontmatter, and heads its `TODOS.md` item. A story keeps
-   its ID when it changes sprint, and the parts of a split story get new IDs. Take
-   the number before writing the story, and raise the next free number in `Home.md`.
-   The other document kinds are coded the same way: `EP-nn`, `SP-nn`, `PRD-nnn`,
-   `BL-nnn`, and `L-nnn`, each at the start of its file name, with the next free
-   number in `Home.md`. Link a renamed document with its full file name and a short
-   alias.
+1. **Roles.** The user is the product owner. They order the backlog, write the sprint goal, and accept or
+   reject each `Done`. Claude sessions are the development team. Claude also does the duties of a Scrum master:
+   keep the events on time and raise impediments as blocker pages.
+2. **Sprint.** A sprint is one week, Monday to Sunday, and the next sprint starts the next Monday. Its dates
+   and number never change after it starts. Sprint planning is on Monday and takes 2 hours at most. The review
+   and the retrospective are on Sunday. Refinement of the next backlog follows the review.
+3. **One sprint at a time.** A story gets a `sprint` number only at sprint planning, for the sprint that is
+   being planned. Never assign a story to a future sprint. A story with `sprint` empty and a status other than
+   `Done` or `Superseded` is in the product backlog, ordered by `priority`. Ask the product owner when the
+   pick is unclear, and do not guess.
+4. **Files.** A story is `docs/stories/US-nnn-<slug>.md`, from `templates/user-story.md`. An epic is
+   `docs/epics/EP-nn-<slug>.md`, from `templates/epic.md`, and it holds the goal, the reason, the assumptions,
+   and the definition of done that a PRD held. A sprint is `docs/sprints/SPR-nnn-<slug>.md`, from
+   `templates/sprint.md`, where nnn is the sprint number. PRDs and four-sprint plans are retired and live in
+   `archive/`. The hierarchy is theme, then epic, then story. Keep epics few.
+5. **Story fields.** A story has `us_id`, `title`, `epic`, `kind` (`story`, `spike`, or `bug`), `status`,
+   `priority`, `estimate` (XS=1, S=2, M=3, L=5 points), and `sprint`. Statuses are `Not started` (in the
+   backlog), `Ready`, `In progress`, `Reviewed`, `Blocked`, `Done`, and `Superseded`. A story is `Ready` when
+   its acceptance check, estimate, and dependencies are written and it is not rated L. Split a story rated L
+   before it enters a sprint.
+6. **Spikes.** An experiment or a proof is a story with `kind: spike`, a question, and a timebox of one sprint
+   or less. It ends with an answer in the story and a `D-nnn` decision. It does not need a UI screenshot. An
+   idea in `raw/ideas/` stays read-only. The spike links it in `source_ideas` and works in `marie-curie/`.
+7. **Definition of done.** A story reaches `Done` only when the acceptance check passes in the environment it
+   names, tests pass, the concept page it changes is updated with `last_updated` bumped, and the story file
+   holds evidence and a numbered details list. Evidence is a screenshot under
+   `artifacts/docs/stories/evidence/`, embedded with `![[name.png]]`. A UI story gets a screenshot of the
+   running UI. A backend story with no UI gets a screenshot of the real output, with a caption that gives
+   the capture time and host. When the acceptance check says server, a screenshot from a laptop does not
+   count. A spike records its measured result instead. Take the screenshot before changing the status. If the
+   check fails, log the failure as a blocker and leave the story off `Done`. A story that is not `Done` at the
+   review leaves the sprint: clear `sprint` and estimate it again.
+8. **Mid-sprint work.** A new fix, feature, or bug found during a sprint is written as a story in the backlog,
+   with `sprint` empty. It enters the sprint only if it threatens the sprint goal, and the product owner
+   decides what leaves. The sprint goal does not change.
+9. **`TODOS.md`** shows the current sprint and holds no state of its own. Never add an item by hand. Set the
+   story's `sprint` at planning, and the query shows it.
+10. **Review and retrospective.** On the last day, fill the Review and Retrospective sections of the sprint
+    file: the goal met or not, the points delivered, the stories that left, then what worked, what did not, and
+    one action. Check the previous action first. An action becomes a story, a rule change, or an `L-nnn`
+    lesson. Record the actual dates only in the sprint file's frontmatter, since a sprint's dates do not move.
+11. **Velocity.** `artifacts/Velocity.md` sums the points of `Done` stories by sprint. Plan a sprint from the
+    last three values. Capacity stays a forecast in points, not hours per person.
+12. **A blocker is an impediment.** A blocker found in a sprint gets a blocker page the same day, from
+    `templates/blocker.md`. Say on the page whether it blocks the sprint goal, and why. If it does, fix it
+    first and put it first in the daily log. If it does not, it waits for planning, or a subagent in its own
+    worktree fixes it while the sprint continues. Review the subagent's diff before it lands.
+13. **IDs.** Every document has one code at the start of its file name: `US-nnn` (story), `EP-nn` (epic),
+    `SPR-nnn` (sprint, equal to the sprint number), `BL-nnn` (blocker), `L-nnn` (lesson), and `D-nnn`
+    (decision). A code is assigned once from the next free number in the Conventions of `artifacts/Home.md`,
+    never reused, and never renumbered. A story keeps its ID when it changes sprint, and the parts of a split
+    story get new IDs. Take the number before writing the file, and raise the next free number in `Home.md`.
+    Link a renamed document with its full file name and a short alias.
 
-## Verification discipline for PRDs and cross-referencing documents
+The rules of the old four-sprint plan (numbered 1 to 12 before 2026-10-10) are retired. Old stories and
+blockers that cite "rule 8" or "rule 11" mean those rules and stay as written.
 
-Rules learned from mistakes made while drafting this project's PRDs and user stories. Each links
+## Verification discipline for epics and cross-referencing documents
+
+Rules learned from mistakes made while drafting this project's PRDs, epics, and user stories. The PRD rules now apply to the epic file, which took over the PRD's sections. Each links
 to its full incident under `artifacts/docs/lessons/`; the lesson page holds the "why", this list is
 the checkable rule to apply going forward.
 
 - Before ruling a data store out as a source for something, read the code that writes into it, not
   just a schema summary or the query that happens to read it today. See
   [[lessons#L-009|L-009]].
-- Record a user's short stated answer as a PRD Decision only after checking it actually resolves
+- Record a user's short stated answer as a decision (in an epic or the decision log) only after checking it actually resolves
   the question that was asked, not by transcribing it as-is. See
   [[lessons#L-008|L-008]].
-- When a PRD's Goals section changes scope, re-read Problem, Non-goals, Dependencies and
-  assumptions, Definition of done, and Rollback for sentences that assumed the old scope. See
+- When an epic's Goal changes scope, re-read Why, Dependencies and
+  assumptions, Definition of done, and Risks for sentences that assumed the old scope. See
   [[lessons#L-005|L-005]].
 - After editing a document, grep the vault for `[[wikilinks]]` to it and check whether every
   document that cross-references it still holds true. See
@@ -326,7 +272,7 @@ the checkable rule to apply going forward.
 ## Write each fact once
 
 Added 2026-10-10 after a day in which one decision was copied into six files. A fact has one home, and every
-other file links to it. This applies to the vault below and to rules 8, 9, and 10 above.
+other file links to it. This applies to the vault below and to the Scrum rules above.
 
 | Fact | Its one home |
 | --- | --- |
@@ -335,11 +281,13 @@ other file links to it. This applies to the vault below and to rules 8, 9, and 1
 | A blocker's state and attempts | the blocker page |
 | What a subsystem is and how it works | the concept page |
 | The sprint of a story | the story's `sprint` field, read by queries |
+| A sprint's goal, review, and retrospective | the sprint file |
+| An epic's goal and definition of done | the epic file |
 | A day's server facts, commands, and pickup list | that day's log |
 
 1. A story moving to `Done`, `Reviewed`, or `Blocked` is written in its story file only. The Status history of an
-   epic or a sprint plan records plan-level changes only: a story added, moved to another sprint, split, or
-   dropped, a sprint started or finished, and the blocker case of rule 11. The Dataview queries show the rest.
+   epic or a sprint file records plan-level changes only: a story added, split, moved to another epic, or
+   dropped, a sprint started or finished, and the blocker case of rule 12. The Dataview queries show the rest.
 2. A daily log is an index. Write one line per event with a link to the file that holds the detail. Do not
    copy numbers, tables, or details that a story, blocker, or decision already holds. Keep in the log only what
    has no other home.
@@ -352,10 +300,8 @@ other file links to it. This applies to the vault below and to rules 8, 9, and 1
 ## artifacts/ is an Obsidian vault, maintained as a wiki
 
 `artifacts/` is a working knowledge base, not a folder of one-off notes. See
-`artifacts/Home.md` for the index and conventions. The project backlog lives
-at `artifacts/TODOS.md`, inside the vault (moved there from the repo root on
-2026-09-22 so Obsidian, which cannot see outside its own vault folder, can
-actually index it). Five kinds of files live here, and each has a different
+`artifacts/Home.md` for the index and conventions. The product backlog is the set of
+story files with no sprint. `artifacts/TODOS.md` shows the current sprint by query. Five kinds of files live here, and each has a different
 maintenance rule:
 
 - **`artifacts/raw/`** is the user's own source material: architecture notes,
@@ -400,8 +346,8 @@ maintenance rule:
   blocker. Start a new one from `artifacts/templates/blocker.md`. It holds
   Description, Why this matters, one `### Approach N` subsection per attempt,
   Decision and explanation, and optionally Concerns; a concept page or
-  `TODOS.md` item links to the blocker page for this detail instead of
-  repeating it, and the `TODOS.md` item gets a `**Blocker tracking:**` line
+  story links to the blocker page for this detail instead of
+  repeating it, and the story gets a `**Blocker tracking:**` line
   pointing back. `status` (`open`/`monitoring`/`resolved`/`wont-fix`),
   `date_closed`, `approaches_tried`, and `approaches_remaining` get **edited
   in place** as the blocker's state changes, unlike a log entry, which is

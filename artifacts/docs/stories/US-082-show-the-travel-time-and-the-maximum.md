@@ -3,11 +3,11 @@ date_drafted: 2026-10-07
 type: user-story
 us_id: "US-082"
 story_label: "7"
-epic: "[[EP-11-frontend-mockup-recheck]]"
+epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Not started
 priority: P3
 estimate: S
-sprint: 15
+sprint: 
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Show the travel time and the maximum depth on each route tab"

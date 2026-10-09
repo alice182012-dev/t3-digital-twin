@@ -3,7 +3,7 @@ date_drafted: 2026-10-06
 type: user-story
 us_id: "US-071"
 story_label: "C1"
-epic: "[[EP-10-routing-first-consumer]]"
+epic: "[[EP-18-time-aware-routing-engine]]"
 status: Done
 priority: P1
 estimate: M

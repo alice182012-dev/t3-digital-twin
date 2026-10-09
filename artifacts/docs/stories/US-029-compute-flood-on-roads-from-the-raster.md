@@ -3,7 +3,7 @@ date_drafted: 2026-09-24
 type: user-story
 us_id: "US-029"
 story_label: "3"
-epic: "[[EP-06-raster-first-pipeline]]"
+epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
 status: Done
 priority: P0
 estimate: L

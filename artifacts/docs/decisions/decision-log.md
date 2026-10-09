@@ -380,3 +380,15 @@ is the maximum.
 - **Affects:** `US-100` (`Done`), `US-093` (option A stays the comparison reference, and its sticky-longer rate is the price of this safety), [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]], and the paper's closure rule. No code changes.
 - **Revisit if:** the real-graph cost in `US-093` shows that sticky loses routes a traveller needs, or the interval check of alternative 2 is built and proven.
 
+
+## D-024: Adopt the Scrum framework and retire the four-sprint plans and the PRDs
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** The project follows Scrum with one-week sprints (Monday to Sunday), as described in [[scrum-framework]]. The user is the product owner. Claude sessions are the development team. A sprint is picked at sprint planning, one sprint at a time. Each sprint ends with a review and a retrospective. Velocity comes from the points of `Done` stories ([[Velocity]]). The 16 epics become 4 (`EP-17` to `EP-20`). PRDs are retired, and each epic holds its goal, reason, assumptions, and definition of done. Spikes (`kind: spike`) hold experiments, and they end with an answer and a decision.
+- **Why:** The old rules planned four sprints ahead and put stories in them by dependency. In practice sprints 5 to 12 started and ended early, so a sprint no longer meant a week, and there was no sprint review, no retrospective, no velocity, and several places that held the same fact. Atlassian's Scrum guide plans one sprint at a time from an ordered backlog, keeps the length fixed so estimates improve, and puts review and retrospective inside the sprint.
+- **Alternatives:** (1) Keep the four-sprint plans and add a review and a retrospective. It keeps the plan that the dates already broke. (2) Kanban, with no sprints. The project has a goal per week and an evidence rule per story, which suit sprints better. The user chose full Scrum.
+- **Evidence:** the readings in `docs/concepts/project-management/`, and the user's answers on 2026-10-10: "ok" to restart the calendar at a Monday, "fresh" for Sprint 13, and "yes and retire the prds" for the epics.
+- **Affects:** `.claude/CLAUDE.md` (the rules for sprints, stories, and PRDs), `Home.md`, `TODOS.md`, the templates (`sprint.md` and `epic.md` are new, `prd.md` is archived), `archive/prds/`, `archive/epics/`, `archive/sprints/`, every story's `epic` and `sprint` fields, and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|Sprint 13]], which starts on 2026-10-12.
+- **Revisit if:** two sprints in a row end below half of the forecast, or the product owner wants a different sprint length. Atlassian advises trying every event for two sprints before changing them.

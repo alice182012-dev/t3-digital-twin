@@ -3,11 +3,12 @@ date_drafted: 2026-10-08
 type: user-story
 us_id: "US-091"
 story_label: "2"
-epic: "[[EP-14-routing-paper-experiments]]"
+epic: "[[EP-20-routing-paper-experiments]]"
 status: In progress
+kind: spike
 priority: P1
 estimate: M
-sprint: 12
+sprint: 
 subsystem: routing, paper
 related: ["[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
 title: "Measure how often a single-timestep route meets a closed road on arrival"
