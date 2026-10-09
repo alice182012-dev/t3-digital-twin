@@ -9,6 +9,7 @@
 4. `US-094` waits for a real Tomorrow.io forecast above 5 mm/h. `US-095` and the `netcdf_values` drop wait for it, and the drop needs your explicit go.
 5. Decide `US-069`: accept the 0-hour and 63-hour readings, or take both readings on time in the second replay (item 1 does the second).
 6. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`), best with the DAG running on real rain. The flag is off now.
+7. Decide between option A and sticky closure (`US-100`). `US-099` is done: option A on the real graph is exact for 0.475 of the searches at a budget of 3,000,000 expansions (max 27.6 s per search). `US-100` needs your call on what each closure rule means for a vehicle already on the route.
 
 Done on 2026-10-09 and removed from this list: the `graphhopper` rollout for `US-096` and `US-097`, the format-2 graph export (copied to `D:/airflow_new_data/data/mapping/graph_export`, blocker [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]] `resolved`), and the test for a via request with a shallow road (`f555e71`, run 37889625407). Records are in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] and the log of 2026-10-09.
 
@@ -131,6 +132,36 @@ Done on 2026-10-09 and removed from this list: the `graphhopper` rollout for `US
 **Blocker tracking:** [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]].
 
 **Status note:** `In progress`. The arrival-only search (`scripts/routing_reference/arrival_only.py`, label-correcting, `exact` flag) and the per-pair comparison with sticky closure (`scripts/routing_experiments/sticky_cost.py`) are merged on `modular` (`fc14d81` to `ae824ea`, 24 tests, a seeded 300-graph property test shows sticky never ends earlier than arrival-only). The estimate stays S. The real run waits for the second replay (D-020) and the same graph-with-nodes gap as `US-092`.
+
+### Done - US-099 Run the simple-path arrival-only search on the real graph and record its exact rate and runtime
+
+**Result:** option A is exact for 114 of 240 searches (0.475) at a budget of 3,000,000 expansions, 0.08 s for an exact search and up to 27.6 s for an inexact one. Evidence: `us-099-option-a-real-graph-output.png`.
+
+**What:** Run option A of `BL-027` (`marie-curie/arrival_only_simple_path.py`) on the real graph with the 3 copied replay tables. The result file records, for each vehicle limit, the exact rate, the time per pair, and the pairs that ran out of budget. Only then do `BL-027` and its plan change, citing the grid's 654 cases and the 94 and 72 counts as grid evidence ([[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]] Story 5).
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** the option A search and its test (written in `marie-curie/`), `real_graph.py`, and the tables in `marie-curie/edge_tables_replay_2026-10-09/`.
+
+**Sprint:** 12, [[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]] Story 5 (US-099), in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
+
+**Blocker tracking:** [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]].
+
+**Status note:** `Done`. `BL-027` (approach 3) and the plan are updated, citing the grid's 654 scenarios, 94 earlier-arrival cases, and 72 inexact cases as grid evidence. The slow search on blocked pairs is recorded in `BL-027` and feeds `US-100`, so no separate blocker was opened.
+
+### Active - US-100 Decide between option A closure and sticky closure for a vehicle already on the route
+
+**What:** Read what each closure rule means for a vehicle already on the route, then record the chosen rule. On the grid, sticky closure has no route in 128 cases where option A has one and arrives later in 64. If option A can send a vehicle into a segment that floods while it is still in it, sticky closure is the safer default ([[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]] Story 6).
+
+**Effort:** XS
+**Priority:** P2
+**Depends on:** `US-099` for the decision. The reading of the two rules can start now.
+
+**Sprint:** 12, [[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]] Story 6 (US-100), in [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
+
+**Blocker tracking:** [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]].
+
+**Status note:** `Not started`. This is a product choice, not a correctness issue, and the call is yours.
 
 ## Backlog
 
