@@ -42,6 +42,24 @@ The image starts from the stock image's digest and starts GraphHopper with `run-
 - `TimeAwareDijkstra` is a Dijkstra search whose labels carry the weight and the time spent. A label is dropped only when another label at the node is no heavier and no later, which keeps it exact when weight and time differ.
 - `TimeAwareRouter` (built by `TimeAwareGraphHopper.doCreateRouter`) uses it for a request with the hint `td_departure` (epoch seconds) on a profile with the hint `td_limit_cm`. Any other request is routed as before. A time-aware request skips LM and CH. The table comes from `TimeAwareGraphHopper.setTableSupplier`, which `US-052` connects to `LatestTableSource`.
 - `StickyChecker` re-walks a route and lists every road entered while closed.
+
+### Two-option plan (decision D-021)
+
+A time-aware request is planned with the profile's hard limit first. The router then re-walks that route against the precaution depth `P = ceil(fraction * limit)`, in whole cm, using the same window start, departure, and 10-minute margin. The response has these shapes:
+
+- No road of the route reaches `P`: one path, `td.kinds` is `recommended`. No second search runs.
+- A road reaches `P` and a second search under `P` finds a route: two paths. Path 0 is the route under `P`, kind `recommended`. Path 1 is the limit route, kind `through_water`. `td.kinds` is `recommended,through_water`.
+- A road reaches `P` and no route exists under `P`: one path, the limit route, `td.kinds` is `through_water`.
+
+The fraction is the profile hint `td_precaution_fraction`, a number above 0 and at most 1, read beside `td_limit_cm`. It is 0.5 when the profile has no such hint. A value outside that range gives a `fallback` answer that names the profile. A request cannot set it.
+
+Response hints added to `td.status`, `td.run`, `td.departure`, and `td.last_step`:
+
+- `td.kinds`: a comma list with one kind per path, in path order.
+- `td.limit_cm`: the vehicle's limit.
+- `td.precaution_cm`: `P` as used, in whole cm.
+
+An answer with `td.status` `fallback`, an error answer, and a request without `td_departure` carry none of the three. `td.status` is `unknown` when the recommended path (path 0) ends after the last forecast step.
 - `scenario-check.sh` runs `ScenarioReport` on the server: the four scenarios of the blocker's test table, for the motorbike, car, truck, and foot profile, with and without a detour (32 runs).
 
 ## Export the graph's edges
