@@ -32,3 +32,7 @@ Dependencies: `US-091` (its harness and its pair set), so the two stories sit in
 when the first has a working harness. If the harness slips, this story moves to Sprint 13 of [[SP-04-frontend-recheck|sprint-plan-4]]
 (the rule is in the Risks table of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]).
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-09, active.** The real-graph runner `scripts/routing_experiments/real_run.py` (`7049880`) ran the limit sweep on the 3 copied tables of the first replay: 30 node pairs inside the model border, 21 (table, step) settings, graph hash `8c13d884`. The result file is `marie-curie/real_run_replay1_seed1.json`. Plan limits 20, 30, 35, and 40 cm kept 90 to 97 percent of pairs routable. In 20 of the 21 settings the conclusion differs from the baseline setting, so the three old tables are too few and too dry to settle it. The story stays `In progress` until the tables of the second replay exist.

@@ -35,3 +35,7 @@ Dependencies: `US-047` (the reference), `US-050` (the engine, for a cross-check 
 pairs), the depth tables of the 12-hour replay (rule 5), and the pair sampler of `US-091` if it is ready. The sampler
 can be copied if not.
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-09, active.** The real-graph runner ran the sticky versus arrival-only comparison on the 3 copied tables: all 2,520 comparisons (30 pairs, 21 settings, 4 vehicles) came back `INEXACT`. The arrival-only search in `scripts/routing_reference/arrival_only.py` keeps distinct arrival times per node, and on a graph where every road is open both ways the cycles fill the cap of 16 labels per node before the destination is reached. Caps of 64 and 256 stay inexact and take 7 s and 35 s per pair. No share of "no route" or "longer route" is reported. Fixing it needs a decision on the reference (for example, allow only simple paths, or add a dominance rule), which changes what "arrival-only" means in the paper. The story stays `In progress`.
