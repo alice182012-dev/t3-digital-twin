@@ -17,6 +17,7 @@ If a session ends, the DAG keeps running and the standing-flood rule never stops
 3. Sunday: write the US-091 result and the decision in `decision-log.md`, take the screenshots, fill the evidence and details of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], and resolve `BL-028` if the 12:13 reading holds.
    [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h. Its test-rain skip is already logged (`2b_archive_results`, slot 04:00).
 4. Monday 2026-10-12, planning: confirm the picks, rewrite the story text of US-102, US-091, US-089, and US-094, and split US-094. The owner accepts each `Done` at the review.
+5. After the stop in step 2: pull the branch `us-103-flood-tiles-dag` on the server, unpause `flood_tiles`, and run the acceptance check of [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] ([[decision-log|D-027]]).
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 13, 2026-10-12 to 2026-10-25

@@ -62,7 +62,7 @@ On the server, after the replay has stopped and the change is pulled:
   Written during the replay.
   The code is built on a branch on the Mac and is not pulled to the server until the replay stops, since an edit to `flood_mapping_dag.py` changes the DAG under test.
 - **2026-10-10, code written on branch `us-103-flood-tiles-dag`.**
-  It decided the open design choice: an Asset `flood_depth_files`, emitted by the new task `3b_publish_depth_files`, which runs after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`.
+  It decided the open design choice ([[decision-log|D-027]]): an Asset `flood_depth_files`, emitted by the new task `3b_publish_depth_files`, which runs after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`.
   The PostGIS raster was not used as the input, because the tile code reads `.tif` files.
   The unit tests pass on the Mac.
   The server acceptance check below is still open.

@@ -416,3 +416,15 @@ is the maximum.
 - **Evidence:** the user's instruction on 2026-10-10, and the sprint-planning guide in `docs/concepts/project-management/`.
 - **Affects:** `.claude/CLAUDE.md` (rules 2, 3, and 11), `scrum-framework`, `Velocity`, `Home.md`, `TODOS.md`, `templates/sprint.md`, and `SPR-013`.
 - **Revisit if:** two sprints in a row end below half of the forecast, or the user wants another length.
+
+## D-027: Run the flood tile build as its own DAG, started by an asset that announces the depth folder
+
+- **Date:** 2026-10-10
+- **Status:** active. The code is on the branch `us-103-flood-tiles-dag` and is not on the server yet.
+- **Decided by:** the user for the split ("separate the visualization part into a separate DAG", as prep for a future 3D view and a building cost estimate). The development team chose the input.
+- **Decision:** Task `9_build_flood_tiles` leaves `flood_mapping_full` and becomes the one task of the DAG `flood_tiles`. A new task `3b_publish_depth_files` emits the asset `flood_depth_files` with `run_ts` and `depth_dir` in the event's `extra`, after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`. `flood_tiles` runs on that asset. When events fold into one run, every run in them gets tiles. The age-based cleanup of the local result and depth folders stays in `publish_run`, so `flood_tiles` owns it, and a later consumer must not delete the depth folder. No 3D view and no cost estimate are built yet.
+- **Why:** A tile failure or a tile code change no longer touches the simulation DAG, and a new consumer of the depth rasters is its own DAG on the same asset, as `routing_adapter` is on `flood_depth_raster_tile`. A failure of `flood_tiles` does not turn a core run red.
+- **Alternatives:** (1) Read the PostGIS raster `flood_depth_raster_tile` and reuse `FLOOD_DEPTH_RASTER`. It drops the shared local folder, but the tile code reads `.tif` files, so it needs a new reader and a rewrite of the tested cut. (2) One shared "visualization" DAG for tiles, 3D, and cost. It couples three consumers that have different inputs and outputs.
+- **Evidence:** [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] and the tests `test/test_flood_tiles_dag.py` and `test/test_flood_mapping_dag_graph.py`. The server check is open.
+- **Affects:** `dags/flood_mapping_dag.py`, `dags/flood_tiles_dag.py`, `dags/core_assets.py`, `dags/core_paths.py`, `minio-flood-extent-pipeline`, `3di-simulation-orchestration`, `core-output-contract`, and the README.
+- **Revisit if:** a second consumer of the depth files needs the files after the 24-hour cleanup, or the worker and the tile build move to different hosts.
