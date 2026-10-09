@@ -3,8 +3,9 @@
 The export is two files, written by ExportEdges in java/time-aware-routing/ (US-039):
 
 - graph.json holds graph_hash, edge_count, node_count, and the GraphHopper commit.
-- edges.csv has the header edge_id,wkt and one row per edge, in edge id order. wkt is a LINESTRING in
-  EPSG:4326, longitude first.
+- edges.csv has the header edge_id,wkt (format 1) or edge_id,wkt,base_node,adj_node (format 2) and one
+  row per edge, in edge id order. wkt is a LINESTRING in EPSG:4326, longitude first. Only the first two
+  columns are read.
 
 Airflow cannot run the export, because it runs in the GraphHopper image. An operator writes the two
 files into a folder that Airflow reads. load_graph_edges copies them into graph_edge when the hash
@@ -21,7 +22,7 @@ from typing import Iterator
 
 from psycopg2.extras import execute_values
 
-FORMAT_VERSION = 1
+SUPPORTED_FORMAT_VERSIONS = (1, 2)
 _REQUIRED_KEYS = ("format_version", "graph_hash", "edge_count", "node_count")
 _PAGE_SIZE = 2000
 
@@ -55,9 +56,10 @@ def read_export(export_dir) -> GraphExport:
     for key in _REQUIRED_KEYS:
         if key not in meta:
             raise GraphExportError(f"{meta_path} has no {key}")
-    if meta["format_version"] != FORMAT_VERSION:
+    if meta["format_version"] not in SUPPORTED_FORMAT_VERSIONS:
         raise GraphExportError(
-            f"{meta_path} has format_version {meta['format_version']}, this code reads {FORMAT_VERSION}"
+            f"{meta_path} has format_version {meta['format_version']}, "
+            f"this code reads {', '.join(map(str, SUPPORTED_FORMAT_VERSIONS))}"
         )
     return GraphExport(
         graph_hash=str(meta["graph_hash"]),
@@ -74,10 +76,10 @@ def iter_edges(export: GraphExport) -> Iterator[tuple[int, str]]:
     with open(export.edges_csv, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader, None)
-        if header != ["edge_id", "wkt"]:
-            raise GraphExportError(f"{export.edges_csv} has the header {header}, expected ['edge_id', 'wkt']")
+        if header is None or header[:2] != ["edge_id", "wkt"]:
+            raise GraphExportError(f"{export.edges_csv} has the header {header}, expected it to start with ['edge_id', 'wkt']")
         for row in reader:
-            if len(row) != 2:
+            if len(row) != len(header):
                 raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} has {len(row)} columns")
             edge_id = int(row[0])
             if edge_id != expected_id:

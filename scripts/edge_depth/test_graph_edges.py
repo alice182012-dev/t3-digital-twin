@@ -40,7 +40,13 @@ def write_export(directory, edges=EDGES, graph_hash="a" * 64, edge_count=None, *
     }
     meta.update(overrides)
     (directory / "graph.json").write_text(json.dumps(meta, indent=2) + "\n")
-    lines = ["edge_id,wkt"] + [f'{edge_id},"{wkt}"' for edge_id, wkt in edges]
+    if overrides.get("format_version") == 2:
+        # Format 2 adds the GraphHopper node ids of each edge, which the reader ignores.
+        lines = ["edge_id,wkt,base_node,adj_node"] + [
+            f'{edge_id},"{wkt}",{edge_id},{edge_id + 1}' for edge_id, wkt in edges
+        ]
+    else:
+        lines = ["edge_id,wkt"] + [f'{edge_id},"{wkt}"' for edge_id, wkt in edges]
     (directory / "edges.csv").write_text("\n".join(lines) + "\n")
     return directory
 
@@ -73,7 +79,7 @@ class ReadExportTests(unittest.TestCase):
             graph_edges.read_export(self.dir)
 
     def test_a_wrong_format_version_is_an_error(self):
-        write_export(self.dir, format_version=2)
+        write_export(self.dir, format_version=3)
 
         with self.assertRaises(GraphExportError) as caught:
             graph_edges.read_export(self.dir)
@@ -104,6 +110,13 @@ class IterEdgesTests(unittest.TestCase):
         rows = list(graph_edges.iter_edges(graph_edges.read_export(self.dir)))
 
         self.assertEqual(rows, EDGES)
+
+    def test_a_version_2_export_reads_the_same_edges_and_ignores_the_node_columns(self):
+        write_export(self.dir, format_version=2)
+
+        export = graph_edges.read_export(self.dir)
+
+        self.assertEqual(list(graph_edges.iter_edges(export)), EDGES)
 
     def test_fewer_rows_than_edge_count_is_an_error(self):
         write_export(self.dir, edge_count=4)
