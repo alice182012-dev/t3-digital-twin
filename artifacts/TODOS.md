@@ -180,3 +180,4 @@ The unresolved blockers are:
 6. [[BL-026-sticky-closure-clock-anchored-at-floored-departure|sticky-closure-clock-anchored-at-floored-departure]], monitoring, fixed in code by `US-096`. It resolves after the next rollout rebuilds the `graphhopper` image. It blocks no build.
 7. [[BL-025-engine-has-no-depth-band-cost|engine-has-no-depth-band-cost]], `resolved` by D-021 on 2026-10-09.
 8. [[BL-024-edge-export-has-no-node-ids|edge-export-has-no-node-ids]], `resolved` on 2026-10-09. The real-graph run of `US-092` and `US-093` waits only for the second replay.
+9. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]], open. It blocks only `US-093` and blocks no build in Sprint 13. The fix waits for your decision on the definition of the reference.

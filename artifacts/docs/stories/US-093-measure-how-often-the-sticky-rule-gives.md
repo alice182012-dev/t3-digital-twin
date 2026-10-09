@@ -35,6 +35,7 @@ Dependencies: `US-047` (the reference), `US-050` (the engine, for a cross-check 
 pairs), the depth tables of the 12-hour replay (rule 5), and the pair sampler of `US-091` if it is ready. The sampler
 can be copied if not.
 Evidence: None yet.
+Blocker tracking: [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph]].
 
 ## Status history
 
