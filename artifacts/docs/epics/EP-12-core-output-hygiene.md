@@ -1,7 +1,7 @@
 ---
 date_drafted: 2026-10-07
 type: user-story
-us_ids: ["US-086", "US-087"]
+us_ids: ["US-086", "US-087", "US-101"]
 status: draft
 subsystem: core-output
 source_ideas: []
@@ -18,6 +18,7 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
 
 - [[US-086-prune-old-rows-of-flood-road-values|US-086]] Prune old rows of `flood_road_values`. Story 1.
 - [[US-087-make-test-flood-areas-py-run-without|US-087]] Make `test_flood_areas.py` run without hand-set paths, and run it in CI. Story 2.
+- [[US-101-keep-simulating-while-the-flood-still-stands|US-101]] Keep simulating while the flood still stands after the rain stops. Story 3, P0, blocker [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]].
 
 ## Status history
 
@@ -30,3 +31,4 @@ screenshot and numbered details, recorded here and in `sprint-plan-3.md`.
 
 - **2026-10-09, active.** `US-087` is `Done` (`be45e01`, test passes on the server PostGIS in a throwaway database). The workflow ran on GitHub Actions and passed (run 37869621614).
 - **2026-10-09, active.** `US-086` is `Reviewed`: built and merged, the first prune ran (368 runs and 13,749,316 rows deleted, 45 runs kept), evidence `us-086-prune-check-output.png`. It reaches `Done` after the task runs once inside Airflow.
+- **2026-10-10, active.** `US-101` added as Story 3 (P0, Sprint 12) for [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]. It is a pipeline fault found in the second replay, not a hygiene gap, but it sits in this epic because it changes `flood_mapping_full`, the DAG this epic already edits.
