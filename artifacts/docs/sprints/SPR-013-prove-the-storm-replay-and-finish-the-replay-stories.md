@@ -85,7 +85,11 @@ Recommendation: A unless the 3Di cost decides it, then a design check for B befo
 2. Sunday, Mac: adapt `artifacts/docs/stories/evidence/us-063-replay-check.sh` into a read-only `US-102` check.
    It lists `flood_road_file` times against the slots, counts wet edges per table, and greps the Airflow logs for the Hotstart and Coldstart strings.
 3. Monday 09:30, server, read-only: confirm the server checkout holds the standing-flood commit, no DAG import error exists, and `routing_adapter` is unpaused (the gate reads `flood_road_values`, which only `routing_adapter` writes).
-4. Monday after planning, server: `git pull --ff-only alice modular`.
+4. Server, first change: fix `.env.rain-replay.json`.
+   It holds the values from before the first replay: the 48-hour event of 2025-10-05 and a gate of 0.01.
+   A `stop` would restore that old replay, not live rain.
+   Back it up, then write empty `FLOOD_TEST_RAIN_CSV`, `FLOOD_TEST_RAIN_START`, and `FLOOD_TEST_RAIN_MM_HR`, and no gate line (`null`).
+   Then run `git pull --ff-only alice modular`.
    Add to `.env` `FLOOD_EXTENT_KEEP_RUNS=100`, `EDGE_TABLE_KEEP_RUNS=100`, and `ARCHIVE_HOST_PATH=D:\airflow_new_data\archive` (create the folder first).
    Run `.\scripts\rain_env\replay.ps1 start -Event scripts\rain_events\hanoi_20260916_storm.csv -LeadMinutes 30 -Gate 5`.
    Do not run `stop` first. `start` overwrites the old replay, and the kept `.env.rain-replay.json` restores the live values later.
@@ -185,3 +189,4 @@ Fill this on 2026-10-25.
 - **2026-10-10, planning.** Created at the Scrum adoption ([[decision-log|D-024]]) so the first sprint has a home. Every story that was not `Done` returned to the backlog with `sprint` cleared. The old Sprint 13 to 16 placement of the frontend recheck ([[SP-04-frontend-recheck|sprint-plan-4]]) is dropped.
 - **2026-10-10, planning.** The sprint length changed from one week to two weeks, and stories enter by story points and not by weeks ([[decision-log|D-026]]). The end date moved from 2026-10-18 to 2026-10-25. The picks stay unset until planning on 2026-10-12.
 - **2026-10-10, planning.** The user chose replay scope A, the full storm, over the rebuild plus a short slice. Open decision 2 is now only the go.
+- **2026-10-10, planning.** The owner asked to finish the replay stories during the weekend, so the replay moves from Monday 2026-10-12 to 2026-10-10 or 2026-10-11, and the Monday planning only confirms the picks. The server was checked read-only: it is 22 commits behind and can fast-forward, it contains the standing-flood commit, it has 100.9 GiB free on C:, `routing_adapter` is unpaused, and `flood_mapping_full` is paused. The server changes are waiting for the owner to allow them or run them.
