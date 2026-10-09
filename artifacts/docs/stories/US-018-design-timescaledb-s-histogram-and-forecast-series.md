@@ -15,11 +15,8 @@ title: "Design TimescaleDB's histogram and forecast-series schema"
 
 # US-018 Design TimescaleDB's histogram and forecast-series schema
 
-As an engineer, I want a settled schema for institution histograms, `background_cycle` forecast
-series, and depth history, so I can populate real data instead of guessing a shape mid-build.
-Given the architecture doc's §4.9 describes the histogram split this schema must support, when the
-schema design is reviewed against that section, then it accounts for both `constant_cycle` and
-`background_cycle` data sources without needing a later migration.
+As an engineer, I want a settled schema for institution histograms, `background_cycle` forecast series, and depth history, so I can populate real data instead of guessing a shape mid-build.
+Given the architecture doc's §4.9 describes the histogram split this schema must support, when the schema design is reviewed against that section, then it accounts for both `constant_cycle` and `background_cycle` data sources without needing a later migration.
 Dependencies: None.
 Evidence: ![[timescaledb-schema.png|420]]
 Details:

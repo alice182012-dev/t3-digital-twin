@@ -15,9 +15,9 @@ title: "Show the place names on the start and destination pins"
 
 # US-078 Show the place names on the start and destination pins
 
-As a user looking at a route, I want the pins to carry their names, so I know which end is which without reading the
-panel.
-Given a route whose start and destination have names, when the map renders, then each pin shows its name next to it,
-as in screen 2e ("GO Thăng Long", "FPT Shop"). A point with only coordinates shows no label.
-Dependencies: Story 1. Covers G2.
+As a user looking at a route, I want the pins to carry their names, so I know which end is which without reading the panel.
+Given a route whose start and destination have names, when the map renders, then each pin shows its name next to it, as in screen 2e ("GO Thăng Long", "FPT Shop").
+A point with only coordinates shows no label.
+Dependencies: Story 1.
+Covers G2.
 Evidence: None yet.

@@ -15,15 +15,15 @@ title: "Build a mobile version of screen 2e"
 
 # US-083 Build a mobile version of screen 2e
 
-As a user on a phone, I want the route result, the chart, and the steps to fit a 390 px screen, so I can use the app
-where I am.
-Given a viewport of 390x844, when a route result is open, then the profile row, the tabs, the chart, and the steps
-are all reachable without horizontal scroll, the legend is not covered, and the touch targets are at least 44 px.
+As a user on a phone, I want the route result, the chart, and the steps to fit a 390 px screen, so I can use the app where I am.
+Given a viewport of 390x844, when a route result is open, then the profile row, the tabs, the chart, and the steps are all reachable without horizontal scroll, the legend is not covered, and the touch targets are at least 44 px.
 The mockup has no mobile design, so the story starts with a layout the user approves.
-Dependencies: Stories 2, 3, and 7, so the layout covers the
-final components. Covers the third "Try next" line (G6).
+Dependencies: Stories 2, 3, and 7, so the layout covers the final components.
+Covers the third "Try next" line (G6).
 Evidence: None yet.
 
 ## Status history
 
-- **2026-10-10, estimate M to L.** Compared with US-001 (M for one chart). A mobile layout covers the profile row, the tabs, the chart, the steps, and the legend, and starts with a layout that the product owner approves. Split it before it enters a sprint: one story for the approved layout, one for the build.
+- **2026-10-10, estimate M to L.** Compared with US-001 (M for one chart).
+  A mobile layout covers the profile row, the tabs, the chart, the steps, and the legend, and starts with a layout that the product owner approves.
+  Split it before it enters a sprint: one story for the approved layout, one for the build.

@@ -15,14 +15,13 @@ title: "Design the no-route and \"wait until\" states, then match the UI to the 
 
 # US-084 Design the no-route and "wait until" states, then match the UI to the design
 
-As a product owner, I want the two states the mockup lacks to have an approved design, so the wording and layout are
-a choice and not an accident.
-Given the yellow "No safe route available" box and the alert of `US-054`, when the user has approved a design for
-each state, then the UI matches it at 1366x768 and at 390x844, and a screenshot of each state is saved.
-Dependencies: Story 1, and `US-055`, so the "wait until"
-text comes from the real backend. Covers G7.
+As a product owner, I want the two states the mockup lacks to have an approved design, so the wording and layout are a choice and not an accident.
+Given the yellow "No safe route available" box and the alert of `US-054`, when the user has approved a design for each state, then the UI matches it at 1366x768 and at 390x844, and a screenshot of each state is saved.
+Dependencies: Story 1, and `US-055`, so the "wait until" text comes from the real backend.
+Covers G7.
 Evidence: None yet.
 
 ## Status history
 
-- **2026-10-10, estimate S to M.** Compared with US-057 and US-009 (XS and S: one message each). Two states need a design that the product owner approves, then a match at two screen sizes, so the risk and the screenshots double.
+- **2026-10-10, estimate S to M.** Compared with US-057 and US-009 (XS and S: one message each).
+  Two states need a design that the product owner approves, then a match at two screen sizes, so the risk and the screenshots double.

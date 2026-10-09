@@ -15,14 +15,11 @@ title: "Match the depth chart columns and the route tab text to screen 2e"
 
 # US-077 Match the depth chart columns and the route tab text to screen 2e
 
-As a user comparing routes, I want the chart to show the next hours at a glance and each tab to name its road, so I
-read the chart and the tabs the way the approved design shows them.
-Given a route with a depth forecast, when the chart renders, then it shows 5 columns that are 30 minutes apart (every
-second 15-minute step), only full hours are labelled, and the "now" column is the latest step at or before now, in
-green, with the dashed line at its depth. Given a route with a road description, when the tabs render, then each tab
-reads "Via `road`", and a tab with no unique description still reads "Route N".
-The pipeline publishes 15-minute steps, so the chart takes every second step. The PRD decision of 2026-09-23 ("30
-minutes, matching the mockup") stays true for the chart.
-Dependencies: Story 1 (screenshots of the chart and the
-tabs). Covers G1 and G3.
+As a user comparing routes, I want the chart to show the next hours at a glance and each tab to name its road, so I read the chart and the tabs the way the approved design shows them.
+Given a route with a depth forecast, when the chart renders, then it shows 5 columns that are 30 minutes apart (every second 15-minute step), only full hours are labelled, and the "now" column is the latest step at or before now, in green, with the dashed line at its depth.
+Given a route with a road description, when the tabs render, then each tab reads "Via `road`", and a tab with no unique description still reads "Route N".
+The pipeline publishes 15-minute steps, so the chart takes every second step.
+The PRD decision of 2026-09-23 ("30 minutes, matching the mockup") stays true for the chart.
+Dependencies: Story 1 (screenshots of the chart and the tabs).
+Covers G1 and G3.
 Evidence: None yet.

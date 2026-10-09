@@ -21,13 +21,21 @@ As the owner of the flood-routing product, I want a full replay of the 2026-09-1
 
 Given the storm file `hanoi_20260916_storm.csv` and the `US-101` rule, when the replay runs on the server for about 12 hours, then no run between the first and the last simulating run is skipped while the previous table has edges at or above the depth floor, the first run after any quiet stretch logs a hotstart and not "No saved state", and the table after the quiet stretch holds a wet-edge count close to the forecast of the table before it.
 
-Dependencies: none open. The product owner gives the go before the replay starts, because it holds the server for about 12 hours. The steps: run `replay.ps1 stop`, raise `FLOOD_EXTENT_KEEP_RUNS` (about 60) so `US-091` can use the same replay, start the replay again, and unpause `flood_mapping_full`. `US-089` is the story that owns `replay.ps1`.
+Dependencies: none open.
+The product owner gives the go before the replay starts, because it holds the server for about 12 hours.
+The steps: run `replay.ps1 stop`, raise `FLOOD_EXTENT_KEEP_RUNS` (about 60) so `US-091` can use the same replay, start the replay again, and unpause `flood_mapping_full`.
+`US-089` is the story that owns `replay.ps1`.
 
 ## Status history
 
-- **2026-10-10, ready.** Written at the Scrum adoption ([[decision-log|D-024]]), because `US-101` reached `Done` without the replay its acceptance check names, and `BL-028` stays `monitoring` until the replay. Moves the open step "next action 2" of the old `TODOS.md` into a story.
-- **2026-10-10, estimate M to S.** Compared with US-063 and US-069 (S each: run a replay, read the result). The effort is small and the wait is long. The extra check of the gap tables and the hotstart line does not change the size.
+- **2026-10-10, ready.** Written at the Scrum adoption ([[decision-log|D-024]]), because `US-101` reached `Done` without the replay its acceptance check names, and `BL-028` stays `monitoring` until the replay.
+  Moves the open step "next action 2" of the old `TODOS.md` into a story.
+- **2026-10-10, estimate M to S.** Compared with US-063 and US-069 (S each: run a replay, read the result).
+  The effort is small and the wait is long.
+  The extra check of the gap tables and the hotstart line does not change the size.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`. **Evidence** is a screenshot of the replay output that shows the tables of the gap and the hotstart line, saved under `artifacts/docs/stories/evidence/`. **Details** is a numbered list: what was built, how, why, and what it changes for dependent stories.
+Fill this when the story reaches `Done`.
+**Evidence** is a screenshot of the replay output that shows the tables of the gap and the hotstart line, saved under `artifacts/docs/stories/evidence/`.
+**Details** is a numbered list: what was built, how, why, and what it changes for dependent stories.
