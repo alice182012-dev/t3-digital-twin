@@ -3,12 +3,15 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-017"
 us_ids: ["US-017"]
-status: draft
+status: Done
 subsystem: architecture-backend
 sprint: 2
 source_ideas: []
 related: ["[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
 tags: [user-story, backend, sprint-2]
+priority: P1
+estimate: M
+title: "Route-forecast query against `flood_road_values`"
 ---
 
 # Route-forecast query against `flood_road_values`

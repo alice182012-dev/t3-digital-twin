@@ -10,6 +10,7 @@ estimate: S
 sprint: 12
 subsystem: routing, paper
 related: ["[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Measure how often the sticky rule gives no route or a longer route than an arrival-only reference"
 ---
 
 # US-093 Measure how often the sticky rule gives no route or a longer route than an arrival-only reference

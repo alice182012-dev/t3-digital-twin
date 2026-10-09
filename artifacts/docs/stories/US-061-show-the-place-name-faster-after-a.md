@@ -7,9 +7,10 @@ epic: "[[EP-02-frontend-polish]]"
 status: Not started
 priority: P3
 estimate: S
-sprint: "none, in the backlog of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"
+sprint: 
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]"]
+title: "Show the place name faster after a map tap"
 ---
 
 # US-061 Show the place name faster after a map tap

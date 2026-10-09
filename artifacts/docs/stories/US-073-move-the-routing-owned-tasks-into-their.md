@@ -4,12 +4,13 @@ type: user-story
 us_id: "US-073"
 story_label: "C3"
 epic: "[[EP-10-routing-first-consumer]]"
-status: Not started
+status: Done
 priority: P2
 estimate: M
 sprint: 11
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-10-routing-first-consumer]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Move the routing-owned tasks into their own DAG, triggered by the core's published output"
 ---
 
 # US-073 Move the routing-owned tasks into their own DAG, triggered by the core's published output
@@ -28,3 +29,11 @@ signal), and `US-055` for the server timing, since the proof and the replay rely
 move to a new `dag_id`, so `scripts/pipeline_margins`, the proof tooling and anything keyed on
 `flood_mapping_full` task ids must be checked first.
 Evidence: None yet.
+
+## Evidence and details
+
+**Evidence:** Story C1, and `US-055` for the server timing
+
+**Details:**
+
+![[us-073-routing-adapter-check-output.png|120]]

@@ -10,6 +10,7 @@ estimate: S
 sprint: 1
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Switch the search geocoder's default locale to `vi`"
 ---
 
 # US-008 Switch the search geocoder's default locale to `vi`

@@ -10,6 +10,7 @@ estimate: M
 sprint: 11
 subsystem: core-output
 related: ["[[EP-15-archive-and-netcdf-retirement]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Retire the `netcdf_values` ingest"
 ---
 
 # US-095 Retire the `netcdf_values` ingest

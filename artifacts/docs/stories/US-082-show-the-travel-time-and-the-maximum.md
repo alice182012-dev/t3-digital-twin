@@ -10,6 +10,7 @@ estimate: S
 sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Show the travel time and the maximum depth on each route tab"
 ---
 
 # US-082 Show the travel time and the maximum depth on each route tab

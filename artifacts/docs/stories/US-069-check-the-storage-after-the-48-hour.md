@@ -10,6 +10,7 @@ estimate: S
 sprint: 8
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Check the storage after the 48-hour replay to see if the retention fixes work"
 ---
 
 # US-069 Check the storage after the 48-hour replay to see if the retention fixes work

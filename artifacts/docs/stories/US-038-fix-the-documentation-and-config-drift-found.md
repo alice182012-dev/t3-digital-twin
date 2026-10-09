@@ -10,6 +10,7 @@ estimate: S
 sprint: 3
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Fix the documentation and config drift found by the README rewrite"
 ---
 
 # US-038 Fix the documentation and config drift found by the README rewrite

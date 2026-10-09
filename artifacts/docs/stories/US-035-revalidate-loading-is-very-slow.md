@@ -10,6 +10,7 @@ estimate: S
 sprint: 4
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Revalidate \"loading is very slow\""
 ---
 
 # US-035 Revalidate "loading is very slow"

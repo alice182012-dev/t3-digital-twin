@@ -10,6 +10,7 @@ estimate: S
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-05-mockup-screen-coverage]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Route to a place from the place popup"
 ---
 
 # US-023 Route to a place from the place popup

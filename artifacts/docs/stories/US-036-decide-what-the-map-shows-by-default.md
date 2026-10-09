@@ -10,6 +10,7 @@ estimate: S
 sprint: 2
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Decide what the map shows by default, and close or schedule the latency work"
 ---
 
 # US-036 Decide what the map shows by default, and close or schedule the latency work

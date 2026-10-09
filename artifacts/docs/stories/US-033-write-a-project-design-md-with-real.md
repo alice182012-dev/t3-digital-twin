@@ -7,9 +7,10 @@ epic: "[[EP-07-carried-over-backlog]]"
 status: Not started
 priority: P3
 estimate: M
-sprint: "none yet"
+sprint: 
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]"]
+title: "Write a project `DESIGN.md` with real design tokens"
 ---
 
 # US-033 Write a project `DESIGN.md` with real design tokens

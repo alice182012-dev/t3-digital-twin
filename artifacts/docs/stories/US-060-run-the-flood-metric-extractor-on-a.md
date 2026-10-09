@@ -10,6 +10,7 @@ estimate: XS
 sprint: 4
 subsystem: architecture-backend
 related: ["[[EP-04-timescaledb-and-flood-metrics]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Run the flood metric extractor on a retained run"
 ---
 
 # US-060 Run the flood metric extractor on a retained run

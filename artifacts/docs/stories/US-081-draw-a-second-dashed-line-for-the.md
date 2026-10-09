@@ -10,6 +10,7 @@ estimate: S
 sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Draw a second dashed line for the selected mode's depth limit"
 ---
 
 # US-081 Draw a second dashed line for the selected mode's depth limit

@@ -10,6 +10,7 @@ estimate: M
 sprint: 12
 subsystem: rain-replay
 related: ["[[EP-13-rain-replay-test-environment]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Start and stop a rain replay on the server with one command each"
 ---
 
 # US-089 Start and stop a rain replay on the server with one command each

@@ -4,12 +4,13 @@ type: user-story
 us_id: "US-048"
 story_label: "R3"
 epic: "[[EP-09-time-aware-routing-engine]]"
-status: Not started
+status: Superseded
 priority: P1
 estimate: S
-sprint: "none"
+sprint: 
 subsystem: floodmap-backend, floodmap-frontend
 related: ["[[EP-09-time-aware-routing-engine]]"]
+title: "Show \"no route\" for a mode that has none"
 ---
 
 # US-048 Show "no route" for a mode that has none

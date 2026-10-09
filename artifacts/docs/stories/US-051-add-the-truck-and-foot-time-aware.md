@@ -10,6 +10,7 @@ estimate: S
 sprint: 9
 subsystem: floodmap-backend, floodmap-frontend
 related: ["[[EP-09-time-aware-routing-engine]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Add the `truck` and `foot` time-aware profiles"
 ---
 
 # US-051 Add the `truck` and `foot` time-aware profiles

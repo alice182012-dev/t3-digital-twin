@@ -10,6 +10,7 @@ estimate: S
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-05-mockup-screen-coverage]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Match the empty routing panel to screen 2c"
 ---
 
 # US-025 Match the empty routing panel to screen 2c

@@ -10,6 +10,7 @@ estimate: S
 sprint: 13
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Compare the live app with the mockup in Aside at 1366x768"
 ---
 
 # US-076 Compare the live app with the mockup in Aside at 1366x768

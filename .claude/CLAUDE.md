@@ -204,23 +204,20 @@ from it. Read the matching plan first when resuming work on that topic.
 
 ## User stories and sprint planning
 
-Once a PRD's goals are settled, break it into user stories under
-`artifacts/docs/user-stories/`, following `artifacts/templates/user-story.md` and
+Once a PRD's goals are settled, break it into user stories, one file per story under
+`artifacts/docs/stories/` (`US-nnn-<slug>.md`), following `artifacts/templates/user-story.md` and
 `artifacts/docs/templates/user-story-types.md` for shape selection (Simple,
 Epic, Thematic, SAFe).
 
-1. Default to the Epic shape for a PRD-derived feature area: one file per
-   epic, one row per story, each row still a story you could pull out and
+1. Default to the Epic shape for a PRD-derived feature area: one epic file
+   under `artifacts/docs/epics/` (`EP-nn-<slug>.md`) that links to its stories,
+   and one story file per story, each still a story you could pull out and
    start on its own.
-2. Extend each Epic row with three fields the base shape doesn't carry:
-   `Priority`, `Estimate`, `Sprint`. This is a deliberate extension on top of
-   `user-story-types.md`'s documented shapes, needed because the base Epic
-   shape has no per-row scheduling field (only Thematic does, via "target
-   release", and Thematic is reserved for cross-epic business themes, not
-   this). State any such extension inline in the file rather than silently
-   deviating from the template. A Simple-shape story carries the same
-   information as a `sprint` frontmatter field instead, since it has only one
-   row to schedule; leave it empty for a story still in the backlog.
+2. Every story file carries `priority`, `estimate`, `sprint`, `status`, and `epic`
+   in its frontmatter. This is a deliberate extension on top of
+   `user-story-types.md`'s documented shapes, which have no per-story scheduling
+   field outside Thematic. The story file is the only place these values are
+   recorded. Leave `sprint` empty for a story still in the backlog.
 3. A sprint plan has four sprints (rule 10). Real dependencies decide which of
    the four a story lands in, not how many sprints there are. Read each source
    PRD's Dependencies and assumptions and Definition of done sections, and let
@@ -232,30 +229,29 @@ Epic, Thematic, SAFe).
    backlog table instead, cross-linked to the blocking risk. Scheduling a
    blocked story just to fill a sprint hides its real state.
 5. Write one sprint-plan file per planning pass under
-   `artifacts/docs/user-stories/`, summarizing every epic's story-to-sprint
-   assignment, a "why these four sprints" explanation, and a Risks table.
-   Update it, don't replace it, when stories are added to the sprint it
-   already covers. Start a new planning pass (new sprints, not an addition to
-   the current one) as a new file instead: the first plan is `sprint-plan.md`
-   with `plan_number: 1`; each later pass is `sprint-plan-N.md` with
-   `plan_number: N`, so multiple plans can coexist as a dated record instead
-   of overwriting one another.
+   `artifacts/docs/sprints/`, holding the goal and dates of each sprint, a "why
+   these four sprints" explanation, and a Risks table. Each sprint section lists
+   its stories with a Dataview query over the story frontmatter
+   (`WHERE sprint = N`), never by hand. Update the plan, don't replace it, when
+   stories are added to the sprint it already covers. Start a new planning pass
+   (new sprints, not an addition to the current one) as a new file instead:
+   `SP-nn-<slug>.md` with `plan_number: nn`, so multiple plans can coexist as a
+   dated record instead of overwriting one another.
 6. Invoke the `product-management:sprint-planning` skill for the planning
    methodology (capacity framing, sprint goal, risk table shape) when
    creating or revising a sprint plan. This project has no connected team
    roster or calendar, so capacity stays qualitative (relative estimate,
    dependency order), not tracked hours or points per person, until real
    velocity data exists.
-7. A user story's `related` frontmatter links back to its source PRD and to
-   `sprint-plan.md`. `sprint-plan.md`'s own `related` links every epic file
-   it schedules.
-8. A story reaches `Done` only with evidence and details, recorded in both its
-   epic file and its `sprint-plan.md` row. The sprint tables carry `Evidence`
-   and `Details` columns before `Status`. A story without both stays
+7. A user story's `related` frontmatter links back to its epic and its source
+   PRD. A sprint plan's own `related` links every epic file it schedules.
+8. A story reaches `Done` only with evidence and details, recorded in its story
+   file under "Evidence and details". The sprint plan shows the status through its
+   query, so nothing else is edited. A story without both stays
    `Reviewed` (built and read through, acceptance check not yet passed) or
    `Blocked`.
    - **Evidence** is a screenshot of that story working, saved under
-     `artifacts/docs/user-stories/evidence/` and embedded with `![[name.png]]`.
+     `artifacts/docs/stories/evidence/` and embedded with `![[name.png]]`.
      A UI story gets a screenshot of the running UI. A backend story with no
      UI gets a screenshot of the real output: the endpoint's response in a
      browser, or the verbatim command output rendered to an image whose
@@ -265,18 +261,17 @@ Epic, Thematic, SAFe).
    - **Details** are a numbered list of a few plain sentences: 1. what was
      built, 2. how, 3. why, 4. what it changes for dependent stories or open
      blockers, and more numbered points if needed. Write it as a real numbered
-     list in an epic file. In a sprint table cell, separate the items with
-     `<br />`.
+     list in the story file.
    - Take the screenshot before changing the status. If the check fails, log
      the failure as a blocker and leave the story off `Done`.
 9. `TODOS.md` follows the sprint plan strictly. Any new fix or feature, including
    one that comes up mid-task, is first written as a story and given a sprint in
-   the current `sprint-plan.md` (or in a new plan if it starts a new pass), with
-   its epic file updated to match. Only after that does it appear in `TODOS.md`,
+   the current sprint plan (or in a new plan if it starts a new pass), by setting
+   `sprint` in its story file. Only after that does it appear in `TODOS.md`,
    and its item carries a `**Sprint:**` line linking to the plan. Never add a
    `TODOS.md` item directly, and never leave a story unscheduled without a
    Status history entry that says what blocks it (see rule 4). A bug found while
-   working goes to a blocker page and a sprint-plan row first, and `TODOS.md`
+   working goes to a blocker page and a story with a sprint first, and `TODOS.md`
    second. Ask which sprint if the right one is unclear, instead of guessing.
    `TODOS.md` follows the template the user set on 2026-09-30, with no extra
    text. It has three sections: the current sprint, a "Backlog" (the unfinished
@@ -290,7 +285,7 @@ Epic, Thematic, SAFe).
    When a sprint ends, move its unfinished items to the Backlog.
 10. A sprint is one week, and a sprint plan covers four sprints, so four weeks.
    Every story in a plan lands in one of those four sprints. Work that does not
-   fit in the four weeks goes to the next plan (`sprint-plan-N.md`, whose sprint
+   fit in the four weeks goes to the next plan (`SP-nn-<slug>.md`, whose sprint
    numbers continue where the last plan stopped) or, if a risk blocks it, to a
    backlog table with the blocking reason (rule 4). Never add a fifth sprint to a
    plan. Size each sprint to what fits in one week, by relative estimate until
@@ -316,13 +311,14 @@ Epic, Thematic, SAFe).
    unscheduled or not yet started stays with rule 9 (ask which sprint).
 12. Every user story has one global ID, `US-nnn`, assigned once from the next free
    number in the Conventions of `artifacts/Home.md`, and never reused or renumbered.
-   The ID follows the story's label in its file (`Story 4 (US-014)`), is listed in
-   the file's `us_ids` frontmatter, and fills the `Item` column of its sprint-table
-   row and the header of its `TODOS.md` item. A story keeps its ID when it changes
-   sprint, and the parts of a split story get new IDs. Take the number before
-   writing the story, and raise the next free number in `Home.md`. A user story file starts its name with the IDs it holds
-   (`US-094-095-archive-and-netcdf-retirement-stories.md`), so a search for an ID finds the file; see the
-   Conventions in `artifacts/Home.md`.
+   The ID starts the story's file name (`US-094-archive-results-3di-nc-and-a-run.md`),
+   is the `us_id` in its frontmatter, and heads its `TODOS.md` item. A story keeps
+   its ID when it changes sprint, and the parts of a split story get new IDs. Take
+   the number before writing the story, and raise the next free number in `Home.md`.
+   The other document kinds are coded the same way: `EP-nn`, `SP-nn`, `PRD-nnn`,
+   `BL-nnn`, and `L-nnn`, each at the start of its file name, with the next free
+   number in `Home.md`. Link a renamed document with its full file name and a short
+   alias.
 
 ## Verification discipline for PRDs and cross-referencing documents
 

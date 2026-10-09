@@ -10,6 +10,7 @@ estimate: S
 sprint: 2
 subsystem: architecture-backend
 related: ["[[EP-03-point-depth-lookup-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Handle a full connection pool in `floodmap-backend`"
 ---
 
 # US-015 Handle a full connection pool in `floodmap-backend`

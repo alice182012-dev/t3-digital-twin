@@ -10,6 +10,7 @@ estimate: S
 sprint: 14
 subsystem: routing, frontend
 related: ["[[EP-16-precaution-depth-routing]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Show the recommended route and the through-water option in the app"
 ---
 
 # US-098 Show the recommended route and the through-water option in the app

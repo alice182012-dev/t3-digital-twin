@@ -10,6 +10,7 @@ estimate: M
 sprint: 12
 subsystem: routing, paper
 related: ["[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Write the FIFO lemma and the correctness proof of the sticky-closure forward search"
 ---
 
 # US-090 Write the FIFO lemma and the correctness proof of the sticky-closure forward search
@@ -39,3 +40,11 @@ The suite of `scripts/routing_reference/` passes after the new tests.
 Priority: P1. Status: Done. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]; 2026-12-07 to 2026-12-13).
 Dependencies: None. The user's confirmation of "sticky from departure" is already in place (2026-10-02).
 Evidence: None yet.
+
+## Evidence and details
+
+**Evidence:** None
+
+**Details:**
+
+![[us-090-proof-check-output.png|120]]

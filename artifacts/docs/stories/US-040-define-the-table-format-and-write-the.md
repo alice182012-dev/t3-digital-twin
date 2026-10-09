@@ -10,6 +10,7 @@ estimate: S
 sprint: 5
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Define the table format and write the Python reader and writer"
 ---
 
 # US-040 Define the table format and write the Python reader and writer

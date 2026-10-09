@@ -3,12 +3,15 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-001"
 us_ids: ["US-001"]
-status: draft
+status: Done
 subsystem: floodmap-frontend
 sprint: 3
 source_ideas: []
 related: ["[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[L-009-verify-table-capability-against-write-path-not-summary-or-current-query|verify-table-capability-against-write-path-not-summary-or-current-query]]"]
 tags: [user-story, sprint-3]
+priority: P0
+estimate: M
+title: "Depth-versus-time forecast chart"
 ---
 
 # Depth-versus-time forecast chart

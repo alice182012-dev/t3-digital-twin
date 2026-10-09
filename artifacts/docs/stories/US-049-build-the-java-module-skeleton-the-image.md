@@ -10,6 +10,7 @@ estimate: L
 sprint: 6
 subsystem: floodmap-backend, floodmap-frontend
 related: ["[[EP-09-time-aware-routing-engine]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Build the Java module skeleton, the image, and the CI job"
 ---
 
 # US-049 Build the Java module skeleton, the image, and the CI job

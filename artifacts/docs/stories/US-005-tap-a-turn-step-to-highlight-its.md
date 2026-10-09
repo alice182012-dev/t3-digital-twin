@@ -10,6 +10,7 @@ estimate: XS
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-01-frontend-depth-features]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Tap a turn step to highlight its segment on the map"
 ---
 
 # US-005 Tap a turn step to highlight its segment on the map

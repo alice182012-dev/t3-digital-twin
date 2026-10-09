@@ -10,6 +10,7 @@ estimate: M
 sprint: 4
 subsystem: architecture-backend
 related: ["[[EP-04-timescaledb-and-flood-metrics]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Populate TimescaleDB from the extractor's output"
 ---
 
 # US-021 Populate TimescaleDB from the extractor's output

@@ -10,6 +10,7 @@ estimate: S
 sprint: 14
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Design the no-route and \"wait until\" states, then match the UI to the design"
 ---
 
 # US-084 Design the no-route and "wait until" states, then match the UI to the design

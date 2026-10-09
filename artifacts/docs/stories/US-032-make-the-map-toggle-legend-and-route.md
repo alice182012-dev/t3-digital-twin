@@ -10,6 +10,7 @@ estimate: S
 sprint: 4
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Make the map toggle, legend, and route tabs usable by keyboard and screen reader"
 ---
 
 # US-032 Make the map toggle, legend, and route tabs usable by keyboard and screen reader

@@ -10,6 +10,7 @@ estimate: S
 sprint: 1
 subsystem: architecture-backend
 related: ["[[EP-04-timescaledb-and-flood-metrics]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Design TimescaleDB's histogram and forecast-series schema"
 ---
 
 # US-018 Design TimescaleDB's histogram and forecast-series schema

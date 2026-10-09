@@ -10,6 +10,7 @@ estimate: M
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-01-frontend-depth-features]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Per-point depth badges along the route polyline"
 ---
 
 # US-004 Per-point depth badges along the route polyline

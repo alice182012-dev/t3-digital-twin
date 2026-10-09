@@ -10,6 +10,8 @@ related: []
 
 # <% tp.file.title %>
 
+Name this file PRD-nnn-<slug>.md. Take nnn from the next free number in the Conventions of Home.md.
+
 ## Problem
 
 What's broken or missing today, for whom, and what it costs them. Cite a specific incident, log

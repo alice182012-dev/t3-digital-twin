@@ -10,6 +10,7 @@ estimate: M
 sprint: 12
 subsystem: routing, frontend
 related: ["[[EP-16-precaution-depth-routing]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option"
 ---
 
 # US-097 Recommend a route that avoids the precaution depth, and keep the hard-limit route as a second option
@@ -19,3 +20,11 @@ Given a request with the time-aware flag on, when the backend plans, then it run
 Priority: P1. Status: Done. Estimate: M. Sprint: 12 ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]).
 Dependencies: `US-096` (`Done` in code), the offline sweep of `US-092` to confirm the fraction, and the user's go on the response contract.
 Evidence: `us-097-through-water-route-output.png`.
+
+## Evidence and details
+
+**Evidence:** `US-096`, the fraction sweep of `US-092`, and the user's go on the response contract
+
+**Details:**
+
+![[us-097-through-water-route-output.png|120]]

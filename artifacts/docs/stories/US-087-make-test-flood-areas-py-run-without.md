@@ -10,6 +10,7 @@ estimate: S
 sprint: 12
 subsystem: core-output
 related: ["[[EP-12-core-output-hygiene]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Make `test_flood_areas.py` run without hand-set paths, and run it in CI"
 ---
 
 # US-087 Make `test_flood_areas.py` run without hand-set paths, and run it in CI
@@ -31,3 +32,11 @@ code under test, so check that the test body passes against a real PostGIS befor
 Priority: P3. Status: Done. Estimate: S. Sprint: 12. Dependencies: None. CI needs the repository's GitHub
 Actions, which `java-module.yml` already uses.
 Evidence: None yet.
+
+## Evidence and details
+
+**Evidence:** None
+
+**Details:**
+
+![[us-087-flood-areas-test-check-output.png|120]]

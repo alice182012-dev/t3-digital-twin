@@ -10,6 +10,7 @@ estimate: M
 sprint: 12
 subsystem: routing, paper
 related: ["[[EP-14-routing-paper-experiments]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Measure how often a single-timestep route meets a closed road on arrival"
 ---
 
 # US-091 Measure how often a single-timestep route meets a closed road on arrival

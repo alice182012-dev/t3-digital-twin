@@ -10,6 +10,7 @@ estimate: S
 sprint: 12
 subsystem: rain-replay
 related: ["[[EP-13-rain-replay-test-environment]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Cut the Hanoi storm of 2026-09-16 and 2026-09-17 into a replay event"
 ---
 
 # US-088 Cut the Hanoi storm of 2026-09-16 and 2026-09-17 into a replay event
@@ -34,3 +35,11 @@ Priority: P1. Status: Done. Estimate: S. Sprint: 12. Dependencies: A NASA Earthd
 Mac, and the Python packages the scripts import (`earthaccess`, `h5py`, `fiona`, `pyproj`, `numpy`), which the Mac
 has. The story needs no server.
 Evidence: None yet.
+
+## Evidence and details
+
+**Evidence:** None. Needs the Earthdata login on the Mac
+
+**Details:**
+
+![[us-088-event-check-output.png|120]]

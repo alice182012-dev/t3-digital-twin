@@ -10,6 +10,7 @@ estimate: S
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-05-mockup-screen-coverage]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Verify the first-load, empty-panel, and autofill screens against the mockup"
 ---
 
 # US-024 Verify the first-load, empty-panel, and autofill screens against the mockup

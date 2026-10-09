@@ -10,6 +10,7 @@ estimate: S
 sprint: 2
 subsystem: architecture-backend
 related: ["[[EP-03-point-depth-lookup-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Validate `GET /flood/points`'s latency under concurrent taps"
 ---
 
 # US-014 Validate `GET /flood/points`'s latency under concurrent taps

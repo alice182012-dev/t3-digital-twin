@@ -10,6 +10,7 @@ estimate: XS
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Show only the \"No safe route available\" box when a mode has no connection"
 ---
 
 # US-057 Show only the "No safe route available" box when a mode has no connection

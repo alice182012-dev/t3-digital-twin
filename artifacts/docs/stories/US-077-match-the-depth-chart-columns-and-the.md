@@ -10,6 +10,7 @@ estimate: S
 sprint: 14
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Match the depth chart columns and the route tab text to screen 2e"
 ---
 
 # US-077 Match the depth chart columns and the route tab text to screen 2e

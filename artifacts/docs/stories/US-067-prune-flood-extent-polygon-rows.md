@@ -3,12 +3,15 @@ date_drafted: 2026-10-05
 type: user-story
 us_id: "US-067"
 us_ids: ["US-067"]
-status: done
+status: Done
 subsystem: minio-flood-extent-pipeline, storage-postgres
 sprint: 5
 source_ideas: []
 related: ["[[minio-flood-extent-pipeline]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
 tags: [user-story, infra, postgres, retention]
+priority: P1
+estimate: S
+title: "Prune old runs' flood_extent_polygon rows on every publish"
 ---
 
 # Prune old runs' flood_extent_polygon rows on every publish

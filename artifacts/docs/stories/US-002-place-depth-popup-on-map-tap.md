@@ -10,6 +10,7 @@ estimate: M
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-01-frontend-depth-features]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Place-depth popup on map tap"
 ---
 
 # US-002 Place-depth popup on map tap

@@ -59,11 +59,13 @@ already settled.
      reading directly references one by date, in which case follow that specific link.
    - **PRDs** (`docs/prds/`): read in full any page with `status: draft`, `approved`, or
      `in-progress`. Skip the body of a `shipped` or `abandoned` PRD; note its title only.
-   - **User stories and sprint plans** (`docs/user-stories/`): find the sprint-plan file with the
-     highest `plan_number` in its frontmatter (there may be more than one:
-     `sprint-plan.md`, `sprint-plan-2.md`, and so on — higher `plan_number` is the current planning
-     pass) and read it in full. Then read, in full, only the epic or story files it links to whose
-     own `status` isn't `done`. Skip a completed story's body; note its title only.
+   - **Sprint plans and stories** (`docs/sprints/`, `docs/stories/`): find the sprint-plan file with the
+     highest `plan_number` in its frontmatter (`SP-01-...`, `SP-02-...`, and so on; the highest number is the
+     current planning pass) and read it in full. Its story lists are queries over the story frontmatter, so
+     list the stories with `sprint` in that plan's sprints and a `status` other than `Done` or `Superseded`
+     (grep the `status:` and `sprint:` lines of `docs/stories/US-*.md`), and read those story files in full.
+     Skip a finished story's body; note its title only. Epics (`docs/epics/`) are read only when a story
+     links to one and the task needs its shared intro.
    - **Concepts** (`docs/concepts/`): list titles and `last_updated` dates only, don't read bodies
      by default. Concepts are standing reference, not recent activity, so they don't belong in an
      initial refresh. Read a specific concept page in full only when something else you just read

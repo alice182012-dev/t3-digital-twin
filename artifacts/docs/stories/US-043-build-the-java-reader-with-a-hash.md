@@ -10,6 +10,7 @@ estimate: M
 sprint: 8
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Build the Java reader with a hash check and reload without restart"
 ---
 
 # US-043 Build the Java reader with a hash check and reload without restart

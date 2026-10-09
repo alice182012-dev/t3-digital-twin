@@ -10,6 +10,7 @@ estimate: XS
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-05-mockup-screen-coverage]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Show no result message while From or To is empty"
 ---
 
 # US-059 Show no result message while From or To is empty

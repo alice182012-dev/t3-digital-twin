@@ -10,6 +10,7 @@ estimate: M
 sprint: 1
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Add per-mode travel time under the four mode icons"
 ---
 
 # US-006 Add per-mode travel time under the four mode icons

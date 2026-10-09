@@ -10,6 +10,7 @@ estimate: S
 sprint: 10
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Stop a slow sampling step from holding the database"
 ---
 
 # US-070 Stop a slow sampling step from holding the database

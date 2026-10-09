@@ -10,6 +10,7 @@ estimate: M
 sprint: 8
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Prove the table on the server"
 ---
 
 # US-045 Prove the table on the server
@@ -22,3 +23,11 @@ the build time for the run, and 20 edges match `ST_Value`. The story records the
 story records a blocker.
 Priority: P0. Status: Done. Estimate: M. Sprint: 8. Dependencies: Stories E3, E4. Gate cleared: the user
 set the build-time limit on 2026-10-02. The table task runs beside the tile task, never delays it, and ends within 5 minutes of the end of `3_calculate_depth`.
+
+## Evidence and details
+
+**Evidence:** Stories E3, E4. Gate cleared 2026-10-02: the user set the build-time limit (5 minutes after `3_calculate_depth`, never delaying the tile task)
+
+**Details:**
+
+![[us-045-table-timing-check-output.png|120]]

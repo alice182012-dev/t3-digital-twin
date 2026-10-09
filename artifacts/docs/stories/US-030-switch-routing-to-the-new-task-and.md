@@ -10,6 +10,7 @@ estimate: M
 sprint: 2
 subsystem: airflow-pipeline
 related: ["[[EP-06-raster-first-pipeline]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Switch routing to the new task and retire the GeoJSON tasks"
 ---
 
 # US-030 Switch routing to the new task and retire the GeoJSON tasks

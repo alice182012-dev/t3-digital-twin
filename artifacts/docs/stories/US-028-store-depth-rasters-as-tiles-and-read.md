@@ -10,6 +10,7 @@ estimate: M
 sprint: 2
 subsystem: airflow-pipeline
 related: ["[[EP-06-raster-first-pipeline]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Store depth rasters as tiles and read them through a spatial index"
 ---
 
 # US-028 Store depth rasters as tiles and read them through a spatial index

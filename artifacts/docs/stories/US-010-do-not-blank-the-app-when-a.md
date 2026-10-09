@@ -10,6 +10,7 @@ estimate: XS
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Do not blank the app when a route description is a list"
 ---
 
 # US-010 Do not blank the app when a route description is a list

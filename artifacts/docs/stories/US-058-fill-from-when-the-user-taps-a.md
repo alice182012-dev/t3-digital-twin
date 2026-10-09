@@ -10,6 +10,7 @@ estimate: S
 sprint: 3
 subsystem: floodmap-frontend
 related: ["[[EP-05-mockup-screen-coverage]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Fill From when the user taps a second point after choosing a destination"
 ---
 
 # US-058 Fill From when the user taps a second point after choosing a destination

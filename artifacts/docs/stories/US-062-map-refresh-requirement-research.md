@@ -3,12 +3,15 @@ date_drafted: 2026-10-02
 type: user-story
 us_id: "US-062"
 us_ids: ["US-062"]
-status: done
+status: Done
 subsystem: floodmap-frontend, airflow-pipeline
 sprint: 5
 source_ideas: []
 related: ["[[flood-map-reaction-time-findings]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[map-refresh-requirement-research-plan]]", "[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]]", "[[five-minute-tile-freshness]]", "[[EP-07-carried-over-backlog|carried-over-backlog]]"]
 tags: [user-story, research, requirements, refresh-interval]
+priority: P2
+estimate: M
+title: "Find out how fast a user must react to the flood map"
 ---
 
 # Find out how fast a user must react to the flood map

@@ -10,6 +10,7 @@ estimate: XS
 sprint: 13
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
+title: "Name the page \"Floodmap\" and remove the \"Powered by GraphHopper\" line and its links"
 ---
 
 # US-079 Name the page "Floodmap" and remove the "Powered by GraphHopper" line and its links

@@ -90,22 +90,32 @@ SORT status ASC, date_drafted DESC
 
 ## User stories
 
-One page per user story, or per epic grouping several stories, delegated into a sprint once its
-dependencies are known. Start a new one from `templates/user-story.md`; see
-[[user-story-types]] for which shape (Simple, Epic, Thematic, SAFe) fits. A user story comes after
-its PRD's goals are settled: the PRD says what and why, the user story breaks it into sprint-sized
-work. An Epic-shaped story's rows carry Priority, Estimate, and Sprint in addition to the shape's
-own fields (an extension past what `templates/user-story.md` and [[user-story-types]] show alone;
-see `.claude/CLAUDE.md`, "User stories and sprint planning", for why). A story with no sprint number
-is unscheduled, not forgotten: its Status history says what it's blocked on.
+One file per story in `docs/stories/`, named `US-nnn-<slug>.md`. A story file owns its status, priority, estimate, sprint, epic, evidence, and details. An epic (`docs/epics/EP-nn-<slug>.md`) holds the shared intro for a group of stories and links to them. A sprint plan (`docs/sprints/SP-nn-<slug>.md`) holds the goal, the dates, the risks, and the history, and lists its stories with a query over the story frontmatter. Start a story from `templates/user-story.md`; see [[user-story-types]] for which shape fits. A story comes after its PRD's goals are settled. A story with no sprint number is unscheduled, not forgotten: its Status history says what it is blocked on.
 
 ```dataview
-TABLE status AS "Status", subsystem AS "Subsystem", date_drafted AS "Drafted"
-FROM "docs/user-stories"
-SORT status ASC, date_drafted DESC
+TABLE title AS "Story", sprint AS "Sprint", priority AS "Priority", status AS "Status"
+FROM "docs/stories"
+WHERE type = "user-story" AND status != "Done" AND status != "Superseded"
+SORT sprint ASC, priority ASC
 ```
 
-For one row per story, with sprint, priority, and status, see [[User stories board]].
+For every story, see [[User stories board]].
+
+## Sprint plans
+
+```dataview
+TABLE plan_number AS "Plan", start_date AS "Start", end_date AS "End", status AS "Status"
+FROM "docs/sprints"
+SORT plan_number ASC
+```
+
+## Epics
+
+```dataview
+TABLE us_ids AS "Stories", status AS "Status", subsystem AS "Subsystem"
+FROM "docs/epics"
+SORT file.name ASC
+```
 
 ## Lessons learned
 
@@ -145,18 +155,9 @@ FROM "designs"
   assumptions** section states every fact the design relies on that isn't visible from reading the
   code cold, and **Definition of done** states an operational check rather than a proxy like "it
   compiles" or "no errors in the logs".
-- A user story (`docs/user-stories/`) breaks an approved PRD goal into sprint-sized work; it comes
-  after the PRD, not instead of it. Pick its shape from [[user-story-types]]. An Epic file's rows
-  are delegated to a sprint (Priority, Estimate, and Sprint per row, an extension past the shape's
-  own documented fields) and cross-linked to the sprint plan that assigned them; see
-  `.claude/CLAUDE.md`, "User stories and sprint planning", for the full convention.
-- Every user story has one ID in the form `US-nnn`, for example `US-014`. The ID is global across
-  the vault. It is assigned once and never reused or renumbered. A story keeps its ID when it
-  moves to another sprint, and the parts of a split story get new IDs. The ID follows the story's
-  label in its file (`Story 4 (US-014)`) and is listed in the file's `us_ids` frontmatter. The
-  `Item` column of each sprint table and each matching `TODOS.md` item carry it too. The next free
-  ID is `US-099`. Raise this number when you assign one.
-- A user story file starts its name with the story IDs it holds, so a search for the ID finds the file: `US-094-095-archive-and-netcdf-retirement-stories.md` holds `US-094` and `US-095`, and a file with one story is `US-086-prune-flood-road-values.md`. A file with a consecutive run of IDs uses the first and last (`US-090-093-...`). A file with scattered IDs lists each one (`US-076-077-085-...`) up to four, and past four uses the `us_ids` frontmatter only and a name that says the theme. Name a new epic file this way when you create it, and rename an old one only when you next edit it, updating its `[[wikilinks]]` in the same pass (grep the vault for the old name).
+- Every document kind has a code, and the code starts the file name, so a search for the code finds the file. The codes are `US-nnn` (user story, `docs/stories/`), `EP-nn` (epic, `docs/epics/`), `SP-nn` (sprint plan, `docs/sprints/`, equal to `plan_number`), `PRD-nnn` (`docs/prds/`), `BL-nnn` (blocker, `docs/blockers/`), and `L-nnn` (lesson, `docs/lessons/`). A code is assigned once from the next free number below, never reused, and never renumbered. Link a document by its full file name with the old or short name as an alias: `[[BL-023-9c-sampling-step-runs-over-770-seconds|9c sampling step]]`. Concept pages, logs, and plans keep topic or date names. The next free numbers are `US-099`, `EP-17`, `SP-05`, `PRD-005`, `BL-027`, and `L-012`. Raise the number when you assign one.
+- A PRD (`docs/prds/`) states the problem, goals, and definition of done for a feature or change before its implementation plan (`docs/claude-plan/`) is written. Its **Dependencies and assumptions** section states every fact the design relies on that isn't visible from reading the code cold, and **Definition of done** states an operational check rather than a proxy like "it compiles" or "no errors in the logs".
+- A user story (`docs/stories/US-nnn-<slug>.md`) breaks an approved PRD goal into sprint-sized work. Its frontmatter holds `us_id`, `title`, `epic`, `status`, `priority`, `estimate`, and `sprint`, and the file holds the story text, its evidence, and its numbered details. Nothing else keeps a second copy of those fields: the sprint plan, the board, and the epic read them with queries. Moving a story to another sprint is one edit to `sprint` in its frontmatter, plus a Status history line in the sprint plans it leaves and joins. An epic file links to its stories, a sprint plan never lists them by hand. Pick a story's shape from [[user-story-types]]. See `.claude/CLAUDE.md`, "User stories and sprint planning", for the full convention.
 - A lesson (`docs/lessons/`) is a short, checkable rule distilled from a resolved blocker, not a
   retelling of the incident. Write one when closing a blocker whose cause would generalize past
   the one subsystem it happened in, and link the source blocker in `source_blockers` instead of

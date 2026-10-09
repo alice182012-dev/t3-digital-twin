@@ -10,6 +10,7 @@ estimate: M
 sprint: 10
 subsystem: floodmap-backend, floodmap-frontend
 related: ["[[EP-09-time-aware-routing-engine]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Prove the engine on the server and roll it out"
 ---
 
 # US-055 Prove the engine on the server and roll it out
@@ -25,3 +26,11 @@ and the median detour ratio are recorded. The concept page [[graphhopper-backend
 Priority: P0. Status: Done. Estimate: M. Sprint: 10. Dependencies: Stories R6, R7, R9, E7.
 Tooling built on 2026-10-05, tests first: `scripts/routing_proof/routing_proof.py` (25 tests, four changes make tests fail), `pairs.json` (24 pairs inside the model border), and `rollout.ps1` (untested, it needs the server). The evidence step is one run of `rollout.ps1` after the 48-hour replay ends, plus `scenario-check.sh` from the Mac. Plan: [[engine-server-proof-and-rollout]]. Gate cleared:
 the user set the latency factor of 2 on 2026-10-02, so the p50 and p95 of each trip and vehicle stay within 2 times the baseline of Story R1.
+
+## Evidence and details
+
+**Evidence:** Stories R6, R7, R9, E7. Gate cleared 2026-10-02: the user set the latency factor to 2
+
+**Details:**
+
+![[us-055-rollout-results-check-output.png\|120]]

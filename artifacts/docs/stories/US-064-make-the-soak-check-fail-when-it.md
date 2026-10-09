@@ -10,6 +10,7 @@ estimate: S
 sprint: 5
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Make the soak check fail when it cannot read the server"
 ---
 
 # US-064 Make the soak check fail when it cannot read the server

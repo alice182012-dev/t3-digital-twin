@@ -61,12 +61,12 @@ A UI story takes its screenshot from the running UI (rule 8).
 **Sprint goal:** the live app and the mockup are captured side by side at 1366x768, and the three rows that need no
 other row (the page name, the legend label, and the client timeout) are done.
 
-| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-076 | P1 | Compare the live app with the mockup in Aside at 1366x768 | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 1 | None. Best after `US-055` | None yet | - | Not started |
-| US-085 | P2 | Time out a route request in the client | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 10 | None | None yet | - | Not started |
-| US-079 | P3 | Name the page "Floodmap" and remove the "Powered by GraphHopper" line | XS | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 4 | None | None yet | - | Not started |
-| US-080 | P3 | Keep "As of" and bring the `US-007` record in line | XS | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 5 | None | None yet | - | Not started |
+```dataview
+TABLE title AS "Story", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+FROM "docs/stories"
+WHERE sprint = 13
+SORT priority ASC, file.name ASC
+```
 
 ## Sprint 14: match the chart, the tabs, the pins, and the missing states
 
@@ -75,12 +75,12 @@ other row (the page name, the legend label, and the client timeout) are done.
 **Sprint goal:** the chart columns, the tab text, and the pin labels match screen 2e, and the no-route and "wait until"
 states have an approved design.
 
-| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-077 | P2 | Match the depth chart columns and the route tab text to screen 2e | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 2 | `US-076` (Sprint 13) | None yet | - | Not started |
-| US-078 | P2 | Show the place names on the start and destination pins | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 3 | `US-076` (Sprint 13) | None yet | - | Not started |
-| US-084 | P2 | Design the no-route and "wait until" states, then match the UI to the design | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 9 | `US-076` (Sprint 13), `US-055` ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] Sprint 10) | None yet | - | Not started |
-| US-098 | P2 | Show the recommended route and the through-water option in the app | S | [[EP-16-precaution-depth-routing|US-097-098-precaution-depth-routing-stories]] 2 | `US-097`, `US-076` (Sprint 13), and the design of `US-084` | None yet | - | Not started |
+```dataview
+TABLE title AS "Story", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+FROM "docs/stories"
+WHERE sprint = 14
+SORT priority ASC, file.name ASC
+```
 
 ## Sprint 15: the limit line and the tab details
 
@@ -89,10 +89,12 @@ states have an approved design.
 **Sprint goal:** the chart marks the selected mode's depth limit, and each route tab shows its travel time and its
 maximum depth.
 
-| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-081 | P3 | Draw a second dashed line for the selected mode's depth limit | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 6 | `US-077` (Sprint 14), `US-074` ([[SP-03-engine-in-backend-and-rollout|sprint-plan-3]] Sprint 11, `Done`) | None yet | - | Not started |
-| US-082 | P3 | Show the travel time and the maximum depth on each route tab | S | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 7 | `US-077` (Sprint 14) | None yet | - | Not started |
+```dataview
+TABLE title AS "Story", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+FROM "docs/stories"
+WHERE sprint = 15
+SORT priority ASC, file.name ASC
+```
 
 ## Sprint 16: the mobile layout, and the slip buffer
 
@@ -100,9 +102,12 @@ maximum depth.
 
 **Sprint goal:** screen 2e fits a 390 px screen. The sprint also absorbs slips from Sprints 13 to 15.
 
-| Item | Priority | Story | Estimate | Epic | Dependencies | Evidence | 1. Details | Status |
-| ---- | -------- | ----- | -------- | ---- | ------------ | -------- | ---------- | ------ |
-| US-083 | P3 | Build a mobile version of screen 2e | M | [[EP-11-frontend-mockup-recheck|frontend-mockup-recheck-stories]] 8 | `US-077` (Sprint 14), `US-078` (Sprint 14), `US-082` (Sprint 15) | None yet | - | Not started |
+```dataview
+TABLE title AS "Story", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+FROM "docs/stories"
+WHERE sprint = 16
+SORT priority ASC, file.name ASC
+```
 
 ## Carried to plan 5
 

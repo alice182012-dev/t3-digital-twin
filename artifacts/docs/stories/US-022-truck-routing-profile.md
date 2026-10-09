@@ -3,12 +3,15 @@ date_drafted: 2026-09-23
 type: user-story
 us_id: "US-022"
 us_ids: ["US-022"]
-status: done
+status: Done
 subsystem: floodmap-frontend
 sprint: 4
 source_ideas: []
 related: ["[[SP-01-prd-and-backlog|sprint-plan]]", "[[EP-02-frontend-polish|frontend-polish]]", "[[graphhopper-backend]]", "[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]"]
 tags: [user-story, frontend, sprint-4]
+priority: P2
+estimate: S
+title: "Show the truck routing profile in the frontend"
 ---
 
 # Show the truck routing profile in the frontend

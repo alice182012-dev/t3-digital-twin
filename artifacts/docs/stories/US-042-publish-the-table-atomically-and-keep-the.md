@@ -10,6 +10,7 @@ estimate: S
 sprint: 7
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Publish the table atomically and keep the newest three runs"
 ---
 
 # US-042 Publish the table atomically and keep the newest three runs

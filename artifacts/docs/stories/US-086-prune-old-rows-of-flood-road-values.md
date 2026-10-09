@@ -10,6 +10,7 @@ estimate: S
 sprint: 12
 subsystem: core-output
 related: ["[[EP-12-core-output-hygiene]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Prune old rows of `flood_road_values`"
 ---
 
 # US-086 Prune old rows of `flood_road_values`

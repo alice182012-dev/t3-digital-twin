@@ -10,6 +10,7 @@ estimate: S
 sprint: 11
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-10-routing-first-consumer]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Fail a test when the backend reads a table outside the contract"
 ---
 
 # US-075 Fail a test when the backend reads a table outside the contract

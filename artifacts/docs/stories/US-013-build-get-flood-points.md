@@ -10,6 +10,7 @@ estimate: M
 sprint: 2
 subsystem: architecture-backend
 related: ["[[EP-03-point-depth-lookup-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Build `GET /flood/points`"
 ---
 
 # US-013 Build `GET /flood/points`

@@ -10,6 +10,7 @@ estimate: S
 sprint: 1
 subsystem: architecture-backend
 related: ["[[EP-04-timescaledb-and-flood-metrics]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Stand up the TimescaleDB service"
 ---
 
 # US-019 Stand up the TimescaleDB service

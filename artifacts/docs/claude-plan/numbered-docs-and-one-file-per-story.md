@@ -38,3 +38,5 @@ Concept pages, logs, and plans keep their names.
 ## Status
 
 - 2026-10-09: plan written, branch `artifacts-numbering` created.
+- 2026-10-09: phase A done in `bec81d3` (4 PRDs, 26 blockers, 11 lessons, 4 sprint plans, 16 epics, 98 story files, every wikilink rewritten). Phase B done: story status, priority, estimate, and sprint reconciled with the sprint rows (0 mismatches), evidence and details of 9 stories copied from the sprint rows, the sprint tables replaced by Dataview queries. Step 3 done: `Home.md`, `.claude/CLAUDE.md`, the templates, the board, and the `refresh-artifacts` skill updated. Next free numbers: `EP-17`, `SP-05`, `PRD-005`, `BL-027`, `L-012`.
+- Not changed: `logs/` and `docs/claude-plan/` keep their old names in plain text, because they are append-only records. Obsidian links in them were rewritten.

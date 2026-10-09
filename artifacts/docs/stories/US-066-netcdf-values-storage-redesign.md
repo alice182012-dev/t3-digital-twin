@@ -3,12 +3,15 @@ date_drafted: 2026-10-04
 type: user-story
 us_id: "US-066"
 us_ids: ["US-066"]
-status: done
+status: Done
 subsystem: infra, storage-postgres, timescaledb
 sprint: 5
 source_ideas: []
 related: ["[[netcdf-values-timescale-migration]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[2026-10-04-docker-vhdx-disk-full]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[2026-10-05-us-066-criterion-4-spot-check]]"]
 tags: [user-story, infra, storage, timescaledb, postgres]
+priority: P1
+estimate: L
+title: "Narrow and compress netcdf_values onto TimescaleDB"
 ---
 
 # Narrow and compress netcdf_values onto TimescaleDB
@@ -102,3 +105,11 @@ through the new path, then:
   exercised. This frees space inside the Docker volume, not yet on the Windows host: `C:` still
   needs a `wsl --shutdown` + `diskpart compact vdisk` pass to convert it into Windows-visible free
   space, the same open step [[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]] already tracks.
+
+## Evidence and details
+
+**Evidence:** None
+
+**Details:**
+
+![[us-066-netcdf-timescale-verify.png|120]]

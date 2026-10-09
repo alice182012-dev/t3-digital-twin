@@ -10,6 +10,7 @@ estimate: XS
 sprint: 3
 subsystem: architecture-backend
 related: ["[[EP-03-point-depth-lookup-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Make test_server.py's tile-edge check independent of GDAL's rounding"
 ---
 
 # US-016 Make test_server.py's tile-edge check independent of GDAL's rounding

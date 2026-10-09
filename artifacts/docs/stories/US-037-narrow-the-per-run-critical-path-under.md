@@ -4,12 +4,13 @@ type: user-story
 us_id: "US-037"
 story_label: "6"
 epic: "[[EP-07-carried-over-backlog]]"
-status: Not started
+status: Done
 priority: P2
 estimate: M
 sprint: 4
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Narrow the per-run critical path under the 15-minute cycle (option D)"
 ---
 
 # US-037 Narrow the per-run critical path under the 15-minute cycle (option D)

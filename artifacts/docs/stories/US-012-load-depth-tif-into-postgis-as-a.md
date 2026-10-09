@@ -10,6 +10,7 @@ estimate: M
 sprint: 1
 subsystem: architecture-backend
 related: ["[[EP-03-point-depth-lookup-backend]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Load `depth.tif` into PostGIS as a raster"
 ---
 
 # US-012 Load `depth.tif` into PostGIS as a raster

@@ -10,6 +10,7 @@ estimate: S
 sprint: 7
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-08-edge-depth-table]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]"]
+title: "Document the graph re-import procedure and detect a stale table"
 ---
 
 # US-044 Document the graph re-import procedure and detect a stale table

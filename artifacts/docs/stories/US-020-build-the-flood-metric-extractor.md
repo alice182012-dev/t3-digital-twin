@@ -10,6 +10,7 @@ estimate: L
 sprint: 4
 subsystem: architecture-backend
 related: ["[[EP-04-timescaledb-and-flood-metrics]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
+title: "Build the flood metric extractor"
 ---
 
 # US-020 Build the flood metric extractor

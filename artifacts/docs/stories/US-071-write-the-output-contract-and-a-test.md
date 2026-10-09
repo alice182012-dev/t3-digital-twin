@@ -10,6 +10,7 @@ estimate: M
 sprint: 11
 subsystem: airflow-pipeline, floodmap-backend
 related: ["[[EP-10-routing-first-consumer]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]"]
+title: "Write the output contract and a test that checks it against the live schema"
 ---
 
 # US-071 Write the output contract and a test that checks it against the live schema
