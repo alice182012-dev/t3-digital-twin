@@ -23,6 +23,8 @@ import psycopg2
 from psycopg2 import sql
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SCRIPTS_DIR / "database"))
+import run_output  # noqa: E402
 
 DEFAULT_TARGET = "flood_road_values"
 SAMPLE_STEP_M = 1.0
@@ -183,7 +185,9 @@ FROM piece_depth GROUP BY valid_time_utc
 def compute(conn, run_ts: str, target_table: str = DEFAULT_TARGET) -> ComputeResult:
     """Replaces every row of (run timestamp, forecast_time) for this run's timesteps in one
     transaction, so a retry converges on the same rows. Raises when the run has no tiles, since an
-    empty write would hand routing's winner for those times to an older run."""
+    empty write would hand routing's winner for those times to an older run. A write to
+    flood_road_values records the run's `road_values` row in flood_run_output in the same
+    transaction; a write to a shadow table records nothing."""
     started = time.monotonic()
     timestamp = run_timestamp(run_ts)
     target = sql.Identifier(target_table)
@@ -227,6 +231,8 @@ def compute(conn, run_ts: str, target_table: str = DEFAULT_TARGET) -> ComputeRes
                 "offset": VIETNAM_UTC_OFFSET,
             },
         )
+        if target_table == DEFAULT_TARGET:
+            run_output.record(cur, run_ts, run_output.Output.ROAD_VALUES)
 
     return ComputeResult(
         run_ts=run_ts,
@@ -250,7 +256,6 @@ def main(argv: list[str] | None = None) -> ComputeResult:
     parser.add_argument("--target", default=DEFAULT_TARGET)
     args = parser.parse_args(argv)
 
-    sys.path.insert(0, str(SCRIPTS_DIR / "database"))
     from db_config import DB_CONFIG
 
     conn = psycopg2.connect(**DB_CONFIG)

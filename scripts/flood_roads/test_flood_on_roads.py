@@ -20,7 +20,9 @@ from flood_on_roads import FloodOnRoadsError
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
 import create_flood_depth_raster_tables  # noqa: E402
 import create_flood_road_tables  # noqa: E402
+import create_flood_run_output_table  # noqa: E402
 import create_road_segment_table  # noqa: E402
+from test_run_output import FakeConnection, published  # noqa: E402
 
 DSN = os.getenv("FLOOD_ROADS_TEST_DSN")
 SCHEMA = f"flood_roads_test_{os.getpid()}"
@@ -60,6 +62,7 @@ class FloodOnRoadsTests(unittest.TestCase):
             cur.execute(create_flood_road_tables.SQL)
             cur.execute(create_road_segment_table.SQL)
             cur.execute(create_flood_depth_raster_tables.SQL)
+            cur.execute(create_flood_run_output_table.SQL)
 
     @classmethod
     def tearDownClass(cls):
@@ -70,7 +73,7 @@ class FloodOnRoadsTests(unittest.TestCase):
     def setUp(self):
         with self.conn, self.conn.cursor() as cur:
             cur.execute(
-                "TRUNCATE road_segment, flood_depth_raster_tile, flood_road_values, flood_road_file"
+                "TRUNCATE road_segment, flood_depth_raster_tile, flood_road_values, flood_road_file, flood_run_output"
             )
             # Qualified: search_path falls through to public, where a real shadow table may live.
             cur.execute(f"DROP TABLE IF EXISTS {SCHEMA}.flood_road_values_shadow")
@@ -234,6 +237,15 @@ class FloodOnRoadsTests(unittest.TestCase):
             cur.execute("SELECT feature_count FROM flood_road_file WHERE source_file = %s", (f"flood_on_roads_{RUN}",))
             self.assertEqual(cur.fetchall(), [(4,)])
 
+    def test_a_rerun_keeps_one_road_values_row(self):
+        self.standard_run()
+        flood_on_roads.compute(self.conn, RUN)
+        flood_on_roads.compute(self.conn, RUN)
+
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT run_ts, output FROM flood_run_output")
+            self.assertEqual(cur.fetchall(), [(RUN, "road_values")])
+
     def test_shadow_target_leaves_flood_road_values_alone(self):
         self.standard_run()
         flood_on_roads.create_shadow_table(self.conn, "flood_road_values_shadow")
@@ -249,6 +261,49 @@ class FloodOnRoadsTests(unittest.TestCase):
         with self.assertRaises(FloodOnRoadsError):
             flood_on_roads.compute(self.conn, RUN)
         self.assertEqual(self.rows(), [])
+
+
+class RoadValuesRunOutputTests(unittest.TestCase):
+    """The road_values row of flood_run_output commits in the transaction of the run's rows, and only then."""
+
+    def connection(self, fail_insert=False):
+        def rows(sql):
+            if sql is flood_on_roads._TIMESTEPS_SQL:
+                return [(T1_UTC,)]
+            if sql is flood_on_roads._REGISTER_SQL:
+                return [(7,)]
+            if isinstance(sql, str) and "count(DISTINCT segment_id)" in sql:
+                return [(3,)]
+            if fail_insert and not isinstance(sql, str) and "INSERT INTO" in repr(sql):
+                raise psycopg2.errors.DiskFull("could not extend file")
+            return ()
+
+        return FakeConnection(rows)
+
+    def test_a_computed_run_records_its_road_values_row(self):
+        conn = self.connection()
+
+        result = flood_on_roads.compute(conn, RUN)
+
+        self.assertEqual(result.rows, 3)
+        self.assertEqual(published(conn), {(RUN, "road_values")})
+
+    def test_a_failed_insert_of_the_rows_leaves_no_row(self):
+        conn = self.connection(fail_insert=True)
+
+        with self.assertRaises(psycopg2.errors.DiskFull):
+            flood_on_roads.compute(conn, RUN)
+
+        self.assertEqual(conn.committed, [])
+
+    def test_a_shadow_target_records_no_row(self):
+        conn = self.connection()
+
+        flood_on_roads.compute(conn, RUN, target_table="flood_road_values_shadow")
+
+        written = [repr(sql) for sql, _ in conn.committed if not isinstance(sql, str)]
+        self.assertEqual(len([text for text in written if "flood_road_values_shadow" in text]), 2)
+        self.assertEqual(published(conn), set())
 
 
 if __name__ == "__main__":

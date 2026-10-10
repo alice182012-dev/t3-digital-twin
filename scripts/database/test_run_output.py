@@ -80,7 +80,7 @@ def published(conn: FakeConnection) -> set[tuple[str, str]]:
     return {
         (params["run_ts"], params["output"])
         for sql, params in conn.committed
-        if sql.lstrip().startswith("INSERT INTO flood_run_output")
+        if isinstance(sql, str) and sql.lstrip().startswith("INSERT INTO flood_run_output")
     }
 
 
