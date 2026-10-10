@@ -94,3 +94,11 @@ The tables that `flood_mapping_full` writes itself (`flood_extent_polygon`, `flo
 - **2026-10-10, open.** Logged at the user's request, as P0, after the second replay. First read as a gate working as designed ("not a fault", [[2026-10-10]]). The user corrected this: a storm still floods after the rain stops, so a gate that stops the simulation is the fault. The mechanism is in the Description, from `dags/flood_mapping_dag.py`, `scripts/create_simulation.py`, `scripts/hotstart_policy.py`, and the Airflow task logs of 2026-10-09. Story: [[US-101-keep-simulating-while-the-flood-still-stands]], Sprint 12.
 - **2026-10-10, monitoring.** The user accepted the two concerns: the simulation may stay on while the model keeps water above 5 cm (a model issue), and the check reads `flood_road_values` because it must look at roads only. No change to the code.
 - **2026-10-10, monitoring.** `US-101` is `Done` on test evidence, and `flood_mapping_full` was paused at 01:29 +07. The blocker stays `monitoring` until a replay with a rain gap inside a storm shows no skipped slot and a hotstart after the gap.
+- **2026-10-10, monitoring.** The Scope A replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] ran on the server from 04:02 to 18:17 +07, with a forecast gap at 10:45 to 11:30 +07.
+  At 10:45 +07 the gate read 4.52 mm/h, and the standing-flood rule let the run go ahead.
+  No slot from 10:45 to 12:15 +07 was skipped, and each logged a hotstart.
+  The wet-edge ratio is 1.00 for all 53 consecutive pairs of tables in the run, against 0.30 in replay 2.
+  The numbers and the image are in US-102.
+  The proposed band of 0.8 to 1.25 is not decided by the owner.
+  The stop clause (five dry runs under 5 cm and no rain) was not exercised, because at hour 11.5 the newest table still forecast 3,680 edges at 5 cm or more.
+  The blocker stays `monitoring`, and it can move to `resolved` when the owner accepts the replay at the review.

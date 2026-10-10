@@ -30,7 +30,7 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 
 1. Confirm the goal and the picks above. Setting `sprint: 13` on a story is the pick.
 2. Give the go for the replay. The scope is decided: A, the full storm (the user, 2026-10-10).
-3. Set the pause time of the replay. The recommendation is 00:15 on Tuesday 2026-10-13.
+3. Done on 2026-10-10: the pause time is 18:17 +07, the owner's plan, not the 00:15 recommendation.
 4. Accept the rewritten hotstart check and the wet-edge ratio band of 0.8 to 1.25 for `US-102`.
 5. Choose 30 or 60 pairs for `US-091`. The recommendation is 60, about 31 minutes.
 6. Confirm the 50 GB free-space floor, split `US-094`, and decide whether a lowered rain gate may prove the archive if no forecast passes 5 mm/h by 2026-10-23.
@@ -162,6 +162,10 @@ Recommendation: A unless the 3Di cost decides it, then a design check for B befo
 - `US-094`: split it. Part one deploys the mount and shows the test-rain skip (S, ready, Sprint 13). Part two proves it on the first real run and measures growth (S, backlog). Remove the stale "Sprint 10" lines.
 - `US-089` and `US-091` are carried work (`Reviewed` and `In progress`), not `Ready`. Say so at planning.
 - Add a backlog story for a cap on standing-flood compute only if the replay shows the tail runs past 12 hours.
+- Candidate story, no ID yet: the standing-flood rule keeps simulating on replay data after a stop.
+  It started a real simulation on 2026-10-10 after the replay ended (see [[3di-simulation-orchestration]], "Open items").
+  The fix can be a replay flag, a cap on chain length, or clearing `flood_road_values` after a stop.
+  The owner schedules this story.
 
 ## Sprint backlog
 
@@ -191,4 +195,10 @@ Fill this on 2026-10-25.
 - **2026-10-10, planning.** The user chose replay scope A, the full storm, over the rebuild plus a short slice. Open decision 2 is now only the go.
 - **2026-10-10, planning.** The owner asked to finish the replay stories during the weekend, so the replay moves from Monday 2026-10-12 to 2026-10-10 or 2026-10-11, and the Monday planning only confirms the picks. The server was checked read-only: it is 22 commits behind and can fast-forward, it contains the standing-flood commit, it has 100.9 GiB free on C:, `routing_adapter` is unpaused, and `flood_mapping_full` is paused. The server changes are waiting for the owner to allow them or run them.
 - **2026-10-10, active.** The owner allowed the server writes. Done on the server: `.env.rain-replay.json` was fixed (backup `.bak-2026-10-10`), `git pull --ff-only alice modular` (after two clippings with a `?` in their names were renamed, because Windows rejects them), `.env` got `FLOOD_EXTENT_KEEP_RUNS=100`, `EDGE_TABLE_KEEP_RUNS=100`, and `ARCHIVE_HOST_PATH=D:/airflow_new_data/archive`, `replay.ps1 start` ran twice with an identical `.env` hash, and `flood_mapping_full` was unpaused at 04:02 +07. Slot 04:00 ran with a cold start, and `2b_archive_results` logged the test-rain skip.
+- **2026-10-10, planning.** The replay ran with `flood_mapping_full` unpaused at 04:02 +07 and was paused at 18:17 +07, at hour 13.5, as the owner planned. The replay environment is in [[rain-replay-test-environment]].
+  `replay.ps1 stop` ran at 18:49 +07, and the read-back showed mode `live`.
+  Each replay story now has its evidence and details written, owner acceptance is pending, and none is `Done`: [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], [[US-091-measure-how-often-a-single-timestep-route|US-091]], and [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one).
+  After the stop, the standing-flood rule started a real simulation for slot 18:45 once live rain was unpaused at 18:50, and `flood_mapping_full` was paused again at 18:51. The DAG is paused now, and live rain waits for the candidate story in "Refinement before planning" (see [[3di-simulation-orchestration]], "Open items").
+  Corrections to the plan: the replay ran about 13.5 hours, not 12, the single-timestep departure steps are 0 and 1, not 0 to 6, and the dependency of [[US-091-measure-how-often-a-single-timestep-route|US-091]] is [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]].
+  The picks stay unset until planning on 2026-10-12.
 

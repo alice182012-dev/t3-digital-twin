@@ -30,5 +30,41 @@ The checks that can run without Docker live in `scripts/rain_replay.py` as new s
 Dependencies: None to build.
 Story 1 supplies the storm, and the existing event `scripts/rain_events/hanoi_20251005_48h.csv` works until then.
 The server run needs no image build, so it can run while a replay is on.
-Evidence: None yet.
+Evidence: see the Evidence and details section.
+
+## Status history
+
 - **2026-10-10, carried from the retired TODOS note.** `scripts/rain_replay.py` and `replay.ps1` start, stop, and report a replay, idempotently, and read the values back inside the worker.
+- **2026-10-10, reviewed.** The commands ran on the server for the Scope A replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]].
+  The status stays Reviewed.
+- **2026-10-10, reviewed.** `replay.ps1` start ran twice inside one quarter-hour, at 04:01 +07.
+  `.env` was byte-identical after the second run, with SHA-256 `61B7CDF166A31691586069DDFD4C9169CFF2DC61E65046AC0C93A3923B9C94CD` both times.
+- **2026-10-10, reviewed.** Before the start, `.env.rain-replay.json` was found to hold the values of the first replay, the 48-hour event of 2025-10-05 with gate 0.01.
+  Stop would have restored that old replay.
+  The file was backed up as `.env.rain-replay.json.bak-2026-10-10` and rewritten with the live values.
+- **2026-10-10, reviewed.** `replay.ps1` stop ran at 18:49 +07.
+  It restored the four rain keys, deleted `.env.rain-replay.json`, recreated the worker, and read back `mode live`.
+  Status at 18:50 +07 showed `mode live`, with the CSV, START, and MM_HR keys empty.
+- **2026-10-10, reviewed.** The preview and status now say "at least N runs", because US-101 adds runs.
+  Stop now expects `mode live` when the saved rain is empty.
+  This PowerShell edit ran for the first time on the server (PowerShell 5.1) and worked.
+- **2026-10-10, reviewed.** `git pull` on the server failed on two clippings with a "?" in the file name, which Windows rejects.
+  They were renamed, and the file-name rule in `Home.md` covers this case.
+
+## Evidence and details
+
+The image is rendered output, not a live screenshot.
+The start lines come from the session record of 04:01 +07.
+
+![[us-089-start-stop-output.png|900]]
+
+Rendered output of `replay.ps1` start, status, and stop on the server, captured 2026-10-10 18:49 to 18:50 +07 on gods-macbook.local (the Mac), over ssh to the server 100.67.84.55.
+
+Not in this evidence: the stop cases that change nothing, which are an event file that does not load, a start that is not on a 15-minute slot, and a preview with no run passing the gate.
+
+1. What was built: `replay.ps1` with start, stop, and status, and the checks that run without Docker in `scripts/rain_replay.py`.
+2. How: start writes the three replay variables and the gate to `.env`, recreates only the worker with `--no-deps`, and reads the values back from inside the worker.
+   Stop restores the four rain keys from `.env.rain-replay.json`, then deletes that file.
+3. Why: a second start with the same event and slot must leave `.env` unchanged, and the hash matched after the second start, so the start is idempotent as the story requires.
+4. What it changes: the Scope A replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] used these commands for its start and stop.
+   The stop case with no saved rain now expects `mode live`.

@@ -102,8 +102,7 @@ equals the slot, or the newest state at most two cycles older, else it cold star
 [[BL-009-hotstart-state-saved-at-end-of-run|hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
 [[BL-013-flood-mapping-full-worker-concurrency-serializes-runs|flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
 [[fifteen-minute-cycle-tiles-and-histogram]]. The user unpaused `flood_mapping_full` at about
-15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). Whether the DAG stays unpaused
-after the replay is unverified. The server also had the test DAGs `calculate_depth_manual_test` and
+15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). The DAG was paused at 18:17 +07 on 2026-10-10 at the end of the replay, and it was paused again at 18:51 after the standing-flood tail (see "Open items"). The server also had the test DAGs `calculate_depth_manual_test` and
 `flood_forecast_consecutive_state_test` (both `schedule=None`) and `zz_cold_start_probe` unpaused on
 2026-10-08. `zz_cold_start_probe` has no file in `dags/` in the repository, so its schedule is unverified.
 
@@ -132,7 +131,7 @@ mm/h before the start and after the last row. Setting only one of the two variab
 with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
 `scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
 (246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
-rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` has not run yet (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]). The server's git remote for this repository is `alice`, not `origin`. See
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` ran on the server on 2026-10-10 at 18:49 +07, and its read-back showed mode `live` (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]). The server's git remote for this repository is `alice`, not `origin`. See
 [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 
 ## Triggering the simulation
@@ -299,6 +298,14 @@ therefore opens in map mode, and the tester switches to flood mode by hand.
 
 ## Open items
 
+- **The standing flood after a replay (found 2026-10-10).** After `replay.ps1 stop` at 18:49 +07 and an unpause for live rain at 18:50, the live gate read 0.00 mm/h.
+  The standing-flood rule still saw the replay's flood in `flood_road_values` (3,000 or more edges at 5 cm or more), so it started a real simulation for slot 18:45 (simulation 452035).
+  That run was a cold start, because slot 18:30 was missing, and its rain was 0.00 mm/h from tomorrow.io.
+  The DAG was paused again at 18:51:47, so that it does not keep simulating a flood that is not real, and `flood_mapping_full` is paused now.
+  A fix is needed before live rain can run again.
+  The rule should not continue on replay data, and the fix can be a replay flag, a cap on chain length, or clearing `flood_road_values` after a stop.
+  The candidate story has no ID yet, and the owner schedules it.
+  The replay did not exercise the stop clause of the rule, because the newest table still forecast 3,680 edges at 5 cm or more at hour 11.5.
 - `.env` on the Mac, read on 2026-10-08, sets `MAX_WORKERS=1` and no `AIRFLOW_WORKER_CONCURRENCY`, so
   the `compose.yml` default of 1 applies (line 28). `artifacts/archive/plans/calculate-depth-threedidepth-cli.md`
   recorded `MAX_WORKERS=8` and `AIRFLOW_WORKER_CONCURRENCY=2` as checked in. The server's `.env` is

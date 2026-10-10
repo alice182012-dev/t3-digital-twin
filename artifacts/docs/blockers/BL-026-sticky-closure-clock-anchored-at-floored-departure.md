@@ -9,7 +9,7 @@ approaches_tried: 1
 approaches_remaining: 0
 tags: [blocker, routing, sticky-closure, correctness]
 related: ["[[sticky-closure-proof]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[EP-14-routing-paper-experiments|US-090-093-routing-paper-experiments-stories]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]"]
-last_updated: 2026-10-09
+last_updated: 2026-10-10
 ---
 
 # sticky-closure-clock-anchored-at-floored-departure
@@ -52,3 +52,11 @@ Approach 1 was built as planned (`US-096`). `StickyClosure` keeps the floored st
 - **2026-10-09, open.** Found by the subagent that wrote the proof page, confirmed by reading `TimeAwareRouter.java:86-88` and `TimeAwareDijkstra.java:94`. Story `US-096`, Sprint 12.
 - **2026-10-09, monitoring.** `US-096` fixed it in code (`66c9883`). 129 Java tests pass on GitHub Actions (run 37880057761) and the Python suites pass. The server still runs the old image until the next rollout. Evidence: `us-096-fix-check-output.png`.
 - **2026-10-09, monitoring.** `rollout.ps1` rebuilt the server's `graphhopper` image from `modular` (`11f6373`), meeting the first half of the resolve condition. The server was not separately checked with a departure between two forecast steps, so the blocker stays `monitoring` rather than moving to `resolved`.
+- **2026-10-10, monitoring.** The check that this blocker asked for is done on the server, in the three live sticky readings of [[US-091-measure-how-often-a-single-timestep-route|US-091]] (the cold, 1h, and 3h stages).
+  636 routes departed strictly between two forecast steps (219, 212, and 205 in the three readings), and all 636 had 0 sticky crossings.
+  For example, the 1h reading walked a request valid at 06:15:00 +07 from 06:16:55, while the engine reports the floored step, 06:15:00.
+  The blocker stays `monitoring`, and the owner resolves it at the review.
+
+Rendered output read from the three live sticky result files, captured 2026-10-10 18:41 +07 on gods-macbook.local (the Mac), against the server 100.67.84.55.
+
+![[us-091-live-sticky-mid-step-output.png|900]]

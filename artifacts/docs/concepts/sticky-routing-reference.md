@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
 related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-09
+last_updated: 2026-10-10
 ---
 
 # Sticky routing reference and checker
@@ -53,6 +53,17 @@ The arguments after the roads file are the origin latitude and longitude, then t
 ## Measured
 
 On 2026-10-01 the pair above gives a route of 15 edges and 1,488 m on `roads.geojson` (47,210 directed edges). All 16 runs match the sticky column and the returned routes have no crossing. The plain shortest route, which ignores time, crosses a closed road in the 8 blocked runs. The search agrees with an exhaustive search over all simple paths on 300 random graphs.
+
+On 2026-10-10 the sticky engine was read live three times, at 05:20, 06:18, and 08:17 +07, on 60 pairs, 4 vehicles, and departure steps 0 to 5.
+The three readings planned 1,292, 1,253, and 1,215 routes, with 0 sticky crossings in all.
+Of those routes, 636 departed strictly between two steps, and none of them crossed a closed road.
+
+The single-timestep model, on the same tables plus the last 8 runs, planned 3,911 routes.
+Under the rule "step at or before the arrival", 307 of them (7.8 percent) met a closed road on arrival.
+By group, the rates were 7.1 percent for cold, 3.7 percent for 1h, 13.0 percent for 3h, and 7.9 percent for late.
+The harness check "the backend lists a step" applies only to the single-timestep model.
+The backend keeps flood areas for only 2 steps of each run, while the engine reads the full edge table.
+The measurement is in [[US-091-measure-how-often-a-single-timestep-route|US-091]].
 
 ## Open items
 

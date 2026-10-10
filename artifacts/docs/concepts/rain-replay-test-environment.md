@@ -3,8 +3,8 @@ date: 2026-10-07
 type: concept
 status: active
 tags: [concept, rain, replay, test-environment, us-088, us-089, sprint-12]
-related: ["[[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]"]
-last_updated: 2026-10-07
+related: ["[[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]", "[[US-089-start-and-stop-a-rain-replay-on|US-089]]", "[[2026-10-10]]"]
+last_updated: 2026-10-10
 ---
 
 # Plan: a rain test environment
@@ -67,3 +67,18 @@ so it makes fewer runs, but its peak is higher.
   rain (`test-code/rain input/`). The scripts have the dates of an earlier event written into them and use the Final
   Run short name, which has no data for September 2026. The plan uses a copy with the Late Run.
 - **2026-10-08, active.** The user decided that a replay runs for 12 hours only, to save 3Di compute cost. The storm event is cut to its wettest 12 hours before it is committed, so the preview shows fewer simulating runs than the 48-hour October event. `US-045` and `US-069` still need several `routing_adapter` runs; 12 hours of storm gives those runs, but not the 24-hour to 48-hour comparison that `US-069` names. Raise that with the user when the replay starts.
+- **2026-10-10, active.** The full-storm replay (scope A) ran with `flood_mapping_full` unpaused at 04:02 +07 and was paused at 18:17 +07, at hour 13.5 of the replay, as the owner planned.
+  The 2026-10-08 entry planned 12 hours, so the replay ran about 13.5 hours instead.
+  The run is recorded in [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]].
+  `replay.ps1 start` ran twice inside one quarter-hour and left `.env` identical.
+  `replay.ps1 stop` ran at 18:49 +07, restored the live values, and the read-back showed mode `live`.
+  A trap was found before the stop.
+  `.env.rain-replay.json` still held the values from before the first replay, the 48-hour event of 2025-10-05 with gate 0.01, so `stop` would have restored that old replay.
+  The file was rewritten with live values (an empty CSV, an empty start, an empty `FLOOD_TEST_RAIN_MM_HR`, and no gate line), and the old file was kept as a `.bak-2026-10-10` copy.
+  The preview and `status` now say "at least N runs", because [[US-101-keep-simulating-while-the-flood-still-stands|US-101]] adds runs while the flood stands.
+  `stop` expects mode `live` when the saved rain is empty.
+  The replay needs `FLOOD_EXTENT_KEEP_RUNS` and `EDGE_TABLE_KEEP_RUNS` raised in `.env`.
+  `compose.yml` reads `EDGE_TABLE_KEEP_RUNS` from `.env`, and its default is 60.
+  The backend lists flood areas for only the first 2 steps of each run.
+  The server is Windows, so a file name with a question mark or a colon breaks `git pull`.
+  The standing-flood tail that the stop exposed is in [[3di-simulation-orchestration]], "Open items".
