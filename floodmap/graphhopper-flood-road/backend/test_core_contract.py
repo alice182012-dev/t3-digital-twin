@@ -20,13 +20,14 @@ CONTRACT_TABLES = {
     "flood_extent_polygon",
     "flood_extent_step",
     "flood_road_values",
+    "flood_run_output",
     "graph_edge",
 }
 
 READER_ROLES = {
     "routing_reader": frozenset(CONTRACT_TABLES),
     "analysis_reader": frozenset(
-        {"flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "flood_road_values"}
+        {"flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "flood_road_values", "flood_run_output"}
     ),
 }
 
@@ -259,7 +260,7 @@ def test_rejects_a_table_before_any_role() -> None:
         raise AssertionError("a table bullet before any role heading must be rejected")
 
 
-def test_page_describes_the_five_contract_tables() -> None:
+def test_page_describes_the_six_contract_tables() -> None:
     path = page_path()
     if path is None or not path.is_file():
         print(f"skip: contract page not found at {path}")
@@ -320,7 +321,7 @@ def main() -> int:
     test_rejects_a_table_the_contract_does_not_describe()
     test_rejects_a_role_listed_twice()
     test_rejects_a_table_before_any_role()
-    test_page_describes_the_five_contract_tables()
+    test_page_describes_the_six_contract_tables()
     test_page_matches_the_live_schema()
     print("ok")
     return 0
