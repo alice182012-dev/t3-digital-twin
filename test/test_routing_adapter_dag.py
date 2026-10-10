@@ -5,6 +5,7 @@ Run it as a file: python3 test/test_routing_adapter_dag.py
 
 import importlib.util
 import os
+import sys
 import types
 import unittest
 from datetime import datetime
@@ -16,6 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("dag_graph_fakes", ROOT / "test/test_flood_mapping_dag_graph.py")
 fakes = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fakes)
+
+sys.path.insert(0, str(ROOT / "scripts/database"))
+import run_output  # noqa: E402
+from test_run_output import FakeConnection, published  # noqa: E402
 
 PUBLISHED = fakes.FakeAsset("flood_depth_raster_tile")
 
@@ -127,6 +132,7 @@ class RoutingTaskTests(unittest.TestCase):
     def setUp(self):
         self.dag_module = load_routing_module()
         self.dag_module.DB_CONFIG = {}
+        self.dag_module.run_output = run_output
         self.ti = MagicMock()
         self.context = {"ti": self.ti, "triggering_asset_events": triggered_by("20260924T170639")}
 
@@ -217,6 +223,41 @@ class RoutingTaskTests(unittest.TestCase):
             self.dag_module.task_build_edge_depth_table(**self.context)
 
         self.ti.xcom_push.assert_not_called()
+
+    def build_and_publish(self, conn, latest="20260924T170639.bin", publish_error=None):
+        self.dag_module.build_edge_depth = MagicMock()
+        self.dag_module.build_edge_depth.build_table.return_value = self.built_table()
+        self.dag_module.publish_edge_depth = MagicMock()
+        self.dag_module.publish_edge_depth.publish_table.return_value = MagicMock(
+            latest=latest, previous="20260924T165639.bin", moved=latest == "20260924T170639.bin", removed=(),
+        )
+        self.dag_module.publish_edge_depth.publish_table.side_effect = publish_error
+        self.dag_module.psycopg2 = types.SimpleNamespace(connect=lambda **config: conn)
+        with patch("builtins.print"):
+            self.dag_module.task_build_edge_depth_table(**self.context)
+
+    def test_a_published_table_records_its_edge_depth_row(self):
+        conn = FakeConnection()
+
+        self.build_and_publish(conn)
+
+        self.assertEqual(published(conn), {("20260924T170639", "edge_depth")})
+
+    def test_an_older_table_that_latest_does_not_name_records_no_row(self):
+        conn = FakeConnection()
+
+        self.build_and_publish(conn, latest="20260924T171639.bin")
+
+        self.assertEqual(self.ti.xcom_push.call_args.kwargs["value"]["published"]["moved"], False)
+        self.assertEqual(published(conn), set())
+
+    def test_a_failed_publish_records_no_row(self):
+        conn = FakeConnection()
+
+        with self.assertRaises(ValueError):
+            self.build_and_publish(conn, publish_error=ValueError("not a valid table"))
+
+        self.assertEqual(published(conn), set())
 
     def pruned(self, **fields):
         result = dict(

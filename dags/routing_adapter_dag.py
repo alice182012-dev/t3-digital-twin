@@ -28,6 +28,7 @@ sys.path.append(os.path.join(SCRIPTS_PATH, "flood_roads"))
 try:
     import build_edge_depth
     import publish_edge_depth
+    import run_output
     from db_config import DB_CONFIG
     from roads import load_road_segments
     from flood_roads import flood_on_roads
@@ -78,7 +79,10 @@ def task_build_edge_depth_table(**kwargs):
     """Writes this run's edge depth table: the deepest flood sample along every GraphHopper edge, in
     centimetres, at every step, tagged with the graph hash (US-041), and publishes it (US-042): `latest`
     points at it, only forward, and the newest EDGE_TABLE_KEEP_RUNS tables stay. It reads the tiles task 9b
-    loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR."""
+    loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
+
+    Its last write is the run's `edge_depth` row in flood_run_output, only when `latest` names this run's table.
+    An older run that finishes after a newer one leaves `latest` alone, so its table is not the published one."""
     ti = kwargs["ti"]
     run_ts = published_run_ts(kwargs)
 
@@ -119,6 +123,13 @@ def task_build_edge_depth_table(**kwargs):
         + ("" if published.moved else f" (unchanged: {built.path.name} is not newer)")
         + (f", removed {list(published.removed)}" if published.removed else "")
     )
+    if published.latest == built.path.name:
+        conn = psycopg2.connect(**DB_CONFIG)
+        try:
+            with conn, conn.cursor() as cur:
+                run_output.record(cur, run_ts, run_output.Output.EDGE_DEPTH)
+        finally:
+            conn.close()
     return report
 
 
