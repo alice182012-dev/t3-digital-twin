@@ -176,6 +176,7 @@ class StateTestDagGraphTests(unittest.TestCase):
         database.create_flood_extent_tables.main.assert_called_once_with()
         database.create_flood_depth_raster_tables.main.assert_called_once_with()
         database.create_road_segment_table.main.assert_called_once_with()
+        database.create_flood_run_output_table.main.assert_called_once_with()
 
 
 class SharedRunNameTests(unittest.TestCase):

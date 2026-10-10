@@ -62,6 +62,7 @@ try:
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
     import database.create_road_segment_table
+    import database.create_flood_run_output_table
     import flood_extent
     import publish
     import raster_load
@@ -218,6 +219,7 @@ def task_ensure_schema(**kwargs):
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()
+    database.create_flood_run_output_table.main()
 
 
 def depth_stamps(depth_dir):

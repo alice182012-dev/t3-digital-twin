@@ -194,6 +194,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_flood_depth_raster_tables.main.assert_called_once_with()
         database.create_road_segment_table.main.assert_called_once_with()
         database.create_graph_edge_table.main.assert_called_once_with()
+        database.create_flood_run_output_table.main.assert_called_once_with()
 
     def test_no_core_task_waits_on_a_routing_task(self):
         """A DAG run takes its state from its leaf tasks. The leaves are core tasks only, so a routing failure
