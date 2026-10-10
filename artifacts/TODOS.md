@@ -10,10 +10,9 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 The replay is finished (scope A). `replay.ps1 stop` ran at 2026-10-10 18:49 +07 and read back `mode live`. [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done`. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved`.
-`flood_mapping_full` is paused. It stays paused until step 1 has pulled the branch `us-103-flood-tiles-dag`, so do not unpause it for live rain before then.
-1. Pull the branch `us-103-flood-tiles-dag` on the server, unpause `flood_tiles`, and run the acceptance check of [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] ([[decision-log|D-027]]). Then unpause `flood_mapping_full` for live rain.
-2. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decisions 7 (`TIME_AWARE_ROUTING`) and 8 ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]) from the owner. The owner accepts each `Done` at the review.
-3. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
+[[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] is `Done`. The server runs the branch `us-103-flood-tiles-dag`, and `flood_tiles` and `flood_mapping_full` are both unpaused.
+1. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decisions 7 (`TIME_AWARE_ROUTING`) and 8 ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]) from the owner. The owner accepts each `Done` at the review.
+2. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
    - Assign `sprint` to [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] only if the owner decides so. All three are `Done` with no sprint, so Velocity does not count them.
    - The owner decides whether `TIME_AWARE_ROUTING` stays on (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
    - The owner decides whether [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] resolves (open decision 8).
@@ -33,7 +32,7 @@ No story has this sprint yet.
 
 ## Product backlog
 
-24 stories.
+23 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-103"
 title: "Move the flood tile build into its own DAG"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Not started
+status: Done
 kind: story
 priority: P2
 estimate: M
@@ -69,7 +69,24 @@ On the server, after the replay has stopped and the change is pulled:
   The `.tif` folder is the default input. A second input, the PostGIS raster, is in the code behind `FLOOD_TILES_INPUT=postgis`, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] compares the two.
   The unit tests pass on the Mac.
   The server acceptance check below is still open.
+- **2026-10-10, Done.**
+  The server acceptance check passed at about 22:20 +07, and the evidence below was taken then.
+  The concept page [[minio-flood-extent-pipeline]] already documents the `flood_tiles` DAG, with `last_updated` set to 2026-10-10, so the status moved to `Done`.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+![[us-103-flood-overlay-server.png|420]]
+
+Caption: the live frontend at `100.67.84.55:8082`, captured 2026-10-10 at about 22:20 +07, with the legend "As of 10/10/2026 22:15" and the flood overlay on.
+The two z13 `.pbf` tiles that returned 404 are empty tiles, which are not published by design.
+
+1. Check 1, the trigger: the asset-triggered `flood_tiles` runs from 13:38Z to 15:04Z on 2026-10-10 all ended `success`.
+   Each one started within 1 second of the end of the `flood_mapping_full` run that triggered it, with no manual trigger.
+2. Check 2, the bucket: `runs/20261010T220000` and `runs/20261010T221500` in the `flood-extent` bucket each hold 2 timestep folders.
+3. Check 3, the frontend: the map showed the flood overlay, and the legend read "As of 10/10/2026 22:15".
+   The two z13 `.pbf` tiles returned 404, which is expected because the map treats a missing tile as empty (see [[minio-flood-extent-pipeline]]).
+4. Check 4, the audit rows: `flood_extent_step` holds 2 rows per run, each with `is_empty` false, for the runs 20261010T214500 to 20261010T221500.
+   Since 20261009T231500, 76 distinct runs have rows.
+5. Server state: the server checkout was on branch `us-103-flood-tiles-dag`, at the commit with the message "Add a constant 5 mm/h, 2 hour rain event for the US-103 acceptance check", and it was clean.
+6. Server state: `flood_tiles` and `flood_mapping_full` were both unpaused when checked.
+   This story does not record who unpaused `flood_mapping_full`.
