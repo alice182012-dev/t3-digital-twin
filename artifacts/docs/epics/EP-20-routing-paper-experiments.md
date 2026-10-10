@@ -32,7 +32,7 @@ The paper claims that a time-aware route is safer than a single-step route. Each
 
 ## Risks and open questions
 
-- `US-091` needs a replay of the storm with the `US-101` fix, because the backend keeps flood areas for only 8 runs.
+- `US-091` needed a replay of the storm with the `US-101` fix, because the backend keeps flood areas for only 8 runs by default. The replay of 2026-10-10 (`US-102`) supplied it.
 
 ## Stories
 

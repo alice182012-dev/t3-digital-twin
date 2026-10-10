@@ -22,20 +22,20 @@ The section "The manual two-event test DAG" covers a DAG that runs the same step
         |
    (rain, or a flood still stands)
         v
-1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 9_build_flood_tiles
-        |                        |                      |
+1_trigger_simulation --> 2_download_results --> 3_calculate_depth --> 3b_publish_depth_files
+        |                        |                      |                  (asset event, starts flood_tiles)
         |                        v                      +--> 9b_load_depth_raster
         |               2b_archive_results --> 2c_archive_done
         v
 0b_ensure_schema
 ```
 
-The diagram leaves out the edges from `0b_ensure_schema` to `9_build_flood_tiles` and `9b_load_depth_raster`, and from `2c_archive_done` to `9_build_flood_tiles`. The DAG has 9 tasks. Task `3b_upload_netcdf_postgres` left the DAG on 2026-10-10 ([[US-095-retire-the-netcdf-values-ingest|US-095]]). Since 2026-10-07 (commit
+The diagram leaves out the edges from `0b_ensure_schema` to `3b_publish_depth_files` and `9b_load_depth_raster`, and from `2c_archive_done` to `3b_publish_depth_files`. The DAG has 9 tasks. The tile build `9_build_flood_tiles` left the DAG for `flood_tiles`, which runs on the asset `3b_publish_depth_files` emits ([[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]). Task `3b_upload_netcdf_postgres` left the DAG on 2026-10-10 ([[US-095-retire-the-netcdf-values-ingest|US-095]]). Since 2026-10-07 (commit
 `77169c3` on the branch `modular`) the routing tasks are in their own DAG, `routing_adapter`,
 described in the next section. `routing_adapter` is unpaused on the server (checked 2026-10-08), and
 `artifacts/TODOS.md` records it running there from 2026-10-07 16:00 +07.
 
-`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `9_build_flood_tiles` and
+`0b_ensure_schema` runs after `1_trigger_simulation` and feeds `3b_publish_depth_files` and
 `9b_load_depth_raster`, since each needs its PostGIS tables to exist
 first. It creates the three empty TimescaleDB tables, `flood_road_values` with its `segment_id` column, the flood
 extent tables, the depth raster tables, and `road_segment` and `graph_edge`, which only
@@ -46,7 +46,7 @@ outlet and sets `run_ts` in the event's `extra`. Airflow emits the event only wh
 succeeds, so a dry cycle emits none. The event is the signal that a run's depth tiles are in
 `flood_depth_raster_tile`. See [[core-output-contract]], "Readiness".
 
-Tasks `9_build_flood_tiles` and `9b_load_depth_raster` name the run with
+Tasks `3b_publish_depth_files` and `9b_load_depth_raster` name the run with
 `flood_extent.run_ts_for_depth_dir`, the `stamp_key` of the earliest `depth_*.tif`. On 2026-09-24
 the GeoJSON chain (`4_extract_geojson_full` to `8_upload_postgres`) left the DAG, per the plan
 [[raster-first-flood-pipeline]].
@@ -102,7 +102,8 @@ equals the slot, or the newest state at most two cycles older, else it cold star
 [[BL-009-hotstart-state-saved-at-end-of-run|hotstart-state-saved-at-end-of-run]]. Concurrency for overlapping runs is covered in
 [[BL-013-flood-mapping-full-worker-concurrency-serializes-runs|flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
 [[fifteen-minute-cycle-tiles-and-histogram]]. The user unpaused `flood_mapping_full` at about
-15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). The DAG was paused at 18:17 +07 on 2026-10-10 at the end of the replay, and it was paused again at 18:51 after the standing-flood tail (see "Open items"). The server also had the test DAGs `calculate_depth_manual_test` and
+15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). Whether the DAG stays unpaused
+after the replay is unverified. The server also had the test DAGs `calculate_depth_manual_test` and
 `flood_forecast_consecutive_state_test` (both `schedule=None`) and `zz_cold_start_probe` unpaused on
 2026-10-08. `zz_cold_start_probe` has no file in `dags/` in the repository, so its schedule is unverified.
 
@@ -114,7 +115,8 @@ access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle proceeds
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
 mm/h). Below that, `scripts/standing_flood.py` reads the newest 5 runs of `flood_road_values` (US-101,
 [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]). The run proceeds while a recent run (under 45 minutes old) is in progress and either one of those 5 runs has a deepest value of 5 cm or more
-(`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0. Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
+(`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0.
+On 2026-10-10 the rule ran the 4 slots of the event window that the 5 mm/h gate alone would have skipped ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], resolved). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
 run ends as a successful dry-state skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
 `sim_id` there always means a real 3Di failure, so it raises `AirflowException` rather than
 `AirflowSkipException`, which would otherwise show identically green in the Airflow UI for both a
@@ -131,7 +133,9 @@ mm/h before the start and after the last row. Setting only one of the two variab
 with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
 `scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
 (246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
-rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` ran on the server on 2026-10-10 at 18:49 +07, and its read-back showed mode `live` (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]). The server's git remote for this repository is `alice`, not `origin`. See
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` ran on 2026-10-10 at 18:49 +07 and read back `mode live` (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]).
+The 2026-10-10 replay ran 55 runs from 04:45 to about 18:15 +07, and all of them ended `success` ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+The server's git remote for this repository is `alice`, not `origin`. See
 [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 
 ## Triggering the simulation
@@ -171,7 +175,9 @@ timed saved states stay in the state file. `choose_saved_state`'s 30-minute wind
 after a restart, and the run would hotstart from a storm that kept growing. The rule is on by default,
 and `FLOOD_COLD_START_AFTER_BREAK=0` turns it off. The trigger log prints a `Chain check` line with the
 verdict. Checked live on 2026-10-02: the first run after a restart logged `cold start forced`, and the
-four runs after it logged `hotstart allowed` and `[Hotstart, exact]`. A failed 3Di trigger also breaks
+four runs after it logged `hotstart allowed` and `[Hotstart, exact]`.
+On 2026-10-10 the replay logged `[Hotstart, exact]` in 57 trigger logs and `[Coldstart]` in none, and the only forced cold start was the 04:00 run that began the chain ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+A failed 3Di trigger also breaks
 the chain, so the next run cold-starts instead of using the two-cycle backup state.
 
 ### Status polling
@@ -197,7 +203,7 @@ transient error that might resolve on retry.
 Rana keeps a simulation's result files for one month (stated by the user on 2026-10-10).
 A past run can therefore be rebuilt without a new simulation until then.
 Take its `sim_id` from the `1_trigger_simulation` XCom, call `download_result.run_download`, and run `calculate_depth.run_calculate_depth` on the file.
-The local `depth.tif` files under `data/mapping/output_depths` are a cache, and the 24-hour cleanup of `9_build_flood_tiles` may delete them.
+The local `depth.tif` files under `data/mapping/output_depths` are a cache, and the 24-hour cleanup of `9_build_flood_tiles` (now in `flood_tiles`) may delete them.
 A saved state is different.
 `create_simulation.py` registers each one with an expiry of one day, so a hotstart is possible only from a run less than a day old.
 A slot that never ran has no result to download, and only a new simulation can fill it.
@@ -298,14 +304,6 @@ therefore opens in map mode, and the tester switches to flood mode by hand.
 
 ## Open items
 
-- **The standing flood after a replay (found 2026-10-10).** After `replay.ps1 stop` at 18:49 +07 and an unpause for live rain at 18:50, the live gate read 0.00 mm/h.
-  The standing-flood rule still saw the replay's flood in `flood_road_values` (3,000 or more edges at 5 cm or more), so it started a real simulation for slot 18:45 (simulation 452035).
-  That run was a cold start, because slot 18:30 was missing, and its rain was 0.00 mm/h from tomorrow.io.
-  The DAG was paused again at 18:51:47, so that it does not keep simulating a flood that is not real, and `flood_mapping_full` is paused now.
-  A fix is needed before live rain can run again.
-  The rule should not continue on replay data, and the fix can be a replay flag, a cap on chain length, or clearing `flood_road_values` after a stop.
-  The candidate story has no ID yet, and the owner schedules it.
-  The replay did not exercise the stop clause of the rule, because the newest table still forecast 3,680 edges at 5 cm or more at hour 11.5.
 - `.env` on the Mac, read on 2026-10-08, sets `MAX_WORKERS=1` and no `AIRFLOW_WORKER_CONCURRENCY`, so
   the `compose.yml` default of 1 applies (line 28). `artifacts/archive/plans/calculate-depth-threedidepth-cli.md`
   recorded `MAX_WORKERS=8` and `AIRFLOW_WORKER_CONCURRENCY=2` as checked in. The server's `.env` is

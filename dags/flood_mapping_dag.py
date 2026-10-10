@@ -5,15 +5,13 @@ from airflow.providers.standard.operators.python import BranchPythonOperator, Py
 from datetime import datetime, timedelta, timezone
 import sys
 import os
-import boto3
 import psycopg2
 
-from core_assets import FLOOD_DEPTH_RASTER
+from core_assets import FLOOD_DEPTH_FILES, FLOOD_DEPTH_RASTER
+from core_paths import BASE_PATH, DATA_PATH, DEPTH_ROOT_DIR, RESULT_DIR
 
 
-BASE_PATH = "/opt/airflow"
 SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
-DATA_PATH = os.path.join(BASE_PATH, "data/mapping")
 
 sys.path.append(SCRIPTS_PATH)
 # database/*.py import `db_config` as a top-level module (not `database.db_config`),
@@ -36,7 +34,6 @@ try:
     import database.create_graph_edge_table
     import database.create_timescale_tables
     import flood_extent
-    import publish
     import raster_load
     from db_config import DB_CONFIG
 except ImportError as e:
@@ -46,26 +43,14 @@ except ImportError as e:
 STATE_FILE = os.path.join(BASE_PATH, "state", "flood_system_state.json")
 INPUT_DEM = os.path.join(DATA_PATH, "inputs", "dem.tif")
 INPUT_GRID = os.path.join(DATA_PATH, "inputs", "gridadmin.h5")
-RESULT_DIR = os.path.join(DATA_PATH, "results")
-DEPTH_ROOT_DIR = os.path.join(DATA_PATH, "output_depths")
-# Vector tiles of the flood extent, one folder per run and timestep, served by the frontend at
-# /flood-extent/<run>/<timestep>/{z}/{x}/{y}.pbf. compose.yml mounts this folder into it.
-FLOOD_EXTENT_WORKERS = int(os.getenv("FLOOD_EXTENT_WORKERS", "2"))
-FLOOD_EXTENT_KEEP_RUNS = int(os.getenv("FLOOD_EXTENT_KEEP_RUNS", "8"))
-FLOOD_EXTENT_TILE_STEPS = int(os.getenv("FLOOD_EXTENT_TILE_STEPS", "2"))
-# scripts/flood_extent/publish.py's own scratch space, per timestep, deleted as each timestep's
-# tiles finish uploading — never the final destination, just where the raster pipeline works.
-FLOOD_EXTENT_WORK_DIR = os.path.join(DATA_PATH, "flood_extent_work")
-FLOOD_EXTENT_BUCKET = os.getenv("FLOOD_EXTENT_BUCKET", "flood-extent")
-FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS = int(os.getenv("FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS", "24"))
 # 2b_archive_results copies results_3di.nc and a run record of every real-rain run here (compose.yml mounts
-# ARCHIVE_HOST_PATH) before the 24-hour cleanup in 9_build_flood_tiles deletes RESULT_DIR.
+# ARCHIVE_HOST_PATH) before the 24-hour cleanup in the `flood_tiles` DAG deletes RESULT_DIR.
 ARCHIVE_DIR = os.getenv("ARCHIVE_DIR", os.path.join(BASE_PATH, "archive"))
 ARCHIVE_MIN_FREE_GB = float(os.getenv("ARCHIVE_MIN_FREE_GB", "50"))
 # graph.json of the graph export names the graph hash that the run record carries.
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 # scripts/flood_extent/raster_load.py's own scratch space for the EPSG:4326-reprojected copy of
-# each depth.tif; each file is deleted right after it loads, same posture as FLOOD_EXTENT_WORK_DIR.
+# each depth.tif; each file is deleted right after it loads, same posture as the flood_tiles work folder.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # The rain threshold only starts a simulation from a dry state. Once runs exist, the simulation continues until the
@@ -252,52 +237,19 @@ def depth_run(ti):
     return depth_dir, flood_extent.run_ts_for_depth_dir(depth_dir)
 
 
-def task_build_flood_tiles(**kwargs):
-    """Cut the map's flood-extent tiles from the first FLOOD_EXTENT_TILE_STEPS depth rasters of
-    this run, publish them to MinIO, and write one PostGIS audit row per dissolved band polygon
-    and one flood_extent_step row per timestep.
-
-    Only uploaded tiles and DB rows are kept; publish_run deletes every local intermediate itself
-    as each timestep finishes. The run name comes from the earliest depth file, the same one task
-    9b uses, so the UI finds the tiles from the (run, valid_time) pair it already selects. Tiles go
-    to MinIO, not a local folder, because the worker and the frontend run on separate hosts in
-    production.
-    """
+def task_publish_depth_files(**kwargs):
+    """Tell the consumers that this run's depth folder is complete. Task 3 wrote it and task 2b has archived the
+    results, so the age-based cleanup of `flood_tiles` cannot take a file the archive still needs."""
     depth_dir, run_ts = depth_run(kwargs["ti"])
-
-    print(f"🌊 9. Publishing flood-extent tiles: {depth_dir} -> s3://{FLOOD_EXTENT_BUCKET}/runs/{run_ts}")
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=os.environ["MINIO_ENDPOINT"],
-        aws_access_key_id=os.environ["MINIO_ACCESS_KEY"],
-        aws_secret_access_key=os.environ["MINIO_SECRET_KEY"],
-    )
-    db_conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        results = publish.publish_run(
-            depth_dir,
-            run_ts,
-            FLOOD_EXTENT_WORK_DIR,
-            s3,
-            FLOOD_EXTENT_BUCKET,
-            workers=FLOOD_EXTENT_WORKERS,
-            db_conn=db_conn,
-            tile_steps=FLOOD_EXTENT_TILE_STEPS,
-            keep_runs=FLOOD_EXTENT_KEEP_RUNS,
-            cleanup_dirs=[RESULT_DIR, DEPTH_ROOT_DIR, FLOOD_EXTENT_WORK_DIR],
-            cleanup_max_age_hours=FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS,
-        )
-    finally:
-        db_conn.close()
-    flooded = sum(1 for result in results.values() if not result.is_empty)
-    print(f"✅ Tiles done: {flooded}/{len(results)} timesteps have flooding")
-    return {"run_ts": run_ts, "timesteps": len(results), "flooded_timesteps": flooded}
+    kwargs["outlet_events"][FLOOD_DEPTH_FILES].extra = {"run_ts": run_ts, "depth_dir": depth_dir}
+    print(f"📨 3b. Depth files of run {run_ts} are ready: {depth_dir}")
+    return {"run_ts": run_ts, "depth_dir": depth_dir}
 
 
 def task_load_depth_raster(**kwargs):
     """Loads every depth_*.tif of this run into flood_depth_raster_tile, reprojected to EPSG:4326, so
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
-    of reading the file from disk. Same run_ts as task 9, so both tables key off the (run,
+    of reading the file from disk. Same run_ts as task 3b and the flood_tiles DAG, so both tables key off the (run,
     valid_time) pair the frontend already selects.
 
     On success it emits FLOOD_DEPTH_RASTER with the run_ts, which schedules routing_adapter_dag.py.
@@ -352,15 +304,17 @@ with DAG(
         task_id="2_download_results", python_callable=task_download_result
     )
     t2b = PythonOperator(task_id="2b_archive_results", python_callable=task_archive_results)
-    # Ends when 2b ends, failed or not, so a full archive drive turns 2b red without stopping the tile build.
+    # Ends when 2b ends, failed or not, so a full archive drive turns 2b red without stopping 3b_publish_depth_files, which starts the tile build.
     t2c = EmptyOperator(task_id="2c_archive_done", trigger_rule="all_done")
     t3 = PythonOperator(
         task_id="3_calculate_depth",
         python_callable=task_calculate_depth,
         pool=POOL_DEPTH_CALC,
     )
-    t9 = PythonOperator(
-        task_id="9_build_flood_tiles", python_callable=task_build_flood_tiles
+    t3b = PythonOperator(
+        task_id="3b_publish_depth_files",
+        python_callable=task_publish_depth_files,
+        outlets=[FLOOD_DEPTH_FILES],
     )
     t9b = PythonOperator(
         task_id="9b_load_depth_raster",
@@ -369,8 +323,8 @@ with DAG(
     )
 
     t0 >> t1 >> t2 >> t3
-    t2 >> t2b >> t2c >> t9
-    t3 >> t9
+    t2 >> t2b >> t2c >> t3b
+    t3 >> t3b
     t3 >> t9b
     t1 >> t_ddl
-    t_ddl >> [t9, t9b]
+    t_ddl >> [t3b, t9b]

@@ -416,3 +416,78 @@ is the maximum.
 - **Evidence:** the user's instruction on 2026-10-10, and the sprint-planning guide in `docs/concepts/project-management/`.
 - **Affects:** `.claude/CLAUDE.md` (rules 2, 3, and 11), `scrum-framework`, `Velocity`, `Home.md`, `TODOS.md`, `templates/sprint.md`, and `SPR-013`.
 - **Revisit if:** two sprints in a row end below half of the forecast, or the user wants another length.
+
+## D-027: Run the flood tile build as its own DAG, started by an asset that announces the depth folder
+
+- **Date:** 2026-10-10
+- **Status:** active for the split. The input is `files` by default, and the choice between `files` and `postgis` waits for [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]. The code is on the branch `us-103-flood-tiles-dag` and is not on the server yet.
+- **Decided by:** the user for the split ("separate the visualization part into a separate DAG", as prep for a future 3D view and a building cost estimate). The development team chose the input.
+- **Decision:** Task `9_build_flood_tiles` leaves `flood_mapping_full` and becomes the one task of the DAG `flood_tiles`. A new task `3b_publish_depth_files` emits the asset `flood_depth_files` with `run_ts` and `depth_dir` in the event's `extra`, after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`. `flood_tiles` runs on that asset. When events fold into one run, every run in them gets tiles. The age-based cleanup of the local result and depth folders stays in `publish_run`, so `flood_tiles` owns it, and a later consumer must not delete the depth folder. No 3D view and no cost estimate are built yet.
+- **Why:** A tile failure or a tile code change no longer touches the simulation DAG, and a new consumer of the depth rasters is its own DAG on the same asset, as `routing_adapter` is on `flood_depth_raster_tile`. A failure of `flood_tiles` does not turn a core run red.
+- **Alternatives:** (1) Read the PostGIS raster `flood_depth_raster_tile` and run on `FLOOD_DEPTH_RASTER`. It drops the shared local folder, but the tile build would wait for `9b` and first export each step back to a GeoTIFF in EPSG:4326. The code supports it with `FLOOD_TILES_INPUT=postgis` (`scripts/flood_extent/raster_export.py`), and the user asked to test both. (2) One shared "visualization" DAG for tiles, 3D, and cost. It couples three consumers that have different inputs and outputs.
+- **Evidence:** [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] and the tests `test/test_flood_tiles_dag.py` and `test/test_flood_mapping_dag_graph.py`. The server check is open.
+- **Affects:** `dags/flood_mapping_dag.py`, `dags/flood_tiles_dag.py`, `dags/core_assets.py`, `dags/core_paths.py`, `minio-flood-extent-pipeline`, `3di-simulation-orchestration`, `core-output-contract`, and the README.
+- **Revisit if:** a second consumer of the depth files needs the files after the 24-hour cleanup, or the worker and the tile build move to different hosts.
+
+## D-028: Keep the latest forecast of each road piece and moment, for years
+
+- **Date:** 2026-10-10
+- **Status:** active for the rule. The drop age and the way a consumer tells dry from unknown wait for [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+- **Decided by:** the user ("no lets do first row"), after the development team showed the sizing of three options.
+- **Decision:** The flood history for the industry applications is `depth_history` in TimescaleDB, one row per road piece and moment, where the run with the later `issued_at` wins. It is kept for several years, with TimescaleDB compression and a policy that drops old data. No table keeps every forecast of every run. The history is the model's own forecast values, since no gauge observation enters the pipeline.
+- **Why:** The latest-wins series is about 278,000 rows on a storm day, about 13 GB a year uncompressed even if every day were a storm day. Keeping every forecast is about 2.2 million rows a day, and no analysis asked for it. One month, the retention of 3Di results, is too short for a history of past floods.
+- **Alternatives:** (1) Keep every forecast for 30 days in a second table, for analyses of forecast error and lead time. Rejected for now, and a new story adds it if such an analysis is asked for. (2) Keep one month of the latest-wins series, like 3Di results. Rejected, because the series is small enough to keep for years.
+- **Evidence:** the sizing in `US-105`, read on the server on 2026-10-10. The row size and the compression ratio are estimates until `US-106` measures them.
+- **Affects:** `US-105`, `US-106`, [[EP-21-industry-analysis-on-the-flood-data|EP-21]], and [[timescaledb-schema]].
+- **Revisit if:** an industry application needs forecast error or lead time, if compression on the real TimescaleDB server is far below 10 times, or if the gauge hot start adds observed depth.
+
+## D-029: Give vault edits to a Haiku subagent
+
+- **Date:** 2026-10-10
+- **Status:** active. Decided by the user.
+- **Decided by:** the user.
+- **Decision:** Every edit under `artifacts/` goes to the `vault-writer` agent (`.claude/agents/vault-writer.md`), which runs on Haiku in the same Claude Code terminal.
+  The main session keeps code, DAGs, and scripts.
+  The brief to the agent is short: the story ID, the task, and the date.
+  The agent reads `git log`, `git diff`, and the story file for the rest.
+  A fact that exists nowhere in the repo, such as a measured number, a server result, or a user decision, goes into the brief.
+  The main session reads what the agent wrote before it reports the work as done.
+- **Why:** Vault writing is routine work, and a smaller model does it at a lower cost per token than the main session.
+  The agent needs no extra tool, and it runs in the terminal the session already uses.
+  Haiku is billed, not free, so the saving is lower cost and not zero cost.
+- **Alternatives:** (1) Hermes, a free model in a second tmux pane. It needs a second tool to run and sits outside the Claude Code terminal, so it is the fallback below. (2) Keep vault edits in the main session. It spends the main model's tokens on routine writing.
+- **Evidence:** The user's choice on 2026-10-10. No cost measurement exists yet.
+- **Affects:** `.claude/CLAUDE.md` (section "Vault edits go to the vault-writer agent") and `.claude/agents/vault-writer.md`.
+- **Revisit if:** the cost still hurts after about a week, around 2026-10-17. The fallback is Hermes in a second tmux pane, which reuses `vault-writer.md` as its instructions.
+
+## D-030: Show a pinned demo flood when no rain is forecast, and keep its peak step through every prune
+
+- **Date:** 2026-10-10
+- **Status:** active for the rule. The status signal and the router's read of the pinned step wait for [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]].
+- **Decided by:** the user.
+- **Decision:** The flood map has three modes.
+  - **LIVE:** rain is forecast above the threshold, or a standing flood exists, and real simulation steps are published. The map shows the real result, as today.
+  - **PENDING:** rain is forecast, but the simulation has published no step yet. The map shows a dry map with a warning that the simulation is running.
+  - **DEMO:** Tomorrow.io shows no rain past the threshold and no standing flood. The map shows the demo flood with the warning "No flood forecasted, displaying the demo flood of Sep 16, 2026", in English only.
+  The demo is one static frame, the peak step of the 12-hour replay of the 2026-09-16 storm ([[US-088-cut-the-hanoi-storm-of-2026-09|US-088]]). The source is the replay of 2026-10-10 ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]). It has no slider and no animation.
+  In DEMO mode the tiles, the routing, and the depth popup all use the pinned demo flood, not the tiles alone. The peak step must therefore survive every pruner: the MinIO tiles, `flood_extent_step`, and `flood_extent_polygon` (`FLOOD_EXTENT_KEEP_RUNS`, 8 runs), `flood_depth_raster_tile`, `flood_road_values` (`prune_flood_road_values`), and the routing edge tables (`EDGE_TABLE_KEEP_RUNS`, 3 runs).
+- **Why:** The request did not give a reason, so none is recorded here.
+- **Alternatives:** The user rejected these: (1) shift the demo onto the real clock, (2) show a slider over the demo, (3) show the demo on the tiles only, and (4) write the warning in Vietnamese.
+- **Evidence:** None. The code is not written, and the feature is not on any branch.
+- **Affects:** [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[minio-flood-extent-pipeline]], [[core-output-contract]], and [[edge-depth-table-format]].
+
+## D-031: Count the violation rate of single-timestep routes as the case for time-aware routing
+
+- **Date:** 2026-10-10
+- **Status:** active for the finding. Whether `TIME_AWARE_ROUTING` stays on waits for the product owner's decision (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+- **Decided by:** The development team, from the result of [[US-091-measure-how-often-a-single-timestep-route|US-091]], which the product owner accepted as `Done` on 2026-10-10.
+- **Decision:** The measured violation rate supports time-aware routing.
+  Single-timestep routes met a road that was too deep on arrival in every storm stage, vehicle, trip length class, and departure step tested.
+  The figures and their limits are in US-091.
+  The decision does not turn `TIME_AWARE_ROUTING` on or off.
+- **Why:** The case for time-aware routing is now a measured rate on the replay's tables, not an argument.
+  The slowed-travel sensitivity case on the 3-hour table kept the same count, so the free-flow arrival assumption did not drive that table's result.
+- **Alternatives:** A slowed-travel case run as a labelled sensitivity check, which kept the same count on the 3-hour table.
+- **Evidence:** The result files of `US-091` in `marie-curie/us-091/` (git-ignored), and the screenshots `us-091-single-timestep-result-output.png` and `us-091-live-sticky-mid-step-output.png` in `artifacts/docs/stories/evidence/`.
+- **Affects:** [[US-091-measure-how-often-a-single-timestep-route|US-091]], [[EP-20-routing-paper-experiments|EP-20]], [[sticky-routing-reference]], [[graphhopper-backend]], and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]].
+- **Revisit if:** the owner decides on `TIME_AWARE_ROUTING`, a later replay gives a different rate, or the free-flow arrival times are replaced by measured travel times.

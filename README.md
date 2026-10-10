@@ -14,7 +14,10 @@ gives the overview and links to the concept pages for depth.
 One Airflow DAG, `flood_mapping_full` in `dags/flood_mapping_dag.py`, produces all flood data. When
 `9b_load_depth_raster` finishes, it emits the Airflow asset `flood_depth_raster_tile` with the run's
 `run_ts`. That event starts a second DAG, `routing_adapter` in `dags/routing_adapter_dag.py`, which
-writes the routing inputs. A failure in `routing_adapter` does not fail the core run. Two services
+writes the routing inputs. A failure in `routing_adapter` does not fail the core run.
+Task `3b_publish_depth_files` emits a second asset, `flood_depth_files`, which starts the `flood_tiles` DAG in
+`dags/flood_tiles_dag.py`. That DAG cuts the map's flood-extent tiles, and a later consumer of the depth rasters
+can be added the same way, as its own DAG. Two services
 read the data. `floodmap-backend` answers routing and depth questions from PostGIS, and the
 frontend draws flood-extent tiles from MinIO.
 
@@ -25,7 +28,8 @@ flowchart LR
   SIM <-->|"template, rain, saved state"| TDI["3Di API"]
   SIM --> DL["2_download_results"]
   DL -->|"results_3di.nc"| DEPTH["3_calculate_depth"]
-  DEPTH -->|"depth_*.tif"| TILES["9_build_flood_tiles"]
+  DEPTH -->|"depth_*.tif"| PUB["3b_publish_depth_files"]
+  PUB -.->|"asset event, run_ts, depth_dir"| TILES["flood_tiles DAG: 9_build_flood_tiles"]
   DEPTH -->|"depth_*.tif"| RASTER["9b_load_depth_raster"]
   TILES -->|".pbf tiles"| MINIO[("MinIO flood-extent bucket")]
   TILES -->|"flood_extent_polygon, flood_extent_step"| PG[("storage-postgres, PostGIS")]
@@ -113,7 +117,7 @@ For the details, see [`flood-on-roads.md`](artifacts/docs/concepts/flood-on-road
 
 ### Flood-extent vector tiles in MinIO draw the map layer
 
-`9_build_flood_tiles` runs `scripts/flood_extent/publish.py`. GRASS GIS turns the first
+`9_build_flood_tiles`, the one task of the `flood_tiles` DAG, runs `scripts/flood_extent/publish.py`. GRASS GIS turns the first
 `FLOOD_EXTENT_TILE_STEPS` depth rasters (default 2) into depth-band polygons. The task cuts them
 into Mapbox vector tiles and uploads them to the `flood-extent` bucket at
 `runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf`. It also writes each polygon to
@@ -281,8 +285,8 @@ Each port has an override variable in `compose.yml`, such as `FLOOD_ROUTING_FRON
 ### Repository layout
 
 - `dags/` holds the Airflow DAGs. `flood_mapping_dag.py` defines `flood_mapping_full`, and
-  `routing_adapter_dag.py` defines `routing_adapter`. `core_assets.py` defines the asset that links
-  them.
+  `routing_adapter_dag.py` defines `routing_adapter`, and `flood_tiles_dag.py` defines `flood_tiles`.
+  `core_assets.py` defines the assets that link them, and `core_paths.py` the folders they share.
 - `scripts/` holds the Python code that the DAG tasks call. It has the 3Di client and simulation
   steps at its top level. Its subfolders are `database/` for table creation, `flood_extent/` for
   tiles and raster loading, `flood_roads/`, `roads/`, `flood_metrics/`, `initial_wl/`, and

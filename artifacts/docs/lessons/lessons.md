@@ -58,7 +58,7 @@ toward exists yet, before concluding it's dead. If `pgrep -f` is the only signal
 negative result as inconclusive on this environment rather than confirmed, and check `ps aux` output
 format first to see whether it even carries arguments. Never launch a second instance of the same
 mutating command (build, migration, `up`, deploy) against the same target while unsure whether the
-first is still running — a race on shared names/resources is a likely outcome, not an edge case.
+first is still running. A race on shared names and resources is a likely outcome, not an edge case.
 
 Full incident: [[L-003-confirm-a-process-is-dead-before-retrying-in-parallel|L-003 original]].
 
@@ -208,3 +208,13 @@ same 4.2.4 client. A simulation start may still reject the field. Record the res
 someone starts a real simulation.
 
 Full incident: [[L-011-patch-the-plugin-before-upgrading-the-client-in-qgis-python|L-011 original]].
+
+## L-012
+
+**Gate a stateful chain on its state, not only on its trigger.**
+
+A scheduled step that skips on a quiet trigger writes no output. A later step that restarts from saved state can then find that state too old and start cold, because the water or the model state outlasted the trigger.
+
+**How to apply.** Before you add a skip branch to a pipeline that keeps saved state, ask what the state describes and how long it lasts. If the state lasts longer than the trigger, the skip must also read the state. Check the change in a replay that has a quiet stretch inside the event. Every slot must run or log a hotstart, and the first table after the stretch must sit within a band of the table before it.
+
+Full incident: [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], which stays in `docs/blockers/`.

@@ -69,16 +69,12 @@ leave the table stale for a run. The cause is unproven until the server shows it
 - **2026-10-06, monitoring.** The user ran the `pg_stat_user_tables` check on the server. `last_analyze` of `flood_depth_raster_tile` is 2026-10-06 03:41:16 UTC, four seconds after run `20261006T104500` started 9c (03:41:12 UTC), so the guard's `ANALYZE` ran in that run. `last_autoanalyze` is still 2026-10-05 17:22:08 UTC, the old value, so autovacuum has not analyzed the table since and the build's own `ANALYZE` is the only fresh statistics. The run took 51.1 s. That supports the stale-statistics theory but does not prove it, since one run is one sample. Close as `resolved` after several more 9c runs under load stay near 50 s.
 - **2026-10-07, monitoring.** `US-073` moved 9c into its own `routing_adapter` DAG, merged to branch `modular` and running on the server since 2026-10-07 16:00 +07. `table_timing.ps1 -Runs 250` found exactly one real 9c run from it so far (the DAG only started two hours earlier): build time 60.1 s, same 67,833 edges and 1,085,487 bytes as the 2026-10-06 run, still near 50 to 60 s inside the step. But the gap from the end of `3_calculate_depth` to the end of 9c was 8.21 minutes, over `US-045`'s 5-minute limit, most likely the new DAG's cold-start/asset-event catch-up rather than a real regression, but n=1 cannot tell the two apart. Stays `monitoring`, not `resolved`: need several more `routing_adapter` runs once the replay ends to see whether the build time holds near 50 to 60 s and whether the end-to-end gap comes down once the DAG is warm.
 - **2026-10-10, monitoring.** `US-070` and `US-086` are `Done`. `9c` still rose within a chain in the second replay (46 s to 96 s in chain 1), with no run past the 120 s cancel, so the blocker stays `monitoring`. The readings are in [[US-070-stop-a-slow-sampling-step-from-holding|US-070]].
-- **2026-10-10, monitoring.** Samples of the Scope A replay, which started at 04:45 +07, give the longest `9c_build_edge_depth_table` (in the `routing_adapter` DAG) at each replay hour.
-  Hour 0 had no run yet.
-  The longest was 57 s at hour 1, 68 s at hour 3, 87 s at hour 6, 100 s at hour 9, 109 s at hour 11.5, and 109 s over all 54 runs at hour 13.
-  The average at hour 13 was 87 s, and the last runs took 97 to 105 s, ending at 97 s.
-  The time rose about 1 s per run until about hour 9, and then it flattened.
-  No run reached the 120 s cancel.
-  `flood_depth_raster_tile` dead tuples cycle between 0 and 7,040 with an hourly autovacuum, and live tuples stay between 49,844 and 56,320, so table bloat does not explain the growth.
-  The cause is still unknown.
-  The owner decides at planning whether to resolve the blocker, since the longest 9c stayed under 120 s.
-
-Rendered output of `marie-curie/us-102/bl023_sample.sh`, captured 2026-10-10 04:04 to 18:17 +07 on gods-macbook.local (the Mac), against the server 100.67.84.55.
-
-![[bl-023-replay-samples-output.png|900]]
+- **2026-10-10, monitoring.** The replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] (04:45 to about 18:15 +07) gave the longest `9c` of the chain at each sample.
+  It grew from 57 s (the run at 05:07 +07, first seen at the 05:09 reading) to 109 s (the run at 15:22 +07, first seen at the 16:17 reading), and it averaged 87 s over 54 runs at the 18:17 reading.
+  No run passed the 120 s cancel.
+  The longest value is under 120 s, but the duration still grows with the length of the chain, so the owner decides at planning (open decision 8 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+- **2026-10-10, monitoring.** The `n_dead_tup` of `flood_depth_raster_tile` was 0 at the 07:47, 10:47, 13:47, and 16:17 readings.
+  It was 7,040 at the 04:04, 05:09, and 18:17 readings, each taken after an autovacuum (at 00:38, 04:53, and 18:06 +07).
+  Those three readings also show the same live and dead counts (56,320 and 7,040), so the statistics may not have refreshed, but the cause is not proven.
+  The claim that the dead-tuple count is 0 after each autovacuum does not hold for these readings.
+  The raw readings are in `marie-curie/us-102/bl023_samples.log`, and the script is `marie-curie/us-102/bl023_sample.sh`.
