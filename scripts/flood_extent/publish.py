@@ -246,6 +246,6 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
     cleanup_old_files(cleanup_dirs, cleanup_max_age_hours)
     if db_conn is not None:
         with db_conn, db_conn.cursor() as cur:
-            run_output.prune(cur, keep_runs, always_keep=run_ts)
             run_output.record(cur, run_ts, run_output.Output.EXTENT)
+            run_output.prune(cur, keep_runs, always_keep=run_ts)
     return results
