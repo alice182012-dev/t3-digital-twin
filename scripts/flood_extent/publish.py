@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import flood_extent
+import run_output
 
 VIETNAM_UTC_OFFSET = timedelta(hours=7)
 
@@ -204,6 +205,10 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
     per-timestep state is safe. Bucket pruning, step-row pruning, polygon-row pruning, and the 24h
     local cleanup only run after every timestep in this run succeeds, so a partial failure never
     prunes still-good older runs.
+
+    The run's `extent` row in flood_run_output is the last write, after every one of the first
+    `tile_steps` steps is published, wet or dry, and after the prunes. A failure anywhere leaves no
+    row. The same transaction prunes flood_run_output to the newest `keep_runs` runs.
     """
     depth_dir = Path(depth_dir)
     if not flood_extent.RUN_DIR.match(run_ts):
@@ -239,4 +244,8 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
     prune_step_rows(db_conn, keep_runs, always_keep=run_ts)
     prune_polygon_rows(db_conn, keep_runs, always_keep=run_ts)
     cleanup_old_files(cleanup_dirs, cleanup_max_age_hours)
+    if db_conn is not None:
+        with db_conn, db_conn.cursor() as cur:
+            run_output.prune(cur, keep_runs, always_keep=run_ts)
+            run_output.record(cur, run_ts, run_output.Output.EXTENT)
     return results
