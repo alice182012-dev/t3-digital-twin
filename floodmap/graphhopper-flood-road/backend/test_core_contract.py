@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from core_contract import Column, Keys, contract_tables, parse_contract, parse_keys
+from core_contract import Column, Keys, contract_tables, parse_contract, parse_keys, parse_reader_roles
 
 CONTRACT_TABLES = {
     "flood_depth_raster_tile",
@@ -21,6 +21,13 @@ CONTRACT_TABLES = {
     "flood_extent_step",
     "flood_road_values",
     "graph_edge",
+}
+
+READER_ROLES = {
+    "routing_reader": frozenset(CONTRACT_TABLES),
+    "analysis_reader": frozenset(
+        {"flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "flood_road_values"}
+    ),
 }
 
 _LIVE_COLUMNS_SQL = """
@@ -70,6 +77,27 @@ One row is one thing.
 | Output | Kept | Set by |
 | ------ | ---- | ------ |
 | `first_table` | Newest 8 runs | `publish.py` |
+
+## Reader roles
+
+Prose about every role.
+
+- **Password.** `<ROLE>_PASSWORD` in `.env`.
+
+### reader_one
+
+- `first_table`
+- `second_table`
+
+### reader_two
+
+The second reader.
+
+- `second_table`
+
+## After
+
+- `first_table`
 """
 
 
@@ -191,6 +219,46 @@ def test_diff_names_the_table_and_the_column() -> None:
     assert diff_columns("gone", contract, []) == ["gone: not found in the database"]
 
 
+def test_parses_each_reader_role_and_its_tables() -> None:
+    assert parse_reader_roles(SAMPLE) == {
+        "reader_one": frozenset({"first_table", "second_table"}),
+        "reader_two": frozenset({"second_table"}),
+    }
+    assert parse_reader_roles("# No roles here\n") == {}
+
+
+def _reader_roles_error(roles_section: str) -> str:
+    try:
+        parse_reader_roles(SAMPLE.replace("## After", roles_section + "\n## After"))
+    except ValueError as error:
+        return str(error)
+    raise AssertionError(f"{roles_section!r} was accepted")
+
+
+def test_rejects_a_role_with_no_table() -> None:
+    assert _reader_roles_error("### reader_three\n\nNo tables.\n") == "role reader_three lists no table"
+
+
+def test_rejects_a_table_the_contract_does_not_describe() -> None:
+    assert _reader_roles_error("### reader_three\n\n- `road_segment`\n") == (
+        "line 51: role reader_three lists road_segment, which the contract does not describe"
+    )
+
+
+def test_rejects_a_role_listed_twice() -> None:
+    assert _reader_roles_error("### reader_one\n\n- `first_table`\n") == "line 49: role reader_one is listed twice"
+
+
+def test_rejects_a_table_before_any_role() -> None:
+    text = "### t\n\n| Column | Type | Nullable |\n| - | - | - |\n| `a` | `text` | no |\n\n## Reader roles\n\n- `t`\n"
+    try:
+        parse_reader_roles(text)
+    except ValueError as error:
+        assert str(error) == "line 9: table t needs a role heading before it", error
+    else:
+        raise AssertionError("a table bullet before any role heading must be rejected")
+
+
 def test_page_describes_the_five_contract_tables() -> None:
     path = page_path()
     if path is None or not path.is_file():
@@ -204,6 +272,7 @@ def test_page_describes_the_five_contract_tables() -> None:
     keys = parse_keys(path.read_text(encoding="utf-8"))
     no_key = sorted(CONTRACT_TABLES - set(keys))
     assert not no_key, f"the page lists no primary key for {no_key}"
+    assert parse_reader_roles(path.read_text(encoding="utf-8")) == READER_ROLES
 
 
 def test_page_matches_the_live_schema() -> None:
@@ -246,6 +315,11 @@ def main() -> int:
     test_rejects_a_nullable_that_is_not_yes_or_no()
     test_rejects_a_table_described_twice()
     test_diff_names_the_table_and_the_column()
+    test_parses_each_reader_role_and_its_tables()
+    test_rejects_a_role_with_no_table()
+    test_rejects_a_table_the_contract_does_not_describe()
+    test_rejects_a_role_listed_twice()
+    test_rejects_a_table_before_any_role()
     test_page_describes_the_five_contract_tables()
     test_page_matches_the_live_schema()
     print("ok")
