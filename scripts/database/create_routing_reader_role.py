@@ -1,11 +1,13 @@
-"""Create the read-only role the routing backend connects with (US-072).
+"""Create one read-only role that a consumer app connects with (US-072, US-107).
 
-    ROUTING_READER_PASSWORD=... python scripts/database/create_routing_reader_role.py
+    ROUTING_READER_PASSWORD=... python scripts/database/create_routing_reader_role.py routing_reader
+    ANALYSIS_READER_PASSWORD=... python scripts/database/create_routing_reader_role.py analysis_reader
 
-Connects with DB_CONFIG, the writer role, and needs CREATEROLE. The role is named by
-ROUTING_READER_USER (default routing_reader) and gets the password in ROUTING_READER_PASSWORD.
-It can read only the tables that artifacts/docs/concepts/core-output-contract.md lists, or the page
-that CORE_CONTRACT_PAGE names. Rerun it after the contract page changes.
+Connects with DB_CONFIG, the writer role, and needs CREATEROLE. The argument names a role under
+"## Reader roles" in artifacts/docs/concepts/core-output-contract.md, or in the page that
+CORE_CONTRACT_PAGE names. The role can read only the tables listed for it there. Its PostgreSQL name
+is <ROLE>_USER (default: the role name) and its password is <ROLE>_PASSWORD. Rerun it after the role's
+list changes.
 
 PostGIS keeps working without a grant here. Its functions are executable by PUBLIC, and
 spatial_ref_sys, geometry_columns and raster_columns are readable by PUBLIC.
@@ -21,9 +23,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "floodmap" / "graphhopper-flood-road" / "backend"))
 
-from core_contract import contract_tables  # noqa: E402
+from core_contract import parse_reader_roles  # noqa: E402
 
-DEFAULT_ROLE = "routing_reader"
 _IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
@@ -46,6 +47,12 @@ def grant_statements(role: str, database: str, tables: frozenset[str]) -> list[s
     ]
 
 
+def reader_env(role: str) -> tuple[str, str]:
+    """The variables that hold role's PostgreSQL name and its password."""
+    prefix = role.upper()
+    return f"{prefix}_USER", f"{prefix}_PASSWORD"
+
+
 def page_path() -> Path:
     override = os.environ.get("CORE_CONTRACT_PAGE")
     if override:
@@ -53,30 +60,32 @@ def page_path() -> Path:
     return REPO / "artifacts" / "docs" / "concepts" / "core-output-contract.md"
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
+    roles = parse_reader_roles(page_path().read_text(encoding="utf-8"))
+    if len(argv) != 2 or argv[1] not in roles:
+        print(f"Usage: {Path(argv[0]).name} ROLE, where ROLE is one of {', '.join(sorted(roles))}.", file=sys.stderr)
+        return 2
+    role, tables = argv[1], roles[argv[1]]
+    user_env, password_env = reader_env(role)
+    user, password = os.environ.get(user_env, role), os.environ.get(password_env)
+    if not password:
+        print(f"Set {password_env} to the password {role} will use.", file=sys.stderr)
+        return 1
+
     import psycopg2
 
     from db_config import DB_CONFIG
 
-    role = os.environ.get("ROUTING_READER_USER", DEFAULT_ROLE)
-    password = os.environ.get("ROUTING_READER_PASSWORD")
-    if not password:
-        print("Set ROUTING_READER_PASSWORD to the password the backend will use.", file=sys.stderr)
-        return 1
-    tables = contract_tables(page_path().read_text(encoding="utf-8"))
-    if not tables:
-        print(f"{page_path()} lists no contract table.", file=sys.stderr)
-        return 1
-    statements = grant_statements(role, DB_CONFIG["database"], tables)
+    statements = grant_statements(user, DB_CONFIG["database"], tables)
 
     conn = psycopg2.connect(**DB_CONFIG)
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,))
+            cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
             if cur.fetchone() is None:
-                cur.execute(f"CREATE ROLE {_quote(role)}")
+                cur.execute(f"CREATE ROLE {_quote(user)}")
             cur.execute(
-                f"ALTER ROLE {_quote(role)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
+                f"ALTER ROLE {_quote(user)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
                 "NOREPLICATION NOBYPASSRLS PASSWORD %s",
                 (password,),
             )
@@ -85,9 +94,9 @@ def main() -> int:
     finally:
         conn.close()
 
-    print(f"Role {role} can read {', '.join(sorted(tables))}.")
+    print(f"Role {user} can read {', '.join(sorted(tables))}.")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(sys.argv))
