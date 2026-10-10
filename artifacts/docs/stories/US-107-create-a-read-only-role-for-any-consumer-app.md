@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-107"
 title: "Create a read-only role for any consumer app"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -41,6 +41,7 @@ Dependencies: None.
 - **2026-10-10, Reviewed.** The server check passed.
   The role script ran for both roles, the permission checks and `test_reader_role.py` passed, and `POST /route` returned 200.
   The product owner accepts `Done` at the review.
+- **2026-10-10, Done.** The product owner accepted the story at the review.
 
 ## Evidence and details
 

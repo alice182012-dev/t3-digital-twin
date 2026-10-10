@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-108"
 title: "Publish a run manifest for the core outputs"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: In progress
 kind: story
 priority: P2
 estimate: M
@@ -35,6 +35,7 @@ Dependencies: None. `US-107` adds the table to the list of each role.
 ## Status history
 
 - **2026-10-10, draft.** Ready: it passes the INVEST check.
+- **2026-10-10, In progress.** The product owner moved the story to In progress after the US-107 review.
 
 ## Evidence and details
 
