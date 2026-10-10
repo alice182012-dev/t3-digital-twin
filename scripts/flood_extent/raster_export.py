@@ -22,7 +22,7 @@ LIMIT %(steps)s
 """
 
 # ST_Union of the unpadded tiles rebuilds the whole timestep. ST_AsGDALRaster needs the GTiff driver enabled for
-# the session, as raster_load.load_raster does for ST_FromGDALRaster.
+# the session, as raster_load.write_tiles does for ST_FromGDALRaster.
 _RASTER_SQL = """
 SELECT ST_AsGDALRaster(ST_Union(rast), 'GTiff')
 FROM flood_depth_raster_tile
