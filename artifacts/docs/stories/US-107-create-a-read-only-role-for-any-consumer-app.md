@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-107"
 title: "Create a read-only role for any consumer app"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: In progress
 kind: story
 priority: P2
 estimate: S
@@ -25,6 +25,9 @@ The section names each role and its tables.
 `routing_reader` keeps the same tables as today, so `floodmap-backend` does not change.
 A second role, `analysis_reader`, is added to the page and gets the tables an analysis reads.
 The password of each role comes from its own variable in `.env`.
+`routing_reader` reads `ROUTING_READER_USER` (default `routing_reader`) and `ROUTING_READER_PASSWORD`, as in `.env.example`.
+`analysis_reader` reads `ANALYSIS_READER_USER` (optional, default `analysis_reader`) and `ANALYSIS_READER_PASSWORD`.
+The product owner sets `ANALYSIS_READER_PASSWORD` in the server `.env`.
 
 Given the script run on the server for both roles, when a session connects as `analysis_reader`, then `SELECT` works on its tables, an `INSERT` fails with a permission error, and a `SELECT` on `road_segment`, which is not in its list, fails with a permission error.
 Given the same run, then `floodmap-backend` still answers `POST /route` as `routing_reader`, and `test_reader_role.py` passes for both roles.
@@ -34,6 +37,7 @@ Dependencies: None.
 ## Status history
 
 - **2026-10-10, draft.** Ready: it passes the INVEST check.
+- **2026-10-10, In progress.** The product owner chose the password variable of the second role, `ANALYSIS_READER_PASSWORD`, and the optional user variable `ANALYSIS_READER_USER`.
 
 ## Evidence and details
 

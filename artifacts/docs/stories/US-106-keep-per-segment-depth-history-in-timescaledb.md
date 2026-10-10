@@ -19,10 +19,13 @@ tags: [user-story]
 
 As an analyst, I want the depth of each road piece to stay on record after the pipeline prunes its own tables, so I can study past floods.
 
-The design follows [[timescaledb-schema]] and [[decision-log|D-028]]. [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] sets the grain, the drop age, and how a consumer tells dry from unknown.
+The design follows [[timescaledb-schema]] and [[decision-log|D-028]], as changed by [[decision-log|D-032]].
+[[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] measured the sizing, and [[decision-log|D-032]] sets the grain, the one-year retention, and how a consumer tells dry from unknown.
 A new asset `FLOOD_ROAD_VALUES` in `dags/core_assets.py` is emitted by task `flood_on_roads` of `routing_adapter`.
 A new DAG `flood_history` runs on that asset and copies the run's per-piece depths into `depth_history`.
 The loader converts `forecast_time` (Vietnam time, no offset) to a UTC `valid_time`, writes `cycle` as `constant_cycle`, and keeps the row with the later `issued_at` when two runs cover the same moment.
+`flood_history` also writes a `history_moment` table (`valid_time` as primary key, with `issued_at`) for every moment the run covers, even when no piece is wet.
+Open point: settle which run wins when the later run wets no piece, because `flood_on_roads.py` picks the newest run with rows and [[decision-log|D-032]] picks the later run that covers the moment.
 The task runs before the 24-hour prune of `flood_road_values` can remove the run.
 The `timescaledb-data` volume moves to a host path on D: before the first load, as `airflow-logs` already does in `compose.yml`, because C: holds Docker's disk image ([[BL-022-docker-data-vhdx-fills-c-drive-again|BL-022]]).
 `create_timescale_tables.py` runs from the DAG on every run, like `0b_ensure_schema` does for `storage-postgres`.

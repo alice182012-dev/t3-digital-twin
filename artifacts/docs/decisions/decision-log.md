@@ -432,7 +432,7 @@ is the maximum.
 ## D-028: Keep the latest forecast of each road piece and moment, for years
 
 - **Date:** 2026-10-10
-- **Status:** active for the rule. The drop age and the way a consumer tells dry from unknown wait for [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+- **Status:** active for the rule. The retention of several years is superseded by [[decision-log|D-032]], which sets one year. The way a consumer tells dry from unknown is set in D-032, and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] builds the store.
 - **Decided by:** the user ("no lets do first row"), after the development team showed the sizing of three options.
 - **Decision:** The flood history for the industry applications is `depth_history` in TimescaleDB, one row per road piece and moment, where the run with the later `issued_at` wins. It is kept for several years, with TimescaleDB compression and a policy that drops old data. No table keeps every forecast of every run. The history is the model's own forecast values, since no gauge observation enters the pipeline.
 - **Why:** The latest-wins series is about 278,000 rows on a storm day, about 13 GB a year uncompressed even if every day were a storm day. Keeping every forecast is about 2.2 million rows a day, and no analysis asked for it. One month, the retention of 3Di results, is too short for a history of past floods.
@@ -491,3 +491,36 @@ is the maximum.
 - **Evidence:** The result files of `US-091` in `marie-curie/us-091/` (git-ignored), and the screenshots `us-091-single-timestep-result-output.png` and `us-091-live-sticky-mid-step-output.png` in `artifacts/docs/stories/evidence/`.
 - **Affects:** [[US-091-measure-how-often-a-single-timestep-route|US-091]], [[EP-20-routing-paper-experiments|EP-20]], [[sticky-routing-reference]], [[graphhopper-backend]], and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]].
 - **Revisit if:** the owner decides on `TIME_AWARE_ROUTING`, a later replay gives a different rate, or the free-flow arrival times are replaced by measured travel times.
+
+## D-032: Store the flood history by road piece and moment in TimescaleDB, for one year, with a moment table for dry and unknown
+
+- **Date:** 2026-10-10
+- **Status:** active for the store, the grain, and the one-year retention. The `history_moment` table, the dry-or-unknown rule, and the compression and drop policy are the team's recommendation, which the product owner reads at the review of [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]].
+- **Decided by:** The product owner, on 2026-10-10, for three points: the three industries (sub-question 1 of `US-105`), a missing row means dry at piece level (sub-question 4), and history lasts one year (sub-question 5).
+  The development team recommends the `history_moment` table and the moment rule in the Decision below.
+  That recommendation is not an owner answer.
+- **Decision:** The store is `depth_history` in TimescaleDB, as [[decision-log|D-028]] set.
+  The grain is one row per road piece and moment.
+  When two runs cover the same moment, the run with the later `issued_at` wins for every piece of that moment.
+  A piece that an earlier run wets and the winning run does not wet gets a row with depth 0, or its earlier row is removed, so the earlier depth does not stay as the answer.
+  History is kept one year, which supersedes the several-year target of [[decision-log|D-028]].
+  The proposal for [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is compression of each chunk once it closes, and a drop policy at 365 days.
+  A table `history_moment`, with `valid_time` as primary key and `issued_at`, gets a row for every moment a run covers, even when no piece is wet.
+  Consumer rule: a moment in `history_moment` with no row for a piece means dry (0 m).
+  A moment not in `history_moment` means unknown, for example a slot that the 5 mm/h rain gate skipped ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]).
+  The consumer rule in [[EP-21-industry-analysis-on-the-flood-data|EP-21]] is confirmed for the read-only consumer and the pipeline as the only writer of the contract tables (its first bullet under "Dependencies and assumptions").
+  It is changed for the history: a missing row means dry only when the moment is in `history_moment`.
+  The rule for `flood_road_values` does not change.
+- **Why:** The measured latest-wins series holds 319,573 rows over three local days, and 297,244 of them fall on the replay storm day (`US-105`, "Evidence and details").
+  TimescaleDB 2.30.1 compresses that sample 11.4 times, so one year of storm days is about 1.3 GB.
+  A missing row cannot say dry or unknown alone, because a run that wets no piece writes no rows, and a skipped run writes no rows either.
+  The `history_moment` table is the cheapest way to tell those apart.
+- **Alternatives:** (1) Write a row for every piece at every moment, the ceiling of about 3.4 million rows a day. Rejected, because most of those rows would say 0. (2) Keep `depth_history` alone, with no moment table. Rejected, because a skipped run and a dry moment would look the same.
+- **Evidence:** The measurements in `US-105`, "Evidence and details", taken on the server and on a scratch hypertable on TimescaleDB 2.30.1 on 2026-10-10.
+  The sample ordered runs by `file_id`, and the decision orders them by `issued_at`.
+  Across the 80 runs on the server, `file_id` order and `issued_at` order agree for 79 of 80 runs and disagree for one pair.
+  `file_id` 523 has run timestamp 2026-10-10 19:00 but was written after `file_id` 522 (timestamp 20:15).
+  The 319,573 row count and the compression ratio do not depend on which run wins, but the depth values of overlapping moments between files 522 and 523 could.
+  The routing writer in `scripts/flood_roads/flood_on_roads.py` picks "the newest run with rows at that time", which is not the same rule as the one above, so US-106 must settle the two.
+- **Affects:** [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], [[decision-log|D-028]], [[EP-21-industry-analysis-on-the-flood-data|EP-21]], and [[timescaledb-schema]].
+- **Revisit if:** the product owner rejects the `history_moment` table, the measured row size or compression on a longer storm series differs far from 141 bytes and 11.4 times, an analysis needs more than one year, or an analysis needs forecast error or lead time ([[decision-log|D-028]]).

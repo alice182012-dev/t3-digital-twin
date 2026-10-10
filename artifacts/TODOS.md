@@ -11,10 +11,10 @@ Index: [[Home]].
 <!-- next-action:start -->
 The replay is finished (scope A). `replay.ps1 stop` ran at 2026-10-10 18:49 +07 and read back `mode live`. [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done`. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved`. The owner closed [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] and [[BL-010-map-shows-forecast-not-now|BL-010]] on 2026-10-10.
 [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] is `Done`. The server runs the branch `us-103-flood-tiles-dag`, and `flood_tiles` and `flood_mapping_full` are both unpaused.
-1. Sunday 2026-10-11, the industry-analysis stories of [[EP-21-industry-analysis-on-the-flood-data|EP-21]]. No story takes a sprint before Monday's planning, and at most two are `In progress`. The order follows the dependencies:
-   - Start [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] (spike, S). Measure the row count and the compressed size on the server, then write the `D-nnn`. It needs the owner's answers to sub-questions 4 (dry or unknown) and 5 (drop age).
-   - Start [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] (S). It has no dependency and changes roles on the server, so the server `.env` needs the new password variables first.
-   - Next: [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] (M, no dependency), then [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (M, after US-105), then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M, after US-107 and US-108).
+1. Sunday 2026-10-11, the industry-analysis stories of [[EP-21-industry-analysis-on-the-flood-data|EP-21]]. No story takes a sprint before Monday's planning, and at most two are `In progress`.
+   - [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Reviewed`. The measurements and [[decision-log|D-032]] are written. The owner reads the "Decided by" line of D-032: the `history_moment` table is the team's recommendation, not an owner answer. The owner accepts the story at the review.
+   - [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] is `In progress`. The code is done on the branch `worktree-agent-a26392d22d0112520`. The server check waits for the owner to set `ANALYSIS_READER_PASSWORD` in the server `.env`. The role script now needs a role name as its argument.
+   - Next: [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] (M, no dependency), then [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (after US-105, estimate M may become L because of `history_moment` and the open winner rule), then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (after US-107 and US-108).
    - Last: [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S, P3), on a copy of the database in `marie-curie/`.
 2. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decision 7 (`TIME_AWARE_ROUTING`) from the owner. The owner accepts each `Done` at the review.
 3. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
@@ -43,7 +43,7 @@ The top 10 by priority:
   Compare the live app with the mockup in Aside at 1366x768
 - [[US-094-archive-results-3di-nc-and-a-run|US-094]], P1, M, Reviewed.
   Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
-- [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], P1, S, Ready.
+- [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], P1, S, Reviewed.
   Decide what flood history the industry apps need
 - [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], P1, M, Not started.
   Keep per-segment depth history in TimescaleDB
