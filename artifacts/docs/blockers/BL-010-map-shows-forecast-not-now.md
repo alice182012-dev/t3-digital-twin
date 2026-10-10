@@ -1,15 +1,15 @@
 ---
 date_open: 2026-09-25
-date_closed: 
+date_closed: 2026-10-10
 type: blocker
-status: monitoring
+status: resolved
 severity: P2
 subsystem: floodmap-frontend
 approaches_tried: 1
-approaches_remaining: 1
+approaches_remaining: 0
 tags: [blocker, frontend, forecast, routing, product-decision]
 related: ["[[EP-02-frontend-polish|frontend-polish]]", "[[US-017-route-forecast-query|route-forecast-query]]", "[[US-001-depth-forecast-chart|depth-forecast-chart]]", "[[3di-simulation-orchestration]]", "[[PRD-001-flood-routing-mockup-frontend-gap|flood-routing-mockup-frontend-gap]]", "[[decision-log]]", "[[five-minute-tile-freshness]]", "[[EP-07-carried-over-backlog|carried-over-backlog]]"]
-last_updated: 2026-10-02
+last_updated: 2026-10-10
 ---
 
 # The map shows a forecast timestep, not the situation now
@@ -250,3 +250,4 @@ Any option that changes what the map shows also changes the "Updated" line story
 - **2026-10-02, monitoring.** [[EP-07-carried-over-backlog|carried-over-backlog]] Story 6 (`US-037`) is `Done`. After the depth inputs moved to local disk, the tile dissolve ran per band, and a restart began from the initial water level, four consecutive on-time runs published step 1 with margins of +1.9 to +4.1 minutes. The margin shrinks about 0.6 minutes per run as the 50 mm/h test storm grows, so this holds for the first hour of a storm. Still `monitoring` until a longer or real-rain run shows the margin holds.
 - **2026-10-02, monitoring.** [[EP-07-carried-over-backlog|carried-over-backlog]] Story 6 (`US-037`) is `In progress` again. The user stopped the pipeline, because the constant 50 mm/h test rain behind the four-run pass is not a real event. The retest runs a recorded 48-hour rain (`US-063`). The page stays `monitoring`.
 - **2026-10-02, monitoring.** The 50 real runs of the 50 mm/h storm from 00:45 to 13:00 +07 show the margin to the end of the tile task at +2.3 minutes in the 01:00 hour, +0.5 in the 02:00 hour, and -0.7 or lower from the 03:00 hour. The tile task grew from 5.8 to 11.5 minutes. The four-run pass of `US-037` covered only the first hours of that storm, which is why the retest uses a recorded rain ([[EP-07-carried-over-backlog|carried-over-backlog]] Story 8).
+- **2026-10-10, resolved.** The product owner closed this blocker on 2026-10-10. The last measured reading on this page is the 2026-10-02 entry, which shows the margin to the end of the tile task at -0.7 minutes or lower from the 03:00 hour, and no later reading is on this page. The Decision and explanation section is not rewritten for the close.

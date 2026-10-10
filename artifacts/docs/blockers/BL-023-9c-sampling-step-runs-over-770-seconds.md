@@ -1,12 +1,12 @@
 ---
 date_open: 2026-10-05
-date_closed: 
+date_closed: 2026-10-10
 type: blocker
-status: monitoring
+status: resolved
 severity: P1
 subsystem: airflow-pipeline
 approaches_tried: 1
-approaches_remaining: "confirm the cause on the server, from the 9c log after the pull, and the plan of a slow step if one is cancelled"
+approaches_remaining: 0
 tags: [blocker, airflow, postgres, edge-depth-table, replay]
 related: ["[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]"]
 last_updated: 2026-10-10
@@ -47,7 +47,7 @@ table stays published. Pushed as `5e358bf`. Not on the server yet.
 
 ## Decision and explanation
 
-Pending. After `git pull alice front-end-according-to-mock-up` on the server (scripts are bind-mounted, so no image
+Closed by the product owner on 2026-10-10, see Status history. Before the close, the plan was: after `git pull alice front-end-according-to-mock-up` on the server (scripts are bind-mounted, so no image
 build), the next 9c log shows whether `ANALYZE` was the fix. If a step is cancelled, its plan is the next evidence.
 The running query was not cancelled, because that is the user's call.
 
@@ -78,3 +78,4 @@ leave the table stale for a run. The cause is unproven until the server shows it
   Those three readings also show the same live and dead counts (56,320 and 7,040), so the statistics may not have refreshed, but the cause is not proven.
   The claim that the dead-tuple count is 0 after each autovacuum does not hold for these readings.
   The raw readings are in `marie-curie/us-102/bl023_samples.log`, and the script is `marie-curie/us-102/bl023_sample.sh`.
+- **2026-10-10, resolved.** The product owner closed this blocker on 2026-10-10. The readings above stay as the record: the longest `9c` grew to 109 s under the 120 s cancel, and the cause is not proven.

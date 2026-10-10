@@ -21,7 +21,7 @@ Given a normal run, the table is the same as before.
 Dependencies: Story E3.
 - **2026-10-10, done.** The user approved closing the story on its own check (a step past 120 s is cancelled, a normal run gives the same table).
   Across all 92 runs of `9c` none went past 120 s, and all succeeded.
-  [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] stays `monitoring`, because `9c` rose from 46 s to 96 s within chain 1 and no cause is known.
+  [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] was resolved by the product owner on 2026-10-10.
 - **2026-10-10, carried from the retired TODOS note.** On the server, run `20261006T104500` took 51.1 s and its `ANALYZE` ran.
 
 ## Evidence and details
@@ -39,5 +39,5 @@ Dependencies: Story E3.
 3. Why: one slow query held the database and starved the runs behind it.
    No such step has happened since the change.
 4. What it changes: `9c` still gets slower within a chain (chain 1: 46 s to 96 s over 27 runs, chain 2: 46 s to about 60 s over 18 runs), even after the prune of `US-086` and its `VACUUM FULL`.
-   The story's check does not cover this, so `BL-023` stays `monitoring` and the growth is recorded as unexplained.
+   The story's check does not cover this, and `BL-023` was resolved by the product owner on 2026-10-10, with the growth recorded as unexplained.
    If a run reaches 120 s, the task fails loudly and the previous table stays published.

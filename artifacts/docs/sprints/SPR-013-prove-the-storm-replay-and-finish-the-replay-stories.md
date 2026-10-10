@@ -35,7 +35,7 @@ Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the
 5. Choose 30 or 60 pairs for `US-091`. The recommendation is 60, about 31 minutes.
 6. Confirm the 50 GB free-space floor, split `US-094`, and decide whether a lowered rain gate may prove the archive if no forecast passes 5 mm/h by 2026-10-23.
 7. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`).
-8. Resolve [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] if the replay shows a longest `9c` under 120 s, or leave it `monitoring`.
+8. The product owner resolved [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] on 2026-10-10 (answer: yes). The question was whether it resolves if the replay shows a longest `9c` under 120 s.
 
 ## How to close the proposed picks
 
@@ -150,8 +150,7 @@ Recommendation: A unless the 3Di cost decides it, then a design check for B befo
 **Blockers**
 
 - [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] blocks the sprint goal. It moves to `resolved` when the five former-gap slots simulate, log Hotstart, and the first post-gap table is inside the ratio band.
-- [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] does not block the sprint goal.
-  Take `n_dead_tup` and `last_autovacuum` of `flood_depth_raster_tile` at hours 0, 3, 6, 9, and 13 beside the `9c` durations.
+- [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] was resolved by the product owner on 2026-10-10, so it is not a sprint blocker.
 - [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] blocks reading the sticky result only.
   A crossing count of 0 on one route with a mid-step departure resolves it.
 

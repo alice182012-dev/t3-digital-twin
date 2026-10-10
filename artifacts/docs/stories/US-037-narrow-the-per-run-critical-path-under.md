@@ -40,7 +40,7 @@ Details of the first measurement:
    At that pace the margin reaches zero in about four more runs.
    The pass holds for the first hour of a storm, not for a storm that has run for hours.
    The test storm (`FLOOD_TEST_RAIN_MM_HR=50`) is still on.
-   The blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] stays `monitoring`.
+   The blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] was resolved by the product owner on 2026-10-10.
 Details (re-closed on 137 runs, 2026-10-05):
 1. What: closed again on 2026-10-05 at the user's decision, on the 137 runs of the replay, not on `report.py` passing over 192.
    The earlier evidence covers four runs only.
@@ -50,7 +50,7 @@ Details (re-closed on 137 runs, 2026-10-05):
 4. Effect: `9_build_flood_tiles` grew 4.8 times over the window (90.9 s to 439.4 s).
    The lead is the unbounded growth of `flood_extent_polygon`, which `US-067` now prunes, and it is not verified.
    A later run or the replay now running can show whether the growth is gone.
-   The blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] stays `monitoring`.
+   The blocker [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] was resolved by the product owner on 2026-10-10.
    Flagged for the human to confirm.
 
 ## Status history

@@ -75,7 +75,7 @@ Verified read-only on the server.
 | Question 1, violation rate of single-timestep routing | A | Planned, nothing run as of 2026-10-02. Confirm in the logs. | To be created from `scripts/routing_reference/` |
 | Question 2, sensitivity of the limits and a regret table | A | Planned, same note | Same |
 | Question 3, proof and conservatism measurement | A | Planned, same note | Same |
-| 9c sampling-step time under load (US-070; run `20261006T104500` took 51.1 s) | B | Monitoring | `artifacts/docs/blockers/BL-023-9c-sampling-step-runs-over-770-seconds.md` |
+| 9c sampling-step time under load (US-070; run `20261006T104500` took 51.1 s) | B | Resolved 2026-10-10 | `artifacts/docs/blockers/BL-023-9c-sampling-step-runs-over-770-seconds.md` |
 | Storage growth over the replay (US-069) | B | Open. D-012 shortens the window to 12 hours, so the 24-to-48-hour reading is not possible. | `artifacts/TODOS.md` US-069 |
 
 The author chose to hold the writing until the 12-hour replay and the routing experiments have produced numbers. Re-read this table, `artifacts/TODOS.md`, and the newest logs at the start of the writing job, then update the table.

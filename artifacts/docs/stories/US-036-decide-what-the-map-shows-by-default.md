@@ -17,6 +17,8 @@ title: "Decide what the map shows by default, and close or schedule the latency 
 
 As the product owner, I want the map's "now" behavior accepted or changed on purpose, so the label and the data agree.
 Given the map shows the latest published step at or before now and captions it "As of `time`", when the user reviews [[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] and [[five-minute-tile-freshness]], then the user records one decision on the blocker page: accept the caption and the 1.5 to 3 minute publish delay, or choose a freshness option and add its stories to a sprint.
+[[BL-010-map-shows-forecast-not-now|map-shows-forecast-not-now]] was resolved by the product owner on 2026-10-10.
+That closure does not record which option the decision above takes.
 Dependencies: None.
 Evidence: ![[map-now-caption-as-of-0130.png|420]]
 Details:

@@ -37,7 +37,7 @@ Run each check on the server.
 
 ## Risks and open questions
 
-- Rate of growth of `9c` within a chain is unexplained ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], `monitoring`).
+- Rate of growth of `9c` within a chain is unexplained ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], resolved by the product owner on 2026-10-10).
 - The rain gate stopped simulation while the flood still stood ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], P0, fixed in code by `US-101` and resolved by the replay of `US-102` on 2026-10-10).
 - Archiving a run needs real rain above 5 mm/h ([[US-094-archive-results-3di-nc-and-a-run|US-094]]).
 

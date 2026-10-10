@@ -37,7 +37,7 @@ The first comparison found elements in the mockup with no code behind them. The 
 ## Risks and open questions
 
 - Four requests for four mode times may delay the screen. Add a loading state or a multi-profile query before real users see it.
-- [[BL-010-map-shows-forecast-not-now|BL-010]] and [[BL-018-route-panel-stuck-on-loading-bars|BL-018]] are `monitoring`.
+- [[BL-010-map-shows-forecast-not-now|BL-010]] was resolved by the product owner on 2026-10-10, and [[BL-018-route-panel-stuck-on-loading-bars|BL-018]] is `monitoring`.
 - `US-033` (`DESIGN.md`) must run after the UI is final, so its tokens do not go stale.
 
 ## Stories
