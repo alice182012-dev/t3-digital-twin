@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [concept, rain, replay, test-environment, us-088, us-089, sprint-12]
 related: ["[[EP-13-rain-replay-test-environment|rain-replay-test-environment-stories]]", "[[september-2026-storm-rain-replay]]", "[[us-063-realistic-rain-replay-for-us-037-and-us-034]]", "[[3di-simulation-orchestration]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]", "[[2026-10-07]]"]
-last_updated: 2026-10-07
+last_updated: 2026-10-10
 ---
 
 # Plan: a rain test environment
@@ -67,3 +67,4 @@ so it makes fewer runs, but its peak is higher.
   rain (`test-code/rain input/`). The scripts have the dates of an earlier event written into them and use the Final
   Run short name, which has no data for September 2026. The plan uses a copy with the Late Run.
 - **2026-10-08, active.** The user decided that a replay runs for 12 hours only, to save 3Di compute cost. The storm event is cut to its wettest 12 hours before it is committed, so the preview shows fewer simulating runs than the 48-hour October event. `US-045` and `US-069` still need several `routing_adapter` runs; 12 hours of storm gives those runs, but not the 24-hour to 48-hour comparison that `US-069` names. Raise that with the user when the replay starts.
+- **2026-10-10, active.** `US-089` is `Done`. On the server, `start` ran twice inside one quarter-hour with the same `.env` hash, and `stop` read back `mode live` at 18:49 +07 (see [[US-089-start-and-stop-a-rain-replay-on|US-089]]). The replay that used this stack ran 04:45 to about 18:15 +07 ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).

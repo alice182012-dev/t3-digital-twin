@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]", "[[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-08
+last_updated: 2026-10-10
 ---
 
 # GraphHopper flood-road backend
@@ -242,7 +242,8 @@ Checks on 2026-10-05 in the cloud session: 98 module tests, and the 16 runs of `
 
 ## The engine in the backend (US-052)
 
-Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `floodmap-backend` (default `false`). The engine was deployed and tested on the server on 2026-10-07 (`US-055`). `scripts/routing_proof/rollout.ps1` turns the flag on for the proof and puts it back off unless run with `-LeaveOn`. At rest on 2026-10-08 the backend reads `TIME_AWARE_ROUTING=false`, so ordinary live routing is still single-timestep. Whether `-LeaveOn` was used on 2026-10-07 is unconfirmed. `US-045` (live timing of task 9c) is still open.
+Plan: [[time-aware-backend-integration]]. The flag is `TIME_AWARE_ROUTING` on `floodmap-backend` (default `false`). The engine was deployed and tested on the server on 2026-10-07 (`US-055`). `scripts/routing_proof/rollout.ps1` turns the flag on for the proof and puts it back off unless run with `-LeaveOn`. At rest on 2026-10-08 the backend reads `TIME_AWARE_ROUTING=false`, so ordinary live routing is still single-timestep. Whether `-LeaveOn` was used on 2026-10-07 is unconfirmed.
+On 2026-10-10 the three live readings of `US-091` turned `TIME_AWARE_ROUTING` on for `floodmap-backend` for one reading each, and the script turned it off again after each reading. `US-045` (live timing of task 9c) is still open.
 
 - **Flag off:** `POST /route` is today's request. The client's `td_*` fields are removed either way.
 - **Flag on:** the backend sends `td_departure`, the later of `valid_time` and the server clock, and no flood `custom_model`. GraphHopper answers with `td.status` (`applied`, `unknown`, or `fallback`), `td.run`, `td.departure`, `td.last_step`, and `td.reason` for a fallback. On `fallback`, or on an answer with no `td.status` (a GraphHopper without the module), the backend sends today's request with the flood custom_model and keeps `td.status: fallback` and the reason in the response. An error passes through, so a route closed by the table gives "Connection between locations not found".
@@ -267,7 +268,7 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
   `truck`, and `foot`. `foot` was confirmed selectable in the live UI on 2026-09-23 and `truck` on
   2026-09-29, after `flood-routing-frontend` was rebuilt and redeployed.
 - Routing through the UI was failing with a safety-framed "No safe route available" error on every
-  request, for every vehicle profile, whenever a `valid_time` was attached — which is always,
+  request, for every vehicle profile, whenever a `valid_time` was attached. That is always the case,
   since `TimeSlider` supplies one on mount. Root cause was a missing `geom_4326` column on
   `flood_road_values`; fixed 2026-09-23 by running the migration that was supposed to add and
   backfill it. See [[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]] for the full investigation. The GeoJSON

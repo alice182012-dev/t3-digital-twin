@@ -43,7 +43,7 @@ Run each check on the server.
 - The image is ours to keep working, because it is built from our module and a GraphHopper upgrade can break it. The version stays pinned.
 - The fallback brings back the old fault. The response flag and the frontend message keep it visible.
 - Whether `TIME_AWARE_ROUTING` stays on for good is the product owner's decision (see the current sprint file).
-- [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] is fixed in code by `US-096`. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]] is `resolved`.
+- [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] is fixed in code by `US-096` and resolved on 2026-10-10 by the live readings of `US-091`. [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph|BL-027]] is `resolved`.
 
 ## Stories
 

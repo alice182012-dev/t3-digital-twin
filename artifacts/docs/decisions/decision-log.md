@@ -459,3 +459,35 @@ is the maximum.
 - **Evidence:** The user's choice on 2026-10-10. No cost measurement exists yet.
 - **Affects:** `.claude/CLAUDE.md` (section "Vault edits go to the vault-writer agent") and `.claude/agents/vault-writer.md`.
 - **Revisit if:** the cost still hurts after about a week, around 2026-10-17. The fallback is Hermes in a second tmux pane, which reuses `vault-writer.md` as its instructions.
+
+## D-030: Show a pinned demo flood when no rain is forecast, and keep its peak step through every prune
+
+- **Date:** 2026-10-10
+- **Status:** active for the rule. The status signal and the router's read of the pinned step wait for [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]].
+- **Decided by:** the user.
+- **Decision:** The flood map has three modes.
+  - **LIVE:** rain is forecast above the threshold, or a standing flood exists, and real simulation steps are published. The map shows the real result, as today.
+  - **PENDING:** rain is forecast, but the simulation has published no step yet. The map shows a dry map with a warning that the simulation is running.
+  - **DEMO:** Tomorrow.io shows no rain past the threshold and no standing flood. The map shows the demo flood with the warning "No flood forecasted, displaying the demo flood of Sep 16, 2026", in English only.
+  The demo is one static frame, the peak step of the 12-hour replay of the 2026-09-16 storm ([[US-088-cut-the-hanoi-storm-of-2026-09|US-088]]). The source is the replay of 2026-10-10 ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]). It has no slider and no animation.
+  In DEMO mode the tiles, the routing, and the depth popup all use the pinned demo flood, not the tiles alone. The peak step must therefore survive every pruner: the MinIO tiles, `flood_extent_step`, and `flood_extent_polygon` (`FLOOD_EXTENT_KEEP_RUNS`, 8 runs), `flood_depth_raster_tile`, `flood_road_values` (`prune_flood_road_values`), and the routing edge tables (`EDGE_TABLE_KEEP_RUNS`, 3 runs).
+- **Why:** The request did not give a reason, so none is recorded here.
+- **Alternatives:** The user rejected these: (1) shift the demo onto the real clock, (2) show a slider over the demo, (3) show the demo on the tiles only, and (4) write the warning in Vietnamese.
+- **Evidence:** None. The code is not written, and the feature is not on any branch.
+- **Affects:** [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[minio-flood-extent-pipeline]], [[core-output-contract]], and [[edge-depth-table-format]].
+
+## D-031: Count the violation rate of single-timestep routes as the case for time-aware routing
+
+- **Date:** 2026-10-10
+- **Status:** active for the finding. Whether `TIME_AWARE_ROUTING` stays on waits for the product owner's decision (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+- **Decided by:** The development team, from the result of [[US-091-measure-how-often-a-single-timestep-route|US-091]], which the product owner accepted as `Done` on 2026-10-10.
+- **Decision:** The measured violation rate supports time-aware routing.
+  Single-timestep routes met a road that was too deep on arrival in every storm stage, vehicle, trip length class, and departure step tested.
+  The figures and their limits are in US-091.
+  The decision does not turn `TIME_AWARE_ROUTING` on or off.
+- **Why:** The case for time-aware routing is now a measured rate on the replay's tables, not an argument.
+  The slowed-travel sensitivity case on the 3-hour table kept the same count, so the free-flow arrival assumption did not drive that table's result.
+- **Alternatives:** A slowed-travel case run as a labelled sensitivity check, which kept the same count on the 3-hour table.
+- **Evidence:** The result files of `US-091` in `marie-curie/us-091/` (git-ignored), and the screenshots `us-091-single-timestep-result-output.png` and `us-091-live-sticky-mid-step-output.png` in `artifacts/docs/stories/evidence/`.
+- **Affects:** [[US-091-measure-how-often-a-single-timestep-route|US-091]], [[EP-20-routing-paper-experiments|EP-20]], [[sticky-routing-reference]], [[graphhopper-backend]], and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]].
+- **Revisit if:** the owner decides on `TIME_AWARE_ROUTING`, a later replay gives a different rate, or the free-flow arrival times are replaced by measured travel times.

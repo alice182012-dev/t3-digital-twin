@@ -9,15 +9,15 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-The replay is running (scope A). `flood_mapping_full` was unpaused at 2026-10-10 04:02 +07, the first run was slot 04:00, and the replay rain starts at 04:45 +07.
-If a session ends, the DAG keeps running and the standing-flood rule never stops on its own. Pause it by hand: `docker --context remote-server exec airflow_new-airflow-scheduler-1 airflow dags pause flood_mapping_full`.
-1. Readings today (+07): 05:09 first table, 05:17 live sticky "cold", 06:17 sticky "1h", 07:47 BL-023 hour 3, 08:17 sticky "3h", 10:47 BL-023 hour 6 and the gap opens, 12:13 the BL-028 reading, 13:47 BL-023 hour 9, 16:17 hour 11.5.
-   Helpers are in `marie-curie/us-091/live_sticky.sh` and `marie-curie/us-102/`.
-2. 18:17: pause the DAG, run the [[US-091-measure-how-often-a-single-timestep-route|US-091]] single-timestep step on 60 pairs, copy the tables, run `artifacts/docs/stories/evidence/us-102-replay-check.sh`, run `replay.ps1 stop` ([[US-089-start-and-stop-a-rain-replay-on|US-089]]), and unpause for live rain.
-3. Sunday: write the US-091 result and the decision in `decision-log.md`, take the screenshots, fill the evidence and details of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], and resolve `BL-028` if the 12:13 reading holds.
-   [[US-094-archive-results-3di-nc-and-a-run|US-094]] waits for real rain above 5 mm/h. Its test-rain skip is already logged (`2b_archive_results`, slot 04:00).
-4. Monday 2026-10-12, planning: confirm the picks, rewrite the story text of US-102, US-091, US-089, and US-094, and split US-094. The owner accepts each `Done` at the review.
-5. After the stop in step 2: pull the branch `us-103-flood-tiles-dag` on the server, unpause `flood_tiles`, and run the acceptance check of [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] ([[decision-log|D-027]]).
+The replay is finished (scope A). `replay.ps1 stop` ran at 2026-10-10 18:49 +07 and read back `mode live`. [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done`. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved`.
+`flood_mapping_full` is paused. It stays paused until step 1 has pulled the branch `us-103-flood-tiles-dag`, so do not unpause it for live rain before then.
+1. Pull the branch `us-103-flood-tiles-dag` on the server, unpause `flood_tiles`, and run the acceptance check of [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] ([[decision-log|D-027]]). Then unpause `flood_mapping_full` for live rain.
+2. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decisions 7 (`TIME_AWARE_ROUTING`) and 8 ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]) from the owner. The owner accepts each `Done` at the review.
+3. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
+   - Assign `sprint` to [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] only if the owner decides so. All three are `Done` with no sprint, so Velocity does not count them.
+   - The owner decides whether `TIME_AWARE_ROUTING` stays on (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+   - The owner decides whether [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] resolves (open decision 8).
+   - The owner reads the "Decided by" line of [[decision-log|D-031]].
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 13, 2026-10-12 to 2026-10-25
@@ -33,17 +33,11 @@ No story has this sprint yet.
 
 ## Product backlog
 
-26 stories.
+24 stories.
 The top 10 by priority:
 
-- [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], P0, S, Ready.
-  Replay the storm with the US-101 fix to close BL-028
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
   Compare the live app with the mockup in Aside at 1366x768
-- [[US-089-start-and-stop-a-rain-replay-on|US-089]], P1, M, Reviewed.
-  Start and stop a rain replay on the server with one command each
-- [[US-091-measure-how-often-a-single-timestep-route|US-091]], P1, M, In progress.
-  Measure how often a single-timestep route meets a closed road on arrival
 - [[US-094-archive-results-3di-nc-and-a-run|US-094]], P1, M, Reviewed.
   Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
 - [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], P1, S, Ready.
@@ -56,15 +50,17 @@ The top 10 by priority:
   Match the depth chart columns and the route tab text to screen 2e
 - [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
   Show the place names on the start and destination pins
+- [[US-084-design-the-no-route-and-wait-until|US-084]], P2, M, Not started.
+  Design the no-route and "wait until" states, then match the UI to the design
+- [[US-085-time-out-a-route-request-in-the|US-085]], P2, S, Not started.
+  Time out a route request in the client
+- [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
+  Show the recommended route and the through-water option in the app
 
 ## Open blockers
 
-- [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], P0, monitoring.
-  rain-gate-stops-simulation-while-the-flood-still-stands
 - [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], P1, monitoring.
   9c sampling step runs over 770 seconds
-- [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]], P1, monitoring.
-  sticky-closure-clock-anchored-at-floored-departure
 - [[BL-010-map-shows-forecast-not-now|BL-010]], P2, monitoring.
   The map shows a forecast timestep, not the situation now
 - [[BL-018-route-panel-stuck-on-loading-bars|BL-018]], P2, monitoring.

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [routing, sticky-c-lite, reference, checker, sprint-5]
 related: ["[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[EP-09-time-aware-routing-engine|time-aware-routing-engine-stories]]", "[[BL-011-routing-not-time-aware|routing-not-time-aware]]", "[[edge-depth-table-format]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[routing-depth-threshold-model]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-09
+last_updated: 2026-10-10
 ---
 
 # Sticky routing reference and checker
@@ -53,6 +53,8 @@ The arguments after the roads file are the origin latitude and longitude, then t
 ## Measured
 
 On 2026-10-01 the pair above gives a route of 15 edges and 1,488 m on `roads.geojson` (47,210 directed edges). All 16 runs match the sticky column and the returned routes have no crossing. The plain shortest route, which ignores time, crosses a closed road in the 8 blocked runs. The search agrees with an exhaustive search over all simple paths on 300 random graphs.
+
+The comparison of single-timestep routes with the sticky rule, on the tables of the 2026-10-10 replay, is in [[US-091-measure-how-often-a-single-timestep-route|US-091]].
 
 ## Open items
 

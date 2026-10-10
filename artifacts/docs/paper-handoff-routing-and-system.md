@@ -133,7 +133,7 @@ All in `marie-curie/lit-review-flood-routing/`. Copy it before use (rule 5).
 | ID | Story and sprint | Experiment | Source of the plan |
 | --- | --- | --- | --- |
 | P1 | `US-090`, Sprint 12 | Write the FIFO lemma and the correctness proof of the forward search; check step-boundary cases; confirm the landmark heuristic stays admissible (story R4 plans a unit test) | Reviewer-questions note, Question 3 |
-| P2 | `US-091`, Sprint 12 | Violation rate of single-timestep routes on arrival, by vehicle, trip length, departure step, and storm stage; report three arrival-step rules | Question 1 |
+| P2 | `US-091`, Sprint 12, Done | Violation rate of single-timestep routes on arrival, by vehicle, trip length, departure step, and storm stage; report three arrival-step rules | Question 1 |
 | P3 | `US-092`, Sprint 12 | Sensitivity of the limits (motorbike 10 to 40 cm, truck 25 to 60 cm, band start 25, 50, 75 percent) with closed length, share of pairs still routable, mean detour, and a regret table | Question 2 |
 | P4 | `US-093`, Sprint 12 | Conservatism of the sticky rule against an arrival-only reference | Question 3, item 4 |
 | P5 | Done, no story | Open the Vu 2024 report and the Manila paper's citation of it, or label the motorbike limit an assumption. Replaced by the source search of 2026-10-08 (`marie-curie/vehicle-limit-sources.md`) | Question 2 |

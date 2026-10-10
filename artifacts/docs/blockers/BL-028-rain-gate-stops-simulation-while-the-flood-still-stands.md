@@ -1,8 +1,8 @@
 ---
 date_open: 2026-10-10
-date_closed: 
+date_closed: 2026-10-10
 type: blocker
-status: monitoring
+status: resolved
 severity: P0
 subsystem: flood-pipeline
 approaches_tried: 1
@@ -68,6 +68,12 @@ Decided by the user on 2026-10-10. The 5 mm/h rain gate decides only from a dry 
 
 Options B (a fixed hold-down time) and C (a lower rain threshold while the flood stands) were not chosen. Option A reads the actual water, so it follows the real storm instead of a guessed number of hours.
 
+Resolved on 2026-10-10 by the replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]].
+The replay met the resolve condition in Status history: no slot was skipped, and the slots after the gap logged a hotstart.
+The gate alone would have skipped 4 of the 46 slots in the event window, and all of them ran.
+The stop clause (five dry runs under 5 cm and rain 0) was not exercised, because the flood still stood when the replay stopped.
+The end of a storm under this rule is therefore still untested, and the first real storm will test it.
+
 ## Concerns
 
 - `flood_road_values` is written by `routing_adapter`, not by `flood_mapping_full`. If `routing_adapter` stops for more than 45 minutes in a storm, the newest run is too old and the gate ends the chain. The user accepted this on 2026-10-10: the check must read the flood on the roads only, and `flood_road_values` is that table. The tables that `flood_mapping_full` writes itself (`flood_extent_polygon`, `flood_depth_raster_tile`) cover every area, not only roads. A run of `routing_adapter` takes about 3 to 4 minutes after `9b`, so a normal slot is well inside the limit.
@@ -94,3 +100,6 @@ The tables that `flood_mapping_full` writes itself (`flood_extent_polygon`, `flo
 - **2026-10-10, open.** Logged at the user's request, as P0, after the second replay. First read as a gate working as designed ("not a fault", [[2026-10-10]]). The user corrected this: a storm still floods after the rain stops, so a gate that stops the simulation is the fault. The mechanism is in the Description, from `dags/flood_mapping_dag.py`, `scripts/create_simulation.py`, `scripts/hotstart_policy.py`, and the Airflow task logs of 2026-10-09. Story: [[US-101-keep-simulating-while-the-flood-still-stands]], Sprint 12.
 - **2026-10-10, monitoring.** The user accepted the two concerns: the simulation may stay on while the model keeps water above 5 cm (a model issue), and the check reads `flood_road_values` because it must look at roads only. No change to the code.
 - **2026-10-10, monitoring.** `US-101` is `Done` on test evidence, and `flood_mapping_full` was paused at 01:29 +07. The blocker stays `monitoring` until a replay with a rain gap inside a storm shows no skipped slot and a hotstart after the gap.
+- **2026-10-10, resolved.** The replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] ran from 04:45 to about 18:15 +07 with 55 runs, all `success`, and no slot was skipped.
+  The trigger logs of 04:15 to 18:15 +07 hold 57 `[Hotstart, exact]` lines and no `[Coldstart]` line.
+  The 7 slots of the former gap (event offsets 360 to 450 minutes) all logged a hotstart, and their first tables are inside the wet-edge band (7 of 7).

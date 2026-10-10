@@ -46,7 +46,10 @@ Dependencies: none to build.
 It blocks `US-095` and `US-086`.
 Proof: a one-off run that reads the real Tomorrow.io forecast, with `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_MM_HR` unset, counts as the proof (the user, 2026-10-08).
 It does need the forecast to pass the rain gate (5 mm/h), so the proof waits for a forecast above it (the user chose this on 2026-10-08).
-Evidence: None yet.
+**Evidence (test-rain skip only):** rendered output of read-only queries on the server, captured 2026-10-10 18:40 +07 from the Mac. It shows the `2b_archive_results` log line of three sampled runs, the task states of all 58 replay runs, and the archive mount in the worker.
+It does not show a real-rain archive, so the story stays `Reviewed`.
+
+![[us-094-test-rain-skip-output.png|900]]
 
 ## Status history
 
@@ -59,3 +62,6 @@ Evidence: None yet.
   Tests: 9 in `scripts/test_archive_results.py` and 15 in `test/test_flood_mapping_dag_graph.py` pass.
   Still open: the deploy (set `ARCHIVE_HOST_PATH=D:\airflow_new_data\archive` in the server `.env`), the real-rain proof, the daily growth in GB, and your confirmation of the 50 GB floor.
 - **2026-10-10, carried from the retired TODOS note.** 24 tests pass for `scripts/archive_results.py`, task `2b_archive_results`, and the join task `2c_archive_done`.
+- **2026-10-10, reviewed.** During the storm replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] with the test-rain setting on, `2b_archive_results` logged the skip in the three sampled runs, and 58 of 58 `2b` and `2c` tasks ended `success`.
+  The archive mount exists in the worker and holds 0 files.
+  The real-rain proof is still open, so the status stays `Reviewed`.

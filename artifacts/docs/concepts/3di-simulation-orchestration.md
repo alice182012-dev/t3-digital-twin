@@ -115,7 +115,8 @@ access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle proceeds
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
 mm/h). Below that, `scripts/standing_flood.py` reads the newest 5 runs of `flood_road_values` (US-101,
 [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]). The run proceeds while a recent run (under 45 minutes old) is in progress and either one of those 5 runs has a deepest value of 5 cm or more
-(`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0. Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
+(`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0.
+On 2026-10-10 the rule ran the 4 slots of the event window that the 5 mm/h gate alone would have skipped ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], resolved). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
 run ends as a successful dry-state skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
 `sim_id` there always means a real 3Di failure, so it raises `AirflowException` rather than
 `AirflowSkipException`, which would otherwise show identically green in the Airflow UI for both a
@@ -132,7 +133,9 @@ mm/h before the start and after the last row. Setting only one of the two variab
 with `FLOOD_TEST_RAIN_MM_HR`, raises a `ValueError`. The committed event is
 `scripts/rain_events/hanoi_20251005_48h.csv`, the Hanoi rain of 2025-10-05T22:30Z to 2025-10-07T22:30Z
 (246.8 mm, peak 56.48 mm/h). On 2026-10-02 the server's `.env` set `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, so all 192 runs of its window simulate. At 5 mm/h, 104 of its 192 runs simulate. The rain gate skips the
-rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` has not run yet (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]). The server's git remote for this repository is `alice`, not `origin`. See
+rest as dry cycles, and a skipped run counts as a success for the cold start rule. `python3 scripts/rain_replay.py preview EVENT START_UTC THRESHOLD` lists the chains of simulating runs, with a cold start for a run whose last simulating slot is more than 4 slots earlier. Three more subcommands need no Docker: `next-slot NOW_UTC LEAD_MINUTES`, `check EVENT START_UTC THRESHOLD` (refuses an event that does not load, a start off the 15-minute grid, or a gate that no run reaches), and `status [--expect-mode MODE] [--expect-start START_UTC]` (reads the four rain variables from the environment and reports `live`, `replay`, or `fixed-rate`). On the server, `scripts/rain_env/replay.ps1` has `start -Event PATH`, `stop`, and `status`. `start` picks the next slot at least 30 minutes ahead, saves the prior values to `.env.rain-replay.json`, edits `.env`, recreates only the worker, and reads the setting back from inside the worker. It does not unpause the DAG. Built on `modular`. `start` ran on the server on 2026-10-08 with `hanoi_20260916_storm.csv` (12 hours, gate 5 mm/h, 42 simulating runs) and the read-back inside the worker matched. `stop` ran on 2026-10-10 at 18:49 +07 and read back `mode live` (`US-089`, [[rain-replay-test-environment]], decision D-012 in [[decision-log]]).
+The 2026-10-10 replay ran 55 runs from 04:45 to about 18:15 +07, and all of them ended `success` ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+The server's git remote for this repository is `alice`, not `origin`. See
 [[us-063-realistic-rain-replay-for-us-037-and-us-034]].
 
 ## Triggering the simulation
@@ -172,7 +175,9 @@ timed saved states stay in the state file. `choose_saved_state`'s 30-minute wind
 after a restart, and the run would hotstart from a storm that kept growing. The rule is on by default,
 and `FLOOD_COLD_START_AFTER_BREAK=0` turns it off. The trigger log prints a `Chain check` line with the
 verdict. Checked live on 2026-10-02: the first run after a restart logged `cold start forced`, and the
-four runs after it logged `hotstart allowed` and `[Hotstart, exact]`. A failed 3Di trigger also breaks
+four runs after it logged `hotstart allowed` and `[Hotstart, exact]`.
+On 2026-10-10 the replay logged `[Hotstart, exact]` in 57 trigger logs and `[Coldstart]` in none, and the only forced cold start was the 04:00 run that began the chain ([[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]).
+A failed 3Di trigger also breaks
 the chain, so the next run cold-starts instead of using the two-cycle backup state.
 
 ### Status polling

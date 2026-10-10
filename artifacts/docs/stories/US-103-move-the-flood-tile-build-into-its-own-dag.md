@@ -24,7 +24,8 @@ No 3D view and no cost estimate are built here.
 
 Given a run of `flood_mapping_full` that finishes task 3, when the run ends, then `flood_tiles_dag` publishes the same tiles and audit rows that task `9_build_flood_tiles` publishes today, and the map overlay looks the same.
 
-Dependencies: [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] (do not change the DAG the replay is testing).
+Dependencies: [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]].
+The replay that US-102 ran on the DAG stopped at 18:49 +07 on 2026-10-10, so the DAG may change now.
 
 ## Plan
 
@@ -60,7 +61,9 @@ On the server, after the replay has stopped and the change is pulled:
 
 - **2026-10-10, draft.**
   Written during the replay.
-  The code is built on a branch on the Mac and is not pulled to the server until the replay stops, since an edit to `flood_mapping_dag.py` changes the DAG under test.
+  The code was built on a branch on the Mac and was held back from the server while the replay ran, since an edit to `flood_mapping_dag.py` would have changed the DAG under test.
+  The replay stopped at 18:49 +07 on 2026-10-10, so the change may now be pulled.
+  `flood_mapping_full` stays paused until the branch `us-103-flood-tiles-dag` is pulled on the server.
 - **2026-10-10, code written on branch `us-103-flood-tiles-dag`.**
   It decided the open design choice ([[decision-log|D-027]]): an Asset `flood_depth_files`, emitted by the new task `3b_publish_depth_files`, which runs after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`.
   The `.tif` folder is the default input. A second input, the PostGIS raster, is in the code behind `FLOOD_TILES_INPUT=postgis`, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] compares the two.

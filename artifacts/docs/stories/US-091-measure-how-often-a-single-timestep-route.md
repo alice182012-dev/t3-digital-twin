@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-091"
 story_label: "2"
 epic: "[[EP-20-routing-paper-experiments]]"
-status: In progress
+status: Done
 kind: spike
 priority: P1
 estimate: M
@@ -29,7 +29,8 @@ Needs no new engine.
 Dependencies: `US-047` (the reference and the checker, `Done`), `US-050` and `US-052` (the engine behind the flag, `Done`), and the depth tables of the 12-hour replay of `US-089` (copied before retention removes them, see rule 5).
 The server run reads the engine proof of `US-055`, which is `In progress`.
 The sticky-engine check inside this story needs the same server state that `US-055` proved on 2026-10-07.
-Evidence: None yet.
+## Status history
+
 - **2026-10-10, carried from the retired TODOS note.** The harness is in `scripts/routing_experiments/` (41 tests pass).
   Three things to know.
   First, the runner walks engine routes from the time of the request since `US-096`.
@@ -47,3 +48,34 @@ Evidence: None yet.
   The depth sources differ (backend flood areas to plan, edge depth tables to re-walk).
   The sticky engine check on the same pairs is not done.
   The remaining stages need a replay with `FLOOD_EXTENT_KEEP_RUNS` raised (about 60).
+- **2026-10-10, done.** The product owner gave the go, and the replay tables answered the question: the single-timestep rate by stage, vehicle, length class, and departure step, the live sticky check, and one labelled sensitivity case.
+  The decision is [[decision-log|D-031]].
+
+## Evidence and details
+
+**Evidence:** rendered output of the single-timestep result (`marie-curie/us-091/single_timestep_seed1.json`, read 2026-10-10 18:55 +07) and of the three live sticky readings (read 18:41 +07).
+
+![[us-091-single-timestep-result-output.png|900]]
+
+![[us-091-live-sticky-mid-step-output.png|900]]
+
+**Details:**
+
+1. Files. The main run is `marie-curie/us-091/single_timestep_seed1.json`, with `single_timestep_summary.txt` and `single_timestep_severity.txt` beside it. The sensitivity case is `single_timestep_slow_3h_seed1.json`. The live sticky readings are `sticky_cold_seed1.json`, `sticky_1h_seed1.json`, and `sticky_3h_seed1.json`. The main run ran on the server worker from 18:22 to 18:49 +07 with the backend flag off.
+2. Setup. The 60 pairs (20 per length class, seed 1) are in `pairs60_seed1.json`. The run used 4 vehicles and departure steps 0 and 1. Each of the cold, one-hour, and three-hour stages is one table: 2026-10-10 at 05:15, 06:15, and 08:15 +07. The late stage is the last 8 runs, 16:30 to 18:15 +07. The vehicle limits in the file are 20 cm (motorbike), 30 cm (car), 35 cm (truck), and 40 cm (foot).
+3. Rule and count. Under the rule "step at or before the arrival", 307 of 3,911 routes violate, which is 7.8 percent. The nearest-step rule gives 310 (7.9 percent), and the worse-of-two rule gives 346 (8.8 percent).
+4. Dropped requests. 1,369 of 5,280 requests had no route (25.9 percent). They are reported as dropped, not as violations and not as routes. SPR-013 estimated 23 percent before the run, and the count replaces that estimate.
+5. By storm stage: cold 30 of 423 routes (7.1 percent), one hour 15 of 402 (3.7 percent), three hours 49 of 376 (13.0 percent), and late 213 of 2,710 (7.9 percent).
+6. By vehicle: car 102 of 947 (10.8 percent), motorbike 90 of 862 (10.4 percent), foot 71 of 1,205 (5.9 percent), and truck 44 of 897 (4.9 percent).
+7. By trip length: under 2 km 72 of 1,337 (5.4 percent), 2-5 km 91 of 1,170 (7.8 percent), and over 5 km 144 of 1,404 (10.3 percent).
+8. By departure step: step 0 155 of 1,956 (7.9 percent), and step 1 152 of 1,955 (7.8 percent).
+9. Severity of the 307 violating routes. The depth over the vehicle limit at the worst edge has a median of 16 cm, a 75th percentile of 24 cm, and a maximum of 140 cm. A violating route has a median of 1 violating edge, a mean of 1.0, and a maximum of 4.
+10. Time to the first violation, counted from departure: median 513 s, 25th percentile 218 s, and 75th percentile 644 s.
+11. Live sticky check. The engine ran on the same 60 pairs with departure steps 0 to 5, and `TIME_AWARE_ROUTING` was on for `floodmap-backend` only. It planned 1,292, 1,253, and 1,215 routes at the cold, one-hour, and three-hour tables, with 0 crossings in each. The readings had 636 departures between two steps (219, 212, and 205). The screenshot gives one example: a request valid at 06:15 +07 was walked from 06:16:55, and the engine reported step 06:15.
+12. Limit of the sticky check. Zero crossings holds under the two rules that the sticky margin covers, step at or before and nearest. The worse-of-two rule gives 25, 33, and 11 violations at the three tables, and the margin does not cover that rule.
+    The `sticky_check` block inside the single-timestep files (316 routes in the main run, 49 in the sensitivity run) counts flag-off routes that a sticky closure would cross. It is not the engine check, and its `passed: false` is expected for those routes.
+13. Sensitivity case, labelled as a sensitivity case. Edges at 20 cm or deeper take 2 times their free-flow time, on the 3-hour table, with 60 pairs, steps 0 and 1, and the flag off. It gives 376 routes, of which 49 violate under the at-or-before and nearest rules and 50 under the worse-of-two rule. The free-flow 3-hour stage has 49 of 376 under the same rules, so slowing travel in deep water did not change the count on this table.
+14. Limits. The main result assumes free-flow arrival times. Each of the cold, one-hour, and three-hour stages is one table, and the late stage is 8 tables. The single-timestep run used departure steps 0 and 1, where SPR-013 had planned 0 to 6, and the sticky check used steps 0 to 5.
+    The two depth sources are the backend's flood areas, which plan each route, and the edge depth table of the same run, which the re-walk reads. The backend keeps flood areas for `FLOOD_EXTENT_KEEP_RUNS` runs, which is 100 on the server.
+15. Decision. [[decision-log|D-031]] records that the measured rate supports time-aware routing. Whether `TIME_AWARE_ROUTING` stays on for good is the product owner's decision (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+16. Blocker. The live readings of item 11 resolve [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]].
