@@ -14,7 +14,9 @@ The replay is finished (scope A). `replay.ps1 stop` ran at 2026-10-10 18:49 +07 
 1. Sunday 2026-10-11, the industry-analysis stories of [[EP-21-industry-analysis-on-the-flood-data|EP-21]]. No story takes a sprint before Monday's planning, and at most two are `In progress`.
    - [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Reviewed`. The measurements and [[decision-log|D-032]] are written. The owner reads the "Decided by" line of D-032: the `history_moment` table is the team's recommendation, not an owner answer. The owner accepts the story at the review.
    - [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] is `Done`. The owner accepted it on 2026-10-10 after the server check passed: the role script ran for both roles, the permission checks and `test_reader_role.py` passed, and `POST /route` returned 200.
-   - Now: [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] is `In progress` (M, no dependency). Then [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (after US-105, estimate M may become L because of `history_moment` and the open winner rule), then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (after US-108).
+   - [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] is `Reviewed`. The server check passed on 2026-10-11, and the owner accepts `Done` at the review.
+   - Next: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (after US-105, estimate M may become L because of `history_moment` and the open winner rule), then [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
+   - US-109 needs [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] `Done` (it is) and [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] `Done` accepted.
    - Last: [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S, P3), on a copy of the database in `marie-curie/`.
 2. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decision 7 (`TIME_AWARE_ROUTING`) from the owner. The owner accepts each `Done` at the review.
 3. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
@@ -36,7 +38,7 @@ No story has this sprint yet.
 
 ## Product backlog
 
-22 stories.
+23 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.

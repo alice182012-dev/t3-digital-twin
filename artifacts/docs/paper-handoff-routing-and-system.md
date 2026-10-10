@@ -86,7 +86,7 @@ Read in this order.
 
 1. `artifacts/raw/T3-Digital-Twin_Architecture.md` and its working copy `artifacts/docs/concepts/architecture-block-diagram.md`. The raw file is the original design and predates two decisions (vector tiles replaced raster tiles, GraphHopper replaced Valhalla). The concept page marks each component Built or Designed, not built. Describe only what is Built.
 2. `artifacts/docs/concepts/3di-simulation-orchestration.md`. The Airflow DAG `dags/flood_mapping_dag.py` (`flood_mapping_full`) runs one cycle every 15 minutes: check the rain forecast, decide whether to simulate, run 3Di, download `results_3di.nc`, compute depth rasters, then fan out to the tile task, the depth raster load, and the flood-on-roads task.
-3. `artifacts/docs/concepts/core-output-contract.md`. The five PostgreSQL tables, the edge depth files, and the vector tiles that the pipeline publishes. Routing is the first consumer. Verified against code at commit `5e4a314`.
+3. `artifacts/docs/concepts/core-output-contract.md`. The six PostgreSQL tables, the edge depth files, and the vector tiles that the pipeline publishes. Routing is the first consumer.
 4. `artifacts/docs/concepts/minio-flood-extent-pipeline.md`. Depth raster to polygon tiles in MinIO plus a PostGIS audit copy.
 5. `artifacts/docs/concepts/flood-on-roads.md`, `road-segment-table.md`, `flood-metric-extractor.md`, `timescaledb-schema.md`. Depth per road piece and the metrics derived from it.
 6. `artifacts/docs/concepts/graphhopper-backend.md`. The backend in `floodmap/graphhopper-flood-road/backend/server.py`, between the frontend and a pinned GraphHopper.

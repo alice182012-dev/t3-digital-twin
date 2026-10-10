@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]", "[[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]"]
-last_updated: 2026-10-10
+last_updated: 2026-10-11
 ---
 
 # Core output contract
@@ -162,10 +162,10 @@ One row says that one output of one run is published.
   - `extent`: task `9_build_flood_tiles`, after the last tile step.
   - `road_values`: task `flood_on_roads` of `routing_adapter`, in the same transaction as its rows in `flood_road_values`.
   - `edge_depth`: task `9c_build_edge_depth_table`, after the file rename, when `latest` names that file.
-- **Writer.** (US-108) Each task writes its row only after its output is published.
+- **Writer.** Each task writes its row only after its output is published.
   A failed task writes no row for that run.
   A rewrite sets `published_at` to `NOW()` again.
-- **Retention.** (US-108) The newest 8 runs by `run_ts`.
+- **Retention.** The newest 8 runs by `run_ts`.
   `FLOOD_EXTENT_KEEP_RUNS` changes the number.
   The prune runs when task `9_build_flood_tiles` publishes, and it keeps the run being published.
 
@@ -241,8 +241,7 @@ Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can
 When 9b succeeds, it emits the Airflow asset `flood_depth_raster_tile` with `{"run_ts": "<run_ts>"}` in the event's `extra` (`dags/core_assets.py`, `US-073`).
 The event says that every timestep of that run is in `flood_depth_raster_tile`.
 The DAG `routing_adapter` runs on it, and its tasks `flood_on_roads` and `9c_build_edge_depth_table` write the other two outputs for that run.
-A consumer outside Airflow reads `flood_run_output` (US-108) instead of polling three places: the rows of `flood_depth_raster_tile`, the rows of `flood_road_values`, and the file that `latest` names.
-Until US-108 lands, such a consumer checks for its own rows, as `flood_points.py` does with `_TIMESTEP_LOADED_SQL`.
+A consumer outside Airflow reads `flood_run_output` instead of polling three places: the rows of `flood_depth_raster_tile`, the rows of `flood_road_values`, and the file that `latest` names.
 `artifacts/TODOS.md` records `routing_adapter` as running on the server from 2026-10-07 16:00 +07.
 The timing of the asset trigger on the server is still being read (`US-073`).
 
