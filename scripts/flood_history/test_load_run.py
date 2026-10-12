@@ -41,7 +41,7 @@ class BuildSliceTests(unittest.TestCase):
     def test_a_run_becomes_utc_moments_and_rows_issued_at_the_run_time(self):
         run = load_run.build_slice(
             "20260924T164803",
-            [datetime(2026, 9, 24, 10, 3, 3), datetime(2026, 9, 24, 9, 48, 3)],
+            [datetime(2026, 9, 24, 17, 3, 3), datetime(2026, 9, 24, 16, 48, 3)],
             [
                 ("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.25),
                 ("seg-1", datetime(2026, 9, 24, 17, 3, 3), 0.0),
@@ -62,26 +62,26 @@ class BuildSliceTests(unittest.TestCase):
         )
 
     def test_a_run_that_wets_no_piece_still_covers_its_moments(self):
-        run = load_run.build_slice("20260924T164803", [datetime(2026, 9, 24, 9, 48, 3)], [])
+        run = load_run.build_slice("20260924T164803", [datetime(2026, 9, 24, 16, 48, 3)], [])
 
         self.assertEqual((run.moments, run.rows), ((utc(2026, 9, 24, 9, 48, 3),), ()))
 
-    def test_a_run_without_tiles_fails(self):
-        with self.assertRaisesRegex(LoadRunError, "no flood_depth_raster_tile rows for run 20260924T164803"):
+    def test_a_run_without_forecast_times_fails(self):
+        with self.assertRaisesRegex(LoadRunError, "no forecast times in flood_road_file for run 20260924T164803"):
             load_run.build_slice("20260924T164803", [], [("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.25)])
 
-    def test_a_row_at_a_time_no_tile_covers_fails(self):
-        with self.assertRaisesRegex(LoadRunError, "which none of its tiles cover"):
+    def test_a_row_at_a_time_the_forecast_times_do_not_cover_fails(self):
+        with self.assertRaisesRegex(LoadRunError, "which its forecast times do not cover"):
             load_run.build_slice(
                 "20260924T164803",
-                [datetime(2026, 9, 24, 9, 48, 3)],
-                [("seg-1", datetime(2026, 9, 24, 9, 48, 3), 0.25)],
+                [datetime(2026, 9, 24, 16, 48, 3)],
+                [("seg-1", datetime(2026, 9, 24, 16, 3, 3), 0.25)],
             )
 
     def test_read_run_queries_the_run_by_its_name_and_its_local_timestamp(self):
         def rows(sql):
-            if "flood_depth_raster_tile" in sql:
-                return [(datetime(2026, 9, 24, 9, 48, 3),)]
+            if "flood_road_file" in sql:
+                return [(datetime(2026, 9, 24, 16, 48, 3),)]
             return [("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.4)]
 
         conn = FakeConnection(rows)
@@ -91,7 +91,7 @@ class BuildSliceTests(unittest.TestCase):
         self.assertEqual(run.rows, (DepthRow("seg-1", utc(2026, 9, 24, 9, 48, 3), 0.4),))
         self.assertEqual(
             [params for _, params in conn.committed],
-            [("20260924T164803",), (datetime(2026, 9, 24, 16, 48, 3),)],
+            [(datetime(2026, 9, 24, 16, 48, 3),), (datetime(2026, 9, 24, 16, 48, 3),)],
         )
 
 
@@ -127,11 +127,11 @@ class PlanWriteTests(unittest.TestCase):
 def run_slice(run_ts, wet):
     """A run that covers four 15-minute moments from its own time on, with `wet` = {(segment_id, step): depth}."""
     issued_at = load_run.vietnam_to_utc(datetime.strptime(run_ts, "%Y%m%dT%H%M%S"))
-    tile_times = [(issued_at + i * timedelta(minutes=15)).replace(tzinfo=None) for i in range(4)]
-    road_rows = [
-        (segment_id, tile_times[step] + load_run.VIETNAM_UTC_OFFSET, depth) for (segment_id, step), depth in wet.items()
+    forecast_times = [
+        (issued_at + i * timedelta(minutes=15)).replace(tzinfo=None) + load_run.VIETNAM_UTC_OFFSET for i in range(4)
     ]
-    return load_run.build_slice(run_ts, tile_times, road_rows)
+    road_rows = [(segment_id, forecast_times[step], depth) for (segment_id, step), depth in wet.items()]
+    return load_run.build_slice(run_ts, forecast_times, road_rows)
 
 
 @unittest.skipUnless(DSN, "FLOOD_TEST_TIMESCALE_DSN unset")

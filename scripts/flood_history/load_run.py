@@ -1,5 +1,5 @@
 """Copies one run's per-piece flood depth from flood_road_values into depth_history in TimescaleDB, and the run's
-moments into history_moment (US-106, D-032, D-036).
+moments into history_moment (US-106, D-032, D-036). The moments come from flood_road_file.forecast_times (US-127).
 
 Usage: python load_run.py RUN_TS   (RUN_TS as the DAG names it, for example 20260924T164803)
 
@@ -67,16 +67,16 @@ def vietnam_to_utc(local: datetime) -> datetime:
     return (local - VIETNAM_UTC_OFFSET).replace(tzinfo=timezone.utc)
 
 
-def build_slice(run_ts: str, tile_times: list[datetime], road_rows: list[tuple[str, datetime, float]]) -> RunSlice:
-    """`tile_times` are the naive UTC valid times of the run's raster tiles. `road_rows` are the run's
-    (segment_id, forecast_time, depth) rows of flood_road_values, forecast_time in naive Vietnam local time."""
-    if not tile_times:
-        raise LoadRunError(f"no flood_depth_raster_tile rows for run {run_ts}, so it covers no moment")
-    moments = tuple(sorted(t.replace(tzinfo=timezone.utc) for t in set(tile_times)))
+def build_slice(run_ts: str, forecast_times: list[datetime], road_rows: list[tuple[str, datetime, float]]) -> RunSlice:
+    """`forecast_times` are the run's times in flood_road_file, and `road_rows` are the run's (segment_id, forecast_time,
+    depth) rows of flood_road_values. Both are naive Vietnam local time."""
+    if not forecast_times:
+        raise LoadRunError(f"no forecast times in flood_road_file for run {run_ts}, so it covers no moment")
+    moments = tuple(sorted(vietnam_to_utc(t) for t in set(forecast_times)))
     rows = tuple(DepthRow(segment_id, vietnam_to_utc(forecast_time), depth) for segment_id, forecast_time, depth in road_rows)
     stray = sorted({row.valid_time for row in rows} - set(moments))
     if stray:
-        raise LoadRunError(f"run {run_ts} has flood_road_values rows at {stray}, which none of its tiles cover")
+        raise LoadRunError(f"run {run_ts} has flood_road_values rows at {stray}, which its forecast times do not cover")
     return RunSlice(run_ts=run_ts, issued_at=vietnam_to_utc(run_timestamp(run_ts)), moments=moments, rows=rows)
 
 
@@ -91,16 +91,18 @@ def plan_write(run: RunSlice, held: dict[datetime, datetime]) -> LoadResult:
 
 
 def read_run(conn, run_ts: str) -> RunSlice:
-    """Reads one run from storage-postgres. Every row of the run is copied, depth 0 included."""
+    """Reads one run from storage-postgres. The run's moments are its forecast times in flood_road_file, which a run
+    with no wet piece still has. Every row of the run is copied, depth 0 included."""
+    run_time = run_timestamp(run_ts)
     with conn, conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT valid_time_utc FROM flood_depth_raster_tile WHERE run_ts = %s", (run_ts,))
-        tile_times = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT DISTINCT unnest(forecast_times) FROM flood_road_file WHERE timestamp = %s", (run_time,))
+        forecast_times = [row[0] for row in cur.fetchall()]
         cur.execute(
             "SELECT segment_id, forecast_time, depth FROM flood_road_values WHERE timestamp = %s",
-            (run_timestamp(run_ts),),
+            (run_time,),
         )
         road_rows = cur.fetchall()
-    return build_slice(run_ts, tile_times, road_rows)
+    return build_slice(run_ts, forecast_times, road_rows)
 
 
 def write_run(conn, run: RunSlice) -> LoadResult:
