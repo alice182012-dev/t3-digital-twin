@@ -16,7 +16,6 @@ spatial_ref_sys, geometry_columns and raster_columns are readable by PUBLIC.
 from __future__ import annotations
 
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -24,27 +23,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "floodmap" / "graphhopper-flood-road" / "backend"))
 
 from core_contract import parse_reader_roles  # noqa: E402
-
-_IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
-
-
-def _quote(name: str) -> str:
-    if not _IDENTIFIER.match(name):
-        raise ValueError(f"{name!r} is not a plain lowercase identifier")
-    return f'"{name}"'
-
-
-def grant_statements(role: str, database: str, tables: frozenset[str]) -> list[str]:
-    """The statements that leave role with SELECT on exactly tables in schema public."""
-    r = _quote(role)
-    return [
-        f"REVOKE ALL ON ALL TABLES IN SCHEMA public FROM {r}",
-        f"REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {r}",
-        f"REVOKE CREATE ON SCHEMA public FROM {r}",
-        f"GRANT CONNECT ON DATABASE {_quote(database)} TO {r}",
-        f"GRANT USAGE ON SCHEMA public TO {r}",
-        *(f"GRANT SELECT ON public.{_quote(table)} TO {r}" for table in sorted(tables)),
-    ]
+from roles import ensure_login_role, grant_statements  # noqa: E402
 
 
 def reader_env(role: str) -> tuple[str, str]:
@@ -81,14 +60,7 @@ def main(argv: list[str]) -> int:
     conn = psycopg2.connect(**DB_CONFIG)
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
-            if cur.fetchone() is None:
-                cur.execute(f"CREATE ROLE {_quote(user)}")
-            cur.execute(
-                f"ALTER ROLE {_quote(user)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE "
-                "NOREPLICATION NOBYPASSRLS PASSWORD %s",
-                (password,),
-            )
+            ensure_login_role(cur, user, password)
             for statement in statements:
                 cur.execute(statement)
     finally:
