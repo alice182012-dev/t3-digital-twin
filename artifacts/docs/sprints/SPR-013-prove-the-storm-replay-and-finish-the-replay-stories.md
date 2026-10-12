@@ -5,39 +5,57 @@ sprint_id: "SPR-013"
 sprint: 13
 start_date: 2026-10-12
 end_date: 2026-10-25
-status: planning
+status: active
 tags: [sprint]
-related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]"]
+related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]", "[[decision-log|D-033]]", "[[decision-log|D-034]]"]
 ---
 
-# SPR-013 Sprint 13: prove the storm replay and finish the replay stories
+# SPR-013 Sprint 13: EP-21 foundation
 
-The first sprint under Scrum ([[decision-log|D-024]]). It runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25 ([[decision-log|D-026]]). Planning is on 2026-10-12. This file holds a proposal until the product owner confirms the goal and the picks. [[TODOS]] shows the sprint in the terminal.
+The first sprint under Scrum ([[decision-log|D-024]]). It runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25 ([[decision-log|D-026]]). Planning was on 2026-10-12, and the product owner confirmed the goal and the picks that day. [[TODOS]] shows the sprint in the terminal.
 
 ## Sprint goal
 
-Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the stories that read that replay (`US-089` and `US-091`) are `Done`.
+EP-21 foundation: the industry apps can read flood history and run analysis in their own container.
+
+Confirmed by the product owner on 2026-10-12. The sprint is backend only, with no frontend story.
 
 ## Planning
 
-- **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). Those sprints lasted days, not two weeks, so they under-measure a two-week sprint. A planning range is 16 points (the average) to 25 points (the best of the three). The product owner sets the forecast on Monday, and Sprint 13 calibrates the next one.
-- **Proposed picks.** `US-102` (S, P0), `US-089` (M, P1), and `US-091` (M, P1) make 8 points. They share one replay of about 13.5 hours (see "How to close the proposed picks"), so the replay is the critical path and starts on Monday.
-- **Room for 8 to 17 more points.** The ready stories with no dependency on the replay are `US-076` (M), `US-085` (S), `US-079` (XS), and `US-080` (XS), which are frontend recheck rows (7 points). Other `Ready` stories can fill the rest after refinement. The product owner said on 2026-10-08 that routing finishes first, so these are the product owner's choice.
-- **Work in progress.** At most two stories are `In progress` at once. `US-102` starts first on Monday, because the replay is the longest wait.
-- **Not picked.** `US-094` waits for real rain above 5 mm/h and cannot finish this sprint.
+- **Velocity.** The last three sprints gave 7, 15, and 25 points ([[Velocity]]). Those sprints lasted days, not two weeks, so they under-measure a two-week sprint. The product owner set the forecast at 16 points on 2026-10-12.
+- **Picks.** Seven stories make 16 points. Each one passes the INVEST check in [[scrum-framework]]. The table lists them in the order to start them.
 
-**Open decisions for the product owner at planning:**
+| Order | Story | Title | Estimate | Points | Depends on |
+| ----- | ----- | ----- | -------- | ------ | ---------- |
+| 1 | [[US-094-archive-results-3di-nc-and-a-run\|US-094]] | Deploy the archive mount and show the test-rain skip (part one) | S | 2 | none |
+| 2 | [[US-106-keep-per-segment-depth-history-in-timescaledb\|US-106]] | Write per-segment depth history to TimescaleDB (part a) | M | 3 | [[US-105-decide-what-flood-history-the-industry-apps-need\|US-105]], Done |
+| 3 | [[US-109-run-an-analysis-service-in-its-own-container\|US-109]] | Run an analysis service in its own container | M | 3 | [[US-107-create-a-read-only-role-for-any-consumer-app\|US-107]] and [[US-108-publish-a-run-manifest-for-the-core-outputs\|US-108]], Done |
+| 4 | [[US-112-keep-the-edge-depth-files-to-the-contract-count\|US-112]] | Keep the edge depth files to the newest 8 runs | S | 2 | none |
+| 5 | [[US-104-compare-the-two-inputs-of-the-flood-tile-build\|US-104]] | Compare the two inputs of the flood tile build (spike) | S | 2 | [[US-103-move-the-flood-tile-build-into-its-own-dag\|US-103]], Done |
+| 6 | [[US-110-decide-whether-pipeline-tables-leave-the-public-schema\|US-110]] | Decide whether pipeline tables leave the public schema (spike) | S | 2 | none |
+| 7 | [[US-113-backfill-per-segment-depth-history\|US-113]] | Backfill per-segment depth history from flood_road_values (part b) | S | 2 | [[US-106-keep-per-segment-depth-history-in-timescaledb\|US-106]], in this sprint |
+| | | Total | | 16 | |
 
-1. Confirm the goal and the picks above. Setting `sprint: 13` on a story is the pick.
-2. Give the go for the replay. The scope is decided: A, the full storm (the user, 2026-10-10).
-3. Set the pause time of the replay. The recommendation is 00:15 on Tuesday 2026-10-13.
-4. Accept the rewritten hotstart check and the wet-edge ratio band of 0.8 to 1.25 for `US-102`.
-5. Choose 30 or 60 pairs for `US-091`. The recommendation is 60, about 31 minutes.
-6. Confirm the 50 GB free-space floor, split `US-094`, and decide whether a lowered rain gate may prove the archive if no forecast passes 5 mm/h by 2026-10-23.
-7. Decide whether `TIME_AWARE_ROUTING` goes on for good (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in `.env`).
-8. The product owner resolved [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] on 2026-10-10 (answer: yes). The question was whether it resolves if the replay shows a longest `9c` under 120 s.
+- **Order of work.** The first two stories start first, so both `In progress` slots are used. [[US-113-backfill-per-segment-depth-history|US-113]] starts after [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Done`.
+- **Work in progress.** At most two stories are `In progress` at once. No story was set to `In progress` at planning.
+- **Not picked.** [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done` and keep an empty `sprint`, because the product owner has not decided to count them. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is in the backlog with no sprint, because its proof waits for a forecast above 5 mm/h.
 
-## How to close the proposed picks
+**Open decisions for the product owner:**
+
+1. Confirm the 50 GB free-space floor for the archive (`ARCHIVE_MIN_FREE_GB`). The floor is for [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], not for a pick in this sprint.
+2. Decide whether a lowered rain gate may prove the archive if no forecast passes 5 mm/h by 2026-10-23.
+
+**Resolved on 2026-10-12:**
+
+- `TIME_AWARE_ROUTING` stays on ([[decision-log|D-034]]). The server change is not made yet, and it waits for the owner's go.
+- The edge depth files keep the newest 8 runs ([[decision-log|D-033]]).
+
+**Removed:** the replay questions (the go, the pause time, the hotstart clause, the pair count, and the question of [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]). The replay or the product owner answered each one on 2026-10-10, and the stories that held them are `Done`.
+
+## Replay plan of 2026-10-10 (done)
+
+The replay ran on 2026-10-10, and its results are in [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]].
+The text below is the plan as it was analysed on 2026-10-10, kept as the record.
 
 Analysis of 2026-10-10 by a read-only subagent.
 I checked its main claims against the code: `compose.yml` line 38, the `[Hotstart` and `[Coldstart` log strings in `create_simulation.py`, the `stop` read-back in `replay.ps1`, the 45-minute limit in `standing_flood.py`, and the wall-clock departure in the backend.
@@ -149,10 +167,10 @@ Recommendation: A unless the 3Di cost decides it, then a design check for B befo
 
 **Blockers**
 
-- [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] blocks the sprint goal. It moves to `resolved` when the five former-gap slots simulate, log Hotstart, and the first post-gap table is inside the ratio band.
-- [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] was resolved by the product owner on 2026-10-10, so it is not a sprint blocker.
-- [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] blocks reading the sticky result only.
-  A crossing count of 0 on one route with a mid-step departure resolves it.
+No open blocker blocks the Sprint 13 goal.
+
+- [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved` (2026-10-10).
+- [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] was resolved by the product owner on 2026-10-10.
 
 **Refinement before planning**
 
@@ -191,4 +209,5 @@ Fill this on 2026-10-25.
 - **2026-10-10, planning.** The owner asked to finish the replay stories during the weekend, so the replay moves from Monday 2026-10-12 to 2026-10-10 or 2026-10-11, and the Monday planning only confirms the picks. The server was checked read-only: it is 22 commits behind and can fast-forward, it contains the standing-flood commit, it has 100.9 GiB free on C:, `routing_adapter` is unpaused, and `flood_mapping_full` is paused. The server changes are waiting for the owner to allow them or run them.
 - **2026-10-10, active.** The owner allowed the server writes. Done on the server: `.env.rain-replay.json` was fixed (backup `.bak-2026-10-10`), `git pull --ff-only alice modular` (after two clippings with a `?` in their names were renamed, because Windows rejects them), `.env` got `FLOOD_EXTENT_KEEP_RUNS=100`, `EDGE_TABLE_KEEP_RUNS=100`, and `ARCHIVE_HOST_PATH=D:/airflow_new_data/archive`, `replay.ps1 start` ran twice with an identical `.env` hash, and `flood_mapping_full` was unpaused at 04:02 +07. Slot 04:00 ran with a cold start, and `2b_archive_results` logged the test-rain skip.
 - **2026-10-10, planning.** The replay finished at 18:49 +07. [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done`, and [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved`. The proposed picks stay as they are, and open decisions 7 and 8 wait for the owner at planning.
+- **2026-10-12, active.** The product owner confirmed the goal and set the forecast at 16 points. Seven stories are picked, with `sprint: 13`, and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is split into part (a), which is picked, and [[US-113-backfill-per-segment-depth-history|US-113]], which is picked too. [[US-094-archive-results-3di-nc-and-a-run|US-094]] is split into part one, which is picked, and [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], which is in the backlog. [[decision-log|D-033]] set the edge depth count to 8 for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]], and [[decision-log|D-034]] kept `TIME_AWARE_ROUTING` on. The server was not touched. Open for the owner: the 50 GB floor and the lowered rain gate.
 

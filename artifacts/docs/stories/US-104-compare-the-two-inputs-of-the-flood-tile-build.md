@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-104"
 title: "Compare the two inputs of the flood tile build"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Not started
+status: Ready
 kind: spike
 priority: P2
 estimate: S
-sprint: 
+sprint: 13
 subsystem: flood-extent
 source_ideas: []
 related: ["[[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]", "[[minio-flood-extent-pipeline]]", "[[decision-log|D-027]]"]
@@ -44,6 +44,7 @@ The modes write the same bucket and the same rows, so run one at a time, with `f
   The code for both modes is on the branch `us-103-flood-tiles-dag` (`scripts/flood_extent/raster_export.py` and the `FLOOD_TILES_INPUT` switch in `dags/flood_tiles_dag.py`).
   Nothing is measured yet.
   `compose.yml` passes `FLOOD_TILES_INPUT` (default `files`) to the Airflow containers. A switch means a new value in the server `.env` and a recreate of the scheduler and the DAG processor, since DAG files read it at parse time.
+- **2026-10-12, Ready.** The dependency [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] is `Done`, so the story passes the INVEST check. Picked for Sprint 13 at S (2 points).
 
 ## Evidence and details
 

@@ -9,44 +9,71 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-The replay is finished (scope A). `replay.ps1 stop` ran at 2026-10-10 18:49 +07 and read back `mode live`. [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] are `Done`. [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]] and [[BL-026-sticky-closure-clock-anchored-at-floored-departure|BL-026]] are `resolved`. The owner closed [[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]] and [[BL-010-map-shows-forecast-not-now|BL-010]] on 2026-10-10.
-[[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] is `Done`. The server runs the branch `us-103-flood-tiles-dag`, and `flood_tiles` and `flood_mapping_full` are both unpaused.
-1. Sunday 2026-10-11, the industry-analysis stories of [[EP-21-industry-analysis-on-the-flood-data|EP-21]]. No story takes a sprint before Monday's planning, and at most two are `In progress`.
-   - [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Done`. The measurements and [[decision-log|D-032]] are written. The owner reads the "Decided by" line of D-032: the `history_moment` table is the team's recommendation, not an owner answer. The owner accepted it on 2026-10-12.
-   - [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] is `Done`. The owner accepted it on 2026-10-10 after the server check passed: the role script ran for both roles, the permission checks and `test_reader_role.py` passed, and `POST /route` returned 200.
-   - [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] is `Done`. The server check passed on 2026-10-11, and the owner accepted it on 2026-10-12.
-   - Next: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (after US-105, estimate M may become L because of `history_moment` and the open winner rule), then [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
-   - US-109 needs [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] `Done` (it is) and [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]] `Done` accepted.
-   - Last: [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S, P3), on a copy of the database in `marie-curie/`.
-2. Monday 2026-10-12, planning: confirm the picks in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], split [[US-094-archive-results-3di-nc-and-a-run|US-094]], and take open decision 7 (`TIME_AWARE_ROUTING`) from the owner. The owner accepts each `Done` at the review.
-3. Monday 2026-10-12, planning decisions for the owner. Each one is a separate call by the owner.
-   - Assign `sprint` to [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]], [[US-089-start-and-stop-a-rain-replay-on|US-089]], and [[US-091-measure-how-often-a-single-timestep-route|US-091]] only if the owner decides so. All three are `Done` with no sprint, so Velocity does not count them.
-   - The owner decides whether `TIME_AWARE_ROUTING` stays on (open decision 7 in [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 16 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
+1. Start first: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a, M) and [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S). Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
+2. Then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S), and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S).
+3. [[US-113-backfill-per-segment-depth-history|US-113]] (S) starts after US-106 is `Done`. Its open question about a run that wets no road piece needs an answer before it starts.
+4. Owner items. The planning did not touch the server.
+   - The flag change for [[decision-log|D-034]] (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in the server `.env`) waits for the owner's go.
+   - The server `.env` change for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (count 8) waits for the owner's go too.
+   - Open for the owner: the 50 GB floor and the lowered rain gate. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is in the backlog with no sprint, and it waits for a forecast above 5 mm/h.
    - The owner reads the "Decided by" line of [[decision-log|D-031]].
+5. The review is on 2026-10-25. A story that is not `Done` at the review leaves the sprint.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 13, 2026-10-12 to 2026-10-25
 
-**Goal:** Proposed: the pipeline passes a full-storm replay with the `US-101` fix, and the stories that read that replay (`US-089` and `US-091`) are `Done`.
+**Goal:** EP-21 foundation: the industry apps can read flood history and run analysis in their own container.
 
 **Sprint file:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]
 
-**Status:** planning.
-0 points picked, 0 done.
+**Status:** active.
+16 points picked, 0 done.
 
-No story has this sprint yet.
+### Ready - US-094 Deploy the archive mount and show the test-rain skip
+
+**Story:** [[US-094-archive-results-3di-nc-and-a-run|US-094]].
+P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Ready - US-106 Write per-segment depth history to TimescaleDB
+
+**Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Ready - US-113 Backfill per-segment depth history from flood_road_values
+
+**Story:** [[US-113-backfill-per-segment-depth-history|US-113]].
+P1, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Ready - US-104 Compare the two inputs of the flood tile build
+
+**Story:** [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]], spike.
+
+### Ready - US-109 Run an analysis service in its own container
+
+**Story:** [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
+P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Ready - US-110 Decide whether pipeline tables leave the public schema
+
+**Story:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
+P3, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.
+
+### Ready - US-112 Keep the edge depth files to the newest 8 runs
+
+**Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
+P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-21 stories.
+16 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
   Compare the live app with the mockup in Aside at 1366x768
-- [[US-094-archive-results-3di-nc-and-a-run|US-094]], P1, M, Reviewed.
-  Archive `results_3di.nc` and a run record to D: when the pipeline reads real rain
-- [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], P1, M, Not started.
-  Keep per-segment depth history in TimescaleDB
+- [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
+  Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-008-switch-the-search-geocoder-s-default-locale|US-008]], P2, S, Reviewed.
   Switch the search geocoder's default locale to `vi`
 - [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
@@ -59,8 +86,10 @@ The top 10 by priority:
   Time out a route request in the client
 - [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
   Show the recommended route and the through-water option in the app
-- [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]], P2, S, Not started.
-  Compare the two inputs of the flood tile build
+- [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], P2, L, Not started.
+  Show a pinned demo flood when no rain is forecast
+- [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
+  Write a project `DESIGN.md` with real design tokens
 
 ## Open blockers
 

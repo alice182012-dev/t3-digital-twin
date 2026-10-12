@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-109"
 title: "Run an analysis service in its own container"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Not started
+status: Ready
 kind: story
 priority: P2
 estimate: M
-sprint: 
+sprint: 13
 subsystem: analysis, compose
 source_ideas: []
 related: ["[[core-output-contract]]", "[[timescaledb-schema]]"]
@@ -35,6 +35,7 @@ Dependencies: US-107, US-108.
 ## Status history
 
 - **2026-10-10, draft.** Not started: it waits for `US-107` and `US-108`. It is rated M. Split the Timescale role into its own story if the sprint needs it smaller.
+- **2026-10-12, Ready.** Both dependencies are `Done`: [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] and [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]. The story passes the INVEST check. Picked for Sprint 13 at M (3 points), and the Timescale role stays in this story.
 
 ## Evidence and details
 

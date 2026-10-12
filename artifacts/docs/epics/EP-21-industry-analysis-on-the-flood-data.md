@@ -70,3 +70,4 @@ SORT file.name ASC
 ## Status history
 
 - **2026-10-10, active.** Created after the review of how modular the system is. Stories `US-105` to `US-110` are added to the backlog with no sprint.
+- **2026-10-12, active.** Sprint 13 planning confirmed the goal "EP-21 foundation: the industry apps can read flood history and run analysis in their own container" ([[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]). `US-106` is split into part (a), `US-106`, and part (b), [[US-113-backfill-per-segment-depth-history|US-113]]. Both are in Sprint 13. The open rule for the winning run is settled by [[decision-log|D-032]].

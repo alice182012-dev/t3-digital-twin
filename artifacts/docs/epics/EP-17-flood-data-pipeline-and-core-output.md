@@ -39,7 +39,7 @@ Run each check on the server.
 
 - Rate of growth of `9c` within a chain is unexplained ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]], resolved by the product owner on 2026-10-10).
 - The rain gate stopped simulation while the flood still stood ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], P0, fixed in code by `US-101` and resolved by the replay of `US-102` on 2026-10-10).
-- Archiving a run needs real rain above 5 mm/h ([[US-094-archive-results-3di-nc-and-a-run|US-094]]).
+- Archiving a run needs real rain above 5 mm/h ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]).
 
 ## Stories
 
@@ -53,3 +53,4 @@ SORT file.name ASC
 ## Status history
 
 - **2026-10-10, active.** Created from the Scrum adoption ([[decision-log|D-024]]). It merges the archived epics `EP-03`, `EP-04`, `EP-06`, `EP-12`, `EP-13`, and `EP-15`, and takes the pipeline stories of `EP-07`. Story history lines stay in [[EP-04-timescaledb-and-flood-metrics-history|the archived histories]].
+- **2026-10-12, active.** Sprint 13 planning split [[US-094-archive-results-3di-nc-and-a-run|US-094]]. Part one, the archive mount and the test-rain skip, is in Sprint 13. Part two, the real-rain proof and the growth, is [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] in the backlog. [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] is in Sprint 13 with the count of 8 ([[decision-log|D-033]]).

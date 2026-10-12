@@ -525,3 +525,32 @@ is the maximum.
   The routing writer in `scripts/flood_roads/flood_on_roads.py` picks "the newest run with rows at that time", which is not the same rule as the one above, so US-106 must settle the two.
 - **Affects:** [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], [[decision-log|D-028]], [[EP-21-industry-analysis-on-the-flood-data|EP-21]], and [[timescaledb-schema]].
 - **Revisit if:** the product owner rejects the `history_moment` table, the measured row size or compression on a longer storm series differs far from 141 bytes and 11.4 times, an analysis needs more than one year, or an analysis needs forecast error or lead time ([[decision-log|D-028]]).
+
+## D-033: Keep the edge depth files for the newest 8 runs, the count of the depth rasters
+
+- **Date:** 2026-10-12
+- **Status:** active. The contract row and the edge depth format page change to 8 when [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] is `Done`.
+- **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning.
+- **Decision:** The edge depth files (`EDGE_TABLE_KEEP_RUNS`) keep the newest 8 runs, not the newest 3 that the contract named.
+  The count matches `flood_depth_raster_tile`, which keeps the newest 8 runs (`FLOOD_RASTER_KEEP_RUNS`, default 8).
+- **Why:** The product owner gave the reason as "so that it matches the depth tif we saved".
+  The depth rasters that are saved are the rows of `flood_depth_raster_tile`, which [[US-028-store-depth-rasters-as-tiles-and-read|US-028]] measured at exactly 8 run timestamps on 2026-09-29.
+  The `depth_*.tif` files on disk are not kept by count, because the 24-hour cleanup of the depth folder removes them.
+- **Alternatives:** (1) Keep 3, the count in [[core-output-contract]] and the code default. Not chosen. (2) Keep the value of 100 that the second replay set in the server `.env`. Not chosen.
+- **Evidence:** [[core-output-contract]], "Retention", which lists 8 for `flood_depth_raster_tile` and 3 for the edge depth files. [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]], which found about 35 `.bin` files on 2026-10-11.
+- **Affects:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]], [[core-output-contract]], [[edge-depth-table-format]], `dags/routing_adapter_dag.py` (the default of `EDGE_TABLE_KEEP_RUNS`), and `compose.yml`.
+- **Revisit if:** the product owner changes the count, a consumer needs an edge depth file older than the newest 8 runs, or the depth rasters and the edge depth files stop covering the same runs.
+
+## D-034: Keep TIME_AWARE_ROUTING on for floodmap-backend
+
+- **Date:** 2026-10-12
+- **Status:** active for the decision. The server does not yet read `true`, because the change needs the owner's go, and this decision does not make it.
+- **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning (open decision 7 of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+- **Decision:** `TIME_AWARE_ROUTING` stays on for `floodmap-backend`.
+  Making it stay on on the server means `scripts/routing_proof/rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in the server `.env`.
+- **Why:** No reason came with the decision in the planning input, and none is recorded here.
+  The flag was off at rest on 2026-10-08, and the live readings of [[US-091-measure-how-often-a-single-timestep-route|US-091]] turned it on for one reading each on 2026-10-10, and the script turned it off after each reading ([[graphhopper-backend]]).
+- **Alternatives:** Turn the flag off again after each reading, the state that [[US-091-measure-how-often-a-single-timestep-route|US-091]] left. Not chosen.
+- **Evidence:** [[graphhopper-backend]] and [[architecture-block-diagram]], which record the flag, the `-LeaveOn` switch, and the state of the server at rest.
+- **Affects:** `scripts/routing_proof/rollout.ps1`, the server `.env`, and [[graphhopper-backend]].
+- **Revisit if:** the product owner changes the decision, or a server reading shows the flag in a state other than the one this decision sets.

@@ -8,7 +8,7 @@ status: Ready
 kind: spike
 priority: P3
 estimate: S
-sprint: 
+sprint: 13
 subsystem: storage, core-output
 source_ideas: []
 related: ["[[core-output-contract]]", "[[storage-backend-django-layer]]"]
@@ -36,6 +36,7 @@ Dependencies: None.
 ## Status history
 
 - **2026-10-10, draft.** Ready: the question is stated, it has an estimate, and the answer is a decision.
+- **2026-10-12, Sprint 13.** Picked at Sprint 13 planning at S (2 points). It has no dependency.
 
 ## Evidence and details
 
