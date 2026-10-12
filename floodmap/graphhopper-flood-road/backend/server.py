@@ -9,6 +9,8 @@ exclude_locations. /flood/areas and POST /route share one derivation
 (flood_areas.derive_areas) so the map overlay and the routing gate can
 never drift apart.
 
+GET /flood/mode answers LIVE, PENDING, or DEMO (flood_mode.py). In DEMO, /flood/areas, /flood/points, and /route read the
+pinned step and not the newest run.
 /flood/runs and /flood/timesteps are a separate concern: they back the
 map's timestep picker, not routing, and read flood_extent_runs.py's
 flood_extent_polygon table instead. See artifacts/raw/T3-Digital-Twin_Architecture.md section 4.2.
@@ -37,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import db  # noqa: E402
 import departures  # noqa: E402
 import edge_depth_reader  # noqa: E402
+import flood_mode  # noqa: E402
 import time_aware_route  # noqa: E402
 from flood_utils import vehicle_threshold_cm  # noqa: E402
 from flood_areas import DEFAULT_BUFFER_M, DEFAULT_MIN_AREA_M2, DEFAULT_SIMPLIFY_M, build_custom_model, derive_areas  # noqa: E402
@@ -71,6 +74,18 @@ def cached_areas(valid_time: str, vehicle_type: str, run: str, buffer_m: float, 
         areas_fc = derive_areas(conn, valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2)
     _areas_cache[key] = (now, areas_fc)
     return areas_fc
+
+
+def demo_step() -> flood_mode.DemoStep | None:
+    """The pinned step when the map is in DEMO mode and a step is pinned, else None."""
+    with db.connection() as conn:
+        return flood_mode.read_mode(conn).demo
+
+
+def pinned(qs: dict[str, list[str]]) -> dict[str, list[str]]:
+    """The query of a flood read, with run and valid_time replaced by the pinned step in DEMO mode."""
+    step = demo_step()
+    return qs if step is None else {**qs, "run": [step.run], "valid_time": [step.valid_time]}
 
 
 def post_graphhopper_route(body: dict, timeout: int = 15) -> dict:
@@ -159,7 +174,11 @@ class Handler(BaseHTTPRequestHandler):
                 run = qs.get("run", ["latest"])[0]
                 with db.connection() as conn:
                     self._send(200, {"run": run, "timesteps": list_timesteps(conn, run)})
+            elif parsed.path == "/flood/mode":
+                with db.connection() as conn:
+                    self._send(200, flood_mode.read_mode(conn).as_json())
             elif parsed.path == "/flood/areas":
+                qs = pinned(qs)
                 valid_time = qs.get("valid_time", [""])[0]
                 if not valid_time:
                     raise ValueError("valid_time is required")
@@ -170,7 +189,7 @@ class Handler(BaseHTTPRequestHandler):
                 min_area_m2 = float(qs.get("min_area", [DEFAULT_MIN_AREA_M2])[0])
                 self._send(200, cached_areas(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2))
             elif parsed.path == "/flood/points":
-                query = parse_point_query(qs)
+                query = parse_point_query(pinned(qs))
                 with db.connection() as conn:
                     self._send(200, lookup_point_depth(conn, query))
             elif parsed.path == "/places/search":
@@ -271,6 +290,12 @@ class Handler(BaseHTTPRequestHandler):
         With TIME_AWARE_ROUTING on, the request goes to the time-aware engine first and falls back to today's request
         when the engine cannot run (time_aware_route.py, US-052).
         """
+        step = demo_step()
+        if step is not None:
+            # In DEMO the engine would judge a trip from the clock on the newest table, so the pinned step goes through
+            # the flood areas of the pinned run, as with the flag off.
+            body = {**body, "run": step.run, "valid_time": step.valid_time}
+
         def flood_custom_model(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2):
             areas_fc = cached_areas(valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2)
             return build_custom_model(areas_fc) if areas_fc["features"] else None
@@ -279,7 +304,7 @@ class Handler(BaseHTTPRequestHandler):
             body,
             post=post_graphhopper_route,
             custom_model=flood_custom_model,
-            enabled=time_aware_route.flag_enabled(os.environ),
+            enabled=time_aware_route.flag_enabled(os.environ) and step is None,
             now=datetime.now(timezone.utc),
             defaults=(DEFAULT_BUFFER_M, DEFAULT_SIMPLIFY_M, DEFAULT_MIN_AREA_M2),
         )

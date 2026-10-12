@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]", "[[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-10
+last_updated: 2026-10-12
 ---
 
 # GraphHopper flood-road backend
@@ -71,6 +71,7 @@ in "The engine in the backend (US-052)".
 | `/info`, `/nearest` | GET | Proxied to GraphHopper unchanged; no flood logic. |
 | `/flood/runs` | GET | Distinct `run_ts` values from `flood_extent_polygon`. |
 | `/flood/timesteps` | GET | Timesteps for one run, converted back to Vietnam local time. |
+| `/flood/mode` | GET | The forecast mode, `LIVE`, `PENDING`, or `DEMO`, with the time of the decision and, in `DEMO`, the pinned run and step (`flood_mode.py`, US-130). |
 | `/flood/areas` | GET | The same flood polygons `POST /route` grades against, for the map overlay. |
 | `/flood/points` | GET | Exact depth at one lat/lon and timestep, from `flood_depth_raster_tile`. |
 | `/route` | POST | Flood-graded route; see the flow above. |
@@ -79,6 +80,17 @@ in "The engine in the backend (US-052)".
 | `/flood/profile` | POST | Depth at evenly spaced samples along a route at one `valid_time`, from `flood_depth_raster_tile` (`flood_profile.py`). |
 | `/places/search`, `/geocode` | GET | Place search, backed by `place_search.py`. |
 | `/places/reverse` | GET | The nearest named Vietnamese place to `lat` and `lon` (Photon `/reverse`), as `{"result": {name, address, ...} or null}`. Backs the place-depth popup. |
+
+## Forecast mode and the demo step (US-130)
+
+`flood_mode.read_mode` reads the newest row of `forecast_mode` and, in `DEMO`, the row of `demo_pin`. A database without the tables, or without a decision, is `LIVE`, which is how the backend behaved before.
+In `DEMO` with a pinned step, `GET /flood/areas`, `GET /flood/points`, and `POST /route` replace the `run` and `valid_time` of the request with the pinned ones.
+`POST /route` skips the time-aware engine in this case, even with `TIME_AWARE_ROUTING` on, and sends today's request with the flood areas of the pinned run.
+The engine reads only the table that `latest` names and floors the departure to the clock, so it cannot judge a stored step.
+In `DEMO` with no pinned step, and in `LIVE` and `PENDING`, the three calls read the newest run.
+`POST /flood/forecast` and `POST /flood/profile` do not change with the mode.
+The point read needs the raster tiles of the pinned step, which [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] rebuilds.
+The role `routing_reader` needs `SELECT` on `forecast_mode` and `demo_pin`, so rerun `create_routing_reader_role.py` after the tables exist.
 
 ## Point depth lookup
 

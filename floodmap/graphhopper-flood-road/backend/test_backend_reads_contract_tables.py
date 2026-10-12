@@ -21,7 +21,7 @@ from test_core_contract import page_path
 
 BACKEND = Path(__file__).resolve().parent
 
-READ_TODAY = {"edge_depth", "edge_depth_run", "flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "graph_edge"}
+READ_TODAY = {"demo_pin", "edge_depth", "edge_depth_run", "flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "forecast_mode", "graph_edge"}
 
 _TOKEN = re.compile(
     r"""

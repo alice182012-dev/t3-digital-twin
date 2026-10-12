@@ -36,7 +36,9 @@ from osgeo import gdal, osr
 import create_flood_depth_raster_tables
 import create_flood_extent_tables
 import create_flood_run_output_table
+import create_demo_pin_table
 import create_edge_depth_tables
+import create_forecast_mode_table
 import create_graph_edge_table
 import raster_load
 
@@ -157,7 +159,9 @@ def points_url(base: str, **params) -> str:
 
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS edge_depth, edge_depth_run, graph_edge_export, graph_edge;")
+        cur.execute("DROP TABLE IF EXISTS edge_depth, edge_depth_run, graph_edge_export, graph_edge, forecast_mode, demo_pin;")
+        cur.execute(create_forecast_mode_table.SQL)
+        cur.execute(create_demo_pin_table.SQL)
         cur.execute(create_graph_edge_table.SQL)
         cur.execute(create_edge_depth_tables.SQL)
         cur.execute(
@@ -220,6 +224,22 @@ def request(url: str, method: str = "GET", body: dict | None = None) -> tuple[in
             return res.status, json.loads(res.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         return exc.code, json.loads(exc.read().decode("utf-8"))
+
+
+def set_mode(dsn: str, *decisions: tuple[str, str]) -> None:
+    """Replaces the forecast_mode rows with one per (slot, mode), and pins OLD_RUN at VALID_TIME_UTC for the demo."""
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute("TRUNCATE forecast_mode")
+        for slot, mode in decisions:
+            cur.execute(
+                "INSERT INTO forecast_mode (slot, rain_peak_mm_hr, gate_mm_hr, standing_flood, mode)"
+                " VALUES (%s, 0, 5, false, %s)",
+                (slot, mode),
+            )
+        cur.execute("TRUNCATE demo_pin")
+        cur.execute(
+            "INSERT INTO demo_pin (run_ts, valid_time_utc, wet_edges) VALUES (%s, %s, 1)", (OLD_RUN, VALID_TIME_UTC)
+        )
 
 
 def main() -> int:
@@ -401,7 +421,60 @@ def main() -> int:
                 StubGraphHopper.response_override = None
                 del os.environ["EDGE_TABLE_DIR"]
 
+        # The forecast mode (US-130). With no decision written the backend is LIVE and reads the newest run.
+        status, payload = request(f"{base}/flood/mode")
+        assert (status, payload) == (200, {"mode": "LIVE", "decided_at": None, "demo": None}), (status, payload)
+
         wet_lon, wet_lat = pixel_centre_lonlat(*WET_PIXEL)
+        expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
+        live_point = points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+
+        # DEMO with a pinned step: the point read, the areas, and the route all use the pinned run and step, whatever the
+        # request names, and the engine is not asked even with the flag on.
+        set_mode(dsn, ("2026-10-12 03:00:00", "LIVE"), ("2026-10-12 03:15:00", "DEMO"))
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and payload["mode"] == "DEMO", (status, payload)
+        assert payload["demo"] == {"run": OLD_RUN, "valid_time": VALID_TIME}, payload
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == OLD_RUN, (status, payload)
+        assert np.float32(payload["depth_m"]) == depth_grid(0.0)[WET_PIXEL], payload
+        status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=OLD_ONLY_VALID_TIME, run=NEW_RUN))
+        assert status == 200 and payload["run"] == OLD_RUN, (status, payload)
+        status, payload = request(f"{base}/flood/areas?valid_time={quote('2030-01-01T00:00:00+00:00')}&run=latest")
+        assert status == 200 and [f["properties"]["band"] for f in payload["features"]] == ["b4"], (status, payload)
+        os.environ["TIME_AWARE_ROUTING"] = "true"
+        try:
+            StubGraphHopper.received_bodies.clear()
+            status, payload = request(
+                f"{base}/route",
+                method="POST",
+                body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "motorbike"},
+            )
+        finally:
+            del os.environ["TIME_AWARE_ROUTING"]
+        assert status == 200, (status, payload)
+        assert len(StubGraphHopper.received_bodies) == 1, StubGraphHopper.received_bodies
+        demo_body = StubGraphHopper.received_bodies[0]
+        assert "td_departure" not in demo_body and demo_body["ch.disable"] is True, demo_body
+        assert "custom_model" in demo_body, demo_body
+
+        # DEMO with no pinned step reads the newest run, and PENDING never pins.
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE demo_pin")
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and (payload["mode"], payload["demo"]) == ("DEMO", None), (status, payload)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+        set_mode(dsn, ("2026-10-12 03:15:00", "DEMO"), ("2026-10-12 03:30:00", "PENDING"))
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and (payload["mode"], payload["demo"]) == ("PENDING", None), (status, payload)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE forecast_mode, demo_pin")
+
         expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
         status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME))
         assert status == 200, (status, payload)
