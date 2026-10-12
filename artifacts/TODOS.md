@@ -72,7 +72,7 @@ The top 10 by priority:
   Backfill per-segment depth history from flood_road_values
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
-- [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], P1, S, In progress.
+- [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], P1, S, Reviewed.
   Let a run with no wet road piece win the winner query
 - [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], P1, M, Not started.
   Export a stable key with each graph edge

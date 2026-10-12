@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-116"
 title: "Let a run with no wet road piece win the winner query"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Reviewed
 kind: bug
 priority: P1
 estimate: S
@@ -37,7 +37,21 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 
 - **2026-10-12, draft.** Found at Sprint 13 planning. It stays in the backlog until the spike decides the method, so the fix is not thrown away.
 - **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. Reproduced on a throwaway PostGIS (`imresamu/postgis:17-3.5`, on the server, reached through a tunnel) with the real `flood_on_roads` writer and the real backend: an older wet run (`20260924T164803`) and a newer dry run (`20260924T170303`) that overlap at local 17:03:03. `GET /flood/areas?valid_time=2026-09-24T17:03:03` returned 1 `b4` feature from the older run, where the newest run is dry. The time 16:48:03, which only the older run covers, returned the same feature, and 17:18:03 returned none.
+- **2026-10-12, Reviewed.** Fixed on `modular`, not pushed and not deployed. The acceptance checks on the server wait for the deploy steps in details item 7.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** the reproduction and the fix, run on a throwaway PostGIS (`imresamu/postgis:17-3.5`, removed afterwards) with the real `flood_on_roads` writer and the real backend. No server screenshot yet, because nothing is deployed.
+
+**Details:**
+
+1. Root cause: the winner query took the newest `timestamp` that has rows in `flood_road_values`, and a run with no wet road piece has no rows. The registry `flood_road_file` held the run but not the forecast times it covers.
+2. `flood_road_file` has a new column `forecast_times` (`TIMESTAMP[]`, naive Vietnam local time). `create_flood_road_tables.py` adds it and backfills existing runs from their rows. `flood_on_roads.compute` writes it for every run, including a dry run.
+3. `_WINNER_SEG_SQL` in `flood_areas.py` picks the newest registered run whose `forecast_times` contains the requested time and reads that run's rows. A winner with no rows gives no features. The pinned-run query did not change. There is one source for the winner and no union with `flood_road_values`.
+4. A shadow run (`flood_on_roads.py --target`) registers no times, and its conflict update keeps the stored times. Without this, a shadow run would have won times with no rows and blanked the overlay.
+5. Same three requests on the same seed, `GET /flood/areas` with `run=latest`. At 17:03:03, where the newest run is dry, the answer changed from 1 `b4` feature to 0. At 16:48:03, which only the older run covers, it stays 1 `b4`. At 17:18:03 it is 0. A request pinned to the older run still returns its `b4` feature.
+6. The tests that failed first on the old code now pass: `test_flood_areas.py` (script, prints `ok`), `test_server.py` (script, prints `ok`), 26 in `scripts/flood_roads`, 12 in `scripts/test_standing_flood.py`, and 21 contract tests. The fixture of `test_server.py` registers its run with its forecast time, because its routing tests would otherwise get no areas.
+7. The backend connects as `routing_reader`, which can read only the tables on the contract page, so `flood_road_file` was added to [[core-output-contract]] (a seventh table, with the `routing_reader` list), and `test_core_contract.py` follows. Deploy order on the server: first run `create_flood_road_tables.py` (the column and the backfill), then run `create_routing_reader_role.py routing_reader` again, then restart `floodmap-backend`. A backend that starts before the first step fails `/flood/areas` on the missing column.
+8. `prune_flood_road_values.py` is not changed. It builds its run list from `flood_road_values`, so it never deletes the registry row of a dry run. Those rows stay, and an old row covers only past times.
+9. For [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]]: the run registry moves with the new table, and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes `flood_road_file` after the readers have moved.
+10. Open for `Done`: the deploy steps in item 7, then a dry run constructed on the server is not possible without writing to its tables, so the server check reads `/flood/areas` for a time covered by two runs and compares it with the newest run's rows. The server had no run with `feature_count` 0 on 2026-10-12.
