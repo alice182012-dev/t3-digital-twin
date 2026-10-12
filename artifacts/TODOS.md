@@ -12,11 +12,11 @@ Index: [[Home]].
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 16 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
 1. Start first: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a, M) and [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S). Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
 2. Then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S), and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S).
-3. [[US-113-backfill-per-segment-depth-history|US-113]] (S) starts after US-106 is `Done`. Its open question about a run that wets no road piece needs an answer before it starts.
+3. [[US-113-backfill-per-segment-depth-history|US-113]] (S) starts after US-106 is `Done`. The rule for a run that wets no road piece is set ([[decision-log|D-036]]).
 4. Owner items. The planning did not touch the server.
-   - The flag change for [[decision-log|D-034]] (`rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in the server `.env`) waits for the owner's go.
+   - The flag for [[decision-log|D-034]] is on. The owner gave the go on 2026-10-12, and the server read-back of that day shows `TIME_AWARE_ROUTING=true` for `floodmap-backend` (see [[decision-log|D-034]]).
    - The server `.env` change for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (count 8) waits for the owner's go too.
-   - Open for the owner: the 50 GB floor and the lowered rain gate. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is in the backlog with no sprint, and it waits for a forecast above 5 mm/h.
+   - The 50 GB floor and the lowered rain gate are set ([[decision-log|D-035]]), and the lowered gate's value is not set. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is in the backlog with no sprint, and it waits for a forecast above 5 mm/h, or for the lowered gate if no forecast passes 5 mm/h by 2026-10-23.
    - The owner reads the "Decided by" line of [[decision-log|D-031]].
 5. The review is on 2026-10-25. A story that is not `Done` at the review leaves the sprint.
 <!-- next-action:end -->

@@ -36,7 +36,8 @@ The `timescaledb-data` volume moves to a host path on D: before the first load, 
 
 Given a replay run on the server, when `flood_history` finishes, then `depth_history` has one row per wet road piece and step of that run, a count query on `flood_road_values` for the same run gives the same number, and the hypertable exists on the real TimescaleDB server (`SELECT * FROM timescaledb_information.hypertables`).
 Given the same run loaded twice, then the row count does not change.
-Given `depth_history` with a compression policy and a drop policy (`timescaledb_information.jobs`), when the compression job has run on the replay data, then `hypertable_compression_stats` gives the real compression ratio, and the story records it so [[decision-log|D-028]] can be checked against the estimate of 10 times.
+Given `depth_history` with a compression policy and a drop policy (`timescaledb_information.jobs`), when the owner compresses one chunk of the replay data by hand, then `hypertable_compression_stats` gives the compression ratio of that chunk, and the story records it so [[decision-log|D-028]] can be checked against the estimate of 10 times.
+The ratio comes from one hand-compressed chunk, so it is a sample, and it does not show that the scheduled compression job runs.
 Given a second run that overlaps the first by one step, then that step keeps the later run's depth.
 
 Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Done`.
@@ -46,6 +47,7 @@ Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]
 
 - **2026-10-10, draft.** Not started: it waits for the decision of `US-105`.
 - **2026-10-12, Ready.** Split at Sprint 13 planning into part (a), this story, and part (b), [[US-113-backfill-per-segment-depth-history|US-113]]. The open rule for the winning run is settled by [[decision-log|D-032]], so it is no longer open here. Sized M (3 points).
+- **2026-10-12, Ready.** The product owner chose to check compression by hand, on one chunk of the replay data, for the acceptance check.
 
 ## Evidence and details
 

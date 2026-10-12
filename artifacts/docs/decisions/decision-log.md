@@ -544,7 +544,8 @@ is the maximum.
 ## D-034: Keep TIME_AWARE_ROUTING on for floodmap-backend
 
 - **Date:** 2026-10-12
-- **Status:** active for the decision. The server does not yet read `true`, because the change needs the owner's go, and this decision does not make it.
+- **Status:** active. The product owner gave the go on 2026-10-12.
+  The server reads `TIME_AWARE_ROUTING=true` for `floodmap-backend` as of about 10:50 +07 on 2026-10-12, by the read-back in Evidence.
 - **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning (open decision 7 of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
 - **Decision:** `TIME_AWARE_ROUTING` stays on for `floodmap-backend`.
   Making it stay on on the server means `scripts/routing_proof/rollout.ps1 -LeaveOn` and `TIME_AWARE_ROUTING=true` in the server `.env`.
@@ -552,5 +553,42 @@ is the maximum.
   The flag was off at rest on 2026-10-08, and the live readings of [[US-091-measure-how-often-a-single-timestep-route|US-091]] turned it on for one reading each on 2026-10-10, and the script turned it off after each reading ([[graphhopper-backend]]).
 - **Alternatives:** Turn the flag off again after each reading, the state that [[US-091-measure-how-often-a-single-timestep-route|US-091]] left. Not chosen.
 - **Evidence:** [[graphhopper-backend]] and [[architecture-block-diagram]], which record the flag, the `-LeaveOn` switch, and the state of the server at rest.
+  Server read-back, 2026-10-12 at about 10:50 +07: `printenv TIME_AWARE_ROUTING` in the container `airflow_new-floodmap-backend-1` prints `true`, the container is `Up`, and `GET /health` from the worker returns 200.
+  Only `floodmap-backend` reads the flag (`compose.yml`, line 425).
+  The change was made without `rollout.ps1`, because that script builds images and a `docker build` over SSH fails on the credential helper.
+  A backup of `.env` was taken first, `TIME_AWARE_ROUTING=true` was appended to it, and `docker compose up -d --no-deps floodmap-backend` ran on the host.
+  No screenshot was taken, so the read-back is the evidence.
 - **Affects:** `scripts/routing_proof/rollout.ps1`, the server `.env`, and [[graphhopper-backend]].
 - **Revisit if:** the product owner changes the decision, or a server reading shows the flag in a state other than the one this decision sets.
+
+## D-035: Set the archive free-space floor at 50 GB, and allow a lowered rain gate to prove the archive
+
+- **Date:** 2026-10-12
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning (open decisions 1 and 2 of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+- **Decision:** The free-space floor `ARCHIVE_MIN_FREE_GB` is 50 GB.
+  The copy fails loudly when the free space of D: is below it ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]).
+  If no forecast passes 5 mm/h by 2026-10-23, a lowered rain gate may prove the archive in [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
+  This decision does not set the value of the lowered gate.
+- **Why:** The 50 GB floor was a proposal, about 8 percent of the 586 GB that was free on 2026-10-08, and the product owner confirmed it.
+  The proof in [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] waits for a forecast above 5 mm/h, so the lowered gate lets the proof run if no such forecast comes by 2026-10-23.
+  The planning input gave no other reason for either answer.
+- **Alternatives:** None were recorded at planning.
+- **Evidence:** [[US-094-archive-results-3di-nc-and-a-run|US-094]] sets the default of `ARCHIVE_MIN_FREE_GB` to 50.
+- **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]].
+- **Revisit if:** the product owner sets a value for the lowered gate, or D: falls below the floor during the archive proof.
+
+## D-036: Record the moments of a run that wets no road piece as dry, at depth 0 cm
+
+- **Date:** 2026-10-12
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning (the open question of [[US-113-backfill-per-segment-depth-history|US-113]]).
+- **Decision:** A run that wets no road piece writes no rows to `flood_road_values`.
+  Its moments are recorded as dry, at depth 0 cm.
+  This applies the dry rule of [[decision-log|D-032]] to such a run.
+- **Why:** The product owner decided the question, and the planning input gave no reason.
+  A run that wets no piece leaves no rows that could show its moments as dry.
+- **Alternatives:** Skip such a run, which leaves its moments unknown. The open question of [[US-113-backfill-per-segment-depth-history|US-113]] named this option. Not chosen.
+- **Evidence:** [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], Evidence item 5, which found that a run that wets no piece writes no rows.
+- **Affects:** [[US-113-backfill-per-segment-depth-history|US-113]], [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], and [[decision-log|D-032]].
+- **Revisit if:** [[US-113-backfill-per-segment-depth-history|US-113]] finds that the moments of such a run cannot be read from any source the team keeps.

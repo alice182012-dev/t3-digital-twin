@@ -24,19 +24,18 @@ Part two of [[US-094-archive-results-3di-nc-and-a-run|US-094]].
 Part one deploys the archive mount and shows the test-rain skip.
 The archive copy runs only in real-rain mode, so no run has proved it yet.
 
-Given a real-rain run above the rain gate of 5 mm/h, with `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_MM_HR` unset, when the run finishes, then `results_3di.nc` and `run_record.json` exist under `<sim_id>/` in the archive folder (`D:\airflow_new_data\archive` on the server).
+Given a real-rain run above the rain gate of 5 mm/h (or above the lowered gate that [[decision-log|D-035]] allows if no forecast passes 5 mm/h by 2026-10-23), with `FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_MM_HR` unset, when the run finishes, then `results_3di.nc` and `run_record.json` exist under `<sim_id>/` in the archive folder (`D:\airflow_new_data\archive` on the server).
 Given that run, when the 24-hour cleanup in `9_build_flood_tiles` has run, then both files are still there.
-Given the copy, when it ends, then the task logs the free space of D: and fails loudly when the free space is below `ARCHIVE_MIN_FREE_GB`.
+Given the copy, when it ends, then the task logs the free space of D: and fails loudly when the free space is below `ARCHIVE_MIN_FREE_GB`, which is 50 GB ([[decision-log|D-035]]).
 Given the run record, then it holds `sim_id`, `run_timestamp`, `rain_input`, `model_id`, `graph_hash`, `bytes`, and `sha256`.
 Given a week of real-rain runs, then the daily growth in GB is measured and recorded in this file.
 
 The proof is a one-off run that reads the real Tomorrow.io forecast, with the test-rain variables unset (the user, 2026-10-08).
 The forecast has to pass the rain gate, so the run cannot be scheduled.
 
-Open questions for the product owner:
-
-1. Confirm the 50 GB free-space floor (`ARCHIVE_MIN_FREE_GB`). The floor is a proposal, about 8 percent of the 586 GB that was free on 2026-10-08.
-2. Decide whether a lowered rain gate may prove the archive if no forecast passes 5 mm/h by 2026-10-23.
+The product owner confirmed the 50 GB free-space floor (`ARCHIVE_MIN_FREE_GB`) on 2026-10-12.
+The product owner also allowed a lowered rain gate, if no forecast passes 5 mm/h by 2026-10-23 ([[decision-log|D-035]]).
+The value of the lowered gate is not set.
 
 Dependencies: [[US-094-archive-results-3di-nc-and-a-run|US-094]] part one is `Done`.
 This story blocks [[US-095-retire-the-netcdf-values-ingest|US-095]] and [[US-086-prune-old-rows-of-flood-road-values|US-086]], as the original US-094 did.
@@ -49,6 +48,7 @@ Estimate: S.
 ## Status history
 
 - **2026-10-12, not started.** Split from US-094 at Sprint 13 planning. It stays in the backlog with no sprint, because its proof waits for a forecast above 5 mm/h ([[decision-log|D-016]], [[decision-log|D-019]]).
+- **2026-10-12, not started.** The product owner confirmed the floor of 50 GB and allowed a lowered rain gate after 2026-10-23 ([[decision-log|D-035]]). The story stays in the backlog with no sprint.
 
 ## Evidence and details
 
