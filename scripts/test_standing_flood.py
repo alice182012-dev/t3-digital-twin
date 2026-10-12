@@ -1,8 +1,18 @@
+import os
+import sys
 import unittest
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from pathlib import Path
+
+import psycopg2
 
 from standing_flood import DRY_DEPTH_M, DRY_RUNS_TO_STOP, RunDepth, assess, read_standing_flood
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "database"))
+import create_edge_depth_tables  # noqa: E402
+
+DSN = os.getenv("EDGE_DEPTH_TEST_DSN")
+SCHEMA = f"standing_flood_test_{os.getpid()}"
 
 START = datetime(2026, 10, 9, 19, 0)
 NO_RAIN = 0.0
@@ -82,32 +92,92 @@ class AssessTests(unittest.TestCase):
         self.assertEqual(result["dry_runs_in_a_row"], 2)
 
 
+@unittest.skipUnless(DSN, "EDGE_DEPTH_TEST_DSN is not set")
 class ReadStandingFloodTests(unittest.TestCase):
-    def connection(self, table_exists, rows):
-        cursor = MagicMock()
-        cursor.fetchone.return_value = (table_exists,)
-        cursor.fetchall.return_value = rows
-        conn = MagicMock()
-        conn.cursor.return_value.__enter__.return_value = cursor
-        return conn, cursor
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = psycopg2.connect(DSN)
+        with cls.conn, cls.conn.cursor() as cur:
+            cur.execute(f"CREATE SCHEMA {SCHEMA}")
+            cur.execute(f"SET search_path TO {SCHEMA}, public")
+            cur.execute(create_edge_depth_tables.SQL)
 
-    def test_a_missing_table_is_a_dry_state_and_is_not_queried_further(self):
-        conn, cursor = self.connection(False, [])
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.rollback()
+        with cls.conn, cls.conn.cursor() as cur:
+            cur.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+        cls.conn.close()
 
-        result = read_standing_flood(conn, max_rain_mm_hr=2.0)
+    def setUp(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(f"SET search_path TO {SCHEMA}, public")
+            cur.execute("TRUNCATE edge_depth_run CASCADE")
 
-        self.assertFalse(result["stands"])
-        self.assertEqual(result["reason"], "no_run")
-        cursor.fetchall.assert_not_called()
+    def add_runs(self, max_depths_cm):
+        """One registered run per value, newest first, one slot apart, built 12 minutes after its slot. A value of
+        None is a run with no wet edge."""
+        with self.conn, self.conn.cursor() as cur:
+            for index, depth_cm in enumerate(max_depths_cm):
+                slot = START - timedelta(minutes=15) * index
+                run_ts = slot.strftime("%Y%m%dT%H%M%S")
+                cur.execute(
+                    "INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times, built_at) "
+                    "VALUES (%s, 'h', ARRAY[%s]::timestamp[], LOCALTIMESTAMP - interval '12 minutes' - %s * interval '1 minute')",
+                    (run_ts, slot, 15 * index),
+                )
+                if depth_cm is not None:
+                    cur.execute(
+                        "INSERT INTO edge_depth VALUES (%s, %s, '1:0', %s), (%s, %s, '2:0', 1)",
+                        (run_ts, slot, depth_cm, run_ts, slot),
+                    )
 
-    def test_rows_from_the_table_are_assessed_with_the_forecast(self):
-        rows = [(START, 4.2, timedelta(minutes=10)), (START - timedelta(minutes=15), 4.1, timedelta(minutes=25))]
-        conn, cursor = self.connection(True, rows)
+    def read(self, rain=NO_RAIN):
+        return read_standing_flood(self.conn, rain)
 
-        result = read_standing_flood(conn, max_rain_mm_hr=0.0)
+    def test_a_database_with_no_registry_table_is_a_dry_state(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("DROP TABLE edge_depth, edge_depth_run")
+        try:
+            result = read_standing_flood(self.conn, max_rain_mm_hr=2.0)
+        finally:
+            with self.conn, self.conn.cursor() as cur:
+                cur.execute(create_edge_depth_tables.SQL)
 
-        self.assertTrue(result["stands"])
-        self.assertEqual(cursor.execute.call_args_list[1].args[1]["limit"], DRY_RUNS_TO_STOP)
+        self.assertEqual((result["stands"], result["reason"]), (False, "no_run"))
+
+    def test_an_empty_registry_is_a_dry_state(self):
+        self.assertEqual(self.read(rain=2.0)["reason"], "no_run")
+
+    def test_a_wet_newest_run_stands(self):
+        self.add_runs([42, 30, 12, 8, 6])
+
+        result = self.read()
+
+        self.assertEqual((result["stands"], result["reason"], result["dry_runs_in_a_row"]), (True, "standing_flood", 0))
+        self.assertEqual(result["newest_run_age_min"], 12.0)
+
+    def test_five_dry_runs_among_them_runs_with_no_wet_edge_end_it(self):
+        self.add_runs([None, 4, None, 4, None])
+
+        result = self.read()
+
+        self.assertEqual((result["stands"], result["reason"], result["dry_runs_in_a_row"]), (False, "dry_and_no_rain", 5))
+
+    def test_a_dry_run_among_the_newest_five_counts_as_dry_not_missing(self):
+        self.add_runs([None, 60, 60, 60, 60])
+
+        self.assertEqual(self.read()["dry_runs_in_a_row"], 1)
+
+    def test_only_the_newest_five_runs_are_read(self):
+        self.add_runs([None] * 5 + [90])
+
+        self.assertEqual(self.read()["dry_runs_in_a_row"], 5)
+
+    def test_a_depth_of_exactly_5_cm_is_wet(self):
+        self.add_runs([5, None, None, None, None])
+
+        self.assertEqual(self.read()["dry_runs_in_a_row"], 0)
 
 
 if __name__ == "__main__":

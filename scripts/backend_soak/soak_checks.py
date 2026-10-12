@@ -9,7 +9,7 @@ Four subcommands.
     containers FILE
                    Read the `docker inspect` lines that run_soak.sh prints. Exit code 1 if a container
                    started after the soak start, was OOM killed, is not running, or could not be read.
-    roads          Pick real roads from `flood_road_values` whose depth lies between two vehicle limits,
+    roads          Pick real edges from `edge_depth` whose depth lies between two vehicle limits,
                    call `POST /route` for each vehicle, and compare with the answer the limits give.
     latency        Time `POST /route` for a short, a medium, and a long trip.
 
@@ -29,7 +29,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _HERE = Path(__file__).resolve()
@@ -229,18 +229,24 @@ BUCKETS = [
     ("every vehicle blocked", 40.3, 10_000.0),
 ]
 
+# edge_key is <osm_way_id>:<position along the way> (US-117), so the neighbours of an edge are the same way at
+# position - 1 and + 1. An edge with no row is dry and is not a candidate, nor a neighbour, as before.
 CURRENT_RUN_SQL = """
 CREATE TEMP TABLE cur AS
-SELECT segment_id, road_name, split_part(segment_id, '#', 1) AS way,
-       nullif(split_part(segment_id, '#', 2), '')::int AS idx,
-       depth * 100 AS cm, ST_LineMerge(geom_4326) AS g
-FROM flood_road_values
-WHERE timestamp = %(run)s AND forecast_time = %(vt)s
+SELECT e.edge_key AS segment_id, split_part(e.edge_key, ':', 1) AS way,
+       split_part(e.edge_key, ':', 2)::int AS idx, d.depth_cm AS cm, e.geom AS g
+FROM edge_depth d
+JOIN graph_edge e USING (edge_key)
+WHERE d.run_ts = %(run)s AND d.valid_time_utc = %(vt)s
 """
+
+# run_ts and the body's run are the DAG's run name. valid_time_utc is naive UTC, and the route body's valid_time is
+# local (+07:00) like the one the backend is called with.
+LOCAL_OFFSET = timedelta(hours=7)
 
 PICK_SQL = """
 WITH cand AS (
-    SELECT c.segment_id, c.road_name, c.cm, c.g, p.segment_id AS p_id, p.g AS p_g, x.segment_id AS x_id, x.g AS x_g
+    SELECT c.segment_id, c.cm, c.g, p.segment_id AS p_id, p.g AS p_g, x.segment_id AS x_id, x.g AS x_g
     FROM cur c
     JOIN cur p ON p.way = c.way AND p.idx = c.idx - 1
     JOIN cur x ON x.way = c.way AND x.idx = c.idx + 1
@@ -254,7 +260,7 @@ WITH cand AS (
     ORDER BY md5(c.segment_id)
     LIMIT %(sample)s
 )
-SELECT c.segment_id, c.road_name, c.cm, ST_AsGeoJSON(c.g), ST_AsGeoJSON(c.p_g), ST_AsGeoJSON(c.x_g)
+SELECT c.segment_id, c.cm, ST_AsGeoJSON(c.g), ST_AsGeoJSON(c.p_g), ST_AsGeoJSON(c.x_g)
 FROM cand c
 WHERE NOT EXISTS (
     SELECT 1 FROM cur n
@@ -285,6 +291,44 @@ def route_coordinates(payload: dict) -> list:
         return []
 
 
+def resolve_run(cur, run_arg, valid_time_arg):
+    """The run name and the naive UTC forecast time to check. Default: the newest registered run and its first step.
+    `run_arg` is a run name or a local timestamp such as '2026-10-02 02:15:00'. `valid_time_arg` is ISO, local when
+    it has no offset."""
+    if run_arg is None:
+        cur.execute("SELECT max(run_ts) FROM edge_depth_run")
+        run = cur.fetchone()[0]
+        if run is None:
+            raise SystemExit("edge_depth_run has no run")
+    else:
+        run = datetime.fromisoformat(run_arg).strftime("%Y%m%dT%H%M%S") if "-" in run_arg else run_arg
+    if valid_time_arg is None:
+        cur.execute("SELECT valid_times[1] FROM edge_depth_run WHERE run_ts = %s", (run,))
+        row = cur.fetchone()
+        if row is None or row[0] is None:
+            raise SystemExit(f"edge_depth_run has no run {run}")
+        return run, row[0]
+    parsed = datetime.fromisoformat(valid_time_arg)
+    if parsed.tzinfo is None:
+        return run, parsed - LOCAL_OFFSET
+    return run, parsed.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def pick_roads(cur, run, vt, per_bucket):
+    """Up to `per_bucket` isolated edges per depth bucket of one run and forecast time, as (bucket label, edge_key,
+    depth in cm, edge GeoJSON, previous edge GeoJSON, next edge GeoJSON)."""
+    cur.execute(CURRENT_RUN_SQL, {"run": run, "vt": vt})
+    cur.execute("CREATE INDEX ON cur USING gist (g)")
+    cur.execute("ANALYZE cur")
+    picks = []
+    for label, lo, hi in BUCKETS:
+        floor = next_limit_cm(lo) if next_limit_cm(lo) is not None else 10_000.0
+        cur.execute(PICK_SQL, {"lo": lo, "hi": hi, "neighbour_floor": floor, "n": per_bucket,
+                               "sample": 200 * per_bucket})
+        picks += [(label, *row) for row in cur.fetchall()]
+    return picks
+
+
 def run_roads(args) -> int:
     import os
 
@@ -294,29 +338,13 @@ def run_roads(args) -> int:
                  "database": os.environ["POSTGRES_DB"], "user": os.environ["POSTGRES_USER"],
                  "password": os.environ["POSTGRES_PASSWORD"]}
     with psycopg2.connect(**db_config) as conn, conn.cursor() as cur:
-        if args.run is None:
-            cur.execute("SELECT max(timestamp) FROM flood_road_values")
-            run = cur.fetchone()[0]
-        else:
-            run = args.run
-        run_text = run if isinstance(run, str) else run.strftime("%Y-%m-%d %H:%M:%S")
-        vt_text = args.valid_time or run_text
-        cur.execute(CURRENT_RUN_SQL, {"run": run_text, "vt": vt_text})
-        cur.execute("CREATE INDEX ON cur USING gist (g)")
-        cur.execute("ANALYZE cur")
-        picks = []
-        for label, lo, hi in BUCKETS:
-            floor = next_limit_cm(lo) if next_limit_cm(lo) is not None else 10_000.0
-            cur.execute(PICK_SQL, {"run": run_text, "vt": vt_text, "lo": lo, "hi": hi,
-                                   "neighbour_floor": floor, "n": args.per_bucket,
-                                   "sample": 200 * args.per_bucket})
-            picks += [(label, *row) for row in cur.fetchall()]
+        run, vt = resolve_run(cur, args.run, args.valid_time)
+        picks = pick_roads(cur, run, vt, args.per_bucket)
 
-    stamp = vt_text.replace(" ", "T")
-    body_times = {"valid_time": f"{stamp}+07:00", "run": run_text.replace("-", "").replace(":", "").replace(" ", "T")}
+    body_times = {"valid_time": (vt + LOCAL_OFFSET).strftime("%Y-%m-%dT%H:%M:%S+07:00"), "run": run}
     server_errors = 0
     rows = []
-    for label, segment_id, name, cm, piece_json, before_json, after_json in picks:
+    for label, segment_id, cm, piece_json, before_json, after_json in picks:
         piece = [tuple(c) for c in json.loads(piece_json)["coordinates"]]
         start = far_point([tuple(c) for c in json.loads(before_json)["coordinates"]], piece)
         end = far_point([tuple(c) for c in json.loads(after_json)["coordinates"]], piece)
@@ -336,7 +364,7 @@ def run_roads(args) -> int:
                     coords = route_coordinates(payload)
                     sink.append((status == 200 and bool(coords), route_passes_through(coords, waypoints, args.tol_m)))
             verdict = judge_vehicle(outcome, directions, control)
-            rows.append({"bucket": label, "segment_id": segment_id, "road": name, "depth_cm": round(cm, 1),
+            rows.append({"bucket": label, "edge_key": segment_id, "depth_cm": cm,
                          "vehicle": vehicle, "expected": outcome, "flood": directions, "control": control,
                          "verdict": verdict})
     failures = sum(row["verdict"] == "fail" for row in rows)
@@ -344,7 +372,7 @@ def run_roads(args) -> int:
     for row in rows:
         key = f'{row["expected"]}:{row["verdict"]}'
         summary[key] = summary.get(key, 0) + 1
-    print(json.dumps({"run": run_text, "valid_time": vt_text, "roads": len(picks), "checks": len(rows),
+    print(json.dumps({"run": run, "valid_time_utc": vt.isoformat(), "roads": len(picks), "checks": len(rows),
                       "summary": summary, "failures": failures, "server_errors": server_errors,
                       "failed_rows": [row for row in rows if row["verdict"] == "fail"],
                       **({"rows": rows} if args.verbose else {})}, indent=1))
@@ -471,8 +499,8 @@ def main(argv=None) -> int:
     containers.set_defaults(func=run_containers)
     roads = sub.add_parser("roads")
     roads.add_argument("--backend", default="http://localhost:8010")
-    roads.add_argument("--run", help="run timestamp, for example '2026-10-02 02:15:00'. Default: the newest.")
-    roads.add_argument("--valid-time", help="forecast time. Default: the run's first step.")
+    roads.add_argument("--run", help="run name or local timestamp, for example 20261002T021500. Default: the newest.")
+    roads.add_argument("--valid-time", help="forecast time, for example 2026-10-02T02:15:00+07:00. Default: the run's first step.")
     roads.add_argument("--per-bucket", type=int, default=4)
     roads.add_argument("--tol-m", type=float, default=6.0)
     roads.add_argument("--verbose", action="store_true", help="print every check, not only the failed ones")

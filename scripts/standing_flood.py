@@ -1,7 +1,7 @@
 """Tells whether the flood of earlier runs still stands on the roads, so the rain gate does not end a storm.
 
 The gate in flood_mapping_dag.py reads forecast rain. A flood outlasts the rain, so the gate applies only from a
-dry state. Once the simulation is on, it runs every slot until two things hold together: flood_road_values has
+dry state. Once the simulation is on, it runs every slot until two things hold together: the edge depth table has
 stayed under DRY_DEPTH_M for DRY_RUNS_TO_STOP runs in a row, and the forecast rain is 0.
 """
 
@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Sequence
 
 DRY_RUNS_TO_STOP = 5
-# flood_road_values.depth is in metres. A run whose deepest value is under 5 cm is a dry run.
+# A run whose deepest edge is under 5 cm is a dry run. edge_depth.depth_cm is whole centimetres, rounded to the nearest.
 DRY_DEPTH_M = 0.05
 # Runs are one 15-minute slot apart. A bigger gap means the chain broke, and older dry runs are not part of this one.
 MAX_RUN_GAP = timedelta(minutes=30)
@@ -20,7 +20,7 @@ MAX_NEWEST_AGE = timedelta(minutes=45)
 
 @dataclass(frozen=True)
 class RunDepth:
-    """One run of flood_road_values: when it starts, its deepest value over all roads and steps, and its age."""
+    """One run of the edge depth table: when it starts, its deepest edge over all steps in metres, and its age."""
 
     timestamp: datetime
     max_depth: float
@@ -63,24 +63,26 @@ def _result(stands: bool, reason: str, dry_runs: int, newest_age) -> dict:
     }
 
 
-_TABLE_SQL = "SELECT to_regclass('public.flood_road_file') IS NOT NULL"
+_TABLE_SQL = "SELECT to_regclass('edge_depth_run') IS NOT NULL"
 
-# flood_on_roads.py registers one flood_road_file row per run and writes values only for roads that were wet at
-# some step, so a run with no rows or a deepest value of 0 is a dry run. created_at is the database clock, as is
-# LOCALTIMESTAMP, so the age does not depend on the replay clock.
+# 9c registers one edge_depth_run row per run and writes edge_depth rows only for edges that were wet at some step, so
+# a run with no rows is a dry run at 0. built_at is the database clock, as is LOCALTIMESTAMP, so the age does not depend
+# on the replay clock.
 _RUNS_SQL = """
-SELECT f.timestamp, coalesce(max(v.depth), 0), LOCALTIMESTAMP - f.created_at
-FROM flood_road_file f
-LEFT JOIN flood_road_values v ON v.file_id = f.id
-GROUP BY f.id, f.timestamp, f.created_at
-ORDER BY f.timestamp DESC
+SELECT to_timestamp(r.run_ts, 'YYYYMMDD"T"HH24MISS')::timestamp,
+       coalesce(max(d.depth_cm), 0) / 100.0,
+       LOCALTIMESTAMP - r.built_at
+FROM edge_depth_run r
+LEFT JOIN edge_depth d ON d.run_ts = r.run_ts
+GROUP BY r.run_ts, r.built_at
+ORDER BY r.run_ts DESC
 LIMIT %(limit)s
 """
 
 
 def read_standing_flood(conn, max_rain_mm_hr: float, dry_depth_m: float = DRY_DEPTH_M) -> dict:
-    """Read the newest runs of flood_road_values over `conn` and assess them with the forecast. A database that has no
-    flood_road_file table has had no run, which is a dry state."""
+    """Read the newest runs of the edge depth table over `conn` and assess them with the forecast. A database that has
+    no edge_depth_run table has had no run, which is a dry state."""
     with conn.cursor() as cur:
         cur.execute(_TABLE_SQL)
         if not cur.fetchone()[0]:

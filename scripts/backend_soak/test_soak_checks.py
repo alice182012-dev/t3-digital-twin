@@ -1,8 +1,13 @@
 import contextlib
 import io
+import os
+import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
+
+import psycopg2
 
 from soak_checks import (
     VEHICLE_LIMIT_CM,
@@ -13,7 +18,9 @@ from soak_checks import (
     latency_table,
     next_limit_cm,
     percentile,
+    pick_roads,
     point_along,
+    resolve_run,
     route_passes_through,
     run_logs,
     scan_logs,
@@ -189,6 +196,77 @@ class LatencyTableTest(unittest.TestCase):
                 "C backend              short    136.5 / 157.6 (!)      -                1906",
             ],
         )
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
+import create_edge_depth_tables  # noqa: E402
+import create_graph_edge_table  # noqa: E402
+
+DSN = os.getenv("EDGE_DEPTH_TEST_DSN")
+SCHEMA = f"soak_checks_test_{os.getpid()}"
+RUN = "20261010T211500"
+VT_UTC = datetime(2026, 10, 10, 14, 15)
+
+
+def edge_wkt(lon):
+    return f"LINESTRING({lon} 21.0, {lon + 0.0005} 21.0)"
+
+
+@unittest.skipUnless(DSN, "EDGE_DEPTH_TEST_DSN is not set")
+class PickRoadsTests(unittest.TestCase):
+    """Way 100 has three edges inside the model border, so edge 100:1 is a candidate when its two neighbours are
+    wet and low. Way 200 has an edge with no neighbour at all."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = psycopg2.connect(DSN)
+        with cls.conn, cls.conn.cursor() as cur:
+            cur.execute(f"CREATE SCHEMA {SCHEMA}")
+            cur.execute(f"SET search_path TO {SCHEMA}, public")
+            cur.execute(create_graph_edge_table.SQL)
+            cur.execute(create_edge_depth_tables.SQL)
+            for edge_id, (key, lon) in enumerate([("100:0", 105.72), ("100:1", 105.7205), ("100:2", 105.721), ("200:0", 105.75)]):
+                cur.execute("INSERT INTO graph_edge (edge_id, edge_key, length_m, geom) VALUES (%s, %s, 50, ST_GeomFromText(%s, 4326))",
+                            (edge_id, key, edge_wkt(lon)))
+            cur.execute("INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times) VALUES (%s, 'h', ARRAY[%s]::timestamp[])",
+                        (RUN, VT_UTC))
+            cur.execute("INSERT INTO edge_depth VALUES (%s, %s, '100:0', 8), (%s, %s, '100:1', 25), "
+                        "(%s, %s, '100:2', 8), (%s, %s, '200:0', 25)", (RUN, VT_UTC) * 4)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.rollback()
+        with cls.conn, cls.conn.cursor() as cur:
+            cur.execute(f"DROP SCHEMA {SCHEMA} CASCADE")
+        cls.conn.close()
+
+    def tearDown(self):
+        self.conn.rollback()
+
+    def cursor(self):
+        cur = self.conn.cursor()
+        cur.execute(f"SET search_path TO {SCHEMA}, public")
+        return cur
+
+    def test_picks_the_wet_edge_between_two_low_neighbours_in_its_bucket(self):
+        with self.cursor() as cur:
+            picks = pick_roads(cur, RUN, VT_UTC, per_bucket=3)
+
+        self.assertEqual([(label, key, cm) for label, key, cm, *_ in picks],
+                         [("motorbike blocked only", "100:1", 25)])
+
+    def test_a_forecast_time_with_no_wet_edge_gives_no_pick(self):
+        with self.cursor() as cur:
+            self.assertEqual(pick_roads(cur, RUN, datetime(2026, 10, 10, 15, 0), per_bucket=3), [])
+
+    def test_the_default_is_the_newest_run_and_its_first_step(self):
+        with self.cursor() as cur:
+            self.assertEqual(resolve_run(cur, None, None), (RUN, VT_UTC))
+
+    def test_a_local_run_timestamp_and_a_local_valid_time_are_converted(self):
+        with self.cursor() as cur:
+            self.assertEqual(resolve_run(cur, "2026-10-10 21:15:00", "2026-10-10T21:15:00"), (RUN, VT_UTC))
+            self.assertEqual(resolve_run(cur, RUN, "2026-10-10T21:15:00+07:00"), (RUN, VT_UTC))
 
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_ex
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # The rain threshold only starts a simulation from a dry state. Once runs exist, the simulation continues until the
-# newest standing_flood.DRY_RUNS_TO_STOP runs of flood_road_values are all under this depth (metres) and no rain is forecast.
+# newest standing_flood.DRY_RUNS_TO_STOP runs of the edge depth table are all under this depth (metres) and no rain is forecast.
 DRY_DEPTH_M = float(os.getenv("FLOOD_DRY_DEPTH_M", "0.05"))
 # Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
 # states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
