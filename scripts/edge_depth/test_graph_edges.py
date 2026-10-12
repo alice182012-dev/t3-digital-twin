@@ -28,6 +28,10 @@ EDGES = [
 ]
 
 
+def pairs(export):
+    return [(edge.edge_id, edge.wkt) for edge in graph_edges.iter_edges(export)]
+
+
 def write_export(directory, edges=EDGES, graph_hash="a" * 64, edge_count=None, **overrides):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -111,7 +115,7 @@ class IterEdgesTests(unittest.TestCase):
     def test_yields_each_edge_id_with_its_geometry_in_order(self):
         write_export(self.dir)
 
-        rows = list(graph_edges.iter_edges(graph_edges.read_export(self.dir)))
+        rows = pairs(graph_edges.read_export(self.dir))
 
         self.assertEqual(rows, EDGES)
 
@@ -120,14 +124,51 @@ class IterEdgesTests(unittest.TestCase):
 
         export = graph_edges.read_export(self.dir)
 
-        self.assertEqual(list(graph_edges.iter_edges(export)), EDGES)
+        self.assertEqual(pairs(export), EDGES)
+        self.assertEqual([e.edge_key for e in graph_edges.iter_edges(export)], [None, None, None])
 
     def test_a_version_3_export_reads_the_same_edges_and_ignores_the_edge_key(self):
         write_export(self.dir, format_version=3)
 
         export = graph_edges.read_export(self.dir)
 
-        self.assertEqual(list(graph_edges.iter_edges(export)), EDGES)
+        self.assertEqual(pairs(export), EDGES)
+        self.assertEqual([e.edge_key for e in graph_edges.iter_edges(export)], ["100:0", "101:0", "102:0"])
+
+    def test_a_version_3_export_without_the_edge_key_column_is_an_error(self):
+        write_export(self.dir, format_version=3)
+        text = (self.dir / "edges.csv").read_text().replace("adj_node,edge_key", "adj_node,other")
+        (self.dir / "edges.csv").write_text(text)
+
+        with self.assertRaises(GraphExportError) as caught:
+            list(graph_edges.iter_edges(graph_edges.read_export(self.dir)))
+
+        self.assertIn("edge_key", str(caught.exception))
+
+    def test_a_malformed_edge_key_is_an_error(self):
+        for bad in ["", "abc", "0:1", "12", "12:", "-3:0", "12:0:1"]:
+            with self.subTest(edge_key=bad):
+                write_export(self.dir, format_version=3)
+                lines = (self.dir / "edges.csv").read_text().splitlines()
+                lines[2] = lines[2].rsplit(",", 1)[0] + "," + bad
+                (self.dir / "edges.csv").write_text("\n".join(lines) + "\n")
+
+                with self.assertRaises(GraphExportError) as caught:
+                    list(graph_edges.iter_edges(graph_edges.read_export(self.dir)))
+
+                self.assertIn("edge_key", str(caught.exception))
+                self.assertIn("line 3", str(caught.exception))
+
+    def test_a_repeated_edge_key_is_an_error(self):
+        write_export(self.dir, format_version=3)
+        lines = (self.dir / "edges.csv").read_text().splitlines()
+        lines[3] = lines[3].rsplit(",", 1)[0] + ",100:0"
+        (self.dir / "edges.csv").write_text("\n".join(lines) + "\n")
+
+        with self.assertRaises(GraphExportError) as caught:
+            list(graph_edges.iter_edges(graph_edges.read_export(self.dir)))
+
+        self.assertIn("repeats the edge_key 100:0", str(caught.exception))
 
     def test_fewer_rows_than_edge_count_is_an_error(self):
         write_export(self.dir, edge_count=4)
@@ -154,6 +195,23 @@ class IterEdgesTests(unittest.TestCase):
 
 @unittest.skipUnless(DSN, "EDGE_DEPTH_TEST_DSN is not set")
 class LoadGraphEdgesTests(unittest.TestCase):
+    def test_a_table_made_before_the_edge_key_gets_the_column_and_the_index(self):
+        schema = f"{SCHEMA}_old"
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(f"CREATE SCHEMA {schema}")
+            cur.execute(f"SET search_path TO {schema}, public")
+            cur.execute("CREATE TABLE graph_edge (edge_id INTEGER PRIMARY KEY, length_m DOUBLE PRECISION NOT NULL, "
+                        "geom geometry(LineString,4326) NOT NULL)")
+            cur.execute("INSERT INTO graph_edge VALUES (0, 1.0, ST_GeomFromText('LINESTRING (105.8 21, 105.9 21)', 4326))")
+            cur.execute(create_graph_edge_table.SQL)
+            cur.execute(create_graph_edge_table.SQL)
+            cur.execute("SELECT edge_id, edge_key FROM graph_edge")
+            self.assertEqual(cur.fetchall(), [(0, None)])
+            cur.execute("SELECT count(*) FROM pg_indexes WHERE schemaname = %s AND indexname = 'idx_graph_edge_edge_key'", (schema,))
+            self.assertEqual(cur.fetchone()[0], 1)
+            cur.execute(f"DROP SCHEMA {schema} CASCADE")
+            cur.execute(f"SET search_path TO {SCHEMA}, public")
+
     @classmethod
     def setUpClass(cls):
         cls.conn = psycopg2.connect(DSN)
@@ -188,6 +246,41 @@ class LoadGraphEdgesTests(unittest.TestCase):
         self.assertTrue(loaded)
         self.assertEqual([row[0] for row in self.edges()], [0, 1, 2])
         self.assertEqual(graph_edges.loaded_hash(self.conn), "c" * 64)
+
+    def test_a_version_3_export_stores_the_edge_keys(self):
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir, format_version=3)))
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT edge_id, edge_key FROM graph_edge ORDER BY edge_id")
+            self.assertEqual(cur.fetchall(), [(0, "100:0"), (1, "101:0"), (2, "102:0")])
+
+    def test_an_export_before_version_3_leaves_the_edge_keys_empty(self):
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir, format_version=2)))
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT count(*), count(edge_key) FROM graph_edge")
+            self.assertEqual(cur.fetchone(), (3, 0))
+
+    def test_the_database_refuses_two_edges_with_one_key(self):
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir, format_version=3)))
+
+        with self.assertRaises(psycopg2.errors.UniqueViolation):
+            with self.conn, self.conn.cursor() as cur:
+                cur.execute("UPDATE graph_edge SET edge_key = '100:0' WHERE edge_id = 1")
+
+    def test_a_new_hash_replaces_the_keys_with_those_of_the_new_graph(self):
+        graph_edges.load_graph_edges(
+            self.conn, graph_edges.read_export(write_export(self.dir, graph_hash="1" * 64, format_version=3)))
+        other = Path(self.tmp.name) / "other"
+        write_export(other, graph_hash="2" * 64, format_version=3)
+        lines = (other / "edges.csv").read_text().replace("100:0", "200:0").replace("101:0", "100:0")
+        (other / "edges.csv").write_text(lines)
+
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(other))
+
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT edge_key FROM graph_edge ORDER BY edge_id")
+            self.assertEqual([row[0] for row in cur.fetchall()], ["200:0", "100:0", "102:0"])
 
     def test_length_is_in_metres(self):
         graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir)))

@@ -207,16 +207,20 @@ One row is one edge of the GraphHopper graph.
 | Column | Type | Nullable |
 | ------ | ---- | -------- |
 | `edge_id` | `integer` | no |
+| `edge_key` | `text` | yes |
 | `length_m` | `double precision` | no |
 | `geom` | `geometry(LineString,4326)` | no |
 
 - **Key.** The primary key is `edge_id`, GraphHopper's own edge id.
-  It changes when the graph is imported again (`scripts/database/create_graph_edge_table.py:8-14`).
+  It changes when the graph is imported again (`scripts/database/create_graph_edge_table.py:8-20`).
+- **Stable key.** `edge_key` is `<osm_way_id>:<position along the way>`, with a unique index.
+  It is the same when the same OSM file is imported again.
+  It is NULL for every row until the export is in format 3, which needs `osm_way_id` in `graph.encoded_values` ([[US-117-export-a-stable-key-with-each-graph-edge|US-117]]).
 - **Primary key columns.** `edge_id`.
-- **Units.** `length_m` is the geodesic length in metres, `ST_Length(geom::geography)` (`scripts/edge_depth/graph_edges.py:101-106`).
+- **Units.** `length_m` is the geodesic length in metres, `ST_Length(geom::geography)` (`scripts/edge_depth/graph_edges.py:129`).
 - **CRS.** EPSG:4326.
 - **Writer.** Task `9c_build_edge_depth_table` loads the graph export when its hash differs from the hash in `graph_edge_export`.
-  It replaces the whole table in one transaction (`graph_edges.py:118-138`).
+  It replaces the whole table in one transaction (`graph_edges.py:144-164`).
 - **Retention.** One graph at a time.
   The routing backend does not read this table.
   Task 9c reads it to build the edge depth files.

@@ -9,7 +9,7 @@ The export is two files, written by ExportEdges in java/time-aware-routing/ (US-
   <osm_way_id>:<position along the way>, and a later story loads it into graph_edge.
 
 Airflow cannot run the export, because it runs in the GraphHopper image. An operator writes the two
-files into a folder that Airflow reads. load_graph_edges copies them into graph_edge when the hash
+files into a folder that Airflow reads. load_graph_edges copies them, with the edge_key, into graph_edge when the hash
 differs from the one graph_edge already holds, so a graph re-import needs no database step.
 """
 
@@ -17,23 +17,33 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, NamedTuple
 
 from psycopg2.extras import execute_values
 
 SUPPORTED_FORMAT_VERSIONS = (1, 2, 3)
 _REQUIRED_KEYS = ("format_version", "graph_hash", "edge_count", "node_count")
 _PAGE_SIZE = 2000
+_EDGE_KEY_FORMAT_VERSION = 3
+_EDGE_KEY = re.compile(r"[1-9][0-9]*:[0-9]+")
 
 
 class GraphExportError(ValueError):
     """The export folder is missing, incomplete, or inconsistent."""
 
 
+class GraphEdge(NamedTuple):
+    edge_id: int
+    wkt: str
+    edge_key: str | None  # None for an export before format 3
+
+
 @dataclass(frozen=True)
 class GraphExport:
+    format_version: int
     graph_hash: str
     edge_count: int
     node_count: int
@@ -63,6 +73,7 @@ def read_export(export_dir) -> GraphExport:
             f"this code reads {', '.join(map(str, SUPPORTED_FORMAT_VERSIONS))}"
         )
     return GraphExport(
+        format_version=int(meta["format_version"]),
         graph_hash=str(meta["graph_hash"]),
         edge_count=int(meta["edge_count"]),
         node_count=int(meta["node_count"]),
@@ -70,22 +81,34 @@ def read_export(export_dir) -> GraphExport:
     )
 
 
-def iter_edges(export: GraphExport) -> Iterator[tuple[int, str]]:
-    """Yields (edge_id, wkt) in file order. Raises when the ids are not 0, 1, 2, ... or when the row
-    count differs from edge_count in graph.json, so a cut-off file cannot be loaded."""
+def iter_edges(export: GraphExport) -> Iterator[GraphEdge]:
+    """Yields each edge in file order. Raises when the ids are not 0, 1, 2, ..., when the row count
+    differs from edge_count in graph.json, or (format 3) when an edge_key is malformed or repeated,
+    so a cut-off or damaged file cannot be loaded."""
     expected_id = 0
+    has_keys = export.format_version >= _EDGE_KEY_FORMAT_VERSION
+    seen_keys: set[str] = set()
     with open(export.edges_csv, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader, None)
         if header is None or header[:2] != ["edge_id", "wkt"]:
             raise GraphExportError(f"{export.edges_csv} has the header {header}, expected it to start with ['edge_id', 'wkt']")
+        if has_keys and header[-1] != "edge_key":
+            raise GraphExportError(f"{export.edges_csv} has the header {header}, format {export.format_version} ends with 'edge_key'")
         for row in reader:
             if len(row) != len(header):
                 raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} has {len(row)} columns")
             edge_id = int(row[0])
             if edge_id != expected_id:
                 raise GraphExportError(f"{export.edges_csv} has edge_id {edge_id} where {expected_id} was expected")
-            yield edge_id, row[1]
+            edge_key = row[-1] if has_keys else None
+            if has_keys:
+                if not _EDGE_KEY.fullmatch(edge_key):
+                    raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} has the edge_key {edge_key!r}, expected <osm_way_id>:<position>")
+                if edge_key in seen_keys:
+                    raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} repeats the edge_key {edge_key}")
+                seen_keys.add(edge_key)
+            yield GraphEdge(edge_id, row[1], edge_key)
             expected_id += 1
     if expected_id != export.edge_count:
         raise GraphExportError(
@@ -102,9 +125,9 @@ def loaded_hash(conn) -> str | None:
 
 
 _INSERT_SQL = """
-INSERT INTO graph_edge (edge_id, length_m, geom)
-SELECT v.edge_id, ST_Length(g.geom::geography), g.geom
-FROM (VALUES %s) AS v(edge_id, wkt)
+INSERT INTO graph_edge (edge_id, edge_key, length_m, geom)
+SELECT v.edge_id, v.edge_key, ST_Length(g.geom::geography), g.geom
+FROM (VALUES %s) AS v(edge_id, wkt, edge_key)
 CROSS JOIN LATERAL (SELECT ST_GeomFromText(v.wkt, 4326) AS geom) g
 """
 
