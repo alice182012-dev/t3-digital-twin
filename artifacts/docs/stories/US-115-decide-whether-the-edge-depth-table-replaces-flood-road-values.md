@@ -72,8 +72,8 @@ Dependencies: None.
    `road_segment` has the stable keys: `segment_id` and `way_id`. It holds 35,652 pieces from 12,431 ways, and `graph_edge` holds 67,833 edges. The two sets do not match one to one.
 3. A sparse edge table is not smaller than today's table.
    `flood_road_values` holds 75 runs, 1,911,344 rows, and 1,275 MB. A recent run has 18,848 to 20,728 rows.
-   The `wet_edges` of the two latest `9c` runs are `[135, 1401, 1953, 2247, 2457, 2599, 2725, 2853]` (16,370 wet edge-steps) and `[127, 135, 1403, 1952, 2246, 2455, 2597, 2735]` (11,650).
-   So a sparse edge table has 11,650 to 16,370 rows per run, against about 20,000 today. At 96 runs in 24 hours, that is 1.1 to 1.6 million rows, against 1.9 million.
+   The `wet_edges` of the two latest `9c` runs are `[135, 1401, 1953, 2247, 2457, 2599, 2725, 2853]` (16,370 wet edge-steps) and `[127, 135, 1403, 1952, 2246, 2455, 2597, 2735]` (13,650).
+   So a sparse edge table has 13,650 to 16,370 rows per run, against about 20,000 today. At 96 runs in 24 hours, that is 1.1 to 1.6 million rows, against 1.9 million.
    Row count and storage are the same order, so a sparse table saves little.
    A sparse table also keeps the dry-run bug: a run with no wet edge has no rows, and the winner query still cannot see it.
 4. One sampler would cost less than two, and the saving is small against the limit.

@@ -620,7 +620,7 @@ is the maximum.
   Replace later, with a trigger: the export of the graph carries a stable key (the OSM way id and the position along the way), and the metrics read it.
 - **Why:** The stale overlay comes from the missing record of a dry run, and a sparse edge table keeps that gap.
   `graph_edge` has no stable key, so history and metrics keyed on `edge_id` break at each re-import.
-  A sparse edge table has 11,650 to 16,370 rows per run against about 20,000, so it does not save storage.
+  A sparse edge table has 13,650 to 16,370 rows per run against about 20,000, so it does not save storage.
   A merged sampler saves up to 62 s of 136 s per run, but the `9c` time already grows along a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]).
 - **Alternatives:** (1) Replace `flood_road_values` with the edge depth table now. Not chosen, because of the missing key and the metrics. (2) Add a sentinel row for a dry run to `flood_road_values`. Not chosen, because the registry already holds the fact and a sentinel row would reach every reader that sums depth.
 - **Evidence:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], Evidence and details, points 1 to 7.
