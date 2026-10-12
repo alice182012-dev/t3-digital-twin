@@ -29,6 +29,7 @@ def test_routing_reader_grants_name_exactly_its_tables() -> None:
         'GRANT SELECT ON public."flood_depth_raster_tile" TO "routing_reader"',
         'GRANT SELECT ON public."flood_extent_polygon" TO "routing_reader"',
         'GRANT SELECT ON public."flood_extent_step" TO "routing_reader"',
+        'GRANT SELECT ON public."flood_road_file" TO "routing_reader"',
         'GRANT SELECT ON public."flood_road_values" TO "routing_reader"',
         'GRANT SELECT ON public."flood_run_output" TO "routing_reader"',
         'GRANT SELECT ON public."graph_edge" TO "routing_reader"',
