@@ -4,13 +4,13 @@ type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
 related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-12
 ---
 
 # Flood metric extractor
 
 The flood metric extractor turns one run's per-segment depth series into flood-impact metrics for
-each road segment and vehicle type. It is Story 3 of [[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]], and it
+each graph edge and vehicle type. It is Story 3 of [[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]], and it
 implements the metrics that section 4.4 of [[T3-Digital-Twin_Architecture]] lists. No DAG task
 runs it yet.
 
@@ -20,31 +20,35 @@ runs it yet.
   is a pure function. It takes a `DepthSeries` (timestamps and depths in metres) and a map from
   vehicle type to hard-block depth, and it returns a `SegmentMetrics`.
 - `scripts/flood_metrics/extract_run.py` is the shell around `extract`. It reads one run from
-  `flood_road_values`, groups the rows into one series per segment, and writes the results. It
-  reads `depth`, which on rows from `scripts/flood_roads/flood_on_roads.py` is the deepest 1 m sample
-  along the road piece. Routing reads the same value, as D-006 in [[decision-log]] records.
+  `edge_depth` and `edge_depth_run`, groups the rows into one series per edge, and writes the results.
+  `edge_depth` holds the wet edges only, so the script fills each dry step of a wet edge with 0 from
+  `edge_depth_run.valid_times`. The depth is the deepest sample along the edge, in whole centimetres,
+  which is the value the routing engine reads ([[decision-log|D-038]]). The geometry comes from `graph_edge`.
+  A run that has no wet edge writes no rows. A run that `edge_depth_run` does not list is an error.
 - `scripts/database/create_flood_metrics_tables.py` creates the output table,
   `flood_segment_metrics`, in `storage-postgres`. The script is idempotent.
 
 To extract one run, run the table script once, then run `python
 scripts/flood_metrics/extract_run.py RUN_TS`, where `RUN_TS` is the run folder name, such as
-`20260923T100000`. The loader selects `flood_road_values` rows whose `timestamp` equals that
-value. The writer deletes the run's earlier rows and inserts the new rows in one transaction, so a
-rerun replaces the earlier result.
+`20260923T100000`. The loader selects the `edge_depth` rows of that run. The writer deletes the run's
+earlier edge-keyed rows and inserts the new rows in one transaction, so a rerun replaces the earlier
+result. Rows of the piece-based extraction stay.
 
 The output table lives in `storage-postgres` instead of TimescaleDB, so the extractor works
 without the TimescaleDB service. Nothing copies `flood_segment_metrics` into TimescaleDB. The story that
 would have (`US-021`) was dropped on 2026-10-01 (D-009 in [[decision-log]]).
 
-## Segment key
+## Edge key
 
-Rows from the old GeoJSON chain have no segment ID, and `road_name` repeats across one road's
-segments. In the `20260522T103000` sample, `way/601864287` has 12 segments. `build_rows` in
-`scripts/database/geojson_to_pg.py` writes one row per feature per timestep and repeats the
-feature's geometry on each row. Equal geometry therefore identifies one segment, and the extractor
-uses `md5(ST_AsEWKB(geom_4326))` as `segment_key`. A later loader can join back to
-`flood_road_values` with the same expression. The table is unique on `(run_ts, segment_key,
-vehicle_type)`.
+A row has `edge_key`, which is `graph_edge.edge_key` (`<osm_way_id>:<position along the way>`).
+The table is unique on `(run_ts, edge_key, vehicle_type)` for these rows.
+A row has no `road_name`, because `graph_edge` has no name. To report a road, group the rows by the
+way id in the key.
+The metric times are local time (UTC+7), as in the rows written before, while the edge depth tables hold UTC.
+
+Rows from before US-121 have `segment_key`, which is `md5(ST_AsEWKB(geom_4326))` of the piece, and no
+`edge_key`. They are kept, and a check allows exactly one of the two keys per row.
+After a graph re-import, a row keeps its key. Read a key by the rule in [[graph-reimport-procedure]].
 
 ## Metric definitions
 

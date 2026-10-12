@@ -181,7 +181,7 @@ The `timescaledb` service starts with the stack. `scripts/database/create_timesc
 defines three hypertables: `institution_histogram_bar`, `background_forecast_depth`, and
 `depth_history`. No DAG runs that script, and no code writes rows to TimescaleDB.
 
-`scripts/flood_metrics/extract_run.py` computes flood metrics per road piece and vehicle, such as
+`scripts/flood_metrics/extract_run.py` computes flood metrics per graph edge and vehicle, such as
 time to peak and when a road becomes passable again. It writes them to `flood_segment_metrics` in
 `storage-postgres`, not to TimescaleDB. No DAG runs it either. See
 [`timescaledb-schema.md`](artifacts/docs/concepts/timescaledb-schema.md) and
