@@ -41,7 +41,9 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 
 ## Evidence and details
 
-**Evidence:** the reproduction and the fix, run on a throwaway PostGIS (`imresamu/postgis:17-3.5`, removed afterwards) with the real `flood_on_roads` writer and the real backend. No server screenshot yet, because nothing is deployed.
+**Evidence:** the server capture of 2026-10-12 12:14 +07, from the Mac with read-only queries, and the reproduction and fix on a throwaway PostGIS (`imresamu/postgis:17-3.5`, removed afterwards) with the real `flood_on_roads` writer and the real backend.
+
+![[us-116-server-check-output.png|900]]
 
 **Details:**
 
@@ -59,4 +61,5 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 12. The owner rebuilt the image of `floodmap-backend` from the server desktop on 2026-10-12 (the container was created at 12:11 +07). The new `flood_areas.py` is in the image, `/health` reports PostGIS and GraphHopper up, the container runs as `routing_reader`, and the log has no error.
 13. Checked on the server, `GET /flood/areas` inside the container, `run=latest` against the same run pinned. Two runs cover the times 00:15 to 01:45 of 2026-10-11: `2026-10-11T00:00:00` and `2026-10-11T00:15:00`. For the 6 times that both cover (00:15 to 01:30) and both vehicles, 12 requests in all, the answer for `latest` equals the answer for the newest run, by feature count and by a hash of the geometry. The two runs differ at 00:45 for the motorbike (374 against 373 features), at 01:15 for both vehicles, and at 01:30 for both vehicles, so `latest` is the newest run there and not the older one. 0 mismatches. A time that no run covers (2026-10-12 09:00) returns 0 features.
 14. Not shown on the server: a dry newest run, because the server has none and the check does not write to its tables. The dry case is shown by the reproduction on the throwaway PostGIS (item 5).
-15. Open for `Done`: the server screenshot of the checks in items 11 and 13, and the owner's acceptance. The command is `bash artifacts/docs/stories/evidence/us-116-server-check.sh` from the Mac. It is read-only, and the screenshot goes to `artifacts/docs/stories/evidence/us-116-server-check-output.png`.
+15. The server screenshot is saved as `us-116-server-check-output.png`. The command is `bash artifacts/docs/stories/evidence/us-116-server-check.sh` from the Mac, and it is read-only. It shows the checkout `d100d6e`, the backend as `routing_reader`, 75 of 75 runs with `forecast_times`, the grant, and 0 mismatches in 12 requests.
+16. Open for `Done`: the owner's acceptance.
