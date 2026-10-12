@@ -633,3 +633,23 @@ is the maximum.
 - **Evidence:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], Evidence and details, points 1 to 7.
 - **Affects:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (keyed by `segment_id` now, re-keyed by US-122, or moved after US-117 and US-118, the owner's call), [[US-113-backfill-per-segment-depth-history|US-113]], [[decision-log|D-036]], and [[core-output-contract]].
 - **Revisit if:** the stable key cannot be built from GraphHopper's data, the `9c` time passes 150 s on average, or a reader needs a piece set that the edge table cannot give.
+
+## D-039: Keep the storm replay of 2026-10-10 as a permanent test dataset, with its own folder and its own databases
+
+- **Date:** 2026-10-12
+- **Status:** proposed. The product owner asked for the dataset and the design, and accepts the decision or changes it.
+- **Decided by:** Awaiting the product owner. The owner asked on 2026-10-12 for a designated test dataset from the 12-hour run, with `results_3di.nc` as the main source, the other data saved or rebuilt from it, and the storage retention of production left as it was.
+- **Decision:** The test dataset is the 58 runs of the storm replay of 2026-10-10 (slots 04:00 to 18:15 +07).
+  The `results_3di.nc` of each run is the source of truth. It is kept in `data/testdata/storm-2026-10-10/nc/`, outside the two folders that the age cleanup of `flood_tiles` sweeps, read-only, with a manifest and checksums.
+  The derived data that existed on 2026-10-12 is saved in `snapshot/`.
+  The derived data that does not exist is rebuilt from the NetCDF by the pipeline functions: NetCDF to depth GeoTIFF, raster tiles, road values, edge depth tables, depth history, and metrics.
+  Tests read two test databases, `minio_custom_test` in `storage-postgres` and `flood_metrics_test` in `timescaledb`, which a restore script fills from the snapshot.
+  The test dataset has no retention. The retention of the production data does not change ([[decision-log|D-017]], and the 24-hour and 8-run rules of the pipeline).
+- **Why:** The next core run deletes the NetCDF files, because they are older than 24 hours, and a replay costs 3Di time. Rana keeps a result for one month, so it is a second copy until about 2026-11-09.
+  A restore of the snapshot takes minutes, and a rebuild of 58 runs takes hours, so the snapshot saves the work and the rebuild keeps the dataset recreatable.
+  Other databases on the same servers have the versions and extensions of production, so a test meets the real behavior. A throwaway container with synthetic rows did not.
+- **Alternatives:** (1) Keep only the NetCDF files and rebuild everything for each test. Not chosen, because the rebuild takes hours. (2) A separate Postgres container for tests. Not chosen for now, because it costs memory and a second set of versions, and a separate database already isolates the data. (3) Leave the data in the production tables. Not possible, because the pipeline prunes them.
+- **Evidence:** [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], Evidence and details, and [[test-dataset]].
+- **Affects:** [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]], the stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]], and the open compression measurement of [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+- **Revisit if:** the restored test databases fill the Docker disk on C:, the model or the graph changes (the dataset then needs a new model and graph hash), or a test needs a storm with a dry run.
+
