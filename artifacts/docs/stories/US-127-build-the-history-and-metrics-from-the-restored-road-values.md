@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-127"
 title: "Build the history and metrics from the restored road values"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Not started
+status: Reviewed
 kind: story
 priority: P2
 estimate: M
@@ -31,6 +31,18 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 
 - **2026-10-12, draft.** Raised with [[decision-log|D-039]].
 
+- **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-125-restore-the-snapshot-into-test-databases|US-125]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] are `Reviewed` and not `Done`, and the owner agreed to build against them. At most two stories were `In progress` ([[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and this one).
+- **2026-10-12, Reviewed.** Built, tested, and run on the server (details item 1 to 6). Its `Done` waits for the `Done` of US-125 and US-106, a server screenshot, and the owner's acceptance.
+
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** `artifacts/docs/stories/evidence/us-127-server-check-output.txt`, the output of two runs on the server on 2026-10-12. There is no screenshot yet.
+
+**Details:**
+
+1. `scripts/testdata/build_history_and_metrics.py` reads the runs of `flood_road_file` in `minio_custom_test`, oldest first. For each run it calls `load_run.write_run` into `flood_metrics_test` and `extract_run.extract_run` into `minio_custom_test`, then compresses every chunk of `depth_history` and prints the ratio. It decompresses first, so a second run gives the same rows. It refuses a database whose name does not end in `_test`.
+2. `load_run.read_run` took the moments of a run from `flood_depth_raster_tile`, which the test databases do not hold (the owner decided that no raster tile is restored). It now reads them from `flood_road_file.forecast_times`, which every run has, wet or dry ([[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]]). The production read of run `20261011T001500` is the same as before: 8 moments and 19,792 rows. The change also lets [[US-113-backfill-per-segment-depth-history|US-113]] load runs older than the newest 8, which the tile table no longer holds.
+3. The tests: `test_load_run.py` has 10 unit tests and 5 against a real TimescaleDB, and all pass, with `test_create_timescale_tables.py` (18 in all). The unit tests now give `build_slice` the forecast times in Vietnam local time and check the run without forecast times and the row at an uncovered time.
+4. Result, 58 runs loaded: `depth_history` holds 219,174 rows and `history_moment` 65 moments (58 runs at 15 minutes plus the 7 later steps of the last run). `flood_segment_metrics` holds 786,956 rows over 58 runs. The first run took 2 min 12 s, the second 1 min 46 s, with the same counts.
+5. Compression of `depth_history` on the full storm: one chunk of 36 MB (23 MB table, 13 MB indexes) goes to 3,840 kB, a ratio of 9.7. The first run printed 12.0, because 58 cycles of delete and insert had left dead space in the chunk, and 47.3 MB before compression is the inflated size. The compressed size is the same in both runs, 3,932,160 bytes. The estimate of [[decision-log|D-028]] and [[decision-log|D-032]] is 10, and the sample of [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] with one run gave 1.7, which was a sample with too few rows per segment. With 219,174 rows the ratio is 9.7, so D-028's trigger (far below 10) is not met. The data has 8 steps of one storm, so a longer record can still differ.
+6. Production did not change: `depth_history` in `flood_metrics` still has 19,792 rows, and `flood_segment_metrics` in `minio_custom` has 23,324 rows (the two runs of the live pipeline).

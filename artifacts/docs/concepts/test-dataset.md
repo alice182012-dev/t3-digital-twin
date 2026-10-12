@@ -69,3 +69,17 @@ docker exec airflow_new-airflow-worker-1 python /opt/airflow/scripts/testdata/re
 - **Cost.** About 2 minutes for a second run, and 2,628 MB for `minio_custom_test` on 2026-10-12. Docker's local volumes grew by about 3.5 GB.
 - **Gaps.** `graph_edge` has no `edge_key`, and `edge_depth` and `edge_depth_run` are empty, because the snapshot predates [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
 - **Test.** `scripts/testdata/test_restore_snapshot.py` runs against a throwaway PostGIS, and CI runs it (`restore-snapshot-test.yml`).
+
+## History and metrics
+
+The script `scripts/testdata/build_history_and_metrics.py` builds `depth_history`, `history_moment`, and `flood_segment_metrics` from the restored road values ([[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]).
+Run it in the Airflow worker after the restore:
+
+```
+docker exec airflow_new-airflow-worker-1 python /opt/airflow/scripts/testdata/build_history_and_metrics.py
+```
+
+- **Result on 2026-10-12.** 219,174 rows in `depth_history`, 65 moments in `history_moment`, and 786,956 rows in `flood_segment_metrics` over 58 runs. A run takes about 2 minutes, and a second run gives the same counts.
+- **Moments.** A run's moments come from `flood_road_file.forecast_times`, so no raster tile is needed.
+- **Compression.** The script compresses every chunk of `depth_history` and prints the ratio. On the full storm it is 9.7, from 36 MB to 3,840 kB. A chunk with dead space from many deletes reads higher (12.0 on the first run), so decompress and compress again before a measurement.
+

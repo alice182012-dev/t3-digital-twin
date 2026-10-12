@@ -90,7 +90,7 @@ A moment listed there with no `depth_history` row for a segment means the segmen
 `depth_history` is compressed per chunk once the chunk closes (segment by `segment_id`, order by `valid_time`), and both tables drop data older than 365 days.
 
 The DAG `flood_history` (`dags/flood_history_dag.py`) runs on the asset `FLOOD_ROAD_VALUES`, which `flood_on_roads` of `routing_adapter` emits.
-`scripts/flood_history/load_run.py` reads the run's moments from `flood_depth_raster_tile` and its rows from `flood_road_values`, including rows of depth 0.
+`scripts/flood_history/load_run.py` reads the run's moments from `flood_road_file.forecast_times` and its rows from `flood_road_values`, including rows of depth 0.
 It converts the Vietnam local `forecast_time` to UTC and writes in one transaction under a table-wide advisory lock.
 For each moment it skips the moment when `history_moment` holds a later `issued_at`. Otherwise it deletes the moment's `depth_history` rows, inserts the run's rows, and upserts the moment.
 A segment that an earlier run wet and the winning run did not wet therefore has no row. Loading a run again gives the same rows.
