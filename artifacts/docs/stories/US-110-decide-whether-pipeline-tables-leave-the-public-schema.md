@@ -8,7 +8,7 @@ status: Ready
 kind: spike
 priority: P3
 estimate: S
-sprint: 
+sprint: 14
 subsystem: storage, core-output
 source_ideas: []
 related: ["[[core-output-contract]]", "[[storage-backend-django-layer]]"]
@@ -38,6 +38,8 @@ Dependencies: None.
 - **2026-10-10, draft.** Ready: the question is stated, it has an estimate, and the answer is a decision.
 - **2026-10-12, Sprint 13.** Picked at Sprint 13 planning at S (2 points). It has no dependency.
 - **2026-10-12, Ready.** Left Sprint 13 to make room for [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], because it has the lowest priority of the picks (P3). `sprint` is cleared and the story returns to the backlog.
+
+- **2026-10-12, Ready.** Picked for the sprint at the product owner's request. It is a spike, so it ends with an answer and a `D-nnn` decision, and it works in `marie-curie/`. Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 
 ## Evidence and details
 

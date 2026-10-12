@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-126"
 title: "Rebuild the raster tiles and road values from the NetCDF"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Not started
+status: Ready
 kind: story
 priority: P3
 estimate: M
-sprint: 
+sprint: 14
 subsystem: testing, flood-data
 source_ideas: []
 related: ["[[test-dataset]]", "[[decision-log|D-039]]"]
@@ -33,6 +33,8 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 ## Status history
 
 - **2026-10-12, draft.** On demand since the owner's answer of the same day, so it is P3. Raised with [[decision-log|D-039]]. Its size M is a guess. It is rated again when the time of one run is measured, and it is split if it is L.
+
+- **2026-10-12, Ready.** Picked for the sprint at the product owner's request. Its condition, that a test needs raster tiles, is met by [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], which rebuilds the tiles of the demo step. The worker has the libraries that `calculate_depth` imports (checked 2026-10-12). Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 
 ## Evidence and details
 

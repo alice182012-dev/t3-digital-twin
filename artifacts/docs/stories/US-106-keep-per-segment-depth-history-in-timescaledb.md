@@ -54,7 +54,7 @@ Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]
 - **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. The build keys `depth_history` by `segment_id`, and [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it later.
 - **2026-10-12, Reviewed.** Built on `modular`, not pushed and not deployed. The acceptance checks on the server wait for the deploy and for the owner's hand compression of one chunk.
 - **2026-10-12, Reviewed, monitoring.** `flood_history` is deployed with no import errors and has never run, because no `routing_adapter` run has emitted `FLOOD_ROAD_VALUES` since the deploy. The owner chose to wait for a real forecast above 5 mm/h and not to trigger `routing_adapter` by hand on the storm run, which would put stale storm data on the live map. The check, the server screenshot, and the acceptance wait for that run.
-- **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] at the product owner's request.
+- **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request.
 
 - **2026-10-12, Reviewed.** The event-triggered run of `flood_history` passed on the server, with a screenshot (details item 15). Open for `Done`: the owner's acceptance. The compression ratio on the full storm is 9.7, measured in [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]].
 

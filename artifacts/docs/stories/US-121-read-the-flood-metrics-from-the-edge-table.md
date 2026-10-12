@@ -32,7 +32,7 @@ Dependencies: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `Do
 ## Status history
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
-- **2026-10-12, Ready.** Picked for [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: its dependencies are `Done` or in the same sprint, and its acceptance check is written.
+- **2026-10-12, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: its dependencies are `Done` or in the same sprint, and its acceptance check is written.
 
 ## Evidence and details
 

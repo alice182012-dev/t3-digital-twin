@@ -2,20 +2,20 @@
 date_drafted: 2026-10-10
 type: user-story
 us_id: "US-111"
-title: "Show a pinned demo flood when no rain is forecast"
+title: "Write the forecast mode status row (part one of the pinned demo flood)"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Not started
+status: Ready
 kind: story
 priority: P2
-estimate: L
-sprint: 
+estimate: S
+sprint: 14
 subsystem: flood-extent
 source_ideas: []
 related: ["[[decision-log|D-030]]", "[[decision-log|D-013]]", "[[minio-flood-extent-pipeline]]", "[[core-output-contract]]", "[[edge-depth-table-format]]", "[[US-088-cut-the-hanoi-storm-of-2026-09|US-088]]", "[[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]]"]
 tags: [user-story]
 ---
 
-# US-111 Show a pinned demo flood when no rain is forecast
+# US-111 Write the forecast mode status row (part one of the pinned demo flood)
 
 As a visitor who opens the flood map on a day with no forecast rain, I want the map, the routing, and the depth popup to use a pinned demo flood with a warning, so the map has a flood to show when the simulation has none.
 
@@ -33,50 +33,44 @@ Given no rain is forecast past the threshold and no flood stands, when a visitor
 Dependencies: [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] ran the replay that supplies the peak step.
 The DAG was not changed while that replay ran.
 
-## Split before Ready
+## Split
 
-This story is an L.
-An L is split before it is Ready, as [[scrum-framework]] requires.
-The plan below suggests four parts, one story each, and each part takes its own story ID when it is split out.
+The story was an L, so it was split on 2026-10-12, as [[scrum-framework]] requires.
+This story is part one, the status row, and its estimate is S.
+The other parts have their own IDs:
 
-## Plan
+- [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] pins the peak step so that no prune removes it (M).
+- [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] serves the mode and reads the pinned step in the backend (M).
+- [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]] shows the banner and the pinned frame in the frontend (M, backlog, not backend).
 
-1. **A DAG status row.**
-   Task `0_check_forecast_rain` writes a status row with the rain gate decision for the run.
-   The backend reads that row to pick LIVE, PENDING, or DEMO.
-   The signal is a proposal, and the story that builds it confirms or changes it.
-2. **Pinned demo data.**
-   In DEMO mode the tiles, the routing, and the depth popup all use the pinned demo flood, not the tiles alone.
-   Choose the peak step from the runs the replay makes.
-   The tile build tiles only the first `FLOOD_EXTENT_TILE_STEPS` (2) steps of each run, so copy the peak step's tiles before the prune removes them.
-   A 15-minute cycle prunes a run after about 2 hours, at 8 runs in `FLOOD_EXTENT_KEEP_RUNS`.
-   The peak step must also survive these prunes: `flood_extent_step`, `flood_extent_polygon`, `flood_depth_raster_tile`, `flood_road_values` (`prune_flood_road_values`), and the routing edge tables (`EDGE_TABLE_KEEP_RUNS`, 3 runs).
-3. **A backend mode endpoint.**
-   The endpoint returns LIVE, PENDING, or DEMO from the status row.
-   Open point: how the router reads a pinned step after the edge tables are pruned.
-4. **The frontend banner and the pinned step.**
-   The map shows the warning text in English only, and the DEMO frame with no slider.
-   In PENDING mode the map shows a dry map with the simulation warning.
-5. **Update the concept pages.**
-   Update [[minio-flood-extent-pipeline]] and [[core-output-contract]] for the status row and the pinned step, and bump `last_updated`.
+## Part one: the status row
+
+Task `0_check_forecast_rain` already decides the rain gate for each run.
+This part writes that decision to a table, so the backend can read it.
+The table holds one row per decision: the time, the forecast peak in mm/h, the gate in mm/h, whether a flood stands, and the mode (`LIVE`, `PENDING`, or `DEMO`).
+The mode follows the definitions at the top of this story.
+The table is a contract table: it goes on [[core-output-contract]] and in the `routing_reader` list, or the backend gets `permission denied`.
+The signal is a proposal of the first draft, and this part confirms it or changes it.
+
+Given a run of `flood_mapping_full` with rain above the gate, when `0_check_forecast_rain` ends, then the status table has a row for that decision with mode `PENDING` until the first step is published, and `LIVE` after.
+Given a decision with no rain above the gate and no standing flood, then the row has mode `DEMO`.
+Given the role `routing_reader`, then it can read the table, and a write fails with a permission error.
 
 ## Acceptance check
 
-On the server, after the change is pulled and the replay has stopped.
-Use a test point inside the model border (`.claude/CLAUDE.md`).
-Take a screenshot of each mode for the evidence section.
+On the server, after the change is pulled.
+Read the newest status row with `psql`, and take a screenshot of the query result and of the contract page entry.
 
-1. Given no rain is forecast past the threshold and no flood stands, when the flood map loads, then the pinned demo flood shows with the exact warning text.
-2. Given rain is forecast above the threshold and no step is published, when the flood map loads, then the map is dry and the warning says the simulation is running.
-3. Given rain is forecast and real steps are published, when the flood map loads, then the map shows the real result as today.
-4. Given DEMO mode, when a visitor taps a point inside the flooded area, then the depth popup reads the pinned step, and a route request is judged on the pinned flood.
-5. Given the replay has made more runs than `FLOOD_EXTENT_KEEP_RUNS` and `EDGE_TABLE_KEEP_RUNS` allow, when the prunes have run, then the pinned step still has its tiles, its rows, and its edge table.
+1. Given the table, when a gate decision runs, then one row holds the mode, the forecast peak, the gate, and the standing-flood flag.
+2. Given `routing_reader`, then `SELECT` works and an `INSERT` fails.
 
 ## Status history
 
 - **2026-10-10, draft.**
   Written from decision [[decision-log|D-030]].
   No code is written, and no branch holds the feature.
+
+- **2026-10-12, Ready.** Split into four stories at the product owner's request, and this part is picked for [[SPR-014-finish-the-remaining-backend|SPR-014]]. The plan of the original story moved to the parts.
 
 ## Evidence and details
 

@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-128"
 title: "Run the test suites against the test databases"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Not started
+status: Ready
 kind: story
 priority: P2
 estimate: S
-sprint: 
+sprint: 14
 subsystem: testing, flood-data
 source_ideas: []
 related: ["[[test-dataset]]", "[[decision-log|D-039]]"]
@@ -31,6 +31,8 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 ## Status history
 
 - **2026-10-12, draft.** Raised with [[decision-log|D-039]].
+
+- **2026-10-12, Ready.** Picked for the sprint at the product owner's request. [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Done`. Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 
 ## Evidence and details
 

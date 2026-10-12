@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-114"
 story_label: "2"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Not started
+status: Ready
 kind: story
 priority: P1
 estimate: S
-sprint: 
+sprint: 14
 subsystem: core-output
 source_ideas: []
 related: ["[[US-094-archive-results-3di-nc-and-a-run|US-094]]", "[[EP-15-archive-and-netcdf-retirement]]", "[[decision-log|D-016]]", "[[decision-log|D-019]]"]
@@ -49,6 +49,8 @@ Estimate: S.
 - **2026-10-12, not started.** Split from US-094 at Sprint 13 planning. It stays in the backlog with no sprint, because its proof waits for a forecast above 5 mm/h ([[decision-log|D-016]], [[decision-log|D-019]]).
 - **2026-10-12, not started.** The product owner confirmed the floor of 50 GB and allowed a lowered rain gate after 2026-10-23 ([[decision-log|D-035]]). The story stays in the backlog with no sprint.
 - **2026-10-12, not started.** The product owner reversed the lowered rain gate the same day, after saying that no rain is expected. The rain gate stays at 5 mm/h, and the 2026-10-23 cutoff is removed. The story stays in the backlog with no sprint, and it is not in Sprint 13 ([[decision-log|D-037]], [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
+
+- **2026-10-12, Ready.** Picked for the sprint at the product owner's request, against the framework rule that keeps a story waiting on an external event out of the sprint. The proof needs a real forecast above 5 mm/h, and none is expected, so this story may leave the sprint at the review ([[decision-log|D-037]]). Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 
 ## Evidence and details
 

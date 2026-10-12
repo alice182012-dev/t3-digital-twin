@@ -198,11 +198,11 @@ Ended early on 2026-10-12 at the product owner's request ([[decision-log|D-040]]
 
 ## Retrospective
 
-Not held. The sprint ended after one day, and the retrospective moves to the review of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] on 2026-10-25.
+Not held. The sprint ended after one day, and the retrospective moves to the review of [[SPR-014-finish-the-remaining-backend|SPR-014]] on 2026-10-25.
 
 ## Refinement for the next sprint
 
-Done at the start of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]]: the stories of [[decision-log|D-038]] are ordered by their dependencies, and the open ones are `Ready` and picked.
+Done at the start of [[SPR-014-finish-the-remaining-backend|SPR-014]]: the stories of [[decision-log|D-038]] are ordered by their dependencies, and the open ones are `Ready` and picked.
 
 ## Status history
 
@@ -219,4 +219,4 @@ Done at the start of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]]
 
 - **2026-10-12, active.** The product owner archived [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] after the first answer, and the story is `Superseded` with an empty `sprint`. A client cannot use a GeoTIFF, and nothing needs the tile build off the worker's disk. The sprint holds five picks and 13 points, four of them `Done` (10 of 13 points). The goal does not change.
 - **2026-10-12, active.** At the owner's request, [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] was started outside the sprint plan. None of the three has a `sprint`, their points are not in the forecast, and the goal does not change.
-- **2026-10-12, done.** The product owner ended the sprint early and started [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] the same day ([[decision-log|D-040]]). The review is above. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] left the sprint, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] had left it as `Superseded`.
+- **2026-10-12, done.** The product owner ended the sprint early and started [[SPR-014-finish-the-remaining-backend|SPR-014]] the same day ([[decision-log|D-040]]). The review is above. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] left the sprint, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] had left it as `Superseded`.

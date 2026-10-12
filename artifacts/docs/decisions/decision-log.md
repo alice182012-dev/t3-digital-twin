@@ -659,9 +659,22 @@ is the maximum.
 - **Date:** 2026-10-12
 - **Status:** active.
 - **Decided by:** The product owner, on 2026-10-12, who asked to make Sprint 14 the current sprint and chose to end Sprint 13 early and start Sprint 14 the same day, over keeping the fixed dates.
-- **Decision:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ends on 2026-10-12 with its review. [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] is `active` from 2026-10-12 to 2026-10-25, two weeks, with the goal "Finish D-038". A story of Sprint 13 that is not `Done` leaves the sprint, and the stories picked for Sprint 14 get `sprint: 14`.
+- **Decision:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ends on 2026-10-12 with its review. [[SPR-014-finish-the-remaining-backend|SPR-014]] is `active` from 2026-10-12 to 2026-10-25, two weeks, with the goal "Finish D-038". A story of Sprint 13 that is not `Done` leaves the sprint, and the stories picked for Sprint 14 get `sprint: 14`.
 - **Why:** The sprint goal of Sprint 13 ("EP-21 foundation") was reached except for [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]]. The work that followed, the stories of [[decision-log|D-038]], is a different goal, and the owner wants the sprint to say so.
 - **Alternatives:** (1) Keep the dates of [[decision-log|D-026]], and start Sprint 14 on 2026-10-26. Not chosen. (2) Start Sprint 14 now and keep it two weeks from today. This is the choice, and its end falls on the same Sunday as Sprint 13.
-- **Evidence:** the Review section of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] and the Planning section of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]].
+- **Evidence:** the Review section of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] and the Planning section of [[SPR-014-finish-the-remaining-backend|SPR-014]].
 - **Affects:** [[decision-log|D-026]], which fixes a sprint's dates after it starts. This decision is an exception, and Sprint 13 lasted one day. [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done outside the plan, have no `sprint`, and so do not count in [[Velocity]].
 - **Revisit if:** a second early end happens, which would show that the planning of the sprint is too coarse.
+
+## D-041: Widen the goal of Sprint 14 to the remaining backend
+
+- **Date:** 2026-10-12
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, who said "for sprint 14 I want to finish all of the remaining backend of the system", then "we will finish all of the backend, add them all", and chose the goal "Finish the remaining backend" over keeping "Finish D-038" with a stretch part.
+- **Decision:** The goal of [[SPR-014-finish-the-remaining-backend|SPR-014]] is "Finish the remaining backend". Seven stories join the seven picks of the first goal: [[US-128-run-the-test-suites-against-the-test-databases|US-128]], [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]], [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], and three parts of the split [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]]. The sprint holds 14 stories and 34 points against a forecast of 16.
+- **Why:** The owner wants the backend finished before the frontend work of [[EP-19-frontend-against-the-mockup|EP-19]] starts. [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] was an L, so it was split into four stories, three of them backend, and [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]] is the frontend part. [[US-098-show-the-recommended-route-and-the-through|US-098]] was left out, because its backend is `Done`.
+- **Alternatives:** (1) Keep "Finish D-038" and list the other stories as a stretch. Not chosen. (2) Pick only the stories that fit the forecast of 16. Not chosen, because the owner asked for all of them.
+- **Evidence:** the Planning section of [[SPR-014-finish-the-remaining-backend|SPR-014]].
+- **Affects:** the rule that a sprint goal does not change after the start ([[decision-log|D-026]]) and the rule that a story waiting on an external event stays out of the sprint ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]). Both are exceptions.
+- **Revisit if:** more than three stories leave the sprint at the review on 2026-10-25, which would show that a forecast of 16 does not describe this team.
+
