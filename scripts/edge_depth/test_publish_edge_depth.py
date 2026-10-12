@@ -105,6 +105,19 @@ class PublishTests(unittest.TestCase):
         )
         self.assertEqual(result.kept, tuple(f"{run_name(i)}.bin" for i in (4, 3, 2)))
 
+    def test_a_table_named_in_also_keep_stays_whatever_its_age(self):
+        for index in (1, 2, 3):
+            publish_edge_depth.publish_table(self.dir, make_table(self.dir, index))
+
+        result = publish_edge_depth.publish_table(
+            self.dir, make_table(self.dir, 4), also_keep={f"{run_name(1)}.bin"}
+        )
+
+        self.assertEqual(result.removed, ())
+        self.assertEqual(
+            self.names(), sorted([f"{run_name(i)}.bin" for i in (1, 2, 3, 4)] + ["latest"])
+        )
+
     def test_keep_is_a_parameter(self):
         for index in (1, 2, 3):
             publish_edge_depth.publish_table(self.dir, make_table(self.dir, index), keep=1)

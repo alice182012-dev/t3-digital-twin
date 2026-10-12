@@ -20,13 +20,17 @@ Library use (what the Airflow DAG does):
 
 import os
 import shutil
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import flood_extent
-import run_output
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
+import demo_pin  # noqa: E402
+import run_output  # noqa: E402
 
 VIETNAM_UTC_OFFSET = timedelta(hours=7)
 
@@ -93,14 +97,14 @@ def publish_step(depth_file, run_ts, work_dir, s3, bucket, engine_options):
 
 
 def prune_bucket_runs(s3, bucket, keep_runs, always_keep):
-    """Deletes every object under old `runs/<run>/` prefixes, keeping the newest `keep_runs`."""
+    """Deletes every object under old `runs/<run>/` prefixes, keeping the newest `keep_runs` and every run of `always_keep`."""
     paginator = s3.get_paginator("list_objects_v2")
     prefixes = []
     for page in paginator.paginate(Bucket=bucket, Prefix="runs/", Delimiter="/"):
         prefixes += [p["Prefix"] for p in page.get("CommonPrefixes", [])]
     runs = sorted((p.removeprefix("runs/").rstrip("/") for p in prefixes), reverse=True)
     for old_run in runs[keep_runs:]:
-        if old_run == always_keep:
+        if old_run in always_keep:
             continue
         objects = [
             {"Key": obj["Key"]}
@@ -123,12 +127,12 @@ def prune_step_rows(db_conn, keep_runs, always_keep):
         cur.execute(
             """
             DELETE FROM flood_extent_step
-            WHERE run_ts <> %(always_keep)s
+            WHERE run_ts <> ALL(%(always_keep)s)
               AND run_ts NOT IN (
                   SELECT DISTINCT run_ts FROM flood_extent_step ORDER BY run_ts DESC LIMIT %(keep_runs)s
               )
             """,
-            {"keep_runs": keep_runs, "always_keep": always_keep},
+            {"keep_runs": keep_runs, "always_keep": sorted(always_keep)},
         )
     db_conn.commit()
 
@@ -160,12 +164,12 @@ def prune_polygon_rows(db_conn, keep_runs, always_keep):
         cur.execute(
             """
             DELETE FROM flood_extent_polygon
-            WHERE run_ts <> %(always_keep)s
+            WHERE run_ts <> ALL(%(always_keep)s)
               AND run_ts NOT IN (
                   SELECT DISTINCT run_ts FROM flood_extent_polygon ORDER BY run_ts DESC LIMIT %(keep_runs)s
               )
             """,
-            {"keep_runs": keep_runs, "always_keep": always_keep},
+            {"keep_runs": keep_runs, "always_keep": sorted(always_keep)},
         )
     db_conn.commit()
 
@@ -240,12 +244,16 @@ def publish_run(depth_dir, run_ts, work_dir, s3, bucket, *, workers=2, db_conn=N
             f"{len(failures)}/{len(depth_files)} timesteps failed: " + "; ".join(failures)
         )
 
-    prune_bucket_runs(s3, bucket, keep_runs, always_keep=run_ts)
-    prune_step_rows(db_conn, keep_runs, always_keep=run_ts)
-    prune_polygon_rows(db_conn, keep_runs, always_keep=run_ts)
+    always_keep = frozenset({run_ts})
+    if db_conn is not None:
+        with db_conn, db_conn.cursor() as cur:
+            always_keep = demo_pin.kept_runs(cur, run_ts)
+    prune_bucket_runs(s3, bucket, keep_runs, always_keep=always_keep)
+    prune_step_rows(db_conn, keep_runs, always_keep=always_keep)
+    prune_polygon_rows(db_conn, keep_runs, always_keep=always_keep)
     cleanup_old_files(cleanup_dirs, cleanup_max_age_hours)
     if db_conn is not None:
         with db_conn, db_conn.cursor() as cur:
             run_output.record(cur, run_ts, run_output.Output.EXTENT)
-            run_output.prune(cur, keep_runs, always_keep=run_ts)
+            run_output.prune(cur, keep_runs, always_keep=always_keep)
     return results

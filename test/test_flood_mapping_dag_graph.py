@@ -211,6 +211,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_graph_edge_table.main.assert_called_once_with()
         database.create_edge_depth_tables.main.assert_called_once_with()
         database.create_flood_run_output_table.main.assert_called_once_with()
+        database.create_demo_pin_table.main.assert_called_once_with()
         database.create_forecast_mode_table.main.assert_called_once_with()
 
     def test_no_core_task_waits_on_a_routing_task(self):

@@ -17,6 +17,7 @@ query never needs its own transform.
 from __future__ import annotations
 
 import os
+from collections.abc import Collection
 from pathlib import Path
 
 import psycopg2
@@ -25,6 +26,7 @@ from osgeo import gdal
 import flood_extent
 import publish
 import run_output
+import demo_pin  # noqa: E402  (publish puts scripts/database on sys.path)
 
 gdal.UseExceptions()
 
@@ -80,13 +82,13 @@ def write_tiles(cur, run_ts: str, valid_time_utc, raster_path: Path) -> None:
     cur.execute(_INSERT_TILES_SQL, params)
 
 
-def prune_raster_runs(cur, keep_runs: int, always_keep: str) -> list[str]:
-    """Deletes every tile of runs outside the newest `keep_runs` by run_ts, never `always_keep`.
+def prune_raster_runs(cur, keep_runs: int, always_keep: Collection[str]) -> list[str]:
+    """Deletes every tile of runs outside the newest `keep_runs` by run_ts, never a run of `always_keep`.
     Returns the pruned runs. Same posture as publish.prune_bucket_runs: run_ts is a fixed-width
     YYYYMMDDTHHMMSS string, so its lexical order is its time order."""
     cur.execute("SELECT DISTINCT run_ts FROM flood_depth_raster_tile ORDER BY run_ts DESC;")
     runs = [row[0] for row in cur.fetchall()]
-    old_runs = [run for run in runs[keep_runs:] if run != always_keep]
+    old_runs = [run for run in runs[keep_runs:] if run not in always_keep]
     if old_runs:
         cur.execute("DELETE FROM flood_depth_raster_tile WHERE run_ts = ANY(%s);", (old_runs,))
     return old_runs
@@ -122,7 +124,7 @@ def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = Non
             with conn, conn.cursor() as cur:
                 write_tiles(cur, run_ts, valid_time, reprojected)
                 if depth_file == depth_files[-1]:
-                    prune_raster_runs(cur, keep_runs, always_keep=run_ts)
+                    prune_raster_runs(cur, keep_runs, always_keep=demo_pin.kept_runs(cur, run_ts))
                     run_output.record(cur, run_ts, run_output.Output.DEPTH_RASTER)
             loaded.append(valid_time)
         finally:

@@ -35,6 +35,7 @@ try:
     import database.create_graph_edge_table
     import database.create_edge_depth_tables
     import database.create_flood_run_output_table
+    import database.create_demo_pin_table
     import database.create_forecast_mode_table
     import database.create_timescale_tables
     import flood_extent
@@ -230,6 +231,7 @@ def task_ensure_schema(**kwargs):
     database.create_graph_edge_table.main()
     database.create_edge_depth_tables.main()
     database.create_flood_run_output_table.main()
+    database.create_demo_pin_table.main()
     database.create_forecast_mode_table.main()
     database.create_timescale_tables.main()
 

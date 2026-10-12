@@ -8,6 +8,7 @@ import numpy as np
 import psycopg2
 from osgeo import gdal, osr
 
+import create_demo_pin_table
 import create_flood_depth_raster_tables
 import create_flood_run_output_table
 import raster_load
@@ -286,6 +287,19 @@ class LoadRunTests(unittest.TestCase):
         self.assertEqual(
             self.runs(), ["20260601T000000", "20260703T000000", "20260704T000000", "20260705T000000"]
         )
+
+    def test_prune_never_deletes_the_pinned_run(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(create_demo_pin_table.SQL)
+            cur.execute("TRUNCATE demo_pin")
+        for run in ["20260701T000000", "20260703T000000", "20260704T000000"]:
+            raster_load.load_run(self.conn, self.depth_dir(run, 4), run, self.root / "work", keep_runs=10)
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("INSERT INTO demo_pin (run_ts, valid_time_utc, wet_edges) VALUES ('20260701T000000', '2026-07-01', 1)")
+
+        raster_load.load_run(self.conn, self.depth_dir("20260705T000000", 4), "20260705T000000", self.root / "work", keep_runs=2)
+
+        self.assertEqual(self.runs(), ["20260701T000000", "20260704T000000", "20260705T000000"])
 
     def test_keep_runs_argument_overrides_the_environment(self):
         for run in ["20260701T000000", "20260702T000000", "20260703T000000", "20260704T000000"]:

@@ -12,6 +12,7 @@ import edge_depth_rows
 from edge_depth_rows import WetEdge
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
+import create_demo_pin_table  # noqa: E402
 import create_edge_depth_tables  # noqa: E402
 
 DSN = os.getenv("EDGE_DEPTH_TEST_DSN")
@@ -45,6 +46,7 @@ class WriteRunTests(unittest.TestCase):
             cur.execute(f"CREATE SCHEMA {SCHEMA}")
             cur.execute(f"SET search_path TO {SCHEMA}, public")
             cur.execute(create_edge_depth_tables.SQL)
+            cur.execute(create_demo_pin_table.SQL)
 
     @classmethod
     def tearDownClass(cls):
@@ -55,6 +57,7 @@ class WriteRunTests(unittest.TestCase):
     def setUp(self):
         with self.conn, self.conn.cursor() as cur:
             cur.execute("TRUNCATE edge_depth_run CASCADE")
+            cur.execute("TRUNCATE demo_pin")
 
     def query(self, sql, args=None):
         with self.conn, self.conn.cursor() as cur:
@@ -123,6 +126,18 @@ class WriteRunTests(unittest.TestCase):
             self.query("SELECT run_ts FROM edge_depth_run ORDER BY run_ts"), [("20260923T170000",), (RUN,)]
         )
         self.assertEqual(self.query("SELECT count(*) FROM edge_depth WHERE run_ts = '20260923T090000'"), [(0,)])
+
+    def test_the_pinned_run_stays_however_old_it_is(self):
+        edge_depth_rows.write_run(self.conn, "20260901T090000", "a" * 64, [T1], [WetEdge(T1, "100:0", 70)])
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("INSERT INTO demo_pin (run_ts, valid_time_utc, wet_edges) VALUES ('20260901T090000', %s, 1)", (T1,))
+
+        edge_depth_rows.write_run(self.conn, RUN, "a" * 64, [T1, T2], WET, keep_hours=24)
+
+        self.assertEqual(
+            self.query("SELECT run_ts FROM edge_depth_run ORDER BY run_ts"), [("20260901T090000",), (RUN,)]
+        )
+        self.assertEqual(self.query("SELECT count(*) FROM edge_depth WHERE run_ts = '20260901T090000'"), [(1,)])
 
     def test_a_run_exactly_at_the_cutoff_is_kept(self):
         edge_depth_rows.write_run(self.conn, "20260923T164803", "a" * 64, [T1], [])

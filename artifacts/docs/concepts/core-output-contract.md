@@ -10,7 +10,7 @@ last_updated: 2026-10-12
 # Core output contract
 
 The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read.
-This page lists what it publishes: ten PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
+This page lists what it publishes: eleven PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
 Routing is the first consumer.
 The story is `US-071` ([[EP-10-routing-first-consumer|routing-first-consumer-stories]] Story C1).
 
@@ -28,6 +28,31 @@ A fact the code cannot show is marked as unverified.
 
 The DDL is in `scripts/database/`.
 Task `0b_ensure_schema` of `flood_mapping_full` runs it on every run (`task_ensure_schema`, `dags/flood_mapping_dag.py:168-176`), and every `CREATE` and `ADD COLUMN` in it has `IF NOT EXISTS`.
+
+### demo_pin
+
+One row is the step of the demo flood. The table has at most one row.
+
+| Column | Type | Nullable |
+| ------ | ---- | -------- |
+| `singleton` | `boolean` | no |
+| `run_ts` | `text` | no |
+| `valid_time_utc` | `timestamp without time zone` | no |
+| `wet_edges` | `integer` | no |
+| `chosen_at` | `timestamp without time zone` | no |
+
+- **Key.** The primary key is `singleton`, which a `CHECK` holds at true, so the table cannot hold a second row.
+- **Primary key columns.** `singleton`.
+- **Meaning.** `run_ts` and `valid_time_utc` name the pinned step, the step with the most wet edges in `edge_depth` when it was chosen.
+  `wet_edges` is its count of wet edges.
+- **Writer.** `python scripts/database/demo_pin.py` chooses the step and replaces the row.
+  `--run` and `--valid-time` take a given step instead.
+  Task `0b_ensure_schema` creates the table, and a database without it has no pin.
+- **Retention.** The row stays until it is replaced.
+  Every prune of a run table keeps the pinned run, and no prune deletes the row:
+  `flood_depth_raster_tile`, `flood_extent_step`, `flood_extent_polygon`, `flood_run_output`, `edge_depth` and `edge_depth_run`, the tiles in MinIO, and the edge depth file of the run.
+  The prune of `flood_road_values` does not, because [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes that table.
+- **Not yet true.** The tile build tiles only the first two steps of a run, so the pinned step has tiles only when it is one of them ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] rebuilds the others).
 
 ### edge_depth
 
@@ -397,6 +422,7 @@ The parser fails when a role lists no table, lists a table this page does not de
 The routing backend `floodmap-backend` connects as this role.
 Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the service in `compose.yml` has no fallback to the writer role.
 
+- `demo_pin`
 - `edge_depth`
 - `edge_depth_run`
 - `flood_depth_raster_tile`

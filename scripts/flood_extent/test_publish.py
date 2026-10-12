@@ -279,7 +279,7 @@ class PrunePolygonRowsNoDbTests(unittest.TestCase):
     def test_does_nothing_when_db_conn_is_none(self):
         # Matches prune_step_rows's own no-op: publish_run can call this unconditionally even
         # when no db_conn was passed in (db_conn is an optional kwarg, default None).
-        publish.prune_polygon_rows(None, keep_runs=3, always_keep="20260925T171500")
+        publish.prune_polygon_rows(None, keep_runs=3, always_keep={"20260925T171500"})
 
 
 @unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
@@ -312,12 +312,17 @@ class PrunePolygonRowsTests(unittest.TestCase):
             return [row[0] for row in cur.fetchall()]
 
     def test_keeps_only_the_newest_keep_runs(self):
-        publish.prune_polygon_rows(self.conn, keep_runs=2, always_keep="20260925T173000")
+        publish.prune_polygon_rows(self.conn, keep_runs=2, always_keep={"20260925T173000"})
 
         self.assertEqual(self.runs(), ["20260925T173000", "20260925T180000"])
 
+    def test_every_run_of_always_keep_survives_even_outside_the_window(self):
+        publish.prune_polygon_rows(self.conn, keep_runs=1, always_keep={"20260925T160000", "20260925T173000"})
+
+        self.assertEqual(self.runs(), ["20260925T160000", "20260925T173000", "20260925T180000"])
+
     def test_always_keep_survives_even_outside_the_window(self):
-        publish.prune_polygon_rows(self.conn, keep_runs=1, always_keep="20260925T160000")
+        publish.prune_polygon_rows(self.conn, keep_runs=1, always_keep={"20260925T160000"})
 
         self.assertEqual(self.runs(), ["20260925T160000", "20260925T180000"])
 

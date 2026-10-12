@@ -33,6 +33,8 @@ class FakeCursor:
 
     def execute(self, sql, params=None):
         self._rows = list(self.conn.rows(sql))
+        if not self._rows and "to_regclass('demo_pin')" in sql:
+            self._rows = [(False,)]  # a database without the pin table, as the real query answers it
         self.conn.pending.append((sql, params))
 
     def fetchall(self):
@@ -126,18 +128,19 @@ class RunOutputTests(unittest.TestCase):
 
         self.assertEqual(self.rows(), [("20261010T100000", "depth_raster"), ("20261010T100000", "edge_depth")])
 
-    def test_prune_keeps_the_newest_runs_and_the_run_being_published(self):
+    def test_prune_keeps_the_newest_runs_and_every_run_it_is_told_to_keep(self):
         for run_ts in ("20261010T100000", "20261010T101500", "20261010T103000", "20261010T104500"):
             self.record(run_ts, Output.DEPTH_RASTER)
         self.record("20261010T104500", Output.EXTENT)
 
         with self.conn, self.conn.cursor() as cur:
-            run_output.prune(cur, 2, always_keep="20261010T100000")
+            run_output.prune(cur, 2, always_keep={"20261010T100000", "20261010T101500"})
 
         self.assertEqual(
             self.rows(),
             [
                 ("20261010T100000", "depth_raster"),
+                ("20261010T101500", "depth_raster"),
                 ("20261010T103000", "depth_raster"),
                 ("20261010T104500", "depth_raster"),
                 ("20261010T104500", "extent"),

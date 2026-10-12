@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 import re
 import time
+from collections.abc import Collection
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,8 +52,11 @@ class PublishResult:
     kept: tuple[str, ...]
 
 
-def publish_table(table_dir, table_name: str, keep: int = DEFAULT_KEEP, now: float | None = None) -> PublishResult:
-    """Publishes table_name, which is already in table_dir. Raises ValueError for keep < 1 and PublishError
+def publish_table(
+    table_dir, table_name: str, keep: int = DEFAULT_KEEP, now: float | None = None, also_keep: Collection[str] = ()
+) -> PublishResult:
+    """Publishes table_name, which is already in table_dir. The tables named in `also_keep`, such as the pinned run's,
+    stay whatever their age. Raises ValueError for keep < 1 and PublishError
     for a name that is not a run table, a missing file, or a file that does not read."""
     if keep < 1:
         raise ValueError(f"keep must be at least 1: {keep}")
@@ -80,7 +84,7 @@ def publish_table(table_dir, table_name: str, keep: int = DEFAULT_KEEP, now: flo
         if moved:
             edge_depth_table.write_latest(table_dir, table_name)
         latest = table_name if moved else previous
-        kept, removed = _retain(table_dir, keep, latest)
+        kept, removed = _retain(table_dir, keep, latest, also_keep)
         _remove_stale_temporaries(table_dir, time.time() if now is None else now)
     return PublishResult(latest=latest, previous=previous, moved=moved, removed=removed, kept=kept)
 
@@ -109,9 +113,11 @@ def _current(table_dir: Path) -> str | None:
     return name if (table_dir / name).is_file() else None
 
 
-def _retain(table_dir: Path, keep: int, latest: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+def _retain(
+    table_dir: Path, keep: int, latest: str, also_keep: Collection[str] = ()
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
     names = sorted((p.name for p in table_dir.iterdir() if _TABLE_NAME.match(p.name)), reverse=True)
-    keep_names = set(names[:keep]) | {latest}
+    keep_names = set(names[:keep]) | {latest} | set(also_keep)
     removed = tuple(sorted(n for n in names if n not in keep_names))
     for name in removed:
         (table_dir / name).unlink(missing_ok=True)

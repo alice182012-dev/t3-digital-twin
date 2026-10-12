@@ -134,6 +134,8 @@ class RoutingTaskTests(unittest.TestCase):
         self.dag_module = load_routing_module()
         self.dag_module.DB_CONFIG = {}
         self.dag_module.run_output = run_output
+        self.dag_module.demo_pin = MagicMock()
+        self.dag_module.demo_pin.kept_runs.side_effect = lambda cur, run_ts: frozenset({run_ts})
         self.ti = MagicMock()
         self.context = {"ti": self.ti, "triggering_asset_events": triggered_by("20260924T170639")}
 
@@ -190,13 +192,28 @@ class RoutingTaskTests(unittest.TestCase):
              "removed": ["20260924T150639.bin"]},
         )
         self.ti.xcom_push.assert_called_once_with(key="edge_depth_table", value=result)
-        publish.publish_table.assert_called_once_with("/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=8)
+        publish.publish_table.assert_called_once_with(
+            "/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=8, also_keep=set()
+        )
+
+    def test_the_table_of_the_pinned_run_is_kept_by_the_publish(self):
+        self.dag_module.demo_pin.kept_runs.side_effect = lambda cur, run_ts: frozenset({run_ts, "20261010T210000"})
+        self.dag_module.build_edge_depth = MagicMock()
+        self.dag_module.build_edge_depth.build_table.return_value = self.built_table()
+        publish = self.dag_module.publish_edge_depth = MagicMock()
+        publish.publish_table.return_value = MagicMock(latest="20260924T170639.bin", previous=None, moved=True, removed=())
+
+        with patch("builtins.print"):
+            self.dag_module.task_build_edge_depth_table(**self.context)
+
+        self.assertEqual(publish.publish_table.call_args.kwargs["also_keep"], {"20261010T210000.bin"})
 
     def test_the_edge_table_folders_can_be_set_by_environment(self):
         env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5", "EDGE_DEPTH_KEEP_HOURS": "12"}
         with patch.dict(os.environ, env):
             dag_module = load_routing_module()
         dag_module.DB_CONFIG = {}
+        dag_module.demo_pin = self.dag_module.demo_pin
         dag_module.build_edge_depth = MagicMock()
         dag_module.build_edge_depth.build_table.return_value = self.built_table("/tables/x.bin")
         dag_module.publish_edge_depth = MagicMock()
@@ -208,7 +225,7 @@ class RoutingTaskTests(unittest.TestCase):
         args = dag_module.build_edge_depth.build_table.call_args.args
         self.assertEqual(args[2:], ("/exports", "/tables"))
         self.assertEqual(dag_module.build_edge_depth.build_table.call_args.kwargs, {"keep_hours": 12})
-        self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5})
+        self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5, "also_keep": set()})
 
     def test_compose_defaults_the_edge_table_count_to_the_dag_default(self):
         compose = (ROOT / "compose.yml").read_text(encoding="utf-8")

@@ -8,11 +8,16 @@ scripts/database/create_edge_depth_tables.py for the tables.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Iterable, NamedTuple, Sequence
 
 from psycopg2.extras import execute_values
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
+import demo_pin  # noqa: E402
 
 DEFAULT_KEEP_HOURS = 24
 _RUN_TS_FORMAT = "%Y%m%dT%H%M%S"
@@ -49,7 +54,7 @@ _ROWS_SQL = "INSERT INTO edge_depth (run_ts, valid_time_utc, edge_key, depth_cm)
 
 _NEWEST_SQL = "SELECT max(run_ts) FROM edge_depth_run"
 
-_PRUNE_SQL = "DELETE FROM edge_depth_run WHERE run_ts < %(cutoff)s AND run_ts <> %(run_ts)s"
+_PRUNE_SQL = "DELETE FROM edge_depth_run WHERE run_ts < %(cutoff)s AND run_ts <> ALL(%(keep)s)"
 
 
 def write_run(
@@ -85,6 +90,6 @@ def write_run(
         cur.execute(_NEWEST_SQL)
         newest = run_time(cur.fetchone()[0])
         cutoff = (newest - timedelta(hours=keep_hours)).strftime(_RUN_TS_FORMAT)
-        cur.execute(_PRUNE_SQL, {"cutoff": cutoff, "run_ts": run_ts})
+        cur.execute(_PRUNE_SQL, {"cutoff": cutoff, "keep": sorted(demo_pin.kept_runs(cur, run_ts))})
         pruned = cur.rowcount
     return WriteResult(rows=len(rows), runs_pruned=pruned)

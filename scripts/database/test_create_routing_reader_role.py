@@ -26,6 +26,7 @@ def test_routing_reader_grants_name_exactly_its_tables() -> None:
         'REVOKE CREATE ON SCHEMA public FROM "routing_reader"',
         'GRANT CONNECT ON DATABASE "minio_custom" TO "routing_reader"',
         'GRANT USAGE ON SCHEMA public TO "routing_reader"',
+        'GRANT SELECT ON public."demo_pin" TO "routing_reader"',
         'GRANT SELECT ON public."edge_depth" TO "routing_reader"',
         'GRANT SELECT ON public."edge_depth_run" TO "routing_reader"',
         'GRANT SELECT ON public."flood_depth_raster_tile" TO "routing_reader"',

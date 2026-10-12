@@ -27,6 +27,7 @@ sys.path.append(os.path.join(SCRIPTS_PATH, "flood_roads"))
 
 try:
     import build_edge_depth
+    import demo_pin
     import publish_edge_depth
     import run_output
     from db_config import DB_CONFIG
@@ -95,10 +96,14 @@ def task_build_edge_depth_table(**kwargs):
         built = build_edge_depth.build_table(
             conn, run_ts, EDGE_EXPORT_DIR, EDGE_TABLE_DIR, keep_hours=EDGE_DEPTH_KEEP_HOURS
         )
+        with conn, conn.cursor() as cur:
+            pinned = demo_pin.kept_runs(cur, run_ts) - {run_ts}
     finally:
         conn.close()
     # A failure above or here leaves `latest` on the previous table: the pointer moves only inside publish_table.
-    published = publish_edge_depth.publish_table(EDGE_TABLE_DIR, built.path.name, keep=EDGE_TABLE_KEEP_RUNS)
+    published = publish_edge_depth.publish_table(
+        EDGE_TABLE_DIR, built.path.name, keep=EDGE_TABLE_KEEP_RUNS, also_keep={f"{run}.bin" for run in pinned}
+    )
     report = {
         "run_ts": run_ts,
         "path": str(built.path),
