@@ -40,6 +40,7 @@ Dependencies: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Don
   4. Retention is the 24 hours before the newest run, as for `flood_road_values` ([[decision-log|D-017]]), set by `EDGE_DEPTH_KEEP_HOURS`.
   5. `9c` writes the rows in one transaction before it writes the file and publishes, so a database failure leaves no file and no new `latest`. A rebuild of one run replaces its rows.
 - **2026-10-12, In progress.** Built and tested, not deployed. `9c` writes the rows and the registry before the file (commit "Write the wet edges of each run to edge_depth with a run registry"), and 135 `edge_depth` tests pass against the real PostGIS. The added time was measured on the 8 stored storm runs (details item 2). The server does not have the code yet. Still open: push and pull, the first real `9c` run with the tables, and the check over 50 consecutive runs.
+- **2026-10-12, In progress.** Pushed and pulled on the server (`--ff-only` from `alice`, head `10338a4`). `create_edge_depth_tables.py` was run by hand, so `edge_depth_run` and `edge_depth` exist and are empty, and a `routing_adapter` run before the next `flood_mapping_full` run cannot fail on a missing table. Airflow has no import errors and `check_tables.py` reports `FRESH`. The next real `9c` run writes the first rows. `EDGE_DEPTH_KEEP_HOURS` is in `compose.yml` and reaches the containers when they are recreated, and the code default is the same 24.
 
 ## Evidence and details
 
