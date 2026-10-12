@@ -44,6 +44,19 @@ ALTER TABLE flood_road_values
 ALTER TABLE flood_road_values
     ADD COLUMN IF NOT EXISTS segment_id TEXT;
 
+-- The forecast times a run covers, in naive Vietnam local time like flood_road_values.forecast_time.
+-- A run with no wet piece has no value rows, so this is the only record that it covers a time.
+ALTER TABLE flood_road_file
+    ADD COLUMN IF NOT EXISTS forecast_times TIMESTAMP[];
+
+UPDATE flood_road_file f
+SET forecast_times = (
+    SELECT array_agg(DISTINCT v.forecast_time ORDER BY v.forecast_time)
+    FROM flood_road_values v WHERE v.file_id = f.id
+)
+WHERE f.forecast_times IS NULL
+  AND EXISTS (SELECT 1 FROM flood_road_values v WHERE v.file_id = f.id);
+
 CREATE INDEX IF NOT EXISTS idx_flood_file_timestamp
 ON flood_road_file(timestamp);
 

@@ -6,7 +6,9 @@ routes against (POST /route) and the equivalent map overlay (GET
 min-area defaults match the values Phase A's D2 sweep validated (buffer=22m,
 min_area=400m2).
 
-Reads `flood_road_values`, a separate table and pipeline from
+Reads `flood_road_values`, with the run that wins a forecast time taken
+from `flood_road_file.forecast_times` so a run with no wet road still wins.
+It is a separate table and pipeline from
 `flood_extent_polygon` (see flood_extent_runs.py, which backs the map's
 timestep picker). See artifacts/raw/T3-Digital-Twin_Architecture.md section 4.2 for why routing and
 map-display visualization intentionally read different flood tables.
@@ -24,13 +26,13 @@ DEFAULT_MIN_AREA_M2 = 400.0
 
 _WINNER_SEG_SQL = """
 WITH winner AS (
-    SELECT DISTINCT ON (forecast_time) forecast_time, timestamp
-    FROM flood_road_values WHERE forecast_time = %(valid_time)s
-    ORDER BY forecast_time, timestamp DESC
+    SELECT max(timestamp) AS timestamp
+    FROM flood_road_file WHERE %(valid_time)s::timestamp = ANY(forecast_times)
 ), seg AS (
     SELECT ST_Transform(v.geom_4326, 3405) AS g, v.depth
-    FROM flood_road_values v JOIN winner w USING (forecast_time, timestamp)
-    WHERE v.depth >= %(band_min)s {band_max_clause}
+    FROM flood_road_values v JOIN winner w USING (timestamp)
+    WHERE v.forecast_time = %(valid_time)s
+      AND v.depth >= %(band_min)s {band_max_clause}
 ), parts AS (
     SELECT (ST_Dump(ST_Union(ST_Buffer(g, %(buffer_m)s)))).geom AS g FROM seg
 )

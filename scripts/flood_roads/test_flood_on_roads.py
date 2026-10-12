@@ -256,6 +256,18 @@ class FloodOnRoadsTests(unittest.TestCase):
         self.assertEqual(result.target_table, "flood_road_values_shadow")
         self.assertEqual(result.rows, 8)
 
+    def test_shadow_target_does_not_register_forecast_times(self):
+        """A registered forecast time makes the run routing's winner for it, and a shadow run has
+        no rows in flood_road_values, so it must neither add its times nor erase the real run's."""
+        self.standard_run()
+        flood_on_roads.create_shadow_table(self.conn, "flood_road_values_shadow")
+        flood_on_roads.compute(self.conn, RUN, target_table="flood_road_values_shadow")
+        self.assertEqual([times for _, _, times in self.registry()], [None])
+
+        flood_on_roads.compute(self.conn, RUN)
+        flood_on_roads.compute(self.conn, RUN, target_table="flood_road_values_shadow")
+        self.assertEqual([times for _, _, times in self.registry()], [[T1_LOCAL, T2_LOCAL]])
+
     def registry(self):
         with self.conn, self.conn.cursor() as cur:
             cur.execute("SELECT source_file, feature_count, forecast_times FROM flood_road_file ORDER BY id")

@@ -141,12 +141,13 @@ GROUP BY s.segment_id
 """
 
 _REGISTER_SQL = """
-INSERT INTO flood_road_file (timestamp, source_file, geojson_type, feature_count)
-VALUES (%(timestamp)s, %(source_file)s, NULL, %(feature_count)s)
+INSERT INTO flood_road_file (timestamp, source_file, geojson_type, feature_count, forecast_times)
+VALUES (%(timestamp)s, %(source_file)s, NULL, %(feature_count)s, %(forecast_times)s::timestamp[])
 ON CONFLICT (source_file) DO UPDATE SET
     timestamp = EXCLUDED.timestamp,
     geojson_type = EXCLUDED.geojson_type,
-    feature_count = EXCLUDED.feature_count
+    feature_count = EXCLUDED.feature_count,
+    forecast_times = coalesce(EXCLUDED.forecast_times, flood_road_file.forecast_times)
 RETURNING id
 """
 
@@ -154,9 +155,9 @@ _DELETE_SQL = """
 DELETE FROM {target} WHERE timestamp = %(timestamp)s AND forecast_time = ANY(%(forecast_times)s)
 """
 
-# A piece wet at any timestep of the run gets a row at every timestep, 0 where it is dry. routing's
-# winner run for a forecast_time is the newest run with rows at that time, and flood_metrics reads
-# each piece's full series.
+# A piece wet at any timestep of the run gets a row at every timestep, 0 where it is dry, so
+# flood_metrics reads each piece's full series. routing's winner run for a forecast_time comes from
+# flood_road_file.forecast_times, so a run with no wet piece still wins its times.
 _INSERT_SQL = """
 WITH wet AS (
     SELECT segment_id FROM piece_depth GROUP BY segment_id HAVING max(depth) > 0
@@ -212,12 +213,18 @@ def compute(conn, run_ts: str, target_table: str = DEFAULT_TARGET) -> ComputeRes
         cur.execute("SELECT count(DISTINCT segment_id) FROM piece_depth WHERE depth > 0")
         piece_rows = cur.fetchone()[0]
 
+        forecast_times = [v + VIETNAM_UTC_OFFSET for v in valid_times]
         cur.execute(
             _REGISTER_SQL,
-            {"timestamp": timestamp, "source_file": f"flood_on_roads_{run_ts}", "feature_count": piece_rows},
+            {
+                "timestamp": timestamp,
+                "source_file": f"flood_on_roads_{run_ts}",
+                "feature_count": piece_rows,
+                # A registered time makes this run routing's winner for it, so a shadow run registers none.
+                "forecast_times": forecast_times if target_table == DEFAULT_TARGET else None,
+            },
         )
         file_id = cur.fetchone()[0]
-        forecast_times = [v + VIETNAM_UTC_OFFSET for v in valid_times]
         cur.execute(
             sql.SQL(_DELETE_SQL).format(target=target),
             {"timestamp": timestamp, "forecast_times": forecast_times},
