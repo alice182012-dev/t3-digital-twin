@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-112"
 title: "Keep the edge depth files to the newest 8 runs"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P3
 estimate: S
@@ -46,6 +46,7 @@ Estimate: S.
   Sized S (2 points), with no dependency. Picked for Sprint 13.
 - **2026-10-12, In progress.** The code default (`dags/routing_adapter_dag.py`) and the `compose.yml` default are 8, with a test for each, and the two pages are updated. The server `.env` change waits for the owner's go.
 - **2026-10-12, Reviewed.** Pushed, pulled, and set on the server with the owner's go (details items 3 to 5). It waits for the server screenshot and the owner's acceptance.
+- **2026-10-12, Done.** The product owner accepted it after the server screenshot.
 
 ## Evidence and details
 
@@ -63,4 +64,4 @@ Estimate: S.
 6. The 92 files removed include the 58 edge depth files of the storm replay. They are kept in the test dataset (`snapshot/edge_depth`, 58 files, checksums verified in [[US-124-save-the-storm-replay-results-and-derived-data|US-124]]). The other 34 were older files of the second replay.
 7. Not shown: a real run of `9c` pruning to 8 by itself. The next run reads the same value from the worker environment, and the story records it when it happens.
 8. The server screenshot is saved as `us-112-server-check-output.png`. It shows `.env` and the worker at 8, 8 files with `latest` among them, `graphhopper` seeing the same 8 files, FRESH, the two pages at 8, and the 58 storm-replay files in the snapshot.
-9. Open for `Done`: the owner's acceptance.
+9. Accepted by the owner on 2026-10-12.

@@ -10,12 +10,12 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 15 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. In progress: [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S). The code and the two pages are done. The server `.env` change (`EDGE_TABLE_KEEP_RUNS` 100 to 8) waits for the owner's go. [[US-109-run-an-analysis-service-in-its-own-container|US-109]] and [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] are `Done`. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
-2. After US-112: [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S).
-3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] waits in the backlog for the spike's decision.
-4. Owner items. The planning did not touch the server.
+1. Next: [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S), the last pick of the sprint. Four picks are `Done` ([[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]]), 10 of 15 points. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
+2. In the backlog, accepted decisions: [[decision-log|D-038]] (replace `flood_road_values`, stories [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] to [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]) and [[decision-log|D-039]] (the storm test dataset, stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]]). A story gets `sprint` only at sprint planning.
+3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
+4. Owner items.
    - The flag for [[decision-log|D-034]] is on. The owner gave the go on 2026-10-12, and the server read-back of that day shows `TIME_AWARE_ROUTING=true` for `floodmap-backend` (see [[decision-log|D-034]]).
-   - The server `.env` change for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (count 8) waits for the owner's go too.
+   - The server `.env` of 2026-10-12 has `EDGE_TABLE_KEEP_RUNS=8` and the two analysis passwords. The backup is `.env.bak-2026-10-12-us112`.
    - The 50 GB floor is set ([[decision-log|D-037]]). The lowered rain gate that [[decision-log|D-035]] allowed was withdrawn the same day ([[decision-log|D-037]]), so the gate stays at 5 mm/h.
    - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is not in Sprint 13 and has no sprint. It waits in the backlog for a real forecast above 5 mm/h.
    - The owner reads the "Decided by" line of [[decision-log|D-031]].
@@ -29,17 +29,12 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Sprint file:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]
 
 **Status:** active.
-15 points picked, 8 done.
+15 points picked, 10 done.
 
 ### Reviewed - US-106 Write per-segment depth history to TimescaleDB
 
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-112 Keep the edge depth files to the newest 8 runs
-
-**Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
-P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-104 Compare the two inputs of the flood tile build
 
@@ -60,6 +55,11 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 **Story:** [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
 P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Done - US-112 Keep the edge depth files to the newest 8 runs
+
+**Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
+P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
