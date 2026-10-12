@@ -10,8 +10,8 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 15 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] is `Done`, and the owner accepted [[decision-log|D-038]] (replace `flood_road_values` with the edge depth table, in stages, US-116 to US-123 in the backlog). [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a) is `In progress`, keyed by `segment_id`, and [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it later.
-2. After US-106: [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S).
+1. In progress: [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M). [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] is `Done` and deployed. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance. [[decision-log|D-038]] is active and its stories are US-117 to US-123 in the backlog.
+2. After US-109: [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S).
 3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] waits in the backlog for the spike's decision.
 4. Owner items. The planning did not touch the server.
    - The flag for [[decision-log|D-034]] is on. The owner gave the go on 2026-10-12, and the server read-back of that day shows `TIME_AWARE_ROUTING=true` for `floodmap-backend` (see [[decision-log|D-034]]).
@@ -31,6 +31,11 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Status:** active.
 15 points picked, 5 done.
 
+### In progress - US-109 Run an analysis service in its own container
+
+**Story:** [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
+P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
 ### Reviewed - US-106 Write per-segment depth history to TimescaleDB
 
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
@@ -40,11 +45,6 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 **Story:** [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]].
 P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]], spike.
-
-### Ready - US-109 Run an analysis service in its own container
-
-**Story:** [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
-P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 ### Ready - US-112 Keep the edge depth files to the newest 8 runs
 
@@ -63,7 +63,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-26 stories.
+25 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -72,8 +72,6 @@ The top 10 by priority:
   Backfill per-segment depth history from flood_road_values
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
-- [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], P1, S, Reviewed.
-  Let a run with no wet road piece win the winner query
 - [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], P1, M, Not started.
   Export a stable key with each graph edge
 - [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, Not started.
@@ -86,6 +84,8 @@ The top 10 by priority:
   Match the depth chart columns and the route tab text to screen 2e
 - [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
   Show the place names on the start and destination pins
+- [[US-084-design-the-no-route-and-wait-until|US-084]], P2, M, Not started.
+  Design the no-route and "wait until" states, then match the UI to the design
 
 ## Open blockers
 

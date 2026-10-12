@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-116"
 title: "Let a run with no wet road piece win the winner query"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: bug
 priority: P1
 estimate: S
@@ -38,6 +38,7 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 - **2026-10-12, draft.** Found at Sprint 13 planning. It stays in the backlog until the spike decides the method, so the fix is not thrown away.
 - **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. Reproduced on a throwaway PostGIS (`imresamu/postgis:17-3.5`, on the server, reached through a tunnel) with the real `flood_on_roads` writer and the real backend: an older wet run (`20260924T164803`) and a newer dry run (`20260924T170303`) that overlap at local 17:03:03. `GET /flood/areas?valid_time=2026-09-24T17:03:03` returned 1 `b4` feature from the older run, where the newest run is dry. The time 16:48:03, which only the older run covers, returned the same feature, and 17:18:03 returned none.
 - **2026-10-12, Reviewed.** Fixed on `modular`, pushed, and deployed on the server, with the checks in details items 10 to 13. It waits for the server screenshot and the owner's acceptance.
+- **2026-10-12, Done.** The product owner accepted it after the server screenshot.
 
 ## Evidence and details
 
@@ -62,4 +63,4 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 13. Checked on the server, `GET /flood/areas` inside the container, `run=latest` against the same run pinned. Two runs cover the times 00:15 to 01:45 of 2026-10-11: `2026-10-11T00:00:00` and `2026-10-11T00:15:00`. For the 6 times that both cover (00:15 to 01:30) and both vehicles, 12 requests in all, the answer for `latest` equals the answer for the newest run, by feature count and by a hash of the geometry. The two runs differ at 00:45 for the motorbike (374 against 373 features), at 01:15 for both vehicles, and at 01:30 for both vehicles, so `latest` is the newest run there and not the older one. 0 mismatches. A time that no run covers (2026-10-12 09:00) returns 0 features.
 14. Not shown on the server: a dry newest run, because the server has none and the check does not write to its tables. The dry case is shown by the reproduction on the throwaway PostGIS (item 5).
 15. The server screenshot is saved as `us-116-server-check-output.png`. The command is `bash artifacts/docs/stories/evidence/us-116-server-check.sh` from the Mac, and it is read-only. It shows the checkout `d100d6e`, the backend as `routing_reader`, 75 of 75 runs with `forecast_times`, the grant, and 0 mismatches in 12 requests.
-16. Open for `Done`: the owner's acceptance.
+16. Accepted by the owner on 2026-10-12.
