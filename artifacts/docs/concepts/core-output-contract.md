@@ -287,7 +287,7 @@ The timing of the asset trigger on the server is still being read (`US-073`).
 | `flood_road_values` | Rows older than `FLOOD_ROAD_VALUES_KEEP_HOURS` (default 24) before the newest run, pruned by the task `prune_flood_road_values` (US-086, D-017) | 45 runs and 1,087,512 rows after the first prune on 2026-10-09, from 413 runs and 14,836,828 rows (7,398 MB). After `VACUUM FULL` the table with its indexes is 537 MB |
 | `flood_run_output` (US-108) | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, task `9_build_flood_tiles` |
 | `graph_edge` | The loaded graph | `graph_edges.py` |
-| Edge depth files | Newest 3 runs | `EDGE_TABLE_KEEP_RUNS`, `publish_edge_depth.py` |
+| Edge depth files | Newest 8 runs | `EDGE_TABLE_KEEP_RUNS`, `publish_edge_depth.py` |
 
 The prunes of the four run tables and the bucket keep the run being published, even when it is older than the newest 8.
 The prune of the edge depth files keeps the file that `latest` names (`_retain` in `scripts/edge_depth/publish_edge_depth.py`).
