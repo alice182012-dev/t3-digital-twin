@@ -564,7 +564,7 @@ is the maximum.
 ## D-035: Set the archive free-space floor at 50 GB, and allow a lowered rain gate to prove the archive
 
 - **Date:** 2026-10-12
-- **Status:** active.
+- **Status:** superseded by D-037.
 - **Decided by:** The product owner, on 2026-10-12, at Sprint 13 planning (open decisions 1 and 2 of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]).
 - **Decision:** The free-space floor `ARCHIVE_MIN_FREE_GB` is 50 GB.
   The copy fails loudly when the free space of D: is below it ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]).
@@ -592,3 +592,20 @@ is the maximum.
 - **Evidence:** [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]], Evidence item 5, which found that a run that wets no piece writes no rows.
 - **Affects:** [[US-113-backfill-per-segment-depth-history|US-113]], [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], and [[decision-log|D-032]].
 - **Revisit if:** [[US-113-backfill-per-segment-depth-history|US-113]] finds that the moments of such a run cannot be read from any source the team keeps.
+
+## D-037: Withdraw the lowered rain gate of D-035, and keep the 50 GB floor
+
+- **Date:** 2026-10-12
+- **Status:** active. It supersedes [[decision-log|D-035]], and the 50 GB floor that D-035 set stays active here.
+- **Decided by:** The product owner, on 2026-10-12, the same day as D-035, after saying that no rain is expected.
+- **Decision:** The lowered rain gate that [[decision-log|D-035]] allowed is withdrawn, and no lowered gate is set.
+  The rain gate of 5 mm/h stays for [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
+  The 2026-10-23 cutoff is removed.
+  The free-space floor `ARCHIVE_MIN_FREE_GB` is 50 GB, and it stays active.
+- **Why:** The owner said that no rain is expected, so the proof in [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] waits for a real forecast above 5 mm/h.
+  The owner kept the 5 mm/h gate, and the planning input gave no other reason.
+- **Alternatives:** None were recorded on 2026-10-12.
+- **Evidence:** The product owner's answer on 2026-10-12, and the D-035 entry, which keeps the earlier wording as the record.
+  [[US-094-archive-results-3di-nc-and-a-run|US-094]] sets the default of `ARCHIVE_MIN_FREE_GB` to 50.
+- **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], and the Next action block of [[TODOS]].
+- **Revisit if:** the product owner sets a value for a lowered gate, or D: falls below the floor during the archive proof.

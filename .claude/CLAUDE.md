@@ -120,10 +120,9 @@ Check `artifacts/raw/ideas/` for a matching idea first.
 Move finished work to where it belongs (`scripts/`, `dags/`, a decision, a concept page).
 Log a concluded experiment in the day's log.
 
-## Vault edits go to the vault-writer agent
+## Vault edits are made in the main session
 
-Delegate every edit under `artifacts/` (logs, stories, sprints, concepts, blockers, decisions, lessons) to the `vault-writer` agent (`.claude/agents/vault-writer.md`, Haiku).
-Keep the brief short: the story ID, the task, and the date. The agent reads `git log`, `git diff`, and the story file for the rest.
-Add a sentence only for a fact that exists nowhere in the repo, such as a measured number, a server result, or a user decision.
-Read what it wrote before you report it as done.
-Edit code, DAGs, and scripts yourself. The agent does not touch them.
+Edit every file under `artifacts/` (logs, stories, sprints, concepts, blockers, decisions, lessons) yourself.
+Do not delegate vault edits to the `vault-writer` agent (`.claude/agents/vault-writer.md`).
+The product owner turned it off on 2026-10-12 because it used too many tokens.
+Read the story file and `git diff` before you write, and keep each edit small.

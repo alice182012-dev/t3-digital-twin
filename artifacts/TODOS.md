@@ -16,7 +16,8 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 4. Owner items. The planning did not touch the server.
    - The flag for [[decision-log|D-034]] is on. The owner gave the go on 2026-10-12, and the server read-back of that day shows `TIME_AWARE_ROUTING=true` for `floodmap-backend` (see [[decision-log|D-034]]).
    - The server `.env` change for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (count 8) waits for the owner's go too.
-   - The 50 GB floor and the lowered rain gate are set ([[decision-log|D-035]]), and the lowered gate's value is not set. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is in the backlog with no sprint, and it waits for a forecast above 5 mm/h, or for the lowered gate if no forecast passes 5 mm/h by 2026-10-23.
+   - The 50 GB floor is set ([[decision-log|D-037]]). The lowered rain gate that [[decision-log|D-035]] allowed was withdrawn the same day ([[decision-log|D-037]]), so the gate stays at 5 mm/h.
+   - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is not in Sprint 13 and has no sprint. It waits in the backlog for a real forecast above 5 mm/h.
    - The owner reads the "Decided by" line of [[decision-log|D-031]].
 5. The review is on 2026-10-25. A story that is not `Done` at the review leaves the sprint.
 <!-- next-action:end -->
