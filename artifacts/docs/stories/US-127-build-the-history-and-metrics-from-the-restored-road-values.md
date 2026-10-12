@@ -34,11 +34,11 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 - **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-125-restore-the-snapshot-into-test-databases|US-125]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] are `Reviewed` and not `Done`, and the owner agreed to build against them. At most two stories were `In progress` ([[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and this one).
 - **2026-10-12, Reviewed.** Built, tested, and run on the server (details item 1 to 6). Its `Done` waits for the `Done` of US-125 and US-106, a server screenshot, and the owner's acceptance.
 
-- **2026-10-12, Done.** The product owner accepted it. The terminal screenshot was not saved before the acceptance, so the evidence is the captured output of the two server runs (`us-127-server-check-output.txt`). Save `us-127-server-check-output.png` from a run of the script when convenient.
+- **2026-10-12, Done.** The product owner accepted it. The terminal screenshot was not saved before the acceptance, so the evidence is the captured output of the two server runs (`us-127-server-check-output.txt`). The screenshot was saved later the same day (`us-127-server-check-output.png`).
 
 ## Evidence and details
 
-**Evidence:** `artifacts/docs/stories/evidence/us-127-server-check-output.txt`, the output of two runs on the server on 2026-10-12. There is no screenshot yet.
+**Evidence:** `artifacts/docs/stories/evidence/us-127-server-check-output.png`, a screenshot of a read-only check of the server on 2026-10-12 17:35 +07 (the script is `marie-curie/us-125-127/us127.sh`), and `us-127-server-check-output.txt`, the output of the two build runs. The screenshot shows 219,174 rows and 65 moments in `depth_history` and `history_moment`, the compression ratio of 9.7, 786,956 metric rows over 58 runs, and the unchanged production counts.
 
 **Details:**
 
