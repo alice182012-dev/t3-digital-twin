@@ -207,9 +207,9 @@ One row is one edge of the GraphHopper graph.
 | Column | Type | Nullable |
 | ------ | ---- | -------- |
 | `edge_id` | `integer` | no |
-| `edge_key` | `text` | yes |
 | `length_m` | `double precision` | no |
 | `geom` | `geometry(LineString,4326)` | no |
+| `edge_key` | `text` | yes |
 
 - **Key.** The primary key is `edge_id`, GraphHopper's own edge id.
   It changes when the graph is imported again (`scripts/database/create_graph_edge_table.py:8-20`).
