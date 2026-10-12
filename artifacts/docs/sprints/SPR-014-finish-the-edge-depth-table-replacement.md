@@ -3,11 +3,11 @@ date: 2026-10-12
 type: sprint
 sprint_id: "SPR-014"
 sprint: 14
-start_date: 2026-10-26
-end_date: 2026-11-08
-status: planning
+start_date: 2026-10-12
+end_date: 2026-10-25
+status: active
 tags: [sprint]
-related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[decision-log|D-038]]"]
+related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[decision-log|D-038]]", "[[decision-log|D-040]]"]
 ---
 
 # SPR-014 Sprint 14: Finish the edge depth table replacement
@@ -20,18 +20,25 @@ Confirmed by the product owner on 2026-10-12. The goal does not change after the
 
 ## Planning
 
-- **Dates.** The sprint runs two weeks, from Monday 2026-10-26 to Sunday 2026-11-08, the Monday after [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ends ([[decision-log|D-026]]). Planning is on 2026-10-26.
-- **Velocity.** Read [[Velocity]] after the review of Sprint 13 on 2026-10-25, and set the forecast then.
-- **Picked stories.** None yet. A story gets `sprint: 14` only at planning, so no story has it today.
-- **Candidates.** The open stories of [[decision-log|D-038]], in the order of their dependencies. They total 11 points, plus the rest of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] if it is not `Done` by then.
+- **Dates.** The sprint runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25. It started on the day [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ended early, at the product owner's request ([[decision-log|D-040]]).
+- **Velocity.** The last sprints gave 15, 25, and 10 points ([[Velocity]]), and the last one lasted one day. The forecast stays at 16 points, as the product owner set it for Sprint 13.
+- **Picks.** Seven stories make 17 points. Each one is `Ready` (the INVEST check of [[scrum-framework]]), and the sum passes the forecast with the last pick, as the rule asks. The table lists them in the order to start them.
 
-| Order | Story | Title | Estimate | Status on 2026-10-12 |
-| ----- | ----- | ----- | -------- | -------------------- |
-| 1 | [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table\|US-120]] | Read the rain gate and the soak checks from the edge table | S | Not started |
-| 2 | [[US-121-read-the-flood-metrics-from-the-edge-table\|US-121]] | Read the flood metrics from the edge table | M | Not started |
-| 3 | [[US-122-point-depth-history-at-the-edge-table\|US-122]] | Point depth_history at the edge table | S | Not started |
-| 4 | [[US-123-delete-flood-on-roads-and-flood-road-values\|US-123]] | Delete flood_on_roads, road_segment, and flood_road_values | S | Not started |
+| Order | Story | Title | Estimate | Points | Depends on |
+| ----- | ----- | ----- | -------- | ------ | ---------- |
+| 1 | [[US-118-write-the-edge-depth-to-a-queryable-table\|US-118]] | Write the edge depth to a queryable table | M | 3 | none, in progress since 2026-10-12 |
+| 2 | [[US-106-keep-per-segment-depth-history-in-timescaledb\|US-106]] | Write per-segment depth history to TimescaleDB (part a) | M | 3 | none, `Reviewed` |
+| 3 | [[US-113-backfill-per-segment-depth-history\|US-113]] | Backfill per-segment depth history | S | 2 | US-106 |
+| 4 | [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table\|US-120]] | Read the rain gate and the soak checks from the edge table | S | 2 | US-118 |
+| 5 | [[US-121-read-the-flood-metrics-from-the-edge-table\|US-121]] | Read the flood metrics from the edge table | M | 3 | US-118 |
+| 6 | [[US-122-point-depth-history-at-the-edge-table\|US-122]] | Point depth_history at the edge table | S | 2 | US-118, US-106, US-113 |
+| 7 | [[US-123-delete-flood-on-roads-and-flood-road-values\|US-123]] | Delete flood_on_roads, road_segment, and flood_road_values | S | 2 | US-119 (`Done`), US-120, US-121, US-122 |
+| | | Total | | 17 | |
 
+- **Why these.** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] needs every reader moved, and [[US-122-point-depth-history-at-the-edge-table|US-122]] needs [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] and [[US-113-backfill-per-segment-depth-history|US-113]] `Done`. So the goal needs all seven.
+- **Risk.** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] needs one event-triggered `flood_history` run, which needs a real or test-rain run. If none happens by the end of the week, [[US-113-backfill-per-segment-depth-history|US-113]], [[US-122-point-depth-history-at-the-edge-table|US-122]], and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] cannot finish, and the product owner decides whether to start a test-rain run.
+- **Work in progress.** At most two stories are `In progress` at once. Only [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is, on 2026-10-12.
+- **Done outside the plan.** [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done on 2026-10-12 before this sprint was planned. They have no `sprint`, and their points are not in [[Velocity]].
 - **Open decisions.** None.
 
 ## Sprint backlog
@@ -45,7 +52,7 @@ SORT priority ASC, file.name ASC
 
 ## Review
 
-Fill this on 2026-11-08. Walk through each story that is `Done` by its evidence screenshot, and record the product owner's accept or reject.
+Fill this on 2026-10-25. Walk through each story that is `Done` by its evidence screenshot, and record the product owner's accept or reject.
 
 - **Goal met:** yes or no, with one sentence.
 - **Points delivered:** N of N forecast.
@@ -66,4 +73,5 @@ The top of the backlog after this review: the order, the stories split, and the 
 
 ## Status history
 
-- **2026-10-12, planning.** Created at the product owner's request, with the goal "Finish D-038". The product owner confirmed the goal the same day. The sprint has no picked story, and the dates are fixed.
+- **2026-10-12, planning.** Created at the product owner's request, with the goal "Finish D-038". The product owner confirmed the goal the same day.
+- **2026-10-12, active.** The product owner ended [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] early and started this sprint the same day, from 2026-10-12 to 2026-10-25 ([[decision-log|D-040]]). Seven stories are picked, with `sprint: 14`, and they make 17 points.

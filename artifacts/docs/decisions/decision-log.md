@@ -654,3 +654,14 @@ is the maximum.
 - **Affects:** [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]], the stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]], and the open compression measurement of [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 - **Revisit if:** the restored test databases fill the Docker disk on C:, the model or the graph changes (the dataset then needs a new model and graph hash), or a test needs a storm with a dry run.
 
+## D-040: End Sprint 13 early and start Sprint 14 on 2026-10-12
+
+- **Date:** 2026-10-12
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, who asked to make Sprint 14 the current sprint and chose to end Sprint 13 early and start Sprint 14 the same day, over keeping the fixed dates.
+- **Decision:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ends on 2026-10-12 with its review. [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] is `active` from 2026-10-12 to 2026-10-25, two weeks, with the goal "Finish D-038". A story of Sprint 13 that is not `Done` leaves the sprint, and the stories picked for Sprint 14 get `sprint: 14`.
+- **Why:** The sprint goal of Sprint 13 ("EP-21 foundation") was reached except for [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]]. The work that followed, the stories of [[decision-log|D-038]], is a different goal, and the owner wants the sprint to say so.
+- **Alternatives:** (1) Keep the dates of [[decision-log|D-026]], and start Sprint 14 on 2026-10-26. Not chosen. (2) Start Sprint 14 now and keep it two weeks from today. This is the choice, and its end falls on the same Sunday as Sprint 13.
+- **Evidence:** the Review section of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] and the Planning section of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]].
+- **Affects:** [[decision-log|D-026]], which fixes a sprint's dates after it starts. This decision is an exception, and Sprint 13 lasted one day. [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done outside the plan, have no `sprint`, and so do not count in [[Velocity]].
+- **Revisit if:** a second early end happens, which would show that the planning of the sprint is too coarse.

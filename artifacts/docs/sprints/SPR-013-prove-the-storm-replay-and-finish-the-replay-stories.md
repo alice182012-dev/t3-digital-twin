@@ -4,8 +4,8 @@ type: sprint
 sprint_id: "SPR-013"
 sprint: 13
 start_date: 2026-10-12
-end_date: 2026-10-25
-status: active
+end_date: 2026-10-12
+status: done
 tags: [sprint]
 related: ["[[scrum-framework]]", "[[Velocity]]", "[[decision-log|D-024]]", "[[decision-log|D-033]]", "[[decision-log|D-034]]"]
 ---
@@ -189,15 +189,20 @@ SORT priority ASC, file.name ASC
 
 ## Review
 
-Fill this on 2026-10-25.
+Ended early on 2026-10-12 at the product owner's request ([[decision-log|D-040]]).
+
+- **Goal met:** no. The industry apps can run analysis in their own container ([[US-109-run-an-analysis-service-in-its-own-container|US-109]]), but [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed` and waits for one event-triggered `flood_history` run, so flood history is not yet proven.
+- **Points delivered:** 10 of 13 picked, against a forecast of 16. [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], and [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] are `Done`.
+- **Not done:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] left the sprint and is picked again for Sprint 14, where [[US-122-point-depth-history-at-the-edge-table|US-122]] depends on it.
+- **Estimate misses:** none recorded. The sprint lasted one day, so the points do not measure a two-week sprint.
 
 ## Retrospective
 
-Fill this on 2026-10-25.
+Not held. The sprint ended after one day, and the retrospective moves to the review of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] on 2026-10-25.
 
 ## Refinement for the next sprint
 
-Fill this on 2026-10-25.
+Done at the start of [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]]: the stories of [[decision-log|D-038]] are ordered by their dependencies, and the open ones are `Ready` and picked.
 
 ## Status history
 
@@ -214,3 +219,4 @@ Fill this on 2026-10-25.
 
 - **2026-10-12, active.** The product owner archived [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] after the first answer, and the story is `Superseded` with an empty `sprint`. A client cannot use a GeoTIFF, and nothing needs the tile build off the worker's disk. The sprint holds five picks and 13 points, four of them `Done` (10 of 13 points). The goal does not change.
 - **2026-10-12, active.** At the owner's request, [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] was started outside the sprint plan. None of the three has a `sprint`, their points are not in the forecast, and the goal does not change.
+- **2026-10-12, done.** The product owner ended the sprint early and started [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] the same day ([[decision-log|D-040]]). The review is above. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] left the sprint, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] had left it as `Superseded`.

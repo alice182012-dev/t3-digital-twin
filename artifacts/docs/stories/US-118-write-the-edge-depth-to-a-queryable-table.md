@@ -8,7 +8,7 @@ status: In progress
 kind: story
 priority: P1
 estimate: M
-sprint: 
+sprint: 14
 subsystem: routing, flood-data, core-output
 source_ideas: []
 related: ["[[decision-log|D-038]]", "[[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]"]
@@ -42,6 +42,7 @@ Dependencies: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Don
 - **2026-10-12, In progress.** Built and tested, not deployed. `9c` writes the rows and the registry before the file (commit "Write the wet edges of each run to edge_depth with a run registry"), and 135 `edge_depth` tests pass against the real PostGIS. The added time was measured on the 8 stored storm runs (details item 2). The server does not have the code yet. Still open: push and pull, the first real `9c` run with the tables, and the check over 50 consecutive runs.
 - **2026-10-12, In progress.** Pushed and pulled on the server (`--ff-only` from `alice`, head `10338a4`). `create_edge_depth_tables.py` was run by hand, so `edge_depth_run` and `edge_depth` exist and are empty, and a `routing_adapter` run before the next `flood_mapping_full` run cannot fail on a missing table. Airflow has no import errors and `check_tables.py` reports `FRESH`. The next real `9c` run writes the first rows. `EDGE_DEPTH_KEEP_HOURS` is in `compose.yml` and reaches the containers when they are recreated, and the code default is the same 24.
 - **2026-10-12, In progress.** While testing [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], `build_edge_depth.py` wrote live rows for two stored storm runs by hand, without `--publish`. Still open: the first real `9c` run that writes rows, and the check over 50 consecutive runs.
+- **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] at the product owner's request.
 
 ## Evidence and details
 
