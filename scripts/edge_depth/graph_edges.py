@@ -141,22 +141,35 @@ ON CONFLICT (singleton) DO UPDATE SET
 """
 
 
+def _is_loaded(cur, export: GraphExport) -> bool:
+    """True when graph_edge holds this export: the same hash, and every edge has its key when the
+    export carries keys. A graph imported again from the same OSM file has the same hash, so the
+    first format 3 export of it still has to fill the keys."""
+    cur.execute("SELECT graph_hash FROM graph_edge_export")
+    row = cur.fetchone()
+    if not row or row[0] != export.graph_hash:
+        return False
+    if export.format_version < _EDGE_KEY_FORMAT_VERSION:
+        return True
+    cur.execute("SELECT EXISTS (SELECT 1 FROM graph_edge WHERE edge_key IS NULL)")
+    return not cur.fetchone()[0]
+
+
 def load_graph_edges(conn, export: GraphExport) -> bool:
-    """Replaces graph_edge with the export when its hash differs from the loaded one. Returns True
-    when it loaded and False when graph_edge already held this export.
+    """Replaces graph_edge with the export unless graph_edge already holds it (see _is_loaded).
+    Returns True when it loaded and False when graph_edge already held this export.
 
     The rows are read and checked before the database is touched, and the replacement is one
     transaction, so a broken file or a bad geometry leaves the previous graph in place."""
-    if loaded_hash(conn) == export.graph_hash:
-        return False
+    with conn, conn.cursor() as cur:
+        if _is_loaded(cur, export):
+            return False
     rows = list(iter_edges(export))
     with conn, conn.cursor() as cur:
         # Two tasks of overlapping runs can both see a new hash. The second one waits, then finds
         # the hash already loaded and replaces nothing.
         cur.execute("SELECT pg_advisory_xact_lock(hashtext('graph_edge'))")
-        cur.execute("SELECT graph_hash FROM graph_edge_export")
-        current = cur.fetchone()
-        if current and current[0] == export.graph_hash:
+        if _is_loaded(cur, export):
             return False
         cur.execute("TRUNCATE graph_edge")
         execute_values(cur, _INSERT_SQL, rows, page_size=_PAGE_SIZE)

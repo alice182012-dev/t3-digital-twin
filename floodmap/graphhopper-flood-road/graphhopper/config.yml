@@ -35,10 +35,11 @@ graphhopper:
     - profile: foot
 
   # Union of what motorbike.json (upstream motorcycle.json), car.json, truck.json
-  # and foot_custom.json need.
+  # and foot_custom.json need, plus osm_way_id, which ExportEdges reads for the stable edge_key (US-117).
+  # osm_way_id is a 31-bit int: the import fails for an OSM way id above 2,147,483,647.
   graph.encoded_values: car_access, car_average_speed, road_access, road_class, track_type, surface,
     max_speed, ferry_speed, hgv, max_width, max_height, max_weight, max_weight_except, road_environment,
-    foot_access, foot_average_speed, foot_road_access
+    foot_access, foot_average_speed, foot_road_access, osm_way_id
 
   prepare.min_network_size: 200
 

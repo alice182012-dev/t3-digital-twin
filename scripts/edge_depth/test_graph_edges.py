@@ -282,6 +282,31 @@ class LoadGraphEdgesTests(unittest.TestCase):
             cur.execute("SELECT edge_key FROM graph_edge ORDER BY edge_id")
             self.assertEqual([row[0] for row in cur.fetchall()], ["200:0", "100:0", "102:0"])
 
+    def test_the_same_hash_with_keys_fills_the_keys_of_an_earlier_export_without_them(self):
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir, format_version=2)))
+        keyed = Path(self.tmp.name) / "keyed"
+        write_export(keyed, format_version=3)
+
+        loaded = graph_edges.load_graph_edges(self.conn, graph_edges.read_export(keyed))
+
+        self.assertTrue(loaded)
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT edge_key FROM graph_edge ORDER BY edge_id")
+            self.assertEqual([row[0] for row in cur.fetchall()], ["100:0", "101:0", "102:0"])
+
+    def test_a_keyed_export_is_not_loaded_twice(self):
+        export = graph_edges.read_export(write_export(self.dir, format_version=3))
+        graph_edges.load_graph_edges(self.conn, export)
+
+        self.assertFalse(graph_edges.load_graph_edges(self.conn, export))
+
+    def test_an_export_without_keys_does_not_reload_a_keyed_table(self):
+        graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir, format_version=3)))
+        plain = Path(self.tmp.name) / "plain"
+        write_export(plain, format_version=2)
+
+        self.assertFalse(graph_edges.load_graph_edges(self.conn, graph_edges.read_export(plain)))
+
     def test_length_is_in_metres(self):
         graph_edges.load_graph_edges(self.conn, graph_edges.read_export(write_export(self.dir)))
 
