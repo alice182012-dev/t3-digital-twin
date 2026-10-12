@@ -41,7 +41,9 @@ Dependencies: US-107, US-108.
 
 ## Evidence and details
 
-**Evidence:** tests on throwaway PostGIS and TimescaleDB containers (removed afterwards) and the read-only state of the server. No server screenshot yet, because nothing is deployed.
+**Evidence:** the server capture of 2026-10-12 13:03 +07, from the Mac, and tests on throwaway PostGIS and TimescaleDB containers (removed afterwards).
+
+![[us-109-server-check-output.png|900]]
 
 **Details:**
 
@@ -55,4 +57,5 @@ Dependencies: US-107, US-108.
 8. Deployed on 2026-10-12 with the owner's go, in the order of item 6. `modular` was pushed (`d100d6e` to `552ca9f`) and pulled by fast-forward, and the owner had added both passwords to the server `.env`. `create_analysis_schema.py` printed that `analysis_owner` owns schema `analysis`, and `create_timescale_reader_role.py` printed that `analysis_timescale_reader` can read `depth_history` and `history_moment`. The owner built the image and started the service from the server desktop (`docker compose build analysis`, then `up -d --no-deps analysis`).
 9. The check script `artifacts/docs/stories/evidence/us-109-server-check.sh`, run by the owner from the Mac at 13:03 +07, printed: the container `airflow_new-analysis-1` up on `127.0.0.1:8020`; `GET /health` returning `{"run_ts": "20261011T001500"}`; with the service's own credentials, `analysis_reader` reads `flood_run_output` and is denied a write to `flood_road_values`, `analysis_owner` creates a table in schema `analysis` and is denied one in `public`, and `analysis_timescale_reader` reads `depth_history` and is denied a write; 0 variables named THREEDI, TOMORROW, MINIO, or ORG_UUID in the container environment; and the root `Dockerfile` and `requirements.txt` unchanged against `main`.
 10. Checked afterwards, read only: no table `us109_probe` exists and schema `analysis` has no table, because the probes ran in rolled-back transactions. The container stays up, its log shows the health request answered with 200, and no service is in `Created` or `Restarting`.
-11. Open for `Done`: the server screenshot of item 9, saved as `us-109-server-check-output.png` in `artifacts/docs/stories/evidence/`, and the owner's acceptance.
+11. The server screenshot of item 9 is saved as `us-109-server-check-output.png`.
+12. Open for `Done`: the owner's acceptance.
