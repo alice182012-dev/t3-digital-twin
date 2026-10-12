@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-104"
 title: "Compare the two inputs of the flood tile build"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Reviewed
+status: In progress
 kind: spike
 priority: P2
 estimate: S
@@ -46,6 +46,7 @@ The modes write the same bucket and the same rows, so run one at a time, with `f
   `compose.yml` passes `FLOOD_TILES_INPUT` (default `files`) to the Airflow containers. A switch means a new value in the server `.env` and a recreate of the scheduler and the DAG processor, since DAG files read it at parse time.
 - **2026-10-12, Ready.** The dependency [[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]] is `Done`, so the story passes the INVEST check. Picked for Sprint 13 at S (2 points).
 - **2026-10-12, Reviewed.** Answered with 5 paired runs, and the owner called the answer clear after the fifth. The `files` mode stays. The `postgis` mode builds no tiles as shipped ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]), and the fixed variant is slower and fails the output check. [[decision-log|D-027]] is updated. Waits for the owner's acceptance.
+- **2026-10-12, In progress.** The owner rejected the answer at review. The reason is not recorded yet. The result under Evidence and details is the first attempt, and the story stays in Sprint 13.
 
 ## Evidence and details
 
