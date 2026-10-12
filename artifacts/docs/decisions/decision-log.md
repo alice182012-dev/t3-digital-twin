@@ -613,8 +613,8 @@ is the maximum.
 ## D-038: Replace flood_road_values with the edge depth table, in stages
 
 - **Date:** 2026-10-12
-- **Status:** proposed. The product owner accepts it, or chooses another option.
-- **Decided by:** Awaiting the product owner. The spike [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] gave the measurements, and the owner asked for one system without a duplicate procedure or table.
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, who accepted it and asked for [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] to be built now, keyed by `segment_id` and re-keyed later by [[US-122-point-depth-history-at-the-edge-table|US-122]]. The spike [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] gave the measurements, and the owner asked for one system without a duplicate procedure or table.
 - **Decision:** One sampler and one table hold the flood depth.
   The edge depth build (task `9c`) also writes the wet edges to a queryable table, with a run registry that records every run and its forecast times, including a run with no wet edge.
   The map overlay, the route fallback, the rain gate, the soak checks, the metrics, and `depth_history` move to that table one at a time.

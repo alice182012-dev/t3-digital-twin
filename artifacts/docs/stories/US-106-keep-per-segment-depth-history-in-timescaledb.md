@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-106"
 title: "Write per-segment depth history to TimescaleDB"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: In progress
 kind: story
 priority: P1
 estimate: M
@@ -40,8 +40,8 @@ Given `depth_history` with a compression policy and a drop policy (`timescaledb_
 The ratio comes from one hand-compressed chunk, so it is a sample, and it does not show that the scheduled compression job runs.
 Given a second run that overlaps the first by one step, then that step keeps the later run's depth.
 
-Open question for the owner, from [[decision-log|D-038]]: this story keys `depth_history` by `segment_id`, and the staged replacement re-keys it on `edge_key` in [[US-122-point-depth-history-at-the-edge-table|US-122]].
-Building it now costs one re-key later. Waiting for [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] avoids it but moves the history out of Sprint 13.
+Answered by the owner on 2026-10-12 ([[decision-log|D-038]]): build this story now. It keys `depth_history` by `segment_id`, and the staged replacement re-keys it on `edge_key` in [[US-122-point-depth-history-at-the-edge-table|US-122]].
+The re-key costs one step later. Waiting for [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] avoids it but moves the history out of Sprint 13.
 
 Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Done`.
 [[US-113-backfill-per-segment-depth-history|US-113]] depends on this story and is in the same sprint.
@@ -51,6 +51,7 @@ Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]
 - **2026-10-10, draft.** Not started: it waits for the decision of `US-105`.
 - **2026-10-12, Ready.** Split at Sprint 13 planning into part (a), this story, and part (b), [[US-113-backfill-per-segment-depth-history|US-113]]. The open rule for the winning run is settled by [[decision-log|D-032]], so it is no longer open here. Sized M (3 points).
 - **2026-10-12, Ready.** The product owner chose to check compression by hand, on one chunk of the replay data, for the acceptance check.
+- **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. The build keys `depth_history` by `segment_id`, and [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it later.
 
 ## Evidence and details
 
