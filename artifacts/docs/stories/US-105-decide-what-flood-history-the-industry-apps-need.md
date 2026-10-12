@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-105"
 title: "Decide what flood history the industry apps need"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: spike
 priority: P1
 estimate: S
@@ -64,6 +64,8 @@ Dependencies: None.
   The measurements and the spike's decision remain open.
 - **2026-10-10, Reviewed.** The spike ends with the measurements in Evidence and details and the decision [[decision-log|D-032]].
   The product owner accepts it at review, and the status moves to `Done` then.
+- **2026-10-12, Done.** The product owner accepted the spike at Sprint 13 planning, and the status moved to `Done` then.
+  A spike needs no screenshot under the Definition of done in `scrum-framework`, item 4: its measured result is in Evidence and details, and its decision is [[decision-log|D-032]].
 
 ## Evidence and details
 

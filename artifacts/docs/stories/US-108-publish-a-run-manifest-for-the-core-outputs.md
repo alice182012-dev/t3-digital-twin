@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-108"
 title: "Publish a run manifest for the core outputs"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: M
@@ -39,6 +39,7 @@ Dependencies: None. `US-107` adds the table to the list of each role.
 - **2026-10-11, Reviewed.** The server check passed.
   Run `20261011T000000` wrote its four rows.
   The product owner accepts `Done` at the review.
+- **2026-10-12, Done.** The product owner accepted the story at Sprint 13 planning, and the status moved to `Done` then.
 
 ## Evidence and details
 

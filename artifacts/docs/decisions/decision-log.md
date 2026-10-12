@@ -499,6 +499,7 @@ is the maximum.
 - **Decided by:** The product owner, on 2026-10-10, for three points: the three industries (sub-question 1 of `US-105`), a missing row means dry at piece level (sub-question 4), and history lasts one year (sub-question 5).
   The development team recommends the `history_moment` table and the moment rule in the Decision below.
   That recommendation is not an owner answer.
+  The product owner accepted US-105 on 2026-10-12.
 - **Decision:** The store is `depth_history` in TimescaleDB, as [[decision-log|D-028]] set.
   The grain is one row per road piece and moment.
   When two runs cover the same moment, the run with the later `issued_at` wins for every piece of that moment.
