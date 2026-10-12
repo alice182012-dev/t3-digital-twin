@@ -187,7 +187,7 @@ class RoutingTaskTests(unittest.TestCase):
              "removed": ["20260924T150639.bin"]},
         )
         self.ti.xcom_push.assert_called_once_with(key="edge_depth_table", value=result)
-        publish.publish_table.assert_called_once_with("/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=3)
+        publish.publish_table.assert_called_once_with("/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=8)
 
     def test_the_edge_table_folders_can_be_set_by_environment(self):
         env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5"}
@@ -205,6 +205,10 @@ class RoutingTaskTests(unittest.TestCase):
         args = dag_module.build_edge_depth.build_table.call_args.args
         self.assertEqual(args[2:], ("/exports", "/tables"))
         self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5})
+
+    def test_compose_defaults_the_edge_table_count_to_the_dag_default(self):
+        compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
+        self.assertIn("EDGE_TABLE_KEEP_RUNS: ${EDGE_TABLE_KEEP_RUNS:-8}", compose)
 
     def test_a_failed_build_publishes_nothing_so_latest_stays(self):
         self.dag_module.build_edge_depth = MagicMock()

@@ -43,7 +43,7 @@ except ImportError as e:
 # Docker volume edge-depth-tables (compose.yml), which the routing readers mount read-only.
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
-EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "3"))
+EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "8"))
 # Parsed when prune_flood_road_values runs, so a bad value fails that task and not the whole DAG file.
 FLOOD_ROAD_VALUES_KEEP_HOURS = os.getenv("FLOOD_ROAD_VALUES_KEEP_HOURS", "24")
 # One slot, so routing holds at most one of the worker's Celery slots and the core's depth and tile tasks keep the
