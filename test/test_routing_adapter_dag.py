@@ -163,6 +163,7 @@ class RoutingTaskTests(unittest.TestCase):
         return MagicMock(
             path=Path(path), graph_hash="a" * 64, graph_loaded=False, edge_count=67833, step_count=8,
             wet_edges=(10, 20, 30, 0, 0, 0, 0, 0), sample_seconds=(1.0,) * 8, size_bytes=1085368, seconds=12.5,
+            rows_written=60, rows_seconds=0.8, runs_pruned=1,
         )
 
     def test_build_edge_depth_table_builds_and_publishes_the_run_of_the_event(self):
@@ -181,6 +182,8 @@ class RoutingTaskTests(unittest.TestCase):
         self.assertEqual(result["run_ts"], "20260924T170639")
         self.assertEqual((result["edge_count"], result["steps"], result["bytes"]), (67833, 8, 1085368))
         self.assertEqual(result["wet_edges"], [10, 20, 30, 0, 0, 0, 0, 0])
+        self.assertEqual((result["rows_written"], result["rows_seconds"], result["runs_pruned"]), (60, 0.8, 1))
+        self.assertEqual(build_edge_depth.build_table.call_args.kwargs, {"keep_hours": 24})
         self.assertEqual(
             result["published"],
             {"latest": "20260924T170639.bin", "previous": "20260924T165639.bin", "moved": True,
@@ -190,7 +193,7 @@ class RoutingTaskTests(unittest.TestCase):
         publish.publish_table.assert_called_once_with("/opt/airflow/edge_depth_tables", "20260924T170639.bin", keep=8)
 
     def test_the_edge_table_folders_can_be_set_by_environment(self):
-        env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5"}
+        env = {"EDGE_EXPORT_DIR": "/exports", "EDGE_TABLE_DIR": "/tables", "EDGE_TABLE_KEEP_RUNS": "5", "EDGE_DEPTH_KEEP_HOURS": "12"}
         with patch.dict(os.environ, env):
             dag_module = load_routing_module()
         dag_module.DB_CONFIG = {}
@@ -204,11 +207,13 @@ class RoutingTaskTests(unittest.TestCase):
 
         args = dag_module.build_edge_depth.build_table.call_args.args
         self.assertEqual(args[2:], ("/exports", "/tables"))
+        self.assertEqual(dag_module.build_edge_depth.build_table.call_args.kwargs, {"keep_hours": 12})
         self.assertEqual(dag_module.publish_edge_depth.publish_table.call_args.kwargs, {"keep": 5})
 
     def test_compose_defaults_the_edge_table_count_to_the_dag_default(self):
         compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
         self.assertIn("EDGE_TABLE_KEEP_RUNS: ${EDGE_TABLE_KEEP_RUNS:-8}", compose)
+        self.assertIn("EDGE_DEPTH_KEEP_HOURS: ${EDGE_DEPTH_KEEP_HOURS:-24}", compose)
 
     def test_a_failed_build_publishes_nothing_so_latest_stays(self):
         self.dag_module.build_edge_depth = MagicMock()

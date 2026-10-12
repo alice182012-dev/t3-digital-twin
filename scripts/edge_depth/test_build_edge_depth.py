@@ -24,6 +24,7 @@ from build_edge_depth import EdgeDepthBuildError
 from test_graph_edges import write_export
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "database"))
+import create_edge_depth_tables  # noqa: E402
 import create_flood_depth_raster_tables  # noqa: E402
 import create_graph_edge_table  # noqa: E402
 
@@ -85,6 +86,7 @@ class BuildEdgeDepthTests(unittest.TestCase):
             cur.execute(f"SET search_path TO {SCHEMA}, public")
             cur.execute(create_flood_depth_raster_tables.SQL)
             cur.execute(create_graph_edge_table.SQL)
+            cur.execute(create_edge_depth_tables.SQL)
 
     @classmethod
     def tearDownClass(cls):
@@ -98,7 +100,7 @@ class BuildEdgeDepthTests(unittest.TestCase):
         self.export_dir = Path(self.tmp.name) / "export"
         self.out_dir = Path(self.tmp.name) / "tables"
         with self.conn, self.conn.cursor() as cur:
-            cur.execute("TRUNCATE flood_depth_raster_tile, graph_edge, graph_edge_export")
+            cur.execute("TRUNCATE flood_depth_raster_tile, graph_edge, graph_edge_export, edge_depth_run CASCADE")
 
     def add_tile(self, valid_time_utc, tile_x, tile_y, wet):
         with self.conn, self.conn.cursor() as cur:
@@ -137,9 +139,9 @@ class BuildEdgeDepthTests(unittest.TestCase):
         self.add_tile(T2_UTC, 0, 0, t2_left)
         self.add_tile(T2_UTC, 1, 0, right)
 
-    def build(self, edges=STANDARD_EDGES, graph_hash="a" * 64):
-        write_export(self.export_dir, edges=edges, graph_hash=graph_hash)
-        return build_edge_depth.build_table(self.conn, RUN, self.export_dir, self.out_dir)
+    def build(self, edges=STANDARD_EDGES, graph_hash="a" * 64, **options):
+        write_export(self.export_dir, edges=edges, graph_hash=graph_hash, format_version=3)
+        return build_edge_depth.build_table(self.conn, RUN, self.export_dir, self.out_dir, **options)
 
     def read(self, result):
         return edge_depth_table.read_table(result.path)
@@ -210,7 +212,7 @@ class BuildEdgeDepthTests(unittest.TestCase):
         # In the new graph edge 2 runs where edge 0 did.
         moved = [STANDARD_EDGES[0], STANDARD_EDGES[1], (2, STANDARD_EDGES[0][1]), *STANDARD_EDGES[3:]]
         other = Path(self.tmp.name) / "export2"
-        write_export(other, edges=moved, graph_hash="b" * 64)
+        write_export(other, edges=moved, graph_hash="b" * 64, format_version=3)
 
         result = build_edge_depth.build_table(self.conn, RUN, other, self.out_dir)
         table = self.read(result)
@@ -254,6 +256,103 @@ class BuildEdgeDepthTests(unittest.TestCase):
         second = self.build().path.read_bytes()
 
         self.assertEqual(first, second)
+
+    # The rows and the registry of US-118. write_export names the key of edge N "10N:0".
+
+    def rows(self, run=RUN):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(
+                "SELECT valid_time_utc, edge_key, depth_cm FROM edge_depth WHERE run_ts = %s ORDER BY 1, 2", (run,)
+            )
+            return cur.fetchall()
+
+    def registry(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT run_ts, graph_hash, valid_times FROM edge_depth_run")
+            return cur.fetchall()
+
+    def test_the_wet_edges_of_each_step_are_written_with_their_keys(self):
+        self.standard_run()
+
+        self.build()
+
+        self.assertEqual(
+            self.rows(),
+            [(T1_UTC, "100:0", 60), (T1_UTC, "101:0", 40), (T1_UTC, "104:0", 50),
+             (T2_UTC, "100:0", 60), (T2_UTC, "101:0", 40)],
+        )
+
+    def test_the_row_count_is_the_wet_edges_the_task_reports(self):
+        self.standard_run()
+
+        result = self.build()
+
+        self.assertEqual(result.rows_written, sum(result.wet_edges))
+        self.assertEqual(len(self.rows()), 5)
+
+    def test_the_run_is_registered_with_its_forecast_times_and_the_graph_hash(self):
+        self.standard_run()
+
+        self.build(graph_hash="c" * 64)
+
+        self.assertEqual(self.registry(), [(RUN, "c" * 64, [T1_UTC, T2_UTC])])
+
+    def test_a_run_with_no_wet_edge_is_registered_and_has_no_rows(self):
+        self.add_tile(T1_UTC, 0, 0, {})
+        self.add_tile(T2_UTC, 0, 0, {})
+
+        result = self.build()
+
+        self.assertEqual(result.wet_edges, (0, 0))
+        self.assertEqual(self.registry(), [(RUN, "a" * 64, [T1_UTC, T2_UTC])])
+        self.assertEqual(self.rows(), [])
+
+    def test_building_the_same_run_twice_keeps_the_row_count(self):
+        self.standard_run()
+
+        self.build()
+        self.build()
+
+        self.assertEqual(len(self.rows()), 5)
+        self.assertEqual(len(self.registry()), 1)
+
+    def test_an_export_without_keys_is_an_error_that_writes_nothing(self):
+        self.standard_run()
+        write_export(self.export_dir, edges=STANDARD_EDGES, graph_hash="a" * 64, format_version=2)
+
+        with self.assertRaises(EdgeDepthBuildError) as caught:
+            build_edge_depth.build_table(self.conn, RUN, self.export_dir, self.out_dir)
+
+        self.assertIn("edge_key", str(caught.exception))
+        self.assertEqual(self.registry(), [])
+        self.assertFalse(self.out_dir.exists() and any(self.out_dir.iterdir()))
+
+    def test_a_failed_database_write_leaves_no_file(self):
+        self.standard_run()
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("ALTER TABLE edge_depth RENAME TO edge_depth_away")
+        try:
+            with self.assertRaises(psycopg2.Error):
+                self.build()
+            self.conn.rollback()
+        finally:
+            with self.conn, self.conn.cursor() as cur:
+                cur.execute("ALTER TABLE edge_depth_away RENAME TO edge_depth")
+
+        self.assertFalse(self.out_dir.exists() and any(self.out_dir.iterdir()))
+        self.assertEqual(self.registry(), [])
+
+    def test_the_keep_window_is_passed_to_the_writer(self):
+        self.standard_run()
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times) VALUES ('20260101T000000', 'x', %s)",
+                ([T1_UTC],),
+            )
+
+        self.build(keep_hours=24)
+
+        self.assertEqual([run for run, _, _ in self.registry()], [RUN])
 
     # The spot check of US-041: table values against a direct ST_Value reading at the same sample points.
 
@@ -317,7 +416,7 @@ class BuildEdgeDepthTests(unittest.TestCase):
 
     def test_a_step_that_runs_past_its_time_limit_fails_the_build_and_names_the_step(self):
         self.standard_run()
-        write_export(self.export_dir, edges=STANDARD_EDGES, graph_hash="a" * 64)
+        write_export(self.export_dir, edges=STANDARD_EDGES, graph_hash="a" * 64, format_version=3)
         slow = build_edge_depth._SAMPLE_SQL.replace("SELECT s.edge_id, max(w.depth)", "SELECT s.edge_id, max(w.depth) + (SELECT 0 FROM pg_sleep(1))", 1)
         self.assertNotEqual(slow, build_edge_depth._SAMPLE_SQL)
         original = build_edge_depth._SAMPLE_SQL

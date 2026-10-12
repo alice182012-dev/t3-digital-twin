@@ -194,6 +194,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_flood_depth_raster_tables.main.assert_called_once_with()
         database.create_road_segment_table.main.assert_called_once_with()
         database.create_graph_edge_table.main.assert_called_once_with()
+        database.create_edge_depth_tables.main.assert_called_once_with()
         database.create_flood_run_output_table.main.assert_called_once_with()
 
     def test_no_core_task_waits_on_a_routing_task(self):
@@ -243,6 +244,8 @@ class ArchiveTaskTests(unittest.TestCase):
         self.nc.parent.mkdir(parents=True)
         self.nc.write_bytes(b"nc")
         self.dag_module.ARCHIVE_DIR = str(Path(self.tmp.name) / "archive")
+        # The free-space floor has its own tests in test_archive_results.py. Here it must not read the real disk.
+        self.dag_module.ARCHIVE_MIN_FREE_GB = 0
         self.dag_module.EDGE_EXPORT_DIR = str(Path(self.tmp.name) / "no_export")
         self.dag_module.create_simulation = MagicMock()
         self.dag_module.create_simulation.iso_utc.return_value = "2026-10-09T06:00:00Z"

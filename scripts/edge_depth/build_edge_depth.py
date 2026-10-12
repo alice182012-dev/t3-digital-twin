@@ -12,6 +12,10 @@ with graph_edge in place of road_segment. An edge that touches no wet pixel, or 
 The file is <out-dir>/<RUN_TS>.bin in the format of edge_depth_table.py, tagged with the graph hash of the
 export. It is written under a temporary name and renamed, so an interrupted build leaves no partial file and
 keeps the previous one. The latest pointer and the retention of old tables belong to US-042.
+
+The same pass also writes the wet edges to the database (edge_depth_rows.py, US-118), before it writes the file, so
+a database failure leaves no file and the previous table stays published. That needs an export of format 3, whose
+edge_key names each edge across a re-import of the same OSM file.
 The design is in artifacts/archive/plans/edge-depth-table-airflow-task.md.
 """
 
@@ -29,6 +33,7 @@ from pathlib import Path
 
 import psycopg2
 
+import edge_depth_rows
 import edge_depth_table
 import graph_edges
 
@@ -59,6 +64,9 @@ class BuildResult:
     sample_seconds: tuple[float, ...]
     size_bytes: int
     seconds: float
+    rows_written: int
+    rows_seconds: float
+    runs_pruned: int
 
 
 def depth_cm(depth_m: float) -> int:
@@ -113,13 +121,30 @@ GROUP BY s.edge_id
 """
 
 
-def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = DEFAULT_STEP_TIMEOUT_S) -> BuildResult:
-    """Builds <out_dir>/<run_ts>.bin from the run's raster tiles and the export in export_dir.
+_KEYS_SQL = "SELECT edge_id, edge_key FROM graph_edge WHERE edge_id = ANY(%s)"
+
+
+def build_table(
+    conn,
+    run_ts: str,
+    export_dir,
+    out_dir,
+    step_timeout_s: float = DEFAULT_STEP_TIMEOUT_S,
+    keep_hours: int = edge_depth_rows.DEFAULT_KEEP_HOURS,
+) -> BuildResult:
+    """Builds <out_dir>/<run_ts>.bin from the run's raster tiles and the export in export_dir, and writes the
+    run's wet edges to edge_depth, keeping the runs of the last `keep_hours` before the newest.
 
     Raises GraphExportError when the export is missing or inconsistent, and EdgeDepthBuildError when the
-    run has no tiles. Neither writes a file."""
+    run has no tiles or the export has no edge keys. None of them writes a file or a row."""
     started = time.monotonic()
     export = graph_edges.read_export(export_dir)
+    if export.format_version < graph_edges.EDGE_KEY_FORMAT_VERSION:
+        raise EdgeDepthBuildError(
+            f"the export in {export_dir} has format_version {export.format_version}, and edge_depth needs "
+            f"{graph_edges.EDGE_KEY_FORMAT_VERSION} for its edge_key. Write a new export from a graph with osm_way_id "
+            "(artifacts/docs/concepts/graph-reimport-procedure.md)"
+        )
     with conn, conn.cursor() as cur:
         cur.execute(_TIMESTEPS_SQL, {"run_ts": run_ts})
         valid_times = [row[0] for row in cur.fetchall()]
@@ -136,6 +161,7 @@ def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = 
     steps = len(valid_times)
     depths = array("H", bytes(2 * export.edge_count * steps))
     wet_edges = []
+    wet_cells = []
     sample_seconds = []
     for step, valid_time in enumerate(valid_times):
         step_started = time.monotonic()
@@ -148,6 +174,7 @@ def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = 
                     cm = depth_cm(depth)
                     if cm > 0:
                         depths[edge_id * steps + step] = cm
+                        wet_cells.append((edge_id, valid_time, cm))
                         wet += 1
         except psycopg2.errors.QueryCanceled as e:
             raise EdgeDepthBuildError(
@@ -155,6 +182,12 @@ def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = 
             ) from e
         wet_edges.append(wet)
         sample_seconds.append(time.monotonic() - step_started)
+
+    rows_started = time.monotonic()
+    write = edge_depth_rows.write_run(
+        conn, run_ts, export.graph_hash, valid_times, _keyed(conn, wet_cells), keep_hours
+    )
+    rows_seconds = time.monotonic() - rows_started
 
     header = edge_depth_table.TableHeader(
         graph_hash=export.graph_hash,
@@ -174,7 +207,24 @@ def build_table(conn, run_ts: str, export_dir, out_dir, step_timeout_s: float = 
         sample_seconds=tuple(sample_seconds),
         size_bytes=path.stat().st_size,
         seconds=time.monotonic() - started,
+        rows_written=write.rows,
+        rows_seconds=rows_seconds,
+        runs_pruned=write.runs_pruned,
     )
+
+
+def _keyed(conn, wet_cells) -> list[edge_depth_rows.WetEdge]:
+    """The wet (edge id, time, cm) cells with the edge_key of graph_edge in place of the edge id."""
+    edge_ids = sorted({edge_id for edge_id, _, _ in wet_cells})
+    with conn, conn.cursor() as cur:
+        cur.execute(_KEYS_SQL, (edge_ids,))
+        keys = dict(cur.fetchall())
+    missing = [edge_id for edge_id in edge_ids if not keys.get(edge_id)]
+    if missing:
+        raise EdgeDepthBuildError(
+            f"graph_edge has no edge_key for {len(missing)} wet edges, for example edge {missing[0]}"
+        )
+    return [edge_depth_rows.WetEdge(valid_time, keys[edge_id], cm) for edge_id, valid_time, cm in wet_cells]
 
 
 def _write(out_dir: Path, run_ts: str, header, depths: array, steps: int) -> Path:

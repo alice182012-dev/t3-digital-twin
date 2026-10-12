@@ -32,6 +32,7 @@ try:
     import database.create_flood_depth_raster_tables
     import database.create_road_segment_table
     import database.create_graph_edge_table
+    import database.create_edge_depth_tables
     import database.create_flood_run_output_table
     import database.create_timescale_tables
     import flood_extent
@@ -207,6 +208,7 @@ def task_ensure_schema(**kwargs):
     database.create_flood_depth_raster_tables.main()
     database.create_road_segment_table.main()
     database.create_graph_edge_table.main()
+    database.create_edge_depth_tables.main()
     database.create_flood_run_output_table.main()
     database.create_timescale_tables.main()
 

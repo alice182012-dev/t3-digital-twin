@@ -44,6 +44,8 @@ except ImportError as e:
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
 EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "8"))
+# The runs of edge_depth that stay: those within this many hours before the newest run (US-118), like FLOOD_ROAD_VALUES_KEEP_HOURS.
+EDGE_DEPTH_KEEP_HOURS = int(os.getenv("EDGE_DEPTH_KEEP_HOURS", "24"))
 # Parsed when prune_flood_road_values runs, so a bad value fails that task and not the whole DAG file.
 FLOOD_ROAD_VALUES_KEEP_HOURS = os.getenv("FLOOD_ROAD_VALUES_KEEP_HOURS", "24")
 # One slot, so routing holds at most one of the worker's Celery slots and the core's depth and tile tasks keep the
@@ -77,7 +79,8 @@ def published_run_ts(kwargs):
 
 def task_build_edge_depth_table(**kwargs):
     """Writes this run's edge depth table: the deepest flood sample along every GraphHopper edge, in
-    centimetres, at every step, tagged with the graph hash (US-041), and publishes it (US-042): `latest`
+    centimetres, at every step, tagged with the graph hash (US-041), writes its wet edges to `edge_depth` with a
+    registry row for the run (US-118), and publishes it (US-042): `latest`
     points at it, only forward, and the newest EDGE_TABLE_KEEP_RUNS tables stay. It reads the tiles task 9b
     loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
 
@@ -89,7 +92,9 @@ def task_build_edge_depth_table(**kwargs):
     print(f"🧮 9c. Building the edge depth table for run {run_ts}: {EDGE_EXPORT_DIR} -> {EDGE_TABLE_DIR}")
     conn = psycopg2.connect(**DB_CONFIG)
     try:
-        built = build_edge_depth.build_table(conn, run_ts, EDGE_EXPORT_DIR, EDGE_TABLE_DIR)
+        built = build_edge_depth.build_table(
+            conn, run_ts, EDGE_EXPORT_DIR, EDGE_TABLE_DIR, keep_hours=EDGE_DEPTH_KEEP_HOURS
+        )
     finally:
         conn.close()
     # A failure above or here leaves `latest` on the previous table: the pointer moves only inside publish_table.
@@ -105,6 +110,9 @@ def task_build_edge_depth_table(**kwargs):
         "sample_seconds": [round(seconds, 2) for seconds in built.sample_seconds],
         "bytes": built.size_bytes,
         "seconds": round(built.seconds, 2),
+        "rows_written": built.rows_written,
+        "rows_seconds": round(built.rows_seconds, 2),
+        "runs_pruned": built.runs_pruned,
         "published": {
             "latest": published.latest,
             "previous": published.previous,

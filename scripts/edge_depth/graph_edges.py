@@ -27,7 +27,7 @@ from psycopg2.extras import execute_values
 SUPPORTED_FORMAT_VERSIONS = (1, 2, 3)
 _REQUIRED_KEYS = ("format_version", "graph_hash", "edge_count", "node_count")
 _PAGE_SIZE = 2000
-_EDGE_KEY_FORMAT_VERSION = 3
+EDGE_KEY_FORMAT_VERSION = 3
 _EDGE_KEY = re.compile(r"[1-9][0-9]*:[0-9]+")
 
 
@@ -86,7 +86,7 @@ def iter_edges(export: GraphExport) -> Iterator[GraphEdge]:
     differs from edge_count in graph.json, or (format 3) when an edge_key is malformed or repeated,
     so a cut-off or damaged file cannot be loaded."""
     expected_id = 0
-    has_keys = export.format_version >= _EDGE_KEY_FORMAT_VERSION
+    has_keys = export.format_version >= EDGE_KEY_FORMAT_VERSION
     seen_keys: set[str] = set()
     with open(export.edges_csv, newline="", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -149,7 +149,7 @@ def _is_loaded(cur, export: GraphExport) -> bool:
     row = cur.fetchone()
     if not row or row[0] != export.graph_hash:
         return False
-    if export.format_version < _EDGE_KEY_FORMAT_VERSION:
+    if export.format_version < EDGE_KEY_FORMAT_VERSION:
         return True
     cur.execute("SELECT EXISTS (SELECT 1 FROM graph_edge WHERE edge_key IS NULL)")
     return not cur.fetchone()[0]
