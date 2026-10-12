@@ -28,8 +28,14 @@ class ExportEdgesTest {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
+    private static final String ENCODED_VALUES = "car_access, car_average_speed, osm_way_id";
+
     /** Imports an OSM file into a new graph folder, as the server does, and returns the folder. */
     private static Path importGraph(Path osm, Path graphDir) {
+        return importGraph(osm, graphDir, ENCODED_VALUES);
+    }
+
+    private static Path importGraph(Path osm, Path graphDir, String encodedValues) {
         CustomModel car = new CustomModel()
                 .addToSpeed(Statement.If("true", Statement.Op.LIMIT, "car_average_speed"))
                 .addToPriority(Statement.If("!car_access", Statement.Op.MULTIPLY, "0"));
@@ -37,7 +43,7 @@ class ExportEdgesTest {
                 .putObject("datareader.file", osm.toString())
                 .putObject("graph.location", graphDir.toString())
                 .putObject("import.osm.ignored_highways", "")
-                .putObject("graph.encoded_values", "car_access, car_average_speed")
+                .putObject("graph.encoded_values", encodedValues)
                 .setProfiles(List.of(new Profile("car").setCustomModel(car)));
         new TimeAwareGraphHopper().init(config).importOrLoad().close();
         return graphDir;
@@ -64,7 +70,7 @@ class ExportEdgesTest {
         assertEquals(4, result.edgeCount());
         assertEquals(5, result.nodeCount());
         List<String> lines = Files.readAllLines(tmp.resolve("out/edges.csv"));
-        assertEquals("edge_id,wkt,base_node,adj_node", lines.get(0));
+        assertEquals("edge_id,wkt,base_node,adj_node,edge_key", lines.get(0));
         assertEquals(result.edgeCount(), rows(tmp.resolve("out/edges.csv")).size());
     }
 
@@ -129,12 +135,12 @@ class ExportEdgesTest {
         assertEquals(4, json.get("edge_count").asInt());
         assertEquals(5, json.get("node_count").asInt());
         assertEquals("d7dc1b069d2d091c7cfdc007d99d1765c82e618d", json.get("graphhopper_commit").asText());
-        assertEquals(2, json.get("format_version").asInt());
+        assertEquals(3, json.get("format_version").asInt());
     }
 
     /** The node ids are the GraphHopper ids that GraphHash reads, so a reader can join an edge to its nodes. */
     @Test
-    void eachRowEndsWithTheBaseAndAdjacentNodeIdOfItsEdge(@TempDir Path tmp) throws Exception {
+    void eachRowHoldsTheBaseAndAdjacentNodeIdOfItsEdgeBeforeTheKey(@TempDir Path tmp) throws Exception {
         Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
 
         ExportEdges.export(graph, tmp.resolve("out"));
@@ -150,11 +156,93 @@ class ExportEdgesTest {
         List<String> actual = new ArrayList<>();
         for (String row : rows(tmp.resolve("out/edges.csv"))) {
             String[] tail = row.substring(row.lastIndexOf('"') + 2).split(",");
-            assertEquals(2, tail.length, row);
+            assertEquals(3, tail.length, row);
             actual.add(row.substring(0, row.indexOf(',')) + "," + tail[0] + "," + tail[1]);
         }
         assertEquals(4, actual.size());
         assertEquals(expected, actual);
+    }
+
+    private static List<String> keys(Path csv) throws IOException {
+        List<String> keys = new ArrayList<>();
+        for (String row : rows(csv)) keys.add(row.substring(row.lastIndexOf(',') + 1));
+        return keys;
+    }
+
+    /** Way 10 is split at the junction node 2, so its two edges are positions 0 and 1. Ways 11 and 12 are one edge each. */
+    @Test
+    void theKeyIsTheOsmWayIdAndThePositionAlongTheWay(@TempDir Path tmp) throws Exception {
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"));
+
+        ExportEdges.export(graph, tmp.resolve("out"));
+
+        List<String> keys = keys(tmp.resolve("out/edges.csv"));
+        assertEquals(List.of("10:0", "10:1", "11:0", "12:0"), keys.stream().sorted().toList());
+        assertTrue(keys.indexOf("10:0") < keys.indexOf("10:1"), "position 0 is the edge with the lower id: " + keys);
+    }
+
+    @Test
+    void noTwoEdgesShareAKey(@TempDir Path tmp) throws Exception {
+        Path extra = tinyOsm(tmp, "b.osm.xml", "</osm>",
+                "<way id=\"13\"><nd ref=\"4\"/><nd ref=\"6\"/><tag k=\"highway\" v=\"residential\"/></way></osm>");
+        Path graph = importGraph(extra, tmp.resolve("graph-b"));
+
+        ExportEdges.export(graph, tmp.resolve("out"));
+
+        List<String> keys = keys(tmp.resolve("out/edges.csv"));
+        assertEquals(5, keys.size());
+        assertEquals(keys.size(), keys.stream().distinct().count());
+    }
+
+    /** The point of the key: it must survive a re-import of the same file, where edge ids may change. */
+    @Test
+    void twoImportsOfOneOsmFileGiveTheSameKeyForEachEdge(@TempDir Path tmp) throws Exception {
+        Path osm = tinyOsm(tmp, "a.osm.xml", "x", "x");
+
+        ExportEdges.export(importGraph(osm, tmp.resolve("graph-1")), tmp.resolve("out1"));
+        ExportEdges.export(importGraph(osm, tmp.resolve("graph-2")), tmp.resolve("out2"));
+
+        assertEquals(keys(tmp.resolve("out1/edges.csv")), keys(tmp.resolve("out2/edges.csv")));
+    }
+
+    /** An extra way adds its own key and leaves the keys of the other ways as they were. */
+    @Test
+    void anExtraWayAddsOneKeyAndKeepsTheOthers(@TempDir Path tmp) throws Exception {
+        Path same = tinyOsm(tmp, "a.osm.xml", "x", "x");
+        Path extra = tinyOsm(tmp, "b.osm.xml", "</osm>",
+                "<way id=\"13\"><nd ref=\"4\"/><nd ref=\"6\"/><tag k=\"highway\" v=\"residential\"/></way></osm>");
+
+        ExportEdges.export(importGraph(same, tmp.resolve("graph-a")), tmp.resolve("out1"));
+        ExportEdges.export(importGraph(extra, tmp.resolve("graph-b")), tmp.resolve("out2"));
+
+        List<String> before = keys(tmp.resolve("out1/edges.csv")).stream().sorted().toList();
+        List<String> after = keys(tmp.resolve("out2/edges.csv")).stream().sorted().toList();
+        List<String> expected = new ArrayList<>(before);
+        expected.add("13:0");
+        assertEquals(expected.stream().sorted().toList(), after);
+    }
+
+    @Test
+    void aGraphWithoutTheOsmWayIdValueIsAnErrorThatNamesTheFixAndWritesNothing(@TempDir Path tmp) throws Exception {
+        Path graph = importGraph(tinyOsm(tmp, "a.osm.xml", "x", "x"), tmp.resolve("graph-a"), "car_access, car_average_speed");
+
+        IllegalStateException error = org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> ExportEdges.export(graph, tmp.resolve("out")));
+
+        assertTrue(error.getMessage().contains("osm_way_id"), error.getMessage());
+        assertTrue(error.getMessage().contains("re-import"), error.getMessage());
+        assertTrue(Files.notExists(tmp.resolve("out")));
+    }
+
+    /** Adding osm_way_id changes the stored edge data, not the nodes or the geometry, so every table already built stays valid. */
+    @Test
+    void theHashDoesNotDependOnWhetherTheWayIdIsStored(@TempDir Path tmp) throws Exception {
+        Path osm = tinyOsm(tmp, "a.osm.xml", "x", "x");
+
+        String without = GraphHash.of(importGraph(osm, tmp.resolve("graph-1"), "car_access, car_average_speed"));
+        String with = GraphHash.of(importGraph(osm, tmp.resolve("graph-2")));
+
+        assertEquals(without, with);
     }
 
     @Test

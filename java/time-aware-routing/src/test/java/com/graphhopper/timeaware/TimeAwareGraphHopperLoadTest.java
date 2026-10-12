@@ -34,7 +34,7 @@ class TimeAwareGraphHopperLoadTest {
                 .putObject("datareader.file", osm.toString())
                 .putObject("graph.location", dir.resolve("graph").toString())
                 .putObject("import.osm.ignored_highways", "")
-                .putObject("graph.encoded_values", "car_access, car_average_speed")
+                .putObject("graph.encoded_values", "car_access, car_average_speed, osm_way_id")
                 .setProfiles(List.of(new Profile("car").setCustomModel(model).putHint(TimeAwareRouter.LIMIT_HINT, 30)));
         if (tableDir != null) config.putObject("time_aware.table_dir", tableDir);
         return config;

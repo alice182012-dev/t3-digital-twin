@@ -3,9 +3,10 @@
 The export is two files, written by ExportEdges in java/time-aware-routing/ (US-039):
 
 - graph.json holds graph_hash, edge_count, node_count, and the GraphHopper commit.
-- edges.csv has the header edge_id,wkt (format 1) or edge_id,wkt,base_node,adj_node (format 2) and one
-  row per edge, in edge id order. wkt is a LINESTRING in EPSG:4326, longitude first. Only the first two
-  columns are read.
+- edges.csv has the header edge_id,wkt (format 1), edge_id,wkt,base_node,adj_node (format 2), or
+  edge_id,wkt,base_node,adj_node,edge_key (format 3, US-117) and one row per edge, in edge id order. wkt is a
+  LINESTRING in EPSG:4326, longitude first. Only the first two columns are read. edge_key is
+  <osm_way_id>:<position along the way>, and a later story loads it into graph_edge.
 
 Airflow cannot run the export, because it runs in the GraphHopper image. An operator writes the two
 files into a folder that Airflow reads. load_graph_edges copies them into graph_edge when the hash
@@ -22,7 +23,7 @@ from typing import Iterator
 
 from psycopg2.extras import execute_values
 
-SUPPORTED_FORMAT_VERSIONS = (1, 2)
+SUPPORTED_FORMAT_VERSIONS = (1, 2, 3)
 _REQUIRED_KEYS = ("format_version", "graph_hash", "edge_count", "node_count")
 _PAGE_SIZE = 2000
 

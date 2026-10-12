@@ -3,6 +3,8 @@ package com.graphhopper.timeaware;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.graphhopper.routing.ev.IntEncodedValue;
+import com.graphhopper.routing.ev.OSMWayID;
 import com.graphhopper.routing.util.EncodingManager;
 import com.graphhopper.storage.BaseGraph;
 import com.graphhopper.storage.DAType;
@@ -19,17 +21,25 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Exports every edge of a built GraphHopper graph with its id and geometry, plus a hash of the graph (US-039).
+ * Exports every edge of a built GraphHopper graph with its id, geometry, and a stable key, plus a hash of the graph
+ * (US-039, US-117).
  * <p>
  * Writes two files into the output folder:
  * <ul>
- *   <li>{@code edges.csv}: the header {@code edge_id,wkt,base_node,adj_node}, then one row per edge in edge-id order. {@code wkt} is a
- *   LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node. {@code base_node} and {@code adj_node} are the GraphHopper node ids of the edge, as GraphHash reads them.</li>
+ *   <li>{@code edges.csv}: the header {@code edge_id,wkt,base_node,adj_node,edge_key}, then one row per edge in edge-id order. {@code wkt} is a
+ *   LINESTRING in EPSG:4326, longitude first, through the base node, the shape points, and the adjacent node. {@code base_node} and {@code adj_node} are the GraphHopper node ids of the edge, as GraphHash reads them.
+ *   {@code edge_key} is {@code <osm_way_id>:<position>}, where the position counts the edges of the same OSM way in
+ *   edge-id order, from 0. GraphHopper numbers the edges of a way along the way at import, so the position follows the
+ *   way. The key does not change when the same OSM file is imported again, and edge ids, nodes, and the hash may.</li>
  *   <li>{@code graph.json}: the graph hash, the edge and node counts, and the GraphHopper commit.</li>
  * </ul>
- * The graph is opened read-only, so the folder can be a read-only mount.
+ * The graph is opened read-only, so the folder can be a read-only mount. The graph must have the {@code osm_way_id}
+ * encoded value (a 31-bit int, so GraphHopper's import fails for a way id above 2,147,483,647). Without it the export
+ * fails and writes nothing.
  * <p>
  * The hash is a SHA-256 over the node count, the edge count, and for each edge in id order its base node, its
  * adjacent node, its point count, and each point as latitude and longitude in 1e-7 degrees. It does not read file
@@ -38,7 +48,7 @@ import java.nio.file.Path;
 public final class ExportEdges {
 
     /** Bump when the columns, the geometry format, or the hash input change. */
-    static final int FORMAT_VERSION = 2;
+    static final int FORMAT_VERSION = 3;
 
     static final double SCALE = 1e7;
 
@@ -58,10 +68,16 @@ public final class ExportEdges {
     }
 
     public static Result export(Path graphLocation, Path outputDir) {
-        BaseGraph graph = openReadOnly(graphLocation);
+        Store store = open(graphLocation);
+        BaseGraph graph = store.graph();
         try {
+            if (!store.encodingManager().hasEncodedValue(OSMWayID.KEY)) {
+                throw new IllegalStateException("The graph in " + graphLocation + " has no " + OSMWayID.KEY
+                        + " encoded value. Add it to graph.encoded_values in config.yml and re-import the graph.");
+            }
+            IntEncodedValue wayIdEnc = store.encodingManager().getIntEncodedValue(OSMWayID.KEY);
             Files.createDirectories(outputDir);
-            return write(graph, outputDir);
+            return write(graph, wayIdEnc, outputDir);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
@@ -83,6 +99,13 @@ public final class ExportEdges {
      * so it is opened as 2D.
      */
     static BaseGraph openReadOnly(Path graphLocation) {
+        return open(graphLocation).graph();
+    }
+
+    private record Store(BaseGraph graph, EncodingManager encodingManager) {
+    }
+
+    private static Store open(Path graphLocation) {
         // Check first: GHDirectory creates a missing folder, and a read-only mount must not be written to.
         if (!Files.isDirectory(graphLocation)) {
             throw new IllegalStateException("No graph folder at " + graphLocation + ". Import the OSM file first.");
@@ -99,20 +122,26 @@ public final class ExportEdges {
                 .withTurnCosts(encodingManager.needsTurnCostsSupport())
                 .build();
         graph.loadExisting();
-        return graph;
+        return new Store(graph, encodingManager);
     }
 
-    private static Result write(BaseGraph graph, Path outputDir) throws IOException {
+    private static Result write(BaseGraph graph, IntEncodedValue wayIdEnc, Path outputDir) throws IOException {
         int edgeCount = graph.getEdges();
         int nodeCount = graph.getNodes();
         try (BufferedWriter csv = Files.newBufferedWriter(outputDir.resolve("edges.csv"), StandardCharsets.UTF_8)) {
-            csv.write("edge_id,wkt,base_node,adj_node\n");
+            csv.write("edge_id,wkt,base_node,adj_node,edge_key\n");
+            Map<Integer, Integer> edgesSeenOfWay = new HashMap<>();
             AllEdgesIterator edges = graph.getAllEdges();
             int rows = 0;
             while (edges.next()) {
                 PointList points = edges.fetchWayGeometry(FetchMode.ALL);
+                int wayId = edges.get(wayIdEnc);
+                if (wayId == 0) {
+                    throw new IllegalStateException("Edge " + edges.getEdge() + " has no OSM way id");
+                }
+                int position = edgesSeenOfWay.merge(wayId, 1, Integer::sum) - 1;
                 csv.write(edges.getEdge() + ",\"" + lineString(points) + "\","
-                        + edges.getBaseNode() + "," + edges.getAdjNode() + "\n");
+                        + edges.getBaseNode() + "," + edges.getAdjNode() + "," + wayId + ":" + position + "\n");
                 rows++;
             }
             if (rows != edgeCount) {
