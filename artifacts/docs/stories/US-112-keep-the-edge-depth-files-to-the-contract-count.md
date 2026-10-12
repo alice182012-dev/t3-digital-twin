@@ -49,7 +49,9 @@ Estimate: S.
 
 ## Evidence and details
 
-**Evidence:** the server capture of 2026-10-12, read only, from `artifacts/docs/stories/evidence/us-112-server-check.sh`. The screenshot goes to `us-112-server-check-output.png`.
+**Evidence:** the server capture of 2026-10-12 13:12 +07, read only, from `artifacts/docs/stories/evidence/us-112-server-check.sh`.
+
+![[us-112-server-check-output.png|900]]
 
 **Details:**
 
@@ -60,4 +62,5 @@ Estimate: S.
 5. No core run is expected without rain, so the retention was applied by hand with the function that `9c` calls: `publish_table` on the current `latest` name with `keep=8`. The volume went from 100 `.bin` files to 8, `latest` still names `20261011T001500.bin` (not moved), and the 8 files are `20261010T211500` to `20261011T001500`. `check_tables.py` reports FRESH (the export, the tables, and the graph agree on hash `8c13d8841f83`), `graphhopper` sees the same 8 files and `latest`, and the backend `/health` is ok.
 6. The 92 files removed include the 58 edge depth files of the storm replay. They are kept in the test dataset (`snapshot/edge_depth`, 58 files, checksums verified in [[US-124-save-the-storm-replay-results-and-derived-data|US-124]]). The other 34 were older files of the second replay.
 7. Not shown: a real run of `9c` pruning to 8 by itself. The next run reads the same value from the worker environment, and the story records it when it happens.
-8. Open for `Done`: the server screenshot, and the owner's acceptance.
+8. The server screenshot is saved as `us-112-server-check-output.png`. It shows `.env` and the worker at 8, 8 files with `latest` among them, `graphhopper` seeing the same 8 files, FRESH, the two pages at 8, and the 58 storm-replay files in the snapshot.
+9. Open for `Done`: the owner's acceptance.
