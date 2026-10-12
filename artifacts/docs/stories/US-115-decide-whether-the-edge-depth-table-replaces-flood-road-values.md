@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-115"
 title: "Decide whether the edge depth table replaces flood_road_values"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: In progress
 kind: spike
 priority: P0
 estimate: M
@@ -51,6 +51,10 @@ Dependencies: None.
 ## Status history
 
 - **2026-10-12, Ready.** Raised at Sprint 13 planning from the question "what does routing do with a run that wets no road piece". The product owner asked for it to be worked first in the sprint. Sized M (3 points) against `US-001`: several code reads, a data query, and a check on the server.
+- **2026-10-12, In progress.** Read so far, from the code and read-only server queries.
+  Point 1: `flood_on_roads.py` inserts only pieces with `max(depth) > 0`, so a fully dry run writes no rows. The winner query of `flood_areas.py` then picks the newest older run for those times. `extract_run.py` raises `no flood_road_values rows` for such a run, and no DAG calls it, so only a manual run shows the error. The Java engine reads one `latest` table, which is dense, so it is not affected. Still to read: `TimeAwareRouter` for the pick of a table at a given time.
+  Point 2: `graph_edge` has `edge_id`, `length_m`, and `geom`. `edges.csv` has `edge_id`, `wkt`, `base_node`, and `adj_node`, and all of them are renumbered on a re-import. No OSM way id or `segment_id` is exported, so history keyed on `edge_id` is orphaned at each re-import unless a key is added to the export.
+  Point 3 (partly): on the server, `flood_road_values` holds 75 runs, 1,911,344 rows, and 1,275 MB, and a recent run has 18,848 to 20,728 rows (2,356 to 2,591 wet pieces by 8 steps). A sparse edge table needs a count of wet edges per run. Earlier readings show about 1,000 wet edges per step. Points 4 and 5 are open.
 
 ## Evidence and details
 

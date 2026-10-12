@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-094"
 story_label: "1"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Ready
+status: Done
 kind: story
 priority: P1
 estimate: S
@@ -47,8 +47,16 @@ It shows the `2b_archive_results` log line of three sampled runs, the task state
 - **2026-10-10, reviewed.** During the storm replay of [[US-102-replay-the-storm-with-the-us-101-fix-to|US-102]] with the test-rain setting on, `2b_archive_results` logged the skip in the three sampled runs, and 58 of 58 `2b` and `2c` tasks ended `success`.
   The archive mount exists in the worker and holds 0 files.
 - **2026-10-12, Ready.** Split at Sprint 13 planning. This part is the deploy and the test-rain skip, and it is sized S (2 points). The real-rain proof, the copy, the floor, and the growth are [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], in the backlog.
+- **2026-10-12, Done.** The product owner accepted part one.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
-The evidence above is the 2026-10-10 capture.
+**Evidence:** the 2026-10-10 server capture shown above, taken from the Mac with read-only queries.
+
+**Details:**
+
+1. The server `.env` sets `ARCHIVE_HOST_PATH=D:\airflow_new_data\archive`, and `airflow_new-airflow-worker-1` mounts it at `/opt/airflow/archive`. The folder lists with 0 files.
+2. In the three sampled runs of the storm replay (test-rain mode), `2b_archive_results` logged that it skipped.
+3. 58 of 58 `2b_archive_results` and `2c_archive_done` tasks ended `success`.
+4. The tests pass: 9 in `scripts/test_archive_results.py` and 15 in `test/test_flood_mapping_dag_graph.py`.
+5. The concept page [[3di-simulation-orchestration]] has a section "Archiving the result", and its `last_updated` is 2026-10-12.

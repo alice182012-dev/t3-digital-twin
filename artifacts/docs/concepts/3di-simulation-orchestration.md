@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [3di, airflow, simulation]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[calculate-depth-threedidepth-cli]]", "[[minio-flood-extent-pipeline]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-10
+last_updated: 2026-10-12
 ---
 
 # 3Di simulation orchestration
@@ -207,6 +207,16 @@ The local `depth.tif` files under `data/mapping/output_depths` are a cache, and 
 A saved state is different.
 `create_simulation.py` registers each one with an expiry of one day, so a hotstart is possible only from a run less than a day old.
 A slot that never ran has no result to download, and only a new simulation can fill it.
+
+## Archiving the result
+
+Task `2b_archive_results` runs after `2_download_results` and calls `scripts/archive_results.py`.
+It copies `results_3di.nc` and `run_record.json` to `<ARCHIVE_DIR>/<sim_id>/`, but only when the rain source is `tomorrow.io`.
+In test-rain mode (`FLOOD_TEST_RAIN_CSV` or `FLOOD_TEST_RAIN_MM_HR` set), the task logs that it skipped and copies nothing.
+The join task `2c_archive_done` has trigger rule `all_done`, so a failed or skipped archive does not stop the run from reaching `3b_publish_depth_files`.
+`compose.yml` mounts `ARCHIVE_HOST_PATH` at `/opt/airflow/archive`, and the server sets it to `D:\airflow_new_data\archive`.
+Checked on the server on 2026-10-10: during the storm replay, 58 of 58 `2b` and `2c` tasks ended `success`, three sampled `2b` logs show the skip, and the worker lists the mount with 0 files.
+The real-rain copy, the 50 GB free-space floor, and the growth in GB are open in [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 
 ## Turning the NetCDF into depth rasters
 
