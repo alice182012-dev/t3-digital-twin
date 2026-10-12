@@ -29,7 +29,7 @@ The script creates one enum type and three hypertables.
 | --- | --- | --- | --- |
 | `institution_histogram_bar` | `issued_at` | `institution_id, cycle, issued_at, bar_index` | One hourly bar of one institution's histogram, from one simulation run |
 | `background_forecast_depth` | `issued_at` | `segment_id, issued_at, valid_time` | One road segment's forecast depth at one hour, from one `background_cycle` run |
-| `depth_history` | `valid_time` | `segment_id, valid_time` | The depth kept on record for one road segment at one moment |
+| `depth_history` | `valid_time` | `edge_key, valid_time` | The depth kept on record for one wet graph edge at one moment |
 
 `simulation_cycle` is an enum with the values `constant_cycle` and `background_cycle`. The
 `cycle` column in `institution_histogram_bar` and `depth_history` uses it, so a typo or a third
@@ -86,22 +86,24 @@ because history queries ask "what was the depth on this road over the last week"
 per segment and moment, so the run with the later `issued_at` wins a moment ([[decision-log|D-032]]).
 
 `history_moment` has one row per moment a run covered, wet or not (`valid_time` as primary key, with `issued_at`).
-A moment listed there with no `depth_history` row for a segment means the segment was dry (0 m). A moment missing there is unknown, for example a slot that the rain gate skipped. Both tables are hypertables with 7-day chunks.
-`depth_history` is compressed per chunk once the chunk closes (segment by `segment_id`, order by `valid_time`), and both tables drop data older than 365 days.
+A moment listed there with no `depth_history` row for an edge means the edge was dry (0 m). A moment missing there is unknown, for example a slot that the rain gate skipped. Both tables are hypertables with 7-day chunks.
+`depth_history` is compressed per chunk once the chunk closes (segment by `edge_key`, order by `valid_time`), and both tables drop data older than 365 days.
 
 The DAG `flood_history` (`dags/flood_history_dag.py`) runs on the asset `FLOOD_ROAD_VALUES`, which `flood_on_roads` of `routing_adapter` emits.
-`scripts/flood_history/load_run.py` reads the run's moments from `flood_road_file.forecast_times` and its rows from `flood_road_values`, including rows of depth 0.
-It converts the Vietnam local `forecast_time` to UTC and writes in one transaction under a table-wide advisory lock.
+`scripts/flood_history/load_run.py` reads the run's moments from `edge_depth_run.valid_times` and its rows from `edge_depth`, which holds the wet edges only ([[US-122-point-depth-history-at-the-edge-table|US-122]], [[decision-log|D-038]]).
+Both are naive UTC, and `depth_m` is `depth_cm / 100`.
+It writes in one transaction under a table-wide advisory lock.
 For each moment it skips the moment when `history_moment` holds a later `issued_at`. Otherwise it deletes the moment's `depth_history` rows, inserts the run's rows, and upserts the moment.
-A segment that an earlier run wet and the winning run did not wet therefore has no row. Loading a run again gives the same rows.
-`depth_history` is keyed by `segment_id` until [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it on `edge_key`.
+An edge that an earlier run wet and the winning run did not wet therefore has no row. Loading a run again gives the same rows.
+A run that `edge_depth_run` does not list is an error. Task `9c` writes the registry row and has no ordering against `flood_on_roads`, so a load that runs first fails and the DAG retries once.
+
+`depth_history.edge_key` is `graph_edge.edge_key` (`<osm_way_id>:<position>`). `create_timescale_tables.py` renames the column `segment_id` of an older table to `edge_key`, which keeps the compressed chunks.
+Rows loaded before the move keep their piece ids (`<way>#<index>`), which never equal an edge key. They cannot be mapped to edges, because the pieces and the edges split a way at different points.
+A moment that only old rows cover has no row for any edge, so an edge key reads dry there. A later run for the same moment replaces the old rows.
 
 ## Open items
 
-- `segment_id` is `TEXT`. Since the raster-first pipeline, `flood_road_values.segment_id` holds the
-  stable ID of the `road_segment` table, and it maps 1 to 1 to the geometry (checked on the
-  2026-09-30 02:00:00 run). The metric extractor still keys on `md5(ST_AsEWKB(geom_4326))` (see
-  [[flood-metric-extractor]]). `flood_history` writes `depth_history` and `history_moment`. No loader writes the other tables, since `US-021` was dropped.
+- `edge_key` is `TEXT`. The metric extractor keys on it too (see [[flood-metric-extractor]]). `flood_history` writes `depth_history` and `history_moment`. No loader writes the other tables, since `US-021` was dropped.
 - Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
   foreign key because the planned institutions table lives in `storage-postgres`, a different
   database.

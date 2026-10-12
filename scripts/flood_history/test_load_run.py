@@ -38,14 +38,11 @@ class ConversionTests(unittest.TestCase):
 
 
 class BuildSliceTests(unittest.TestCase):
-    def test_a_run_becomes_utc_moments_and_rows_issued_at_the_run_time(self):
+    def test_a_run_becomes_utc_moments_and_wet_rows_in_metres_issued_at_the_run_time(self):
         run = load_run.build_slice(
             "20260924T164803",
-            [datetime(2026, 9, 24, 17, 3, 3), datetime(2026, 9, 24, 16, 48, 3)],
-            [
-                ("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.25),
-                ("seg-1", datetime(2026, 9, 24, 17, 3, 3), 0.0),
-            ],
+            [datetime(2026, 9, 24, 10, 3, 3), datetime(2026, 9, 24, 9, 48, 3)],
+            [("100:0", datetime(2026, 9, 24, 9, 48, 3), 25), ("100:0", datetime(2026, 9, 24, 10, 3, 3), 7)],
         )
 
         self.assertEqual(
@@ -55,44 +52,47 @@ class BuildSliceTests(unittest.TestCase):
                 issued_at=utc(2026, 9, 24, 9, 48, 3),
                 moments=(utc(2026, 9, 24, 9, 48, 3), utc(2026, 9, 24, 10, 3, 3)),
                 rows=(
-                    DepthRow("seg-1", utc(2026, 9, 24, 9, 48, 3), 0.25),
-                    DepthRow("seg-1", utc(2026, 9, 24, 10, 3, 3), 0.0),
+                    DepthRow("100:0", utc(2026, 9, 24, 9, 48, 3), 0.25),
+                    DepthRow("100:0", utc(2026, 9, 24, 10, 3, 3), 0.07),
                 ),
             ),
         )
 
-    def test_a_run_that_wets_no_piece_still_covers_its_moments(self):
-        run = load_run.build_slice("20260924T164803", [datetime(2026, 9, 24, 16, 48, 3)], [])
+    def test_a_run_that_wets_no_edge_still_covers_its_moments(self):
+        run = load_run.build_slice("20260924T164803", [datetime(2026, 9, 24, 9, 48, 3)], [])
 
         self.assertEqual((run.moments, run.rows), ((utc(2026, 9, 24, 9, 48, 3),), ()))
 
-    def test_a_run_without_forecast_times_fails(self):
-        with self.assertRaisesRegex(LoadRunError, "no forecast times in flood_road_file for run 20260924T164803"):
-            load_run.build_slice("20260924T164803", [], [("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.25)])
+    def test_a_run_without_valid_times_fails(self):
+        with self.assertRaisesRegex(LoadRunError, "no valid times in edge_depth_run for run 20260924T164803"):
+            load_run.build_slice("20260924T164803", [], [("100:0", datetime(2026, 9, 24, 9, 48, 3), 25)])
 
-    def test_a_row_at_a_time_the_forecast_times_do_not_cover_fails(self):
-        with self.assertRaisesRegex(LoadRunError, "which its forecast times do not cover"):
+    def test_a_row_at_a_time_the_valid_times_do_not_cover_fails(self):
+        with self.assertRaisesRegex(LoadRunError, "which its valid times do not cover"):
             load_run.build_slice(
                 "20260924T164803",
-                [datetime(2026, 9, 24, 16, 48, 3)],
-                [("seg-1", datetime(2026, 9, 24, 16, 3, 3), 0.25)],
+                [datetime(2026, 9, 24, 9, 48, 3)],
+                [("100:0", datetime(2026, 9, 24, 9, 3, 3), 25)],
             )
 
-    def test_read_run_queries_the_run_by_its_name_and_its_local_timestamp(self):
+    def test_read_run_queries_the_run_by_its_name(self):
         def rows(sql):
-            if "flood_road_file" in sql:
-                return [(datetime(2026, 9, 24, 16, 48, 3),)]
-            return [("seg-1", datetime(2026, 9, 24, 16, 48, 3), 0.4)]
+            if "edge_depth_run" in sql:
+                return [([datetime(2026, 9, 24, 9, 48, 3)],)]
+            return [("100:0", datetime(2026, 9, 24, 9, 48, 3), 40)]
 
         conn = FakeConnection(rows)
 
         run = load_run.read_run(conn, "20260924T164803")
 
-        self.assertEqual(run.rows, (DepthRow("seg-1", utc(2026, 9, 24, 9, 48, 3), 0.4),))
-        self.assertEqual(
-            [params for _, params in conn.committed],
-            [(datetime(2026, 9, 24, 16, 48, 3),), (datetime(2026, 9, 24, 16, 48, 3),)],
-        )
+        self.assertEqual(run.rows, (DepthRow("100:0", utc(2026, 9, 24, 9, 48, 3), 0.4),))
+        self.assertEqual([params for _, params in conn.committed], [("20260924T164803",), ("20260924T164803",)])
+
+    def test_read_run_fails_for_a_run_the_registry_does_not_list(self):
+        conn = FakeConnection(lambda sql: [])
+
+        with self.assertRaisesRegex(LoadRunError, "no edge_depth_run row for run 20260924T164803"):
+            load_run.read_run(conn, "20260924T164803")
 
 
 class PlanWriteTests(unittest.TestCase):
@@ -125,13 +125,11 @@ class PlanWriteTests(unittest.TestCase):
 
 
 def run_slice(run_ts, wet):
-    """A run that covers four 15-minute moments from its own time on, with `wet` = {(segment_id, step): depth}."""
+    """A run that covers four 15-minute moments from its own time on, with `wet` = {(edge_key, step): depth_cm}."""
     issued_at = load_run.vietnam_to_utc(datetime.strptime(run_ts, "%Y%m%dT%H%M%S"))
-    forecast_times = [
-        (issued_at + i * timedelta(minutes=15)).replace(tzinfo=None) + load_run.VIETNAM_UTC_OFFSET for i in range(4)
-    ]
-    road_rows = [(segment_id, forecast_times[step], depth) for (segment_id, step), depth in wet.items()]
-    return load_run.build_slice(run_ts, forecast_times, road_rows)
+    valid_times = [(issued_at + i * timedelta(minutes=15)).replace(tzinfo=None) for i in range(4)]
+    wet_rows = [(edge_key, valid_times[step], depth_cm) for (edge_key, step), depth_cm in wet.items()]
+    return load_run.build_slice(run_ts, valid_times, wet_rows)
 
 
 @unittest.skipUnless(DSN, "FLOOD_TEST_TIMESCALE_DSN unset")
@@ -153,8 +151,8 @@ class WriteRunTests(unittest.TestCase):
     def history(self):
         with self.conn, self.conn.cursor() as cur:
             cur.execute(
-                "SELECT segment_id, valid_time, depth_m, cycle::text, issued_at FROM depth_history "
-                "ORDER BY valid_time, segment_id"
+                "SELECT edge_key, valid_time, depth_m, cycle::text, issued_at FROM depth_history "
+                "ORDER BY valid_time, edge_key"
             )
             return cur.fetchall()
 
@@ -166,8 +164,8 @@ class WriteRunTests(unittest.TestCase):
     def write(self, run):
         return load_run.write_run(self.conn, run)
 
-    def test_loading_a_run_writes_one_row_per_source_row(self):
-        run = run_slice("20260924T164500", {("seg-1", 0): 0.2, ("seg-1", 1): 0.0, ("seg-2", 0): 0.5, ("seg-2", 1): 0.1})
+    def test_loading_a_run_writes_one_row_per_wet_edge_and_step(self):
+        run = run_slice("20260924T164500", {("100:0", 0): 20, ("101:0", 0): 50, ("101:0", 1): 10})
 
         self.write(run)
 
@@ -175,33 +173,32 @@ class WriteRunTests(unittest.TestCase):
         self.assertEqual(
             self.history(),
             [
-                ("seg-1", utc(2026, 9, 24, 9, 45), 0.2, "constant_cycle", issued),
-                ("seg-2", utc(2026, 9, 24, 9, 45), 0.5, "constant_cycle", issued),
-                ("seg-1", utc(2026, 9, 24, 10, 0), 0.0, "constant_cycle", issued),
-                ("seg-2", utc(2026, 9, 24, 10, 0), 0.1, "constant_cycle", issued),
+                ("100:0", utc(2026, 9, 24, 9, 45), 0.2, "constant_cycle", issued),
+                ("101:0", utc(2026, 9, 24, 9, 45), 0.5, "constant_cycle", issued),
+                ("101:0", utc(2026, 9, 24, 10, 0), 0.1, "constant_cycle", issued),
             ],
         )
         self.assertEqual(len(self.moments()), 4)
 
     def test_loading_the_same_run_twice_keeps_the_row_count(self):
-        run = run_slice("20260924T164500", {("seg-1", 0): 0.2, ("seg-2", 3): 0.4})
+        run = run_slice("20260924T164500", {("100:0", 0): 20, ("101:0", 3): 40})
 
         self.write(run)
         second = self.write(run)
 
         self.assertEqual((len(second.written), len(self.history()), len(self.moments())), (4, 2, 4))
 
-    def test_a_later_run_takes_the_overlapping_moments_and_drops_a_piece_only_the_earlier_run_wet(self):
-        self.write(run_slice("20260924T164500", {("seg-1", 1): 0.2, ("seg-2", 1): 0.3, ("seg-1", 0): 0.1}))
+    def test_a_later_run_takes_the_overlapping_moments_and_drops_an_edge_only_the_earlier_run_wet(self):
+        self.write(run_slice("20260924T164500", {("100:0", 1): 20, ("101:0", 1): 30, ("100:0", 0): 10}))
 
-        later = self.write(run_slice("20260924T170000", {("seg-1", 0): 0.6}))
+        later = self.write(run_slice("20260924T170000", {("100:0", 0): 60}))
 
         self.assertEqual((len(later.written), later.skipped), (4, ()))
         self.assertEqual(
             self.history(),
             [
-                ("seg-1", utc(2026, 9, 24, 9, 45), 0.1, "constant_cycle", utc(2026, 9, 24, 9, 45)),
-                ("seg-1", utc(2026, 9, 24, 10, 0), 0.6, "constant_cycle", utc(2026, 9, 24, 10, 0)),
+                ("100:0", utc(2026, 9, 24, 9, 45), 0.1, "constant_cycle", utc(2026, 9, 24, 9, 45)),
+                ("100:0", utc(2026, 9, 24, 10, 0), 0.6, "constant_cycle", utc(2026, 9, 24, 10, 0)),
             ],
         )
         self.assertEqual(
@@ -210,21 +207,21 @@ class WriteRunTests(unittest.TestCase):
         )
 
     def test_an_earlier_run_loaded_after_a_later_one_keeps_only_the_moments_nobody_later_covers(self):
-        self.write(run_slice("20260924T170000", {("seg-1", 0): 0.6}))
+        self.write(run_slice("20260924T170000", {("100:0", 0): 60}))
 
-        earlier = self.write(run_slice("20260924T164500", {("seg-1", 0): 0.1, ("seg-1", 1): 0.2, ("seg-2", 1): 0.3}))
+        earlier = self.write(run_slice("20260924T164500", {("100:0", 0): 10, ("100:0", 1): 20, ("101:0", 1): 30}))
 
         self.assertEqual(earlier.written, (utc(2026, 9, 24, 9, 45),))
         self.assertEqual(len(earlier.skipped), 3)
         self.assertEqual(
             self.history(),
             [
-                ("seg-1", utc(2026, 9, 24, 9, 45), 0.1, "constant_cycle", utc(2026, 9, 24, 9, 45)),
-                ("seg-1", utc(2026, 9, 24, 10, 0), 0.6, "constant_cycle", utc(2026, 9, 24, 10, 0)),
+                ("100:0", utc(2026, 9, 24, 9, 45), 0.1, "constant_cycle", utc(2026, 9, 24, 9, 45)),
+                ("100:0", utc(2026, 9, 24, 10, 0), 0.6, "constant_cycle", utc(2026, 9, 24, 10, 0)),
             ],
         )
 
-    def test_a_run_that_wets_no_piece_records_its_moments_and_no_depths(self):
+    def test_a_run_that_wets_no_edge_records_its_moments_and_no_depths(self):
         result = self.write(run_slice("20260924T164500", {}))
 
         self.assertEqual((len(result.written), self.history()), (4, []))

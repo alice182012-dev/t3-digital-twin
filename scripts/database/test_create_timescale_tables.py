@@ -67,7 +67,7 @@ class TimescaleSchemaTests(unittest.TestCase):
 
         self.assertEqual(rows, [("depth_history", "valid_time", "7 days"), ("history_moment", "valid_time", "7 days")])
 
-    def test_depth_history_compresses_by_segment_ordered_by_time(self):
+    def test_depth_history_compresses_by_edge_ordered_by_time(self):
         rows = self.query(
             """
             SELECT segmentby, orderby FROM timescaledb_information.hypertable_compression_settings
@@ -75,7 +75,7 @@ class TimescaleSchemaTests(unittest.TestCase):
             """
         )
 
-        self.assertEqual(rows, [("segment_id", "valid_time")])
+        self.assertEqual(rows, [("edge_key", "valid_time")])
 
     def test_the_compression_and_drop_policies_exist_once_after_two_runs(self):
         rows = self.query(
@@ -96,6 +96,55 @@ class TimescaleSchemaTests(unittest.TestCase):
                 ("history_moment", "policy_retention", "365 days"),
             ],
         )
+
+
+@unittest.skipUnless(DSN, "FLOOD_TEST_TIMESCALE_DSN unset")
+class DepthHistoryMigrationTests(unittest.TestCase):
+    """A depth_history made before US-122 has segment_id and a compressed chunk."""
+
+    schema = f"timescale_migration_test_{os.getpid()}"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.conn = psycopg2.connect(DSN)
+        with cls.conn, cls.conn.cursor() as cur:
+            cur.execute("CREATE EXTENSION IF NOT EXISTS timescaledb")
+            cur.execute(f"CREATE SCHEMA {cls.schema}")
+            cur.execute(f"SET search_path TO {cls.schema}, public")
+            cur.execute(
+                """
+                CREATE TYPE simulation_cycle AS ENUM ('constant_cycle', 'background_cycle');
+                CREATE TABLE depth_history (
+                    segment_id TEXT NOT NULL, valid_time TIMESTAMPTZ NOT NULL, depth_m DOUBLE PRECISION NOT NULL,
+                    cycle simulation_cycle NOT NULL, issued_at TIMESTAMPTZ NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY (segment_id, valid_time));
+                SELECT create_hypertable('depth_history', by_range('valid_time', INTERVAL '7 days'));
+                ALTER TABLE depth_history SET (timescaledb.compress, timescaledb.compress_segmentby = 'segment_id',
+                                               timescaledb.compress_orderby = 'valid_time');
+                INSERT INTO depth_history (segment_id, valid_time, depth_m, cycle, issued_at)
+                VALUES ('601455783#2', '2026-01-01 00:00+00', 0.3, 'constant_cycle', '2026-01-01 00:00+00');
+                SELECT compress_chunk(c) FROM show_chunks('depth_history') c;
+                """
+            )
+
+    @classmethod
+    def tearDownClass(cls):
+        drop_test_schema(cls.conn, cls.schema)
+
+    def test_the_script_renames_the_key_and_keeps_the_compressed_rows(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(create_timescale_tables.SQL)
+            cur.execute(create_timescale_tables.SQL)
+            cur.execute("SELECT edge_key, depth_m FROM depth_history")
+            rows = cur.fetchall()
+            cur.execute(
+                "SELECT segmentby FROM timescaledb_information.hypertable_compression_settings "
+                "WHERE hypertable = %s::regclass", (f"{self.schema}.depth_history",)
+            )
+            segmentby = cur.fetchall()
+
+        self.assertEqual(rows, [("601455783#2", 0.3)])
+        self.assertEqual(segmentby, [("edge_key",)])
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
-"""Copies one run's per-piece flood depth from flood_road_values into depth_history in TimescaleDB, and the run's
-moments into history_moment (US-106, D-032, D-036). The moments come from flood_road_file.forecast_times (US-127).
+"""Copies one run's per-edge flood depth from edge_depth into depth_history in TimescaleDB, and the run's moments
+into history_moment (US-106, US-122, D-032, D-036, D-038). The moments come from edge_depth_run.valid_times.
 
 Usage: python load_run.py RUN_TS   (RUN_TS as the DAG names it, for example 20260924T164803)
 
 When two runs cover the same moment, the run with the later issued_at wins every piece of that moment: a loser's
-rows for the moment are replaced, so a piece only the loser wet has no row and reads as dry. Loading a run again
+rows for the moment are replaced, so an edge only the loser wet has no row and reads as dry. Loading a run again
 replaces its own rows. The table rules are in artifacts/docs/concepts/timescaledb-schema.md.
 """
 
@@ -29,7 +29,7 @@ CYCLE = "constant_cycle"
 
 
 class DepthRow(NamedTuple):
-    segment_id: str
+    edge_key: str
     valid_time: datetime
     depth_m: float
 
@@ -63,20 +63,20 @@ class LoadRunError(ValueError):
 
 
 def vietnam_to_utc(local: datetime) -> datetime:
-    """A naive Vietnam local time, as flood_road_values and the run name keep it, as an aware UTC time."""
+    """A naive Vietnam local time, as the run name keeps it, as an aware UTC time."""
     return (local - VIETNAM_UTC_OFFSET).replace(tzinfo=timezone.utc)
 
 
-def build_slice(run_ts: str, forecast_times: list[datetime], road_rows: list[tuple[str, datetime, float]]) -> RunSlice:
-    """`forecast_times` are the run's times in flood_road_file, and `road_rows` are the run's (segment_id, forecast_time,
-    depth) rows of flood_road_values. Both are naive Vietnam local time."""
-    if not forecast_times:
-        raise LoadRunError(f"no forecast times in flood_road_file for run {run_ts}, so it covers no moment")
-    moments = tuple(sorted(vietnam_to_utc(t) for t in set(forecast_times)))
-    rows = tuple(DepthRow(segment_id, vietnam_to_utc(forecast_time), depth) for segment_id, forecast_time, depth in road_rows)
+def build_slice(run_ts: str, valid_times: list[datetime], wet_rows: list[tuple[str, datetime, int]]) -> RunSlice:
+    """`valid_times` are the run's times in edge_depth_run, and `wet_rows` are the run's (edge_key, valid_time, depth_cm)
+    rows of edge_depth. Both are naive UTC. Only wet edges have a row, and the others read as dry."""
+    if not valid_times:
+        raise LoadRunError(f"no valid times in edge_depth_run for run {run_ts}, so it covers no moment")
+    moments = tuple(sorted(t.replace(tzinfo=timezone.utc) for t in set(valid_times)))
+    rows = tuple(DepthRow(edge_key, t.replace(tzinfo=timezone.utc), depth_cm / 100) for edge_key, t, depth_cm in wet_rows)
     stray = sorted({row.valid_time for row in rows} - set(moments))
     if stray:
-        raise LoadRunError(f"run {run_ts} has flood_road_values rows at {stray}, which its forecast times do not cover")
+        raise LoadRunError(f"run {run_ts} has edge_depth rows at {stray}, which its valid times do not cover")
     return RunSlice(run_ts=run_ts, issued_at=vietnam_to_utc(run_timestamp(run_ts)), moments=moments, rows=rows)
 
 
@@ -91,18 +91,16 @@ def plan_write(run: RunSlice, held: dict[datetime, datetime]) -> LoadResult:
 
 
 def read_run(conn, run_ts: str) -> RunSlice:
-    """Reads one run from storage-postgres. The run's moments are its forecast times in flood_road_file, which a run
-    with no wet piece still has. Every row of the run is copied, depth 0 included."""
-    run_time = run_timestamp(run_ts)
+    """Reads one run from storage-postgres. The run's moments are its valid times in edge_depth_run, which a run with
+    no wet edge still has. A run the registry does not list is an error."""
     with conn, conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT unnest(forecast_times) FROM flood_road_file WHERE timestamp = %s", (run_time,))
-        forecast_times = [row[0] for row in cur.fetchall()]
-        cur.execute(
-            "SELECT segment_id, forecast_time, depth FROM flood_road_values WHERE timestamp = %s",
-            (run_time,),
-        )
-        road_rows = cur.fetchall()
-    return build_slice(run_ts, forecast_times, road_rows)
+        cur.execute("SELECT valid_times FROM edge_depth_run WHERE run_ts = %s", (run_ts,))
+        registry = cur.fetchone()
+        if registry is None:
+            raise LoadRunError(f"no edge_depth_run row for run {run_ts}")
+        cur.execute("SELECT edge_key, valid_time_utc, depth_cm FROM edge_depth WHERE run_ts = %s", (run_ts,))
+        wet_rows = cur.fetchall()
+    return build_slice(run_ts, registry[0], wet_rows)
 
 
 def write_run(conn, run: RunSlice) -> LoadResult:
@@ -119,7 +117,7 @@ def write_run(conn, run: RunSlice) -> LoadResult:
         cur.execute("DELETE FROM depth_history WHERE valid_time = ANY(%s)", (list(result.written),))
         execute_values(
             cur,
-            "INSERT INTO depth_history (segment_id, valid_time, depth_m, cycle, issued_at) VALUES %s",
+            "INSERT INTO depth_history (edge_key, valid_time, depth_m, cycle, issued_at) VALUES %s",
             [(*row, CYCLE, run.issued_at) for row in result.rows],
             page_size=1000,
         )

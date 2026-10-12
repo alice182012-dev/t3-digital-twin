@@ -63,8 +63,22 @@ SELECT create_hypertable(
     'background_forecast_depth', by_range('issued_at'), if_not_exists => TRUE
 );
 
+-- US-122 (D-038): depth_history is keyed by graph_edge.edge_key, not by the road_segment piece id. A table made before
+-- that has segment_id, so rename it first. Rows loaded before the move keep their piece ids ('way#index'), which
+-- never collide with an edge key ('way:position'), and a load of a later run replaces them for its moments.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_attribute
+        WHERE attrelid = to_regclass('depth_history') AND attname = 'segment_id' AND NOT attisdropped
+    ) THEN
+        ALTER TABLE depth_history RENAME COLUMN segment_id TO edge_key;
+    END IF;
+END
+$$;
+
 CREATE TABLE IF NOT EXISTS depth_history (
-    segment_id TEXT NOT NULL,
+    edge_key TEXT NOT NULL,
     valid_time TIMESTAMPTZ NOT NULL,
 
     depth_m DOUBLE PRECISION NOT NULL CHECK (depth_m >= 0),
@@ -73,7 +87,7 @@ CREATE TABLE IF NOT EXISTS depth_history (
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    PRIMARY KEY (segment_id, valid_time),
+    PRIMARY KEY (edge_key, valid_time),
     CHECK (valid_time >= issued_at)
 );
 
@@ -90,7 +104,7 @@ BEGIN
     ) THEN
         ALTER TABLE depth_history SET (
             timescaledb.compress,
-            timescaledb.compress_segmentby = 'segment_id',
+            timescaledb.compress_segmentby = 'edge_key',
             timescaledb.compress_orderby = 'valid_time'
         );
     END IF;
@@ -101,8 +115,8 @@ $$;
 SELECT add_compression_policy('depth_history', compress_after => INTERVAL '7 days', if_not_exists => TRUE);
 SELECT add_retention_policy('depth_history', drop_after => INTERVAL '365 days', if_not_exists => TRUE);
 
--- Every moment a run covers, wet or not. A moment listed here with no depth_history row for a piece means the
--- piece was dry; a moment missing here is unknown (D-032, D-036). It is a hypertable with the same chunks and drop
+-- Every moment a run covers, wet or not. A moment listed here with no depth_history row for an edge means the
+-- edge was dry; a moment missing here is unknown (D-032, D-036). It is a hypertable with the same chunks and drop
 -- policy as depth_history, so a moment is forgotten when its depths are, and an old moment never reads as dry.
 CREATE TABLE IF NOT EXISTS history_moment (
     valid_time TIMESTAMPTZ PRIMARY KEY,

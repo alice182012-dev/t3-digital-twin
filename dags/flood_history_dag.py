@@ -1,9 +1,10 @@
-"""The per-piece depth history in TimescaleDB, one load per run (US-106, D-032).
+"""The per-edge depth history in TimescaleDB, one load per run (US-106, US-122, D-032, D-038).
 
 `flood_on_roads` of `routing_adapter` emits FLOOD_ROAD_VALUES, and this DAG runs on that event. It copies the run's
-rows of flood_road_values into depth_history and the run's moments into history_moment (scripts/flood_history/
-load_run.py). prune_flood_road_values keeps the 24 hours before the newest run, so the run is still there when this
-DAG reads it. A failure here touches neither the core run nor routing.
+rows of edge_depth into depth_history and the run's moments into history_moment (scripts/flood_history/load_run.py).
+Task 9c writes those rows and has no ordering against flood_on_roads, so a run whose 9c has not written its registry
+row fails here until a retry finds it. edge_depth keeps the 24 hours before the newest run, so the run is still
+there when this DAG reads it. A failure here touches neither the core run nor routing.
 """
 from airflow import DAG
 from airflow.providers.standard.operators.python import PythonOperator

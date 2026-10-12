@@ -82,7 +82,7 @@ class TimescaleReaderRoleTests(unittest.TestCase):
     def test_the_role_cannot_insert_into_depth_history(self):
         with self.assertRaises(InsufficientPrivilege):
             self.query(
-                "INSERT INTO public.depth_history (segment_id, valid_time, depth_m, cycle, issued_at) "
+                "INSERT INTO public.depth_history (edge_key, valid_time, depth_m, cycle, issued_at) "
                 "VALUES ('s', '2026-10-11T00:00:00Z', 0.1, 'constant_cycle', '2026-10-11T00:00:00Z')",
                 as_role=True,
             )
