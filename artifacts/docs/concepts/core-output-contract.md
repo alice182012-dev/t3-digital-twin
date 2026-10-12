@@ -29,6 +29,51 @@ A fact the code cannot show is marked as unverified.
 The DDL is in `scripts/database/`.
 Task `0b_ensure_schema` of `flood_mapping_full` runs it on every run (`task_ensure_schema`, `dags/flood_mapping_dag.py:168-176`), and every `CREATE` and `ADD COLUMN` in it has `IF NOT EXISTS`.
 
+### edge_depth
+
+One row is the depth of one wet edge at one forecast time, from one run.
+
+| Column | Type | Nullable |
+| ------ | ---- | -------- |
+| `run_ts` | `text` | no |
+| `valid_time_utc` | `timestamp without time zone` | no |
+| `edge_key` | `text` | no |
+| `depth_cm` | `integer` | no |
+
+- **Key.** The primary key is (`run_ts`, `valid_time_utc`, `edge_key`).
+  `run_ts` references `edge_depth_run.run_ts` with `ON DELETE CASCADE`.
+- **Primary key columns.** `run_ts`, `valid_time_utc`, `edge_key`.
+- **Time.** `run_ts` and `valid_time_utc` follow the Time convention section.
+- **Units.** `depth_cm` is the deepest sample along the edge, in whole centimetres, and a check keeps it above 0.
+- **Which rows exist.** An edge that is dry at a time has no row for that time.
+  A run with no wet edge has no rows here.
+- **Join.** `edge_key` is `graph_edge.edge_key`, which survives a re-import of the same OSM file.
+  The routing backend joins on it to draw the geometry (`floodmap/graphhopper-flood-road/backend/flood_areas.py`).
+- **Writer.** Task `9c_build_edge_depth_table`, in one transaction before it writes the file and publishes (`scripts/edge_depth/edge_depth_rows.py`).
+  A rebuild of one run replaces its rows.
+- **Retention.** The 24 hours before the newest run, set by `EDGE_DEPTH_KEEP_HOURS` (`edge_depth_rows.py`).
+
+### edge_depth_run
+
+One row is one run whose edge depth `9c` has written, wet or dry.
+
+| Column | Type | Nullable |
+| ------ | ---- | -------- |
+| `run_ts` | `text` | no |
+| `graph_hash` | `text` | no |
+| `valid_times` | `timestamp without time zone[]` | no |
+| `built_at` | `timestamp without time zone` | no |
+
+- **Key.** The primary key is `run_ts`.
+- **Primary key columns.** `run_ts`.
+- **Time.** `valid_times` holds the forecast times the run covers, in UTC without an offset, like `valid_time_utc`.
+  `built_at` is `NOW()` cast to `timestamp without time zone`.
+- **Why it exists.** A run with no wet edge writes no rows to `edge_depth`, so this row is the only record that the run covers a time.
+  The newest run whose `valid_times` contains a time wins that time (`_LATEST_WINNER` in `flood_areas.py`).
+  A winner with no rows in `edge_depth` means no edge is wet at that time.
+- **Writer.** Task `9c_build_edge_depth_table`, in the same transaction as the rows in `edge_depth`.
+- **Retention.** The same prune as `edge_depth`, which deletes the registry row and, by cascade, its rows.
+
 ### flood_depth_raster_tile
 
 One row is one 256 by 256 pixel tile of the flood depth raster at one forecast step of one run.
@@ -125,8 +170,7 @@ One row registers one run of `flood_on_roads`, whether or not the run has any we
 - **Time.** `timestamp` is the run, in Vietnam local time (+07) without an offset, the same value as `flood_road_values.timestamp`.
   `forecast_times` holds the forecast times the run covers, in the same local time as `flood_road_values.forecast_time`.
 - **Why it exists.** A run in which no road piece is wet writes no rows to `flood_road_values`, so the registry is the only record that the run covers a time.
-  The newest run whose `forecast_times` contains a time wins that time (`_WINNER_SEG_SQL` in `flood_areas.py`).
-  A winner with no rows in `flood_road_values` means no road piece is wet at that time.
+  The map overlay and the route fallback no longer read it (`US-119`).
 - **Which rows exist.** The writer registers every run, including a run with `feature_count` 0.
   A run from the older GeoJSON chain, `scripts/database/geojson_to_pg.py`, has `forecast_times` NULL until `create_flood_road_tables.py` backfills it from its rows.
   A shadow run (`flood_on_roads.py --target`) registers no times.
@@ -222,7 +266,7 @@ One row is one edge of the GraphHopper graph.
 - **Writer.** Task `9c_build_edge_depth_table` loads the graph export when its hash differs from the hash in `graph_edge_export`.
   It replaces the whole table in one transaction (`graph_edges.py:144-164`).
 - **Retention.** One graph at a time.
-  The routing backend does not read this table.
+  The routing backend reads its geometry to draw the wet edges of `edge_depth` (`US-119`).
   Task 9c reads it to build the edge depth files.
 
 ## Edge depth files
@@ -290,6 +334,7 @@ The timing of the asset trigger on the server is still being read (`US-073`).
 | Tiles in `flood-extent` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
 | `flood_road_values` | Rows older than `FLOOD_ROAD_VALUES_KEEP_HOURS` (default 24) before the newest run, pruned by the task `prune_flood_road_values` (US-086, D-017) | 45 runs and 1,087,512 rows after the first prune on 2026-10-09, from 413 runs and 14,836,828 rows (7,398 MB). After `VACUUM FULL` the table with its indexes is 537 MB |
 | `flood_run_output` (US-108) | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, task `9_build_flood_tiles` |
+| `edge_depth`, `edge_depth_run` | The 24 hours before the newest run | `EDGE_DEPTH_KEEP_HOURS`, `edge_depth_rows.py` |
 | `graph_edge` | The loaded graph | `graph_edges.py` |
 | Edge depth files | Newest 8 runs | `EDGE_TABLE_KEEP_RUNS`, `publish_edge_depth.py` |
 
@@ -323,6 +368,8 @@ The parser fails when a role lists no table, lists a table this page does not de
 The routing backend `floodmap-backend` connects as this role.
 Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the service in `compose.yml` has no fallback to the writer role.
 
+- `edge_depth`
+- `edge_depth_run`
 - `flood_depth_raster_tile`
 - `flood_extent_polygon`
 - `flood_extent_step`

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-119"
 title: "Read the map overlay and the route fallback from the edge table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Not started
+status: In progress
 kind: story
 priority: P1
 estimate: S
@@ -31,7 +31,16 @@ Dependencies: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `Do
 ## Status history
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
+- **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is built and its tables exist on the server, but they hold no rows until the next real `9c` run. The change is in `flood_areas.py`, which serves both `/flood/areas` and the legacy custom model of `/route`. Built and tested on a throwaway PostGIS, not deployed. Still open: the deploy, the reader role rerun, the before and after comparison on one replay run, and the server screenshot.
 
 ## Evidence and details
 
 Fill this when the story reaches `Done`.
+
+Details so far:
+
+1. One query now serves both reads. `_SEG_SQL` takes the winner from `edge_depth_run` (`_LATEST_WINNER`) or the pinned run (`_PINNED_WINNER`), joins `edge_depth` to `graph_edge` on `edge_key`, and builds the same buffered bands as before.
+2. Two units differ from `flood_road_values`. Depth is whole centimetres, so a band limit is `round(limit_m * 100)` and 15 cm is in band `b3` while 14 cm is in `b2`. The table holds UTC, so `_utc_naive` turns the request's `valid_time` into UTC, and a time with no offset is read as Vietnam local time, as before.
+3. `test_flood_areas.py` (against PostGIS) covers the three criteria that need no live run: a newest dry run hides an older wet run, a wet newest run answers with its own edges, and the centimetre limits. `test_server.py` covers `/flood/areas` and `/route` over HTTP. `test_server.py` failed before this story on a missing `flood_run_output` table, and the fixture now creates it.
+4. The core output contract page now describes `edge_depth` and `edge_depth_run`, and `routing_reader` lists them. It still lists `flood_road_file` and `flood_road_values`, so a rollback to the older backend keeps working. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] removes them.
+5. Deploy order: roll out the backend, then run `create_routing_reader_role.py routing_reader` so the role can read the new tables. Until the first `9c` run writes rows, a `latest` request returns no features.

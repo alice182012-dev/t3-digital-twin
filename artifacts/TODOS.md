@@ -69,7 +69,7 @@ The top 10 by priority:
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, In progress.
   Write the edge depth to a queryable table
-- [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], P1, S, Not started.
+- [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], P1, S, In progress.
   Read the map overlay and the route fallback from the edge table
 - [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], P1, S, Reviewed.
   Save the storm-replay results and derived data
