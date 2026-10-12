@@ -31,7 +31,7 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Status:** active.
 15 points picked, 5 done.
 
-### In progress - US-106 Write per-segment depth history to TimescaleDB
+### Reviewed - US-106 Write per-segment depth history to TimescaleDB
 
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].

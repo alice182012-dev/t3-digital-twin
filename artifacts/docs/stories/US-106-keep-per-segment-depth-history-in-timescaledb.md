@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-106"
 title: "Write per-segment depth history to TimescaleDB"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Reviewed
 kind: story
 priority: P1
 estimate: M
@@ -52,8 +52,20 @@ Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]
 - **2026-10-12, Ready.** Split at Sprint 13 planning into part (a), this story, and part (b), [[US-113-backfill-per-segment-depth-history|US-113]]. The open rule for the winning run is settled by [[decision-log|D-032]], so it is no longer open here. Sized M (3 points).
 - **2026-10-12, Ready.** The product owner chose to check compression by hand, on one chunk of the replay data, for the acceptance check.
 - **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. The build keys `depth_history` by `segment_id`, and [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it later.
+- **2026-10-12, Reviewed.** Built on `modular`, not pushed and not deployed. The acceptance checks on the server wait for the deploy and for the owner's hand compression of one chunk.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
-A server screenshot of the three queries is the evidence.
+**Evidence:** tests run on a throwaway TimescaleDB 2.30.1 container on the server (removed afterwards), and one real run loaded into it. There is no server screenshot yet, because the DAG is not deployed.
+
+**Details:**
+
+1. `create_timescale_tables.py` gives `depth_history` 7-day chunks, compression per closed chunk, and a 365-day drop policy, and adds `history_moment` with the same chunks and drop policy. Running the script twice changes nothing. A table-wide advisory lock covers the two callers, `0b_ensure_schema` and `flood_history`.
+2. `history_moment` is a hypertable and not a plain table, so an old moment is forgotten together with its depths. A plain table would keep moments after their depths were dropped, and those old moments would read as dry.
+3. `scripts/flood_history/load_run.py` holds the write rule as one pure function, `plan_write`, with the I/O around it. The lock is table-wide, because two different runs that share a moment could otherwise both read `history_moment` before either writes.
+4. The DAG `flood_history` runs on the asset `FLOOD_ROAD_VALUES`. When the scheduler folds several events into one run, it loads every run of them, oldest first, so no run leaves its early moments unknown. A manual run loads the newest published run.
+5. The tests pass: 18 DB tests (`scripts/database/test_create_timescale_tables.py` and `scripts/flood_history/test_load_run.py`) against the throwaway TimescaleDB, and 8 in `test/test_flood_history_dag.py`, 28 in `test/test_routing_adapter_dag.py`, and 19 in `test/test_flood_mapping_dag_graph.py` without a database.
+6. Real data, run `20261011T001500` copied from the server's read-only tables into the throwaway database: 19,792 rows loaded, equal to the count of the run in `flood_road_values`, over 8 moments, with 8 rows in `history_moment`. A second load gave the same counts. The first moment, 00:15 +07, is stored as 17:15 UTC.
+7. The volume `timescaledb-data` stays on C: (owner decision of 2026-10-12, hard disk drive on D:).
+8. Open for `Done`: the replay-run check and the hand compression of one chunk on the real server, which need the deploy. The compression ratio is not measured.
+9. For [[US-122-point-depth-history-at-the-edge-table|US-122]]: the table is keyed by `segment_id`, and the loader reads `flood_road_values`, so both change there.

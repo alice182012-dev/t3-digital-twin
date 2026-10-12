@@ -4,7 +4,7 @@ type: concept
 status: parked
 tags: [timescaledb, schema, histogram, sprint-1]
 related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
-last_updated: 2026-10-01
+last_updated: 2026-10-12
 ---
 
 # TimescaleDB schema for histograms, forecast series, and depth history
@@ -83,19 +83,29 @@ those tables don't hold. A CHECK rejects a `valid_time` earlier than `issued_at`
 `depth_history` keeps one depth per segment per moment, with `valid_time` as its time column,
 because history queries ask "what was the depth on this road over the last week". The
 `cycle` and `issued_at` columns record which run supplied the value. The primary key allows one row
-per segment and moment, so the loader must pick which run wins. The expected rule is an upsert that
-keeps the row with the later `issued_at`.
+per segment and moment, so the run with the later `issued_at` wins a moment ([[decision-log|D-032]]).
+
+`history_moment` has one row per moment a run covered, wet or not (`valid_time` as primary key, with `issued_at`).
+A moment listed there with no `depth_history` row for a segment means the segment was dry (0 m). A moment missing there is unknown, for example a slot that the rain gate skipped. Both tables are hypertables with 7-day chunks.
+`depth_history` is compressed per chunk once the chunk closes (segment by `segment_id`, order by `valid_time`), and both tables drop data older than 365 days.
+
+The DAG `flood_history` (`dags/flood_history_dag.py`) runs on the asset `FLOOD_ROAD_VALUES`, which `flood_on_roads` of `routing_adapter` emits.
+`scripts/flood_history/load_run.py` reads the run's moments from `flood_depth_raster_tile` and its rows from `flood_road_values`, including rows of depth 0.
+It converts the Vietnam local `forecast_time` to UTC and writes in one transaction under a table-wide advisory lock.
+For each moment it skips the moment when `history_moment` holds a later `issued_at`. Otherwise it deletes the moment's `depth_history` rows, inserts the run's rows, and upserts the moment.
+A segment that an earlier run wet and the winning run did not wet therefore has no row. Loading a run again gives the same rows.
+`depth_history` is keyed by `segment_id` until [[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it on `edge_key`.
 
 ## Open items
 
 - `segment_id` is `TEXT`. Since the raster-first pipeline, `flood_road_values.segment_id` holds the
   stable ID of the `road_segment` table, and it maps 1 to 1 to the geometry (checked on the
   2026-09-30 02:00:00 run). The metric extractor still keys on `md5(ST_AsEWKB(geom_4326))` (see
-  [[flood-metric-extractor]]). No loader writes these tables, since `US-021` was dropped.
+  [[flood-metric-extractor]]). `flood_history` writes `depth_history` and `history_moment`. No loader writes the other tables, since `US-021` was dropped.
 - Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
   foreign key because the planned institutions table lives in `storage-postgres`, a different
   database.
-- No compression or retention policy is set. Add them once real row counts exist.
+- The compression ratio is not measured on real rows yet. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] asks the owner to compress one chunk by hand.
 - The script ran against a plain PostgreSQL 16 server with the TimescaleDB calls stubbed out. That
   run checked the tables, the enum, every CHECK, and idempotency. The `create_hypertable` calls have
   not run against a real TimescaleDB server yet.
