@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
 related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-08
+last_updated: 2026-10-12
 ---
 
 # Edge depth table format
@@ -57,7 +57,7 @@ The graph hash guard (refuse a table whose `graphHash` differs from the loaded g
 
 ## The `latest` pointer
 
-A table directory holds the table files and one text file named `latest`. It contains the current table's file name and a newline, for example `20260930T020000.bin`. The name has no path separator and is not `latest`. `read_latest` returns the path of that table, and `write_latest` writes the pointer. Replacing the pointer without a partial read, and keeping the newest 3 tables, belong to `US-042`.
+A table directory holds the table files and one text file named `latest`. It contains the current table's file name and a newline, for example `20260930T020000.bin`. The name has no path separator and is not `latest`. `read_latest` returns the path of that table, and `write_latest` writes the pointer. Replacing the pointer without a partial read, and keeping the newest 8 tables ([[decision-log|D-033]]), belong to `US-042`.
 
 ## Measured
 

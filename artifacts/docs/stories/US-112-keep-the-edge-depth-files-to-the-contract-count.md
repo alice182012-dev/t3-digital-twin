@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-112"
 title: "Keep the edge depth files to the newest 8 runs"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Ready
+status: In progress
 kind: story
 priority: P3
 estimate: S
@@ -44,6 +44,7 @@ Estimate: S.
   It was a backlog story with no sprint.
 - **2026-10-12, Ready.** The product owner set the count to 8 ([[decision-log|D-033]]). The story named the count the contract named, which was 3, so its title and text now name 8. The contract page changes with this story.
   Sized S (2 points), with no dependency. Picked for Sprint 13.
+- **2026-10-12, In progress.** The code default (`dags/routing_adapter_dag.py`) and the `compose.yml` default are 8, with a test for each, and the two pages are updated. The server `.env` change waits for the owner's go.
 
 ## Evidence and details
 

@@ -225,7 +225,7 @@ One row is one edge of the GraphHopper graph.
 
 Task `9c_build_edge_depth_table` writes one file per run, `<run_ts>.bin`, into the Docker volume `edge-depth-tables`.
 A text file named `latest` holds the name of the current file.
-The newest 3 files stay (`EDGE_TABLE_KEEP_RUNS`, `dags/routing_adapter_dag.py:42`).
+The newest 8 files stay (`EDGE_TABLE_KEEP_RUNS`, default 8 in `dags/routing_adapter_dag.py` and in `compose.yml`, [[decision-log|D-033]]).
 Depths are in centimetres, and the step times are seconds since 1970-01-01T00:00:00Z.
 The byte layout, the `latest` pointer, and the graph hash check are in [[edge-depth-table-format]].
 
@@ -329,7 +329,7 @@ Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the s
 
 ### analysis_reader
 
-An analysis application connects as this role.
+An analysis application connects as this role. The service that runs it is described in [[analysis-service]].
 Its variables are `ANALYSIS_READER_USER` and `ANALYSIS_READER_PASSWORD`.
 It reads the flood results and not the road graph, so `graph_edge` and `road_segment` are not on its list.
 

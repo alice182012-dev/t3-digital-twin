@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-109"
 title: "Run an analysis service in its own container"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: M
@@ -38,6 +38,7 @@ Dependencies: US-107, US-108.
 - **2026-10-12, Ready.** Both dependencies are `Done`: [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] and [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]. The story passes the INVEST check. Picked for Sprint 13 at M (3 points), and the Timescale role stays in this story.
 - **2026-10-12, In progress.** Started after [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] was accepted. The build is the folder `analysis-service/`, two role scripts, and a service in `compose.yml` with an explicit environment block.
 - **2026-10-12, Reviewed.** Built, pushed, and deployed on the server on 2026-10-12, with the checks in details items 9 and 10. It waits for the server screenshot and the owner's acceptance.
+- **2026-10-12, Done.** The product owner accepted it after the server screenshot. The concept page is [[analysis-service]].
 
 ## Evidence and details
 
@@ -58,4 +59,4 @@ Dependencies: US-107, US-108.
 9. The check script `artifacts/docs/stories/evidence/us-109-server-check.sh`, run by the owner from the Mac at 13:03 +07, printed: the container `airflow_new-analysis-1` up on `127.0.0.1:8020`; `GET /health` returning `{"run_ts": "20261011T001500"}`; with the service's own credentials, `analysis_reader` reads `flood_run_output` and is denied a write to `flood_road_values`, `analysis_owner` creates a table in schema `analysis` and is denied one in `public`, and `analysis_timescale_reader` reads `depth_history` and is denied a write; 0 variables named THREEDI, TOMORROW, MINIO, or ORG_UUID in the container environment; and the root `Dockerfile` and `requirements.txt` unchanged against `main`.
 10. Checked afterwards, read only: no table `us109_probe` exists and schema `analysis` has no table, because the probes ran in rolled-back transactions. The container stays up, its log shows the health request answered with 200, and no service is in `Created` or `Restarting`.
 11. The server screenshot of item 9 is saved as `us-109-server-check-output.png`.
-12. Open for `Done`: the owner's acceptance.
+12. Accepted by the owner on 2026-10-12. The concept page [[analysis-service]] holds the endpoint, the roles, and the rollout.
