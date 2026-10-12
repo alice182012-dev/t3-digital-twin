@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-109"
 title: "Run an analysis service in its own container"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Reviewed
 kind: story
 priority: P2
 estimate: M
@@ -37,8 +37,19 @@ Dependencies: US-107, US-108.
 - **2026-10-10, draft.** Not started: it waits for `US-107` and `US-108`. It is rated M. Split the Timescale role into its own story if the sprint needs it smaller.
 - **2026-10-12, Ready.** Both dependencies are `Done`: [[US-107-create-a-read-only-role-for-any-consumer-app|US-107]] and [[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]. The story passes the INVEST check. Picked for Sprint 13 at M (3 points), and the Timescale role stays in this story.
 - **2026-10-12, In progress.** Started after [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] was accepted. The build is the folder `analysis-service/`, two role scripts, and a service in `compose.yml` with an explicit environment block.
+- **2026-10-12, Reviewed.** Built and merged on `modular`, not pushed and not deployed. The server checks wait for the rollout in details item 6.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
-A server screenshot of the health response and the three permission checks is the evidence.
+**Evidence:** tests on throwaway PostGIS and TimescaleDB containers (removed afterwards) and the read-only state of the server. No server screenshot yet, because nothing is deployed.
+
+**Details:**
+
+1. The service is the folder `analysis-service/`: its own `Dockerfile` (python:3.12-slim), its own `requirements.txt` (`psycopg2-binary` only), and `app/server.py`, which is a stdlib `ThreadingHTTPServer` like the routing backend. `GET /health` returns `{"run_ts": ...}` for the newest run whose set of outputs in `flood_run_output` equals the four of `run_output.Output`, or null. A refused connection gives 503, and any other path gives 404. The root `Dockerfile` and `requirements.txt` are unchanged (`git diff` is empty).
+2. The service reads `storage-postgres` as `analysis_reader` ([[US-107-create-a-read-only-role-for-any-consumer-app|US-107]]). `scripts/database/create_analysis_schema.py` makes the role `analysis_owner` and schema `analysis`, with no right on schema `public`, and `scripts/database/create_timescale_reader_role.py` makes `analysis_timescale_reader`, which can only `SELECT` `depth_history` and `history_moment`. Both scripts run again without change. A shared `roles.py` holds the common statements, and `create_routing_reader_role.py` uses it with unchanged behavior.
+3. The `analysis` service in `compose.yml` has no `env_file` and does not use the Airflow anchor. Its `environment` holds only its own variables. `test/test_analysis_service_compose.py` fails if an `env_file`, a `THREEDI` key, or a `TOMORROW` key is added.
+4. Tests on 2026-10-12: 12 offline tests pass, and with throwaway databases the 10 tests of `analysis-service/test` and the 18 of the three role scripts pass (PostGIS 17-3.5 and TimescaleDB 2.30.1). A test of the routing reader grants was already failing on `modular` after the contract change of [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], and a separate commit fixed its list.
+5. Server state, read only, 2026-10-12: `analysis_reader` exists, schema `analysis` and `analysis_owner` do not, and no `analysis%` role exists in TimescaleDB. `flood_run_output` has the runs `20261011T001500` and `20261011T000000`, each with all four outputs, so `/health` returns `20261011T001500`. `ANALYSIS_READER_PASSWORD` is in the server `.env`, and the two new passwords are not.
+6. Rollout order. Compose resolves every variable of the file for every command, so once the branch is pulled, every `docker compose` command fails until `.env` has `ANALYSIS_OWNER_PASSWORD` and `ANALYSIS_TIMESCALE_READER_PASSWORD`. First add both passwords to the server `.env`. Then pull `modular`. Then run `create_analysis_schema.py` and `create_timescale_reader_role.py` in the worker with the passwords passed to `docker exec`, because the worker reads `.env` only when it is created. Then build and start the service from the server desktop, because `docker build` over SSH fails.
+7. The service does not use the owner and the TimescaleDB credentials yet. They are in its environment so the permission checks can run from inside the container.
+8. Open for `Done`: the four server checks of the story (health returns the newest complete `run_ts`, a write to `flood_road_values` is refused, a write to a table in schema `analysis` works, and `printenv` shows no 3Di or Tomorrow.io key), the server screenshot, and the owner's acceptance.
