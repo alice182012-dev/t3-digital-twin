@@ -36,7 +36,7 @@ Confirmed by the product owner on 2026-10-12. The goal does not change after the
 | | | Total | | 17 | |
 
 - **Why these.** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] needs every reader moved, and [[US-122-point-depth-history-at-the-edge-table|US-122]] needs [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] and [[US-113-backfill-per-segment-depth-history|US-113]] `Done`. So the goal needs all seven.
-- **Risk.** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] needs one event-triggered `flood_history` run, which needs a real or test-rain run. If none happens by the end of the week, [[US-113-backfill-per-segment-depth-history|US-113]], [[US-122-point-depth-history-at-the-edge-table|US-122]], and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] cannot finish, and the product owner decides whether to start a test-rain run.
+- **Risk.** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] needed one event-triggered `flood_history` run. It passed on 2026-10-12 with a hand-made asset event, so the rain no longer blocks the chain. The story still waits for the compression measurement and the owner's acceptance, and [[US-113-backfill-per-segment-depth-history|US-113]] can then load the retained runs.
 - **Work in progress.** At most two stories are `In progress` at once. Only [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is, on 2026-10-12.
 - **Done outside the plan.** [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]] were done on 2026-10-12 before this sprint was planned. They have no `sprint`, and their points are not in [[Velocity]].
 - **Open decisions.** None.
