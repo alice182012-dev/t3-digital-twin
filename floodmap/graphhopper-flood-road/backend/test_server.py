@@ -155,7 +155,11 @@ def reset(conn) -> None:
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
         cur.execute(create_flood_road_tables.SQL)
-        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN,))
+        cur.execute(
+            "INSERT INTO flood_road_file (id, timestamp, source_file, forecast_times)"
+            " VALUES (1, %s, 'test', ARRAY[%s::timestamp]);",
+            (RUN, VALID_TIME),
+        )
         cur.execute(
             "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, geom_4326)"
             " VALUES (1, %s, %s, 0.25, ST_GeomFromText(%s, 4326));",

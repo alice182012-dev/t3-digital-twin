@@ -256,6 +256,50 @@ class FloodOnRoadsTests(unittest.TestCase):
         self.assertEqual(result.target_table, "flood_road_values_shadow")
         self.assertEqual(result.rows, 8)
 
+    def registry(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT source_file, feature_count, forecast_times FROM flood_road_file ORDER BY id")
+            return cur.fetchall()
+
+    def test_a_dry_run_registers_its_forecast_times_and_writes_no_rows(self):
+        self.add_tile(T1_UTC, 0, 0, {})
+        self.add_tile(T2_UTC, 0, 0, {})
+        self.add_piece("way/1#0", row_line(1, 0, 10), 10.0)
+        flood_on_roads.compute(self.conn, RUN)
+        self.assertEqual(self.rows(), [])
+        self.assertEqual(self.registry(), [(f"flood_on_roads_{RUN}", 0, [T1_LOCAL, T2_LOCAL])])
+
+    def test_a_wet_run_registers_its_forecast_times(self):
+        self.standard_run()
+        flood_on_roads.compute(self.conn, RUN)
+        self.assertEqual(self.registry(), [(f"flood_on_roads_{RUN}", 4, [T1_LOCAL, T2_LOCAL])])
+
+    def test_a_rerun_keeps_the_registered_forecast_times(self):
+        self.standard_run()
+        flood_on_roads.compute(self.conn, RUN)
+        flood_on_roads.compute(self.conn, RUN)
+        self.assertEqual(self.registry(), [(f"flood_on_roads_{RUN}", 4, [T1_LOCAL, T2_LOCAL])])
+
+    def test_table_script_run_twice_backfills_a_registered_runs_forecast_times(self):
+        """A run registered before forecast_times existed gets its times from its value rows; a run
+        without rows keeps NULL, and a second run of the script changes nothing."""
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("ALTER TABLE flood_road_file DROP COLUMN forecast_times")
+            cur.execute(
+                "INSERT INTO flood_road_file (timestamp, source_file) VALUES (%s, 'old run') RETURNING id",
+                (RUN_LOCAL,),
+            )
+            file_id = cur.fetchone()[0]
+            cur.execute("INSERT INTO flood_road_file (timestamp, source_file) VALUES (%s, 'no rows')", (RUN_LOCAL,))
+            for forecast_time in (T2_LOCAL, T1_LOCAL, T2_LOCAL):
+                cur.execute(
+                    "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth) VALUES (%s, %s, %s, 0.3)",
+                    (file_id, RUN_LOCAL, forecast_time),
+                )
+            cur.execute(create_flood_road_tables.SQL)
+            cur.execute(create_flood_road_tables.SQL)
+        self.assertEqual(self.registry(), [("old run", None, [T1_LOCAL, T2_LOCAL]), ("no rows", None, None)])
+
     def test_run_without_tiles_raises_and_writes_nothing(self):
         self.add_piece("way/1#0", row_line(1, 0, 10), 10.0)
         with self.assertRaises(FloodOnRoadsError):

@@ -42,6 +42,7 @@ from flood_areas import build_custom_model, derive_areas
 from flood_utils import vehicle_threshold_cm, vehicle_types
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
+EARLIER_TIME = "2026-05-22T08:45:00+00:00"
 RUN_OLD = "2026-05-22T06:00:00+00:00"
 RUN_NEW = "2026-05-22T12:00:00+00:00"
 
@@ -65,17 +66,35 @@ def reset(conn) -> None:
     with conn.cursor() as cur:
         cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
         cur.execute(create_flood_road_tables.SQL)
-        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN_OLD,))
     conn.commit()
+
+
+def register(conn, run: str, forecast_time: str) -> int:
+    """Records that `run` covers `forecast_time` in flood_road_file, as flood_on_roads.py does for
+    every run, wet or dry. Returns the run's file id."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO flood_road_file (timestamp, source_file, forecast_times)"
+            " VALUES (%(run)s, %(run)s, ARRAY[%(t)s::timestamp])"
+            " ON CONFLICT (source_file) DO UPDATE SET forecast_times = ("
+            "   SELECT array_agg(DISTINCT t ORDER BY t)"
+            "   FROM unnest(flood_road_file.forecast_times || EXCLUDED.forecast_times) t)"
+            " RETURNING id;",
+            {"run": run, "t": forecast_time},
+        )
+        file_id = cur.fetchone()[0]
+    conn.commit()
+    return file_id
 
 
 def insert(conn, run: str, forecast_time: str, depth: float, wkt: str, segment_id: str | None = None) -> None:
     """segment_id=None is a row from the old GeoJSON chain; a value is a flood_on_roads.py row."""
+    file_id = register(conn, run, forecast_time)
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, segment_id, geom_4326)"
-            " VALUES (1, %s, %s, %s, %s, ST_GeomFromText(%s, 4326));",
-            (run, forecast_time, depth, segment_id, wkt),
+            " VALUES (%s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326));",
+            (file_id, run, forecast_time, depth, segment_id, wkt),
         )
     conn.commit()
 
@@ -140,6 +159,7 @@ def main() -> int:
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b2"]
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_NEW)) == ["b4"]
 
+    check_dry_newest_run_wins(conn)
     check_depth_decides_impassable(conn)
 
     conn.close()
@@ -163,6 +183,19 @@ def main() -> int:
 
     print("ok")
     return 0
+
+
+def check_dry_newest_run_wins(conn) -> None:
+    """A run with no wet piece writes no flood_road_values rows, only its flood_road_file row with
+    the forecast times it covers (US-116). It still wins those times, so the older run's water
+    stops showing there, and the older run still answers a time only it covers."""
+    reset(conn)
+    insert(conn, RUN_OLD, EARLIER_TIME, DEPTH_B4_MOTORBIKE, SEGMENT_A)
+    insert(conn, RUN_OLD, VALID_TIME, DEPTH_B4_MOTORBIKE, SEGMENT_A)
+    register(conn, RUN_NEW, VALID_TIME)
+    assert derive_areas(conn, VALID_TIME, "motorbike", "latest")["features"] == []
+    assert band_ids(derive_areas(conn, EARLIER_TIME, "motorbike", "latest")) == ["b4"]
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4"]
 
 
 def check_depth_decides_impassable(conn) -> None:
