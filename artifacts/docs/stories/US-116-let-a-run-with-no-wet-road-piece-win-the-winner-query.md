@@ -26,7 +26,7 @@ Given a newest run with no wet piece and an older run that is wet at the same fo
 Given the same state, when `/route` falls back to the legacy custom model, then it has no flood areas.
 Given a newest run that is wet at some time, then the response does not change.
 
-The method waits for [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]. If the decision replaces the table, this story becomes part of that work. If the decision keeps both, the winner reads the run registry (`flood_road_file`, which already holds a run with `feature_count` 0).
+The method waits for the owner to accept [[decision-log|D-038]], which is proposed by [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]. D-038 keeps both tables, so the winner reads the run registry (`flood_road_file`, which already holds a run with `feature_count` 0).
 The server had no run with `feature_count` 0 among 75 runs on 2026-10-12, so a test needs a constructed dry run.
 
 Dependencies: [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] is `Done`.

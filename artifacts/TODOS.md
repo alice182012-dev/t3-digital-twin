@@ -31,7 +31,7 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Status:** active.
 15 points picked, 2 done.
 
-### In progress - US-115 Decide whether the edge depth table replaces flood_road_values
+### Reviewed - US-115 Decide whether the edge depth table replaces flood_road_values
 
 **Story:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]].
 P0, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.

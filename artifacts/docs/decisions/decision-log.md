@@ -609,3 +609,21 @@ is the maximum.
   [[US-094-archive-results-3di-nc-and-a-run|US-094]] sets the default of `ARCHIVE_MIN_FREE_GB` to 50.
 - **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], and the Next action block of [[TODOS]].
 - **Revisit if:** the product owner sets a value for a lowered gate, or D: falls below the floor during the archive proof.
+
+## D-038: Keep flood_road_values and the edge depth table, and fix the winner query with the run registry
+
+- **Date:** 2026-10-12
+- **Status:** proposed. The product owner accepts it, or chooses another option.
+- **Decided by:** Awaiting the product owner. The spike [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] recommends it.
+- **Decision:** Keep `flood_road_values` for the map, the route fallback, the metrics, and the history, and keep the edge depth table for the routing engine.
+  Fix the stale overlay by making the winner query of `flood_areas.py` read the run registry `flood_road_file`, so a run with no wet piece wins its forecast times with no features.
+  Replace later, with a trigger: the export of the graph carries a stable key (the OSM way id and the position along the way), and the metrics read it.
+- **Why:** The stale overlay comes from the missing record of a dry run, and a sparse edge table keeps that gap.
+  `graph_edge` has no stable key, so history and metrics keyed on `edge_id` break at each re-import.
+  A sparse edge table has 11,650 to 16,370 rows per run against about 20,000, so it does not save storage.
+  A merged sampler saves up to 62 s of 136 s per run, but the `9c` time already grows along a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]).
+- **Alternatives:** (1) Replace `flood_road_values` with the edge depth table now. Not chosen, because of the missing key and the metrics. (2) Add a sentinel row for a dry run to `flood_road_values`. Not chosen, because the registry already holds the fact and a sentinel row would reach every reader that sums depth.
+- **Evidence:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], Evidence and details, points 1 to 7.
+- **Affects:** [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] (method decided), [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (no change: `depth_history` keeps reading `flood_road_values`), and [[decision-log|D-036]].
+- **Revisit if:** the export carries a stable key, the `9c` time passes 150 s on average, or a reader needs a piece set that `road_segment` cannot give.
+
