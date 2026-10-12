@@ -436,6 +436,37 @@ services:
       - "${FLOODMAP_BACKEND_PORT:-8010}:8010"
     restart: unless-stopped
 
+  analysis:
+    # US-109. Its own image and requirements file. No env_file and no x-airflow-common: the environment holds only
+    # the service's own credentials, so the 3Di, Tomorrow.io, and MinIO keys never reach it.
+    # test/test_analysis_service_compose.py checks the variable list.
+    build:
+      context: ./analysis-service
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8020
+      POSTGRES_HOST: storage-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
+      # Reads flood results (US-107). scripts/database/create_routing_reader_role.py analysis_reader makes the role.
+      ANALYSIS_READER_USER: ${ANALYSIS_READER_USER:-analysis_reader}
+      ANALYSIS_READER_PASSWORD: ${ANALYSIS_READER_PASSWORD:?Set ANALYSIS_READER_PASSWORD in .env}
+      # Owns schema analysis, the only place the service writes. scripts/database/create_analysis_schema.py.
+      ANALYSIS_OWNER_USER: ${ANALYSIS_OWNER_USER:-analysis_owner}
+      ANALYSIS_OWNER_PASSWORD: ${ANALYSIS_OWNER_PASSWORD:?Set ANALYSIS_OWNER_PASSWORD in .env}
+      TIMESCALE_HOST: timescaledb
+      TIMESCALE_PORT: 5432
+      TIMESCALE_DB: ${TIMESCALE_DB:-flood_metrics}
+      # Reads depth_history and history_moment. scripts/database/create_timescale_reader_role.py.
+      ANALYSIS_TIMESCALE_READER_USER: ${ANALYSIS_TIMESCALE_READER_USER:-analysis_timescale_reader}
+      ANALYSIS_TIMESCALE_READER_PASSWORD: ${ANALYSIS_TIMESCALE_READER_PASSWORD:?Set ANALYSIS_TIMESCALE_READER_PASSWORD in .env}
+    depends_on:
+      storage-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ANALYSIS_PORT:-8020}:8020"
+    restart: unless-stopped
+
   # floodmap-frontend (Valhalla-era static test UI, floodmap/valhalla-flood-road-test/frontend)
   # is retired here: floodmap-backend's response contract changed from Valhalla's
   # trip/legs/polyline shape to GraphHopper's paths[] shape (Workstream B), so the old
