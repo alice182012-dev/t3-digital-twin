@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [minio, airflow, flood-tile]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
-last_updated: 2026-10-10
+last_updated: 2026-10-12
 ---
 
 # MinIO flood-extent tile pipeline
@@ -49,8 +49,10 @@ not fail the core run.
 when `3b_publish_depth_files` ends. `postgis` runs on `flood_depth_raster_tile` (the event of `9b`), exports the
 first `FLOOD_EXTENT_TILE_STEPS` steps with `scripts/flood_extent/raster_export.py` into a temporary folder in
 EPSG:4326, builds from it, and removes it. The task returns `input_seconds` and `build_seconds` for each run.
-The modes write the same bucket and rows, so run one at a time. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]
-measures which one to keep.
+The modes write the same bucket and rows, so run one at a time. Keep `files`. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]
+measured on 2026-10-12 that `postgis` builds no tiles as shipped, because the engine needs the source CRS and the
+export is in EPSG:4326 ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]). With a warp back to EPSG:3405 it is
+32 to 35 s slower per run and its band areas differ from `files` by 1.0 to 1.7 percent ([[decision-log|D-027]]).
 
 The 24-hour cleanup of `RESULT_DIR` and `DEPTH_ROOT_DIR` is part of `publish_run`, so `flood_tiles` owns
 it. It deletes by file age, so it cannot take the files of a run that another consumer still reads. A

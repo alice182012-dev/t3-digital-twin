@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 15 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. Next: [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S), the last pick of the sprint. Four picks are `Done` ([[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]]), 10 of 15 points. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
+1. Next: your acceptance of [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S, `Reviewed`): keep `files`, `postgis` builds no tiles as shipped ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]). Four picks are `Done` ([[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]]), 10 of 15 points. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is also `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
 2. In the backlog, accepted decisions: [[decision-log|D-038]] (replace `flood_road_values`, stories [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] to [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]) and [[decision-log|D-039]] (the storm test dataset, stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]]). A story gets `sprint` only at sprint planning.
 3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
 4. Owner items.
@@ -36,7 +36,7 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### Ready - US-104 Compare the two inputs of the flood tile build
+### Reviewed - US-104 Compare the two inputs of the flood tile build
 
 **Story:** [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]].
 P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]], spike.
@@ -93,5 +93,7 @@ The top 10 by priority:
   The route panel stayed on its grey loading bars
 - [[BL-021-place-name-slow-after-map-tap|BL-021]], P3, open.
   The place name takes seconds to show after a map tap
+- [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]], P3, open.
+  The postgis input of the flood tile build drops every polygon
 
 All blockers: [[Blockers board]].
