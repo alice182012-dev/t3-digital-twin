@@ -16,7 +16,7 @@ related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-repl
 
 Finish [[decision-log|D-038]]: every reader of flood depth reads the edge depth table, and the old sampler and `flood_road_values` are deleted.
 
-This is a draft goal from the product owner, set on 2026-10-12. The product owner confirms or changes it at planning on 2026-10-26. The goal does not change after the sprint starts.
+Confirmed by the product owner on 2026-10-12. The goal does not change after the sprint starts.
 
 ## Planning
 
@@ -32,7 +32,7 @@ This is a draft goal from the product owner, set on 2026-10-12. The product owne
 | 3 | [[US-122-point-depth-history-at-the-edge-table\|US-122]] | Point depth_history at the edge table | S | Not started |
 | 4 | [[US-123-delete-flood-on-roads-and-flood-road-values\|US-123]] | Delete flood_on_roads, road_segment, and flood_road_values | S | Not started |
 
-- **Open decisions.** None. The goal is a draft until planning.
+- **Open decisions.** None.
 
 ## Sprint backlog
 
@@ -66,4 +66,4 @@ The top of the backlog after this review: the order, the stories split, and the 
 
 ## Status history
 
-- **2026-10-12, planning.** Created at the product owner's request, with the draft goal "Finish D-038". The sprint has no picked story, and the dates are fixed.
+- **2026-10-12, planning.** Created at the product owner's request, with the goal "Finish D-038". The product owner confirmed the goal the same day. The sprint has no picked story, and the dates are fixed.
