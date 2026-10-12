@@ -105,7 +105,7 @@ A segment that an earlier run wet and the winning run did not wet therefore has 
 - Institutions have no table yet. `institution_id` is `TEXT` for the same reason, and it can't be a
   foreign key because the planned institutions table lives in `storage-postgres`, a different
   database.
-- The compression ratio is not measured on real rows yet. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] asks the owner to compress one chunk by hand.
+- The compression ratio is 1.7 on one chunk that holds one run (3,022,848 to 1,761,280 bytes, 2026-10-12), against the 11.4 expected. One run is too little data to judge. Measure again after [[US-113-backfill-per-segment-depth-history|US-113]] or a day of runs.
 - The script ran against a plain PostgreSQL 16 server with the TimescaleDB calls stubbed out. That
   run checked the tables, the enum, every CHECK, and idempotency. The `create_hypertable` calls have
   not run against a real TimescaleDB server yet.
