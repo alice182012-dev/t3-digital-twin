@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-116"
 title: "Let a run with no wet road piece win the winner query"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Not started
+status: In progress
 kind: bug
 priority: P1
 estimate: S
@@ -36,6 +36,7 @@ Dependencies: the owner accepts [[decision-log|D-038]].
 ## Status history
 
 - **2026-10-12, draft.** Found at Sprint 13 planning. It stays in the backlog until the spike decides the method, so the fix is not thrown away.
+- **2026-10-12, In progress.** Started after the owner accepted [[decision-log|D-038]]. Reproduced on a throwaway PostGIS (`imresamu/postgis:17-3.5`, on the server, reached through a tunnel) with the real `flood_on_roads` writer and the real backend: an older wet run (`20260924T164803`) and a newer dry run (`20260924T170303`) that overlap at local 17:03:03. `GET /flood/areas?valid_time=2026-09-24T17:03:03` returned 1 `b4` feature from the older run, where the newest run is dry. The time 16:48:03, which only the older run covers, returned the same feature, and 17:18:03 returned none.
 
 ## Evidence and details
 
