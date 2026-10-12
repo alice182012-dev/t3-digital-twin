@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-130"
 title: "Serve the forecast mode and read the pinned step"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Ready
+status: Reviewed
 kind: story
 priority: P2
 estimate: M
@@ -44,6 +44,7 @@ Take a screenshot of the endpoint answer and of a depth read and a route in each
 ## Status history
 
 - **2026-10-12, Ready.** Split from [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] at the product owner's request. It is picked for [[SPR-014-finish-the-remaining-backend|SPR-014]], and it has no code yet.
+- **2026-10-12, Reviewed.** Built and tested, not deployed. `GET /flood/mode` answers `LIVE`, `PENDING`, or `DEMO` from the newest `forecast_mode` row, with the pinned run and step in `DEMO`. A database with no decision answers `LIVE`. In `DEMO` with a pinned step, `GET /flood/points`, `GET /flood/areas`, and `POST /route` replace the `run` and `valid_time` of the request with the pinned ones. `POST /route` skips the time-aware engine in `DEMO` ([[decision-log|D-043]]). `POST /flood/forecast` and `POST /flood/profile` do not change with the mode. `test_server.py` passes against a throwaway PostGIS. It covers `LIVE` with no decision, `DEMO` reading the pinned older run for a point, the areas, and the route, `DEMO` with no pin, and `PENDING`. The unit tests of `flood_mode.py`, the contract reads guard, and the contract parse test pass. Still open: the grants of `routing_reader` on `forecast_mode` and `demo_pin` (rerun `create_routing_reader_role.py`), the pinned step's raster tiles ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]]), the server screenshots of each mode, and the point read and route in `DEMO`.
 
 ## Evidence and details
 

@@ -678,3 +678,26 @@ is the maximum.
 - **Affects:** the rule that a sprint goal does not change after the start ([[decision-log|D-026]]) and the rule that a story waiting on an external event stays out of the sprint ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]). Both are exceptions.
 - **Revisit if:** more than three stories leave the sprint at the review on 2026-10-25, which would show that a forecast of 16 does not describe this team.
 
+## D-042: Delete the piece-keyed depth history when `depth_history` moves to `edge_key`
+
+- **Date:** 2026-10-12
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, who answered "we can delete the old one, it is test rain anyway" to the question what to do with the rows already in `depth_history`, over keeping them.
+- **Decision:** The step of `create_timescale_tables.py` that renames `segment_id` to `edge_key` also deletes every row of `depth_history` and `history_moment`, once. It runs only when the old column exists. The history is rebuilt from runs in `edge_depth` ([[US-113-backfill-per-segment-depth-history|US-113]]).
+- **Why:** The rows hold piece ids (`<way>#<index>`). A piece and an edge split a way at different points, so no mapping from a piece to an edge exists. The rows came from test rain. A moment that only old rows cover would read as dry for every edge key, which is wrong, so `history_moment` goes with them.
+- **Alternatives:** (1) Keep the old rows. Not chosen, because their moments read as dry for an edge key. (2) Map pieces to edges by geometry. Not chosen, because a piece can cover parts of two edges and the depths differ.
+- **Evidence:** [[US-122-point-depth-history-at-the-edge-table|US-122]], status history, and [[timescaledb-schema]].
+- **Affects:** [[US-122-point-depth-history-at-the-edge-table|US-122]] and [[US-113-backfill-per-segment-depth-history|US-113]].
+- **Revisit if:** the history holds rain that the owner wants to keep before the migration runs on the server.
+
+## D-043: In `DEMO` mode the route reads the pinned run through the flood areas and not the engine
+
+- **Date:** 2026-10-12
+- **Status:** active. The owner has not read it.
+- **Decided by:** The development team, on 2026-10-12, while writing [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]. The story left the question open and asked for a decision if a rule changes.
+- **Decision:** With `forecast_mode` at `DEMO` and a pinned step, `POST /route` replaces the `run` and `valid_time` of the request with the pinned ones and skips the time-aware engine, even with `TIME_AWARE_ROUTING` on. It sends today's request with the flood areas that `flood_areas.derive_areas` builds from the `edge_depth` rows of the pinned run. The pin keeps the whole run, so the rows and the file stay ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]).
+- **Why:** The engine reads only the table that `latest` names, and it floors the departure to the clock. A stored step from another day cannot be judged by it without a Java change. The flood areas already accept a pinned run, so the map overlay and the route see the same water.
+- **Alternatives:** (1) Let the engine read `<run_ts>.bin` of the pinned run, which needs a change to the Java module and an image rebuild. Not chosen for now. (2) Send the departure time of the pinned step to the engine. Not chosen, because the engine still reads `latest`.
+- **Evidence:** `test_server.py` (a `DEMO` route sends one request, with `custom_model` and no `td_departure`) and [[graphhopper-backend]].
+- **Affects:** [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]], [[US-052-integrate-the-engine-into-the-backend-with|US-052]] only in that the engine is not used in `DEMO`, and the departure advice of [[US-053-build-post-route-departures|US-053]], which does not change with the mode.
+- **Revisit if:** the demo route must show the departure advice, or the engine can read a pinned table.

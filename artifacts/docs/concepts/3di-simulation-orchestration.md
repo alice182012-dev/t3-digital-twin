@@ -113,10 +113,10 @@ after the replay is unverified. The server also had the test DAGs `calculate_dep
 steps, `RAIN_LOOKAHEAD_HOURS` ahead). The source is Tomorrow.io because NCHMF did not approve API
 access (D-013 in [[decision-log]]). and `evaluate_rain_gate()`. A cycle proceeds to
 `1_trigger_simulation` if any forecast interval reaches `FLOOD_RAIN_THRESHOLD_MM_HR` (default 5
-mm/h). Below that, `scripts/standing_flood.py` reads the newest 5 runs of `flood_road_values` (US-101,
+mm/h). Below that, `scripts/standing_flood.py` reads the newest 5 runs of `edge_depth_run` and `edge_depth` (US-101, US-120,
 [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]). The run proceeds while a recent run (under 45 minutes old) is in progress and either one of those 5 runs has a deepest value of 5 cm or more
 (`FLOOD_DRY_DEPTH_M`, 0.05 m), or some rain is forecast. So the 5 mm/h gate applies only from a dry state, and a running simulation stops once the newest 5 runs are under 5 cm and the forecast is 0.
-On 2026-10-10 the rule ran the 4 slots of the event window that the 5 mm/h gate alone would have skipped ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], resolved). Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
+On 2026-10-10 the rule ran the 4 slots of the event window that the 5 mm/h gate alone would have skipped ([[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], resolved). Each decision, taken or not, is written to `forecast_mode` with the mode `LIVE`, `PENDING`, or `DEMO` (US-111, `scripts/forecast_mode.py`), and `9b_load_depth_raster` moves its run from `PENDING` to `LIVE`. The table is on [[core-output-contract]]. Otherwise the `BranchPythonOperator` returns `None`, which skips every later task, and the
 run ends as a successful dry-state skip, not a failure. `task_run_simulation` relies on this branch already having decided to run: a falsy
 `sim_id` there always means a real 3Di failure, so it raises `AirflowException` rather than
 `AirflowSkipException`, which would otherwise show identically green in the Airflow UI for both a

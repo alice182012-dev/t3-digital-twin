@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-122"
 title: "Point depth_history at the edge table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: Reviewed
 kind: story
 priority: P2
 estimate: S
@@ -32,6 +32,7 @@ Dependencies: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], [[US-
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
 - **2026-10-12, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: its dependencies are `Done` or in the same sprint, and its acceptance check is written.
+- **2026-10-12, Reviewed.** Built and tested, not deployed. `load_run.py` reads `edge_depth` and `edge_depth_run` and writes `depth_history` keyed by `edge_key`, with `depth_m` equal to `depth_cm / 100`. Only wet edges have a row, and `history_moment` marks the dry steps. `create_timescale_tables.py` renames `segment_id` to `edge_key` on an older table. A test on a compressed hypertable (TimescaleDB 2.30.2) shows the rename keeps the compression settings. The rows loaded before the move held piece ids that cannot be mapped to edges, so no mapping list exists. The owner decided to delete them ([[decision-log|D-042]]), and the same step deletes `history_moment`. 16 tests of `test_load_run.py` and 4 of the schema tests pass against a throwaway TimescaleDB. Task `9c` has no ordering against `flood_on_roads`, so a load that runs first fails and the DAG retries once. Still open: the migration on the server database, one run loaded twice on the server, and the rebuild of the history from runs ([[US-113-backfill-per-segment-depth-history|US-113]]).
 
 ## Evidence and details
 

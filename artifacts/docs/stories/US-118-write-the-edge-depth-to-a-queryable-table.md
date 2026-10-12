@@ -44,6 +44,7 @@ Dependencies: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Don
 - **2026-10-12, In progress.** While testing [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], `build_edge_depth.py` wrote live rows for two stored storm runs by hand, without `--publish`. Still open: the first real `9c` run that writes rows, and the check over 50 consecutive runs.
 - **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request.
 - **2026-10-12, In progress.** Task `9c_build_edge_depth_table` ran inside `routing_adapter` for the first time, on the hand-made `9b` event of the US-106 test (see [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], details item 16). It built run `20261011T001500` in 49.3 s and wrote 16,370 rows to `edge_depth` in 0.45 s, as the same run had by hand. `latest` stayed on that file. Still open: a `9c` run on a real simulation, and the check over 50 consecutive runs.
+- **2026-10-12, In progress.** Task `9c` now also reads `demo_pin` and passes the pinned run's table to the publish step, so the retention of the edge depth files keeps it ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]). The prune of `edge_depth` rows keeps the pinned run too.
 
 ## Evidence and details
 

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-111"
 title: "Write the forecast mode status row (part one of the pinned demo flood)"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Ready
+status: Reviewed
 kind: story
 priority: P2
 estimate: S
@@ -71,6 +71,7 @@ Read the newest status row with `psql`, and take a screenshot of the query resul
   No code is written, and no branch holds the feature.
 
 - **2026-10-12, Ready.** Split into four stories at the product owner's request, and this part is picked for [[SPR-014-finish-the-remaining-backend|SPR-014]]. The plan of the original story moved to the parts.
+- **2026-10-12, Reviewed.** Part one is built and tested, not deployed. Table `forecast_mode` holds one row per gate decision (`slot`, `decided_at`, `rain_peak_mm_hr`, `gate_mm_hr`, `standing_flood`, `mode`). Task `0_check_forecast_rain` writes it, and `9b_load_depth_raster` moves its run's row from `PENDING` to `LIVE`. The mode is `DEMO` when the gate is closed, `LIVE` when it is open and a `depth_raster` row of `flood_run_output` is younger than 45 minutes, and `PENDING` otherwise. `standing_flood` is NULL when the forecast rain alone opened the gate, because the task does not read the flood then. A failed write is printed and stops neither the gate nor `9b`. The table is on [[core-output-contract]] and in the `routing_reader` list. 9 tests in `scripts/test_forecast_mode.py` pass against a throwaway PostGIS, and the DAG tests cover the gate and the move to `LIVE`. Still open: the pull on the server, a `psql` read of the newest row, the `INSERT` that `routing_reader` is refused, and the screenshot.
 
 ## Evidence and details
 
