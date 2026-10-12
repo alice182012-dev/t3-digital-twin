@@ -31,15 +31,15 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Status:** active.
 15 points picked, 8 done.
 
-### In progress - US-112 Keep the edge depth files to the newest 8 runs
-
-**Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
-P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
 ### Reviewed - US-106 Write per-segment depth history to TimescaleDB
 
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Reviewed - US-112 Keep the edge depth files to the newest 8 runs
+
+**Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
+P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-104 Compare the two inputs of the flood tile build
 

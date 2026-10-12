@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-112"
 title: "Keep the edge depth files to the newest 8 runs"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: In progress
+status: Reviewed
 kind: story
 priority: P3
 estimate: S
@@ -45,7 +45,19 @@ Estimate: S.
 - **2026-10-12, Ready.** The product owner set the count to 8 ([[decision-log|D-033]]). The story named the count the contract named, which was 3, so its title and text now name 8. The contract page changes with this story.
   Sized S (2 points), with no dependency. Picked for Sprint 13.
 - **2026-10-12, In progress.** The code default (`dags/routing_adapter_dag.py`) and the `compose.yml` default are 8, with a test for each, and the two pages are updated. The server `.env` change waits for the owner's go.
+- **2026-10-12, Reviewed.** Pushed, pulled, and set on the server with the owner's go (details items 3 to 5). It waits for the server screenshot and the owner's acceptance.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** the server capture of 2026-10-12, read only, from `artifacts/docs/stories/evidence/us-112-server-check.sh`. The screenshot goes to `us-112-server-check-output.png`.
+
+**Details:**
+
+1. The count is 8 in the code default (`dags/routing_adapter_dag.py`) and in the `compose.yml` default. Two tests cover it: `test_routing_adapter_dag.py` expects `keep=8`, and a new test checks the `compose.yml` default. Both failed on the old code first.
+2. [[core-output-contract]] ("Edge depth files") and [[edge-depth-table-format]] ("The `latest` pointer") state 8, with `last_updated` 2026-10-12.
+3. Server, with the owner's go: `modular` was pushed and pulled (head `9d4f1e6`). In the server `.env`, `EDGE_TABLE_KEEP_RUNS` went from 100 to 8, with a backup `.env.bak-2026-10-12-us112`. The comparison with the backup showed that line as the only difference.
+4. Only the worker was recreated (`docker compose up -d --no-deps airflow-worker`, from the server), because the worker reads `.env` only when it is created and task `9c` runs there. No task was running or queued. The worker is healthy and reports `EDGE_TABLE_KEEP_RUNS=8`. No other service is in `Created` or `Restarting`.
+5. No core run is expected without rain, so the retention was applied by hand with the function that `9c` calls: `publish_table` on the current `latest` name with `keep=8`. The volume went from 100 `.bin` files to 8, `latest` still names `20261011T001500.bin` (not moved), and the 8 files are `20261010T211500` to `20261011T001500`. `check_tables.py` reports FRESH (the export, the tables, and the graph agree on hash `8c13d8841f83`), `graphhopper` sees the same 8 files and `latest`, and the backend `/health` is ok.
+6. The 92 files removed include the 58 edge depth files of the storm replay. They are kept in the test dataset (`snapshot/edge_depth`, 58 files, checksums verified in [[US-124-save-the-storm-replay-results-and-derived-data|US-124]]). The other 34 were older files of the second replay.
+7. Not shown: a real run of `9c` pruning to 8 by itself. The next run reads the same value from the worker environment, and the story records it when it happens.
+8. Open for `Done`: the server screenshot, and the owner's acceptance.
