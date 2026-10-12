@@ -637,12 +637,13 @@ is the maximum.
 ## D-039: Keep the storm replay of 2026-10-10 as a permanent test dataset, with its own folder and its own databases
 
 - **Date:** 2026-10-12
-- **Status:** proposed. The product owner asked for the dataset and the design, and accepts the decision or changes it.
-- **Decided by:** Awaiting the product owner. The owner asked on 2026-10-12 for a designated test dataset from the 12-hour run, with `results_3di.nc` as the main source, the other data saved or rebuilt from it, and the storage retention of production left as it was.
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-12, who accepted it and said that the raster tiles are not restored now and are rebuilt from the NetCDF when a test needs them. The owner asked on 2026-10-12 for a designated test dataset from the 12-hour run, with `results_3di.nc` as the main source, the other data saved or rebuilt from it, and the storage retention of production left as it was.
 - **Decision:** The test dataset is the 58 runs of the storm replay of 2026-10-10 (slots 04:00 to 18:15 +07).
   The `results_3di.nc` of each run is the source of truth. It is kept in `data/testdata/storm-2026-10-10/nc/`, outside the two folders that the age cleanup of `flood_tiles` sweeps, read-only, with a manifest and checksums.
   The derived data that existed on 2026-10-12 is saved in `snapshot/`.
-  The derived data that does not exist is rebuilt from the NetCDF by the pipeline functions: NetCDF to depth GeoTIFF, raster tiles, road values, edge depth tables, depth history, and metrics.
+  The derived data that does not exist is rebuilt from the NetCDF by the pipeline functions, when a test needs it and not before: NetCDF to depth GeoTIFF, raster tiles, road values, edge depth tables, depth history, and metrics.
+  The restore script does not load raster tiles, and no test database holds them until a test asks for them.
   Tests read two test databases, `minio_custom_test` in `storage-postgres` and `flood_metrics_test` in `timescaledb`, which a restore script fills from the snapshot.
   The test dataset has no retention. The retention of the production data does not change ([[decision-log|D-017]], and the 24-hour and 8-run rules of the pipeline).
 - **Why:** The next core run deletes the NetCDF files, because they are older than 24 hours, and a replay costs 3Di time. Rana keeps a result for one month, so it is a second copy until about 2026-11-09.

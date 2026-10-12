@@ -36,7 +36,9 @@ The files are read-only.
 ## What can be rebuilt
 
 The pipeline functions rebuild every derived table from the NetCDF in this order: `download_result` output to `calculate_depth` (depth GeoTIFF), the tile load of `9b_load_depth_raster`, `flood_on_roads.compute`, `build_edge_depth`, `load_run` of `flood_history`, and `extract_run` for the metrics.
+The owner decided on 2026-10-12 that this is done when a test needs it and not up front ([[decision-log|D-039]]).
 Four things are not in the snapshot because they did not exist on 2026-10-12: the raster tiles of these runs, the depth GeoTIFFs, the MinIO vector tiles, and `depth_history`.
+The restore script does not load raster tiles.
 `flood_segment_metrics` has no rows for these runs.
 
 ## Verify the folder
