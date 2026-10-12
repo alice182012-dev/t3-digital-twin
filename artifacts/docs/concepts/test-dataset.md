@@ -50,7 +50,7 @@ On 2026-10-12, 58 of 58 NetCDF files, 8 of 8 CSV files, and 60 of 60 binary and 
 ## Retention
 
 The dataset has no retention, and the owner deletes it.
-The production retention is unchanged: 24 hours for the NetCDF and depth files, 24 hours of `flood_road_values`, the newest 8 runs of tiles and polygons, and the newest 60 edge depth files.
+The production retention is unchanged: 24 hours for the NetCDF and depth files, 24 hours of `flood_road_values`, the newest 8 runs of tiles and polygons, and the newest 8 edge depth files ([[decision-log|D-033]]).
 Rana keeps the result of each run until about 2026-11-09, which is a second copy of the NetCDF files.
 
 ## Test databases
