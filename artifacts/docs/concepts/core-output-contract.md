@@ -4,17 +4,17 @@ type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]", "[[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]"]
-last_updated: 2026-10-11
+last_updated: 2026-10-12
 ---
 
 # Core output contract
 
 The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read.
-This page lists what it publishes: six PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
+This page lists what it publishes: seven PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
 Routing is the first consumer.
 The story is `US-071` ([[EP-10-routing-first-consumer|routing-first-consumer-stories]] Story C1).
 
-The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the six column tables on this page and compares them with the live database.
+The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the seven column tables on this page and compares them with the live database.
 It fails when a column name, type, nullability, or position differs, or when a primary key or unique constraint differs.
 The `Primary key columns` and `Unique columns` bullets are its input for keys.
 The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema.
@@ -103,6 +103,37 @@ One row says that one forecast step of one run is fully published: its tiles are
   The writer inserts the step row in the same transaction as the step's polygon rows, after the step's tiles are uploaded (`publish.py:49-76`, `publish.py:222-227`).
   A rewrite sets `published_at` to `NOW()` again.
 - **Retention.** The newest 8 runs by `run_ts` (`prune_step_rows`, `publish.py:113-132`).
+
+### flood_road_file
+
+One row registers one run of `flood_on_roads`, whether or not the run has any wet road piece.
+
+| Column | Type | Nullable |
+| ------ | ---- | -------- |
+| `id` | `bigint` | no |
+| `timestamp` | `timestamp without time zone` | no |
+| `source_file` | `text` | no |
+| `geojson_type` | `text` | yes |
+| `feature_count` | `integer` | yes |
+| `created_at` | `timestamp without time zone` | yes |
+| `forecast_times` | `timestamp without time zone[]` | yes |
+
+- **Key.** The primary key is `id`.
+  `source_file` is unique, and it is `flood_on_roads_<run_ts>`.
+- **Primary key columns.** `id`.
+- **Unique columns.** `source_file`.
+- **Time.** `timestamp` is the run, in Vietnam local time (+07) without an offset, the same value as `flood_road_values.timestamp`.
+  `forecast_times` holds the forecast times the run covers, in the same local time as `flood_road_values.forecast_time`.
+- **Why it exists.** A run in which no road piece is wet writes no rows to `flood_road_values`, so the registry is the only record that the run covers a time.
+  The newest run whose `forecast_times` contains a time wins that time (`_WINNER_SEG_SQL` in `flood_areas.py`).
+  A winner with no rows in `flood_road_values` means no road piece is wet at that time.
+- **Which rows exist.** The writer registers every run, including a run with `feature_count` 0.
+  A run from the older GeoJSON chain, `scripts/database/geojson_to_pg.py`, has `forecast_times` NULL until `create_flood_road_tables.py` backfills it from its rows.
+  A shadow run (`flood_on_roads.py --target`) registers no times.
+- **Writer.** Task `flood_on_roads` of the DAG `routing_adapter`, in the same transaction as its rows in `flood_road_values`.
+- **Retention.** The prune of `flood_road_values` deletes the registry rows of the runs it deletes.
+  A run with no rows in `flood_road_values` is not found by that prune, so its registry row stays.
+  The rows are small, and an old row covers only past times.
 
 ### flood_road_values
 
@@ -291,6 +322,7 @@ Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the s
 - `flood_depth_raster_tile`
 - `flood_extent_polygon`
 - `flood_extent_step`
+- `flood_road_file`
 - `flood_road_values`
 - `flood_run_output`
 - `graph_edge`
