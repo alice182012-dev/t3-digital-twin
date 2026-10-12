@@ -610,20 +610,26 @@ is the maximum.
 - **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]], and the Next action block of [[TODOS]].
 - **Revisit if:** the product owner sets a value for a lowered gate, or D: falls below the floor during the archive proof.
 
-## D-038: Keep flood_road_values and the edge depth table, and fix the winner query with the run registry
+## D-038: Replace flood_road_values with the edge depth table, in stages
 
 - **Date:** 2026-10-12
 - **Status:** proposed. The product owner accepts it, or chooses another option.
-- **Decided by:** Awaiting the product owner. The spike [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] recommends it.
-- **Decision:** Keep `flood_road_values` for the map, the route fallback, the metrics, and the history, and keep the edge depth table for the routing engine.
-  Fix the stale overlay by making the winner query of `flood_areas.py` read the run registry `flood_road_file`, so a run with no wet piece wins its forecast times with no features.
-  Replace later, with a trigger: the export of the graph carries a stable key (the OSM way id and the position along the way), and the metrics read it.
-- **Why:** The stale overlay comes from the missing record of a dry run, and a sparse edge table keeps that gap.
-  `graph_edge` has no stable key, so history and metrics keyed on `edge_id` break at each re-import.
-  A sparse edge table has 13,650 to 16,370 rows per run against about 20,000, so it does not save storage.
-  A merged sampler saves up to 62 s of 136 s per run, but the `9c` time already grows along a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]).
-- **Alternatives:** (1) Replace `flood_road_values` with the edge depth table now. Not chosen, because of the missing key and the metrics. (2) Add a sentinel row for a dry run to `flood_road_values`. Not chosen, because the registry already holds the fact and a sentinel row would reach every reader that sums depth.
+- **Decided by:** Awaiting the product owner. The spike [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] gave the measurements, and the owner asked for one system without a duplicate procedure or table.
+- **Decision:** One sampler and one table hold the flood depth.
+  The edge depth build (task `9c`) also writes the wet edges to a queryable table, with a run registry that records every run and its forecast times, including a run with no wet edge.
+  The map overlay, the route fallback, the rain gate, the soak checks, the metrics, and `depth_history` move to that table one at a time.
+  Then `flood_on_roads`, `road_segment`, `flood_road_values`, and `flood_road_file` are deleted.
+  The table is keyed by a stable `edge_key` (the OSM way id and the position along the way) that the graph export carries.
+- **Why:** The owner prefers one procedure and one table, and the engineering rule weighs long-term maintainability above development cost.
+  Two samplers on two geometries (35,652 pieces and 67,833 edges) can drift apart, so the map can show water that the router does not use.
+  A merged sampler saves up to 62 s of the 136 s per run.
+  The stale overlay comes from the missing record of a dry run, and the run registry fixes it in both plans, so [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] is kept and done first.
+- **Costs accepted:** The export must add a stable key ([[US-117-export-a-stable-key-with-each-graph-edge|US-117]]).
+  The metrics and the overlay change grain from pieces to edges, so their tests and totals change ([[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]]).
+  `9c` takes the extra work inside its 5-minute limit, and its time already grows along a chain ([[BL-023-9c-sampling-step-runs-over-770-seconds|BL-023]]).
+  A sparse edge table has 13,650 to 16,370 rows per run against about 20,000 today, so storage does not fall much.
+- **Alternatives:** (1) Keep both tables and fix only the winner query. Not chosen, because it keeps two samplers and two geometries. (2) Add a sentinel row for a dry run to `flood_road_values`. Not chosen, because the registry already holds the fact and a sentinel row would reach every reader that sums depth.
+- **Stories:** [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] (registry fix), [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], [[US-122-point-depth-history-at-the-edge-table|US-122]], and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 - **Evidence:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], Evidence and details, points 1 to 7.
-- **Affects:** [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] (method decided), [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (no change: `depth_history` keeps reading `flood_road_values`), and [[decision-log|D-036]].
-- **Revisit if:** the export carries a stable key, the `9c` time passes 150 s on average, or a reader needs a piece set that `road_segment` cannot give.
-
+- **Affects:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (keyed by `segment_id` now, re-keyed by US-122, or moved after US-117 and US-118, the owner's call), [[US-113-backfill-per-segment-depth-history|US-113]], [[decision-log|D-036]], and [[core-output-contract]].
+- **Revisit if:** the stable key cannot be built from GraphHopper's data, the `9c` time passes 150 s on average, or a reader needs a piece set that the edge table cannot give.

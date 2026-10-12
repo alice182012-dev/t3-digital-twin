@@ -40,6 +40,9 @@ Given `depth_history` with a compression policy and a drop policy (`timescaledb_
 The ratio comes from one hand-compressed chunk, so it is a sample, and it does not show that the scheduled compression job runs.
 Given a second run that overlaps the first by one step, then that step keeps the later run's depth.
 
+Open question for the owner, from [[decision-log|D-038]]: this story keys `depth_history` by `segment_id`, and the staged replacement re-keys it on `edge_key` in [[US-122-point-depth-history-at-the-edge-table|US-122]].
+Building it now costs one re-key later. Waiting for [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] avoids it but moves the history out of Sprint 13.
+
 Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]] is `Done`.
 [[US-113-backfill-per-segment-depth-history|US-113]] depends on this story and is in the same sprint.
 

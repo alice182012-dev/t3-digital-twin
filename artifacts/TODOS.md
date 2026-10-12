@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 15 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] (spike, M) is `Reviewed`: it proposes [[decision-log|D-038]] (keep both tables, fix the winner query with the run registry). The owner accepts the decision, then [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] start. [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S) is `Done` as of 2026-10-12. The spike answers what routing and the map do with a run that wets no road piece, and whether the edge depth table replaces `flood_road_values`. Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
+1. [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] (spike, M) is `Reviewed`: it proposes [[decision-log|D-038]] (replace `flood_road_values` with the edge depth table, in stages, split into US-116 to US-123 in the backlog). The owner accepts the decision, and decides whether [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is built now (re-keyed by US-122) or waits for US-117 and US-118. [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S) is `Done` as of 2026-10-12. The spike answers what routing and the map do with a run that wets no road piece, and whether the edge depth table replaces `flood_road_values`. Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
 2. After the spike decides: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a, M), which may change with the answer. Then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S).
 3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] waits in the backlog for the spike's decision.
 4. Owner items. The planning did not touch the server.
@@ -63,7 +63,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-19 stories.
+26 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -74,18 +74,18 @@ The top 10 by priority:
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], P1, S, Not started.
   Let a run with no wet road piece win the winner query
+- [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], P1, M, Not started.
+  Export a stable key with each graph edge
+- [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, Not started.
+  Write the edge depth to a queryable table
+- [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], P1, S, Not started.
+  Read the map overlay and the route fallback from the edge table
 - [[US-008-switch-the-search-geocoder-s-default-locale|US-008]], P2, S, Reviewed.
   Switch the search geocoder's default locale to `vi`
 - [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
   Match the depth chart columns and the route tab text to screen 2e
 - [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
   Show the place names on the start and destination pins
-- [[US-084-design-the-no-route-and-wait-until|US-084]], P2, M, Not started.
-  Design the no-route and "wait until" states, then match the UI to the design
-- [[US-085-time-out-a-route-request-in-the|US-085]], P2, S, Not started.
-  Time out a route request in the client
-- [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
-  Show the recommended route and the through-water option in the app
 
 ## Open blockers
 

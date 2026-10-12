@@ -1,0 +1,38 @@
+---
+date_drafted: 2026-10-12
+type: user-story
+us_id: "US-117"
+title: "Export a stable key with each graph edge"
+epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
+status: Not started
+kind: story
+priority: P1
+estimate: M
+sprint: 
+subsystem: routing, flood-data, core-output
+source_ideas: []
+related: ["[[decision-log|D-038]]", "[[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]"]
+tags: [user-story]
+---
+
+# US-117 Export a stable key with each graph edge
+
+As the owner of the flood data, I want each graph edge to carry a key that survives a graph re-import, so the depth history and the metrics keep their meaning after the graph changes.
+
+`ExportEdges` (`java/time-aware-routing`) writes `edge_id`, `wkt`, `base_node`, and `adj_node`, and GraphHopper renumbers all four on every import.
+The story adds the OSM way id and the position of the edge along its way to `edges.csv`, and loads them into `graph_edge` as one `edge_key`.
+It also decides how a way split in a different place by a new import maps its old keys to new ones, and records the rule.
+
+Given a graph imported twice from the same OSM file, when `ExportEdges` runs on both, then every `edge_key` of the first export appears in the second.
+Given a graph re-imported from a changed OSM file, when the keys are compared, then the story lists which keys appear, vanish, or change, and the rule for history is written in [[graph-reimport-procedure]].
+Given `graph_edge` after the load, then no two rows share an `edge_key`.
+
+Dependencies: None.
+
+## Status history
+
+- **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
+
+## Evidence and details
+
+Fill this when the story reaches `Done`.

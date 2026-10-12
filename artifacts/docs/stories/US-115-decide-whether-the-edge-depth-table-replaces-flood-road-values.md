@@ -52,7 +52,7 @@ Dependencies: None.
 
 - **2026-10-12, Ready.** Raised at Sprint 13 planning from the question "what does routing do with a run that wets no road piece". The product owner asked for it to be worked first in the sprint. Sized M (3 points) against `US-001`: several code reads, a data query, and a check on the server.
 - **2026-10-12, In progress.** Started. The code reads and the server queries ran the same day.
-- **2026-10-12, Reviewed.** All five points are answered below, and [[decision-log|D-038]] is proposed: keep both tables and fix the winner query with the run registry. The owner accepts the decision, or chooses another option, before the story is `Done`.
+- **2026-10-12, Reviewed.** All five points are answered below, and [[decision-log|D-038]] is proposed. The first version kept both tables. The owner asked for one system, so D-038 now replaces `flood_road_values` in stages, and the work is split into [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] and US-117 to US-123. The owner accepts the decision, or chooses another option, before the story is `Done`.
 
 ## Evidence and details
 
