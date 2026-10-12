@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-117"
 title: "Export a stable key with each graph edge"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Reviewed
 kind: story
 priority: P1
 estimate: M
@@ -37,7 +37,31 @@ Dependencies: None.
 - **2026-10-12, In progress.** The export side is written and tested, not deployed. `ExportEdges` writes `edge_key` (`<osm_way_id>:<position>`) as a fifth column and `format_version` 3, and fails with the fix named when the graph has no `osm_way_id`. `graph_edges.py` reads format 3 and ignores the column. The `java-module` workflow ran on a throwaway branch (since deleted): `ExportEdgesTest` 19 tests and the whole module 144 tests passed, and the Python tests of the reader pass. The GitHub Actions run 38223799828 holds the log. Still open: load `edge_key` into `graph_edge` with a unique index, the re-import window, and the rule for keys when the OSM file changes ([[graph-reimport-procedure]]). `osm_way_id` is a 31-bit int, and the largest way id in `road_segment` is 69 percent of that limit.
 - **2026-10-12, In progress.** The load side is written and tested, not deployed. `create_graph_edge_table.py` adds `graph_edge.edge_key` (`ADD COLUMN IF NOT EXISTS`, so `0b_ensure_schema` migrates the live table) with a unique index. `graph_edges.py` reads the key of a format 3 export (a `GraphEdge` row with `edge_key`, `None` before format 3), refuses a missing column, a malformed key, or a repeated key before the database is touched, and `load_graph_edges` stores it. 57 tests (`test_graph_edges`, `test_build_edge_depth`, `test_check_tables`) passed with none skipped, run in the worker against the real PostGIS in their own schemas, which they dropped. [[core-output-contract]] lists the column. Still open: the re-import window, the rule for keys when the OSM file changes ([[graph-reimport-procedure]]), the live check, and the owner's acceptance.
 - **2026-10-12, In progress.** `modular` was pushed and pulled on the server (`--ff-only` from the `alice` remote). Only the scripts are live. The `ExportEdges` change needs an image rebuild, and the live graph still has no `osm_way_id`, so the live export stays format 2 and `graph_edge.edge_key` stays NULL. Pulled with no import errors, and `check_tables.py` reports `FRESH`. If a re-import runs before `create_graph_edge_table.py` has added the column, the load of the new export fails, so run that script first (see the order trap in the re-import procedure).
+- **2026-10-12, In progress.** The code that fills the key when the graph hash stays the same was added before the re-import (`load_graph_edges` reloads while an export has keys and a row has none), and `config.yml` got `osm_way_id`.
+- **2026-10-12, Reviewed.** Re-imported on the server with the owner's go (details items 1 to 6). It waits for the server screenshot and the owner's acceptance.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** the server check of 2026-10-12, read only, from `artifacts/docs/stories/evidence/us-117-server-check.sh`. The screenshot `us-117-server-check-output.png` is taken from its output and is not saved yet.
+
+**Details:**
+
+1. The live graph was imported again from the same OSM file with `osm_way_id` in `graph.encoded_values`.
+   The image was rebuilt first from the server's desktop, and a read-only export against the old graph then refused with the message about `osm_way_id`, which showed the new jar was in the image.
+   `graphhopper` was recreated alone with `--no-deps` at 15:52:39 +07 and was healthy 40 seconds later.
+   `/info` lists the four profiles and `osm_way_id`, the log shows `TimeAwareGraphHopper active`, and a truck route returns 1,905.742 m, as before.
+2. The graph hash did not change, `8c13d884...`, with 67,833 edges and 51,328 nodes.
+   The same OSM file gives the same edges, so every edge depth table stays valid and task `9c` builds nothing new.
+3. `export-edges.sh` wrote format 3 to `data/mapping/graph_export`. Two exports were identical, and the rows matched `edge_count`.
+   The old export is in `graph_export.bak-2026-10-12-us117`.
+4. The live `graph_edge` got `edge_key` and its unique index from `create_graph_edge_table.py` before the import.
+   The loader then filled it in 2.1 seconds: 67,833 edges, 67,833 keys, 67,833 distinct keys, over 30,185 ways. A second load changed nothing.
+   The largest position is 48.
+5. Only 27,860 of the 67,833 edges lie on a way that `road_segment` holds, because the graph has more road classes than the 12,431 ways of `road_segment`.
+   The key joins to `road_segment` only for those edges, so a story that moves a reader from pieces to edges does not use that join.
+6. `check_tables.py` reports `FRESH`, `POST /route` of the backend returns the same route, and `POST /route/departures` answers `status: ok` from the table of run `20261011T001500`.
+7. The criteria and what covers them:
+   - The keys of a graph imported twice from one file are equal: `ExportEdgesTest` (CI run 38223799828) and the keys of the throwaway import and the live import.
+   - No two rows share a key: the unique index, and the loader refuses a repeated key before it writes.
+   - A graph imported from a changed OSM file: the rule is in [[graph-reimport-procedure]], and the tests prove it only on a small graph. No real changed extract was compared, so the rule for a way whose number of edges changed is not measured.
+8. The largest way id is 1,556,752,106, which is 72.5 percent of the 31-bit limit of `osm_way_id`.

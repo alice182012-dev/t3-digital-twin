@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, reimport, edge-depth-table, graph-hash, operations]
 related: ["[[edge-depth-table-format]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[graph-reimport-procedure-and-stale-table-check]]", "[[graphhopper-backend]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[lessons#L-010|recreate-remote-services-on-the-remote-host]]"]
-last_updated: 2026-10-05
+last_updated: 2026-10-12
 ---
 
 # Graph re-import procedure
@@ -60,7 +60,8 @@ docker --context remote-server exec airflow_new-graphhopper-1 sh -c 'rm -rf /dat
 ssh tecotec@100.67.84.55 "cd C:\Users\TECOTEC\airflow_new; docker compose up -d --force-recreate --no-deps graphhopper"
 ```
 
-The import takes minutes, and routing is down until the service is healthy. Wait for `docker --context remote-server ps` to show `graphhopper` as healthy, and check `/info` lists the four profiles. This is the same wipe-and-recreate that resolved [[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]].
+If `ExportEdges` changed, rebuild the image first with `docker compose build graphhopper` from the server's own desktop, because a build over SSH fails.
+The import of 2026-10-12 took about 40 seconds, and routing is down until the service is healthy. Wait for `docker --context remote-server ps` to show `graphhopper` as healthy, and check `/info` lists the four profiles. This is the same wipe-and-recreate that resolved [[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]].
 
 ### 2. Write the new export
 
@@ -89,6 +90,39 @@ docker --context remote-server exec airflow_new-airflow-worker-1 \
 
 You expect `FRESH`. The command compares the live graph, the export folder, `graph_edge`, and the `latest` table, and it names every mismatch with both hashes. Older kept tables of the old graph show as "not read" and leave when retention removes them.
 
+## The edge key
+
+`edges.csv` of format 3 has a column `edge_key`, written as `<osm_way_id>:<position>`.
+The position counts the edges of one OSM way in edge-id order, from 0.
+`graph_edge.edge_key` holds it with a unique index, and the key is NULL for every row until an export of format 3 is loaded.
+The key needs `osm_way_id` in `graph.encoded_values` of `config.yml`.
+Without that value `ExportEdges` fails and writes nothing.
+
+### What the key keeps
+
+The key stays the same when the same OSM file is imported again, even if GraphHopper numbers the edges differently.
+A graph imported again from the same file also has the same graph hash, so the edge depth tables stay valid and task `9c` builds nothing new.
+`load_graph_edges` still loads the first export of format 3, because it reloads `graph_edge` while an export has keys and a row has none.
+
+### Rule for a changed OSM file
+
+After an import from a changed file, compare the old and the new keys before you trust any history.
+Use this rule for the history of a key:
+
+1. A key that is in both graphs and whose way has the same number of edges is the same edge. Keep its history.
+2. A key of a way that the new file removed is gone. Do not give its history to another edge.
+3. A key of a way whose number of edges changed is not safe. The split points of the way moved, so positions shift. Treat all its keys as new and do not carry history over.
+4. A key of a new way is new and has no history.
+
+The tests prove rules 1 and 4 on a small graph (an extra way adds one key and leaves the others unchanged).
+No real changed extract was compared yet, so rules 2 and 3 follow from how GraphHopper numbers edges and are not measured.
+
+### Limit
+
+`osm_way_id` is a 31-bit integer, so the import fails when a way id passes 2,147,483,647.
+The largest way id of the graph on 2026-10-12 is 1,556,752,106, which is 72.5 percent of that limit.
+The import fails with a message that names the way id, so the failure is not silent.
+
 ## If something goes wrong
 
 | Symptom | Cause | Fix |
@@ -98,6 +132,7 @@ You expect `FRESH`. The command compares the live graph, the export folder, `gra
 | `graph_edge` shows another hash than the export | the table build has not run since step 2 | nothing: the next build reloads it |
 | Step 3 fails with no export | the export folder is empty | step 2 |
 | `export-edges.sh` fails on `EXPECTED_EDGES` | the new graph has another edge count | check it is the intended graph, then set `EXPECTED_EDGES` |
+| Step 3 fails with `column "edge_key" does not exist` | the live `graph_edge` has no `edge_key` yet | run `python /opt/airflow/scripts/database/create_graph_edge_table.py` in the worker, which `0b_ensure_schema` also does on each run |
 | The service does not become healthy after step 1 | the import failed | `docker logs airflow_new-graphhopper-1`, and the profile and encoded-value notes in [[graphhopper-backend]] |
 
 To roll back, restore the old OSM file and `config.yml`, and repeat the procedure. The old export is gone, and the new one comes from the restored graph.
