@@ -3,6 +3,9 @@ import psycopg2
 from db_config import TIMESCALE_DB_CONFIG
 
 SQL = """
+-- 0b_ensure_schema of flood_mapping_full and the flood_history DAG both run this script, so two runs can overlap.
+SELECT pg_advisory_xact_lock(hashtext('create_timescale_tables'));
+
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 DO $$
@@ -75,8 +78,45 @@ CREATE TABLE IF NOT EXISTS depth_history (
 );
 
 SELECT create_hypertable(
-    'depth_history', by_range('valid_time'), if_not_exists => TRUE
+    'depth_history', by_range('valid_time', INTERVAL '7 days'), if_not_exists => TRUE
 );
+
+-- Changing the compression settings fails once a chunk is compressed, so they are set only the first time.
+DO $$
+BEGIN
+    IF NOT (
+        SELECT compression_enabled FROM timescaledb_information.hypertables
+        WHERE format('%I.%I', hypertable_schema, hypertable_name)::regclass = 'depth_history'::regclass
+    ) THEN
+        ALTER TABLE depth_history SET (
+            timescaledb.compress,
+            timescaledb.compress_segmentby = 'segment_id',
+            timescaledb.compress_orderby = 'valid_time'
+        );
+    END IF;
+END
+$$;
+
+-- compress_after equals the chunk interval, so each chunk is compressed once it closes (D-032).
+SELECT add_compression_policy('depth_history', compress_after => INTERVAL '7 days', if_not_exists => TRUE);
+SELECT add_retention_policy('depth_history', drop_after => INTERVAL '365 days', if_not_exists => TRUE);
+
+-- Every moment a run covers, wet or not. A moment listed here with no depth_history row for a piece means the
+-- piece was dry; a moment missing here is unknown (D-032, D-036). It is a hypertable with the same chunks and drop
+-- policy as depth_history, so a moment is forgotten when its depths are, and an old moment never reads as dry.
+CREATE TABLE IF NOT EXISTS history_moment (
+    valid_time TIMESTAMPTZ PRIMARY KEY,
+    issued_at TIMESTAMPTZ NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (valid_time >= issued_at)
+);
+
+SELECT create_hypertable(
+    'history_moment', by_range('valid_time', INTERVAL '7 days'), if_not_exists => TRUE
+);
+SELECT add_retention_policy('history_moment', drop_after => INTERVAL '365 days', if_not_exists => TRUE);
 """
 
 
@@ -90,7 +130,7 @@ def main():
     cur.close()
     conn.close()
 
-    print("Tables institution_histogram_bar, background_forecast_depth, depth_history ready.")
+    print("Tables institution_histogram_bar, background_forecast_depth, depth_history, history_moment ready.")
 
 
 if __name__ == "__main__":
