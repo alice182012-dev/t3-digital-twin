@@ -9,10 +9,10 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 16 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. Start first: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a, M) and [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S). Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
-2. Then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S), and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (spike, S).
-3. [[US-113-backfill-per-segment-depth-history|US-113]] (S) starts after US-106 is `Done`. The rule for a run that wets no road piece is set ([[decision-log|D-036]]).
+Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 15 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
+1. Start first: [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]] (spike, M) and [[US-094-archive-results-3di-nc-and-a-run|US-094]] (part one, S). The spike answers what routing and the map do with a run that wets no road piece, and whether the edge depth table replaces `flood_road_values`. Set a story to `In progress` when it starts, and keep at most two `In progress` at once.
+2. After the spike decides: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (part a, M), which may change with the answer. Then [[US-109-run-an-analysis-service-in-its-own-container|US-109]] (M), [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (S), and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] (spike, S).
+3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]] waits in the backlog for the spike's decision.
 4. Owner items. The planning did not touch the server.
    - The flag for [[decision-log|D-034]] is on. The owner gave the go on 2026-10-12, and the server read-back of that day shows `TIME_AWARE_ROUTING=true` for `floodmap-backend` (see [[decision-log|D-034]]).
    - The server `.env` change for [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]] (count 8) waits for the owner's go too.
@@ -29,7 +29,12 @@ Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 founda
 **Sprint file:** [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]
 
 **Status:** active.
-16 points picked, 0 done.
+15 points picked, 0 done.
+
+### Ready - US-115 Decide whether the edge depth table replaces flood_road_values
+
+**Story:** [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]].
+P0, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.
 
 ### Ready - US-094 Deploy the archive mount and show the test-rain skip
 
@@ -41,11 +46,6 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### Ready - US-113 Backfill per-segment depth history from flood_road_values
-
-**Story:** [[US-113-backfill-per-segment-depth-history|US-113]].
-P1, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
 ### Ready - US-104 Compare the two inputs of the flood tile build
 
 **Story:** [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]].
@@ -56,11 +56,6 @@ P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]], spike.
 **Story:** [[US-109-run-an-analysis-service-in-its-own-container|US-109]].
 P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### Ready - US-110 Decide whether pipeline tables leave the public schema
-
-**Story:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
-P3, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.
-
 ### Ready - US-112 Keep the edge depth files to the newest 8 runs
 
 **Story:** [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]].
@@ -68,13 +63,17 @@ P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-16 stories.
+19 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
   Compare the live app with the mockup in Aside at 1366x768
+- [[US-113-backfill-per-segment-depth-history|US-113]], P1, S, Ready.
+  Backfill per-segment depth history from flood_road_values
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
+- [[US-116-let-a-run-with-no-wet-road-piece-win-the-winner-query|US-116]], P1, S, Not started.
+  Let a run with no wet road piece win the winner query
 - [[US-008-switch-the-search-geocoder-s-default-locale|US-008]], P2, S, Reviewed.
   Switch the search geocoder's default locale to `vi`
 - [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
@@ -87,10 +86,6 @@ The top 10 by priority:
   Time out a route request in the client
 - [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
   Show the recommended route and the through-water option in the app
-- [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], P2, L, Not started.
-  Show a pinned demo flood when no rain is forecast
-- [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
-  Write a project `DESIGN.md` with real design tokens
 
 ## Open blockers
 

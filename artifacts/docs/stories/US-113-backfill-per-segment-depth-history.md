@@ -8,7 +8,7 @@ status: Ready
 kind: story
 priority: P1
 estimate: S
-sprint: 13
+sprint: 
 subsystem: airflow-pipeline, timescaledb
 source_ideas: []
 related: ["[[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]]", "[[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]", "[[decision-log|D-032]]", "[[decision-log|D-017]]", "[[core-output-contract]]", "[[timescaledb-schema]]"]
@@ -44,6 +44,7 @@ Estimate: S.
 
 - **2026-10-12, Ready.** Split from US-106 at Sprint 13 planning. Sized S (2 points). It passes the INVEST check: its dependency is named and in the same sprint, and the acceptance check runs on the server.
 - **2026-10-12, Ready.** The product owner decided the rule for a run that wets no road piece ([[decision-log|D-036]]), and the open question is removed from the story.
+- **2026-10-12, Ready.** Left Sprint 13 to make room for [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]. Its parent, [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], may change with the answer of that spike. `sprint` is cleared and the story returns to the backlog.
 
 ## Evidence and details
 
