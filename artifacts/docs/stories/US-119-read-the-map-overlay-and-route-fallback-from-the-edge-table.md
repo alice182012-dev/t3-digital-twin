@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-119"
 title: "Read the map overlay and the route fallback from the edge table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Done
 kind: story
 priority: P1
 estimate: S
@@ -34,6 +34,7 @@ Dependencies: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `Do
 - **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is built and its tables exist on the server, but they hold no rows until the next real `9c` run. The change is in `flood_areas.py`, which serves both `/flood/areas` and the legacy custom model of `/route`. Built and tested on a throwaway PostGIS, not deployed. Still open: the deploy, the reader role rerun, the before and after comparison on one replay run, and the server screenshot.
 - **2026-10-12, In progress.** Pushed and pulled on the server (head `cf640a2`, `--ff-only` from `alice`). The role `routing_reader` got `SELECT` on `edge_depth` and `edge_depth_run` with two `GRANT` statements, because the worker does not mount the backend module or the contract page that `create_routing_reader_role.py` needs. `build_edge_depth.py` wrote live rows for the stored storm runs `20261010T223000` and `20261011T001500` into a scratch output folder, without `--publish`, so `latest` did not move. The old and new `derive_areas` were compared on live data as `routing_reader` (details item 6). The `floodmap-backend` image is not rebuilt yet, because `docker build` fails over SSH, so the running backend still reads `flood_road_values`.
 - **2026-10-12, In progress.** The owner rebuilt `floodmap-backend` from the server desktop, and the live checks passed (details item 7). The story is ready for the owner's acceptance.
+- **2026-10-12, Done.** The product owner accepted it. The first criterion, a newest run with no wet edge hiding an older wet run, is checked only against PostGIS (details item 7), because the server has no dry newest run yet. The check on the server stays open until one occurs.
 
 ## Evidence and details
 

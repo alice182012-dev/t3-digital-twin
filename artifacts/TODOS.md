@@ -58,7 +58,7 @@ P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-29 stories.
+28 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -69,8 +69,6 @@ The top 10 by priority:
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, In progress.
   Write the edge depth to a queryable table
-- [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], P1, S, In progress.
-  Read the map overlay and the route fallback from the edge table
 - [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], P1, S, Reviewed.
   Save the storm-replay results and derived data
 - [[US-125-restore-the-snapshot-into-test-databases|US-125]], P1, M, Not started.
@@ -81,6 +79,8 @@ The top 10 by priority:
   Match the depth chart columns and the route tab text to screen 2e
 - [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
   Show the place names on the start and destination pins
+- [[US-084-design-the-no-route-and-wait-until|US-084]], P2, M, Not started.
+  Design the no-route and "wait until" states, then match the UI to the design
 
 ## Open blockers
 
