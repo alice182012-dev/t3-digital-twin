@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-118"
 title: "Write the edge depth to a queryable table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Not started
+status: In progress
 kind: story
 priority: P1
 estimate: M
@@ -33,7 +33,36 @@ Dependencies: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Don
 ## Status history
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
+- **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Done`, so `graph_edge.edge_key` exists. The design before the code:
+  1. The database is `storage-postgres`, next to `flood_road_values` and `graph_edge`, because the map overlay and the route fallback read it there through the routing reader role ([[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]]). The history stays in TimescaleDB ([[US-122-point-depth-history-at-the-edge-table|US-122]] re-keys it).
+  2. `edge_depth_run` is the registry: `run_ts` (primary key), `graph_hash`, `valid_times` (the run's forecast times, as in `flood_road_file.forecast_times`), and `built_at`. A run with no wet edge has a row here and no rows below.
+  3. `edge_depth` holds one row per wet edge and step: `run_ts`, `valid_time_utc`, `edge_key`, `depth_cm` (integer, since the table holds up to 65,535). Its primary key is `(run_ts, valid_time_utc, edge_key)`, and a row goes with its run.
+  4. Retention is the 24 hours before the newest run, as for `flood_road_values` ([[decision-log|D-017]]), set by `EDGE_DEPTH_KEEP_HOURS`.
+  5. `9c` writes the rows in one transaction before it writes the file and publishes, so a database failure leaves no file and no new `latest`. A rebuild of one run replaces its rows.
+- **2026-10-12, In progress.** Built and tested, not deployed. `9c` writes the rows and the registry before the file (commit "Write the wet edges of each run to edge_depth with a run registry"), and 135 `edge_depth` tests pass against the real PostGIS. The added time was measured on the 8 stored storm runs (details item 2). The server does not have the code yet. Still open: push and pull, the first real `9c` run with the tables, and the check over 50 consecutive runs.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** the measurement of 2026-10-12 on the server, from `marie-curie/us-118/measure_rows.py`, with the raw numbers in `marie-curie/us-118/results.json`. It ran from a copy of the new scripts in the worker's `/tmp`, against the live `flood_depth_raster_tile` and the live export, with its own scratch schema `us118` and folder. The schema and the folder are removed. The live tables and the live folder of tables were not touched. There is no screenshot yet, because the code is not deployed.
+
+**Details:**
+
+1. The tests: `test_edge_depth_rows.py` (12 tests) and the new tests of `test_build_edge_depth.py` cover the three criteria that need no live run. The rows of each step carry their keys, the count equals the `wet_edges` of the build, a run with no wet edge is a registry row with no rows, and the same run built twice keeps the row count. They also cover a failed database write leaving no file, an export before format 3 refused, and the 24-hour window.
+2. The added time, on the 8 stored storm runs of 2026-10-10 and 2026-10-11 (8 steps each):
+
+   | Run | Whole build (s) | Row write (s) | Rows | Wet edges, sum over 8 steps |
+   | --- | --- | --- | --- | --- |
+   | `20261010T211500` | 60.7 | 0.57 | 21,746 | 21,746 |
+   | `20261010T213000` | 59.0 | 0.54 | 21,923 | 21,923 |
+   | `20261010T214500` | 58.7 | 0.51 | 21,895 | 21,895 |
+   | `20261010T220000` | 58.5 | 0.51 | 21,719 | 21,719 |
+   | `20261010T221500` | 57.9 | 0.53 | 21,412 | 21,412 |
+   | `20261010T223000` | 58.2 | 0.56 | 20,989 | 20,989 |
+   | `20261011T000000` | 44.6 | 0.34 | 13,650 | 13,650 |
+   | `20261011T001500` | 49.0 | 0.46 | 16,370 | 16,370 |
+
+   The row write, which includes the key lookup, adds 0.34 to 0.57 s to a build of 44.6 to 60.7 s, so less than 1 percent. The longest build of this sample is 60.7 s, under the 150 s limit of [[decision-log|D-038]]. Those builds ran on an idle database, so the check over 50 real runs is still open.
+3. The counts agree: 8 registry rows, 159,704 rows, equal to the sum of the rows written. A second build of the last run wrote the same 16,370 rows and left 8 registry rows.
+4. The size of the table: a run holds 13,650 to 21,746 rows, the same order as `flood_road_values` (about 20,000 per run), so 96 runs a day is about 2 million rows.
+5. The first build of a run in the new tables needs `0b_ensure_schema` to have created them. `0b` runs on each `flood_mapping_full` run, and `create_edge_depth_tables.py` can run by hand first, as for `graph_edge`.
+6. A flaky test was fixed on the way: `test_real_rain_archives_the_file_and_the_record` read the real free space of the disk and failed on a Mac with under 50 GB free.

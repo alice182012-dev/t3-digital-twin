@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 13 is `active` from 2026-10-12 to 2026-10-25, with the goal "EP-21 foundation" and 13 points picked. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] holds the picks and the open decisions.
-1. Next: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Reviewed`. The graph was re-imported with `osm_way_id` on 2026-10-12 and `graph_edge` holds 67,833 unique keys. It waits for the owner's server screenshot (`evidence/us-117-server-check.sh`) and acceptance, and then [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is the next story of [[decision-log|D-038]]. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] is archived (`Superseded`) and left the sprint. Four picks are `Done` ([[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]]), 10 of 13 points. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is also `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
+1. Next: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] (`In progress`, the second story of [[decision-log|D-038]], outside the sprint plan). It is built and tested, and the row write adds under 1 s to `9c` on the stored runs. It needs a push, a pull on the server, and the first real `9c` run. [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Done` (accepted 2026-10-12): the graph was re-imported with `osm_way_id` and `graph_edge` holds 67,833 unique keys. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] is archived (`Superseded`) and left the sprint. Four picks are `Done` ([[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]], [[US-094-archive-results-3di-nc-and-a-run|US-094]], [[US-109-run-an-analysis-service-in-its-own-container|US-109]], [[US-112-keep-the-edge-depth-files-to-the-contract-count|US-112]]), 10 of 13 points. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is also `Reviewed` and waits for one event-triggered `flood_history` run, a server screenshot, and your acceptance.
 2. In the backlog, accepted decisions: [[decision-log|D-038]] (replace `flood_road_values`, stories [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] to [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]) and [[decision-log|D-039]] (the storm test dataset, stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]]). A story gets `sprint` only at sprint planning.
 3. Left the sprint to make room: [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
 4. Owner items.
@@ -58,7 +58,7 @@ P3, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-30 stories.
+29 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -67,9 +67,7 @@ The top 10 by priority:
   Backfill per-segment depth history from flood_road_values
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
-- [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], P1, M, Reviewed.
-  Export a stable key with each graph edge
-- [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, Not started.
+- [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], P1, M, In progress.
   Write the edge depth to a queryable table
 - [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], P1, S, Not started.
   Read the map overlay and the route fallback from the edge table
@@ -81,6 +79,8 @@ The top 10 by priority:
   Switch the search geocoder's default locale to `vi`
 - [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
   Match the depth chart columns and the route tab text to screen 2e
+- [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
+  Show the place names on the start and destination pins
 
 ## Open blockers
 

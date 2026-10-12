@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-117"
 title: "Export a stable key with each graph edge"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P1
 estimate: M
@@ -39,10 +39,11 @@ Dependencies: None.
 - **2026-10-12, In progress.** `modular` was pushed and pulled on the server (`--ff-only` from the `alice` remote). Only the scripts are live. The `ExportEdges` change needs an image rebuild, and the live graph still has no `osm_way_id`, so the live export stays format 2 and `graph_edge.edge_key` stays NULL. Pulled with no import errors, and `check_tables.py` reports `FRESH`. If a re-import runs before `create_graph_edge_table.py` has added the column, the load of the new export fails, so run that script first (see the order trap in the re-import procedure).
 - **2026-10-12, In progress.** The code that fills the key when the graph hash stays the same was added before the re-import (`load_graph_edges` reloads while an export has keys and a row has none), and `config.yml` got `osm_way_id`.
 - **2026-10-12, Reviewed.** Re-imported on the server with the owner's go (details items 1 to 6). It waits for the server screenshot and the owner's acceptance.
+- **2026-10-12, Done.** The product owner accepted it. The terminal screenshot was not saved before the acceptance, so the evidence is the script and its captured output (`us-117-server-check-output.txt`, 2026-10-12 15:57 +07). Save `us-117-server-check-output.png` from a run of the script when convenient.
 
 ## Evidence and details
 
-**Evidence:** the server check of 2026-10-12, read only, from `artifacts/docs/stories/evidence/us-117-server-check.sh`. The screenshot `us-117-server-check-output.png` is taken from its output and is not saved yet.
+**Evidence:** the server check of 2026-10-12, read only, from `artifacts/docs/stories/evidence/us-117-server-check.sh`. Its captured output is `us-117-server-check-output.txt`. The screenshot `us-117-server-check-output.png` is not saved yet (owner waived it at acceptance).
 
 **Details:**
 
