@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-117"
 title: "Export a stable key with each graph edge"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Not started
+status: In progress
 kind: story
 priority: P1
 estimate: M
@@ -32,6 +32,7 @@ Dependencies: None.
 ## Status history
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
+- **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. The first read found that the export cannot carry the way id yet. `graph.encoded_values` in `floodmap/graphhopper-flood-road/graphhopper/config.yml` does not list `osm_way_id`, and the pinned GraphHopper build rejected it as a path detail on 2026-09-29 (archived PRD-003 and PRD-004, not rechecked). Enabling it needs a graph re-import ([[graph-reimport-procedure]]): routing is down for minutes, every `edge_id` is renumbered, and task `9c` rebuilds the edge depth table. Whether the pinned build has the `OSMWayID` encoded value is unverified. The owner decides between that re-import and a key built from the edge geometry.
 
 ## Evidence and details
 
