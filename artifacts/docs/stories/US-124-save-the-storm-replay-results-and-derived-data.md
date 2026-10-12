@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-124"
 title: "Save the storm-replay results and derived data"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P1
 estimate: S
@@ -31,6 +31,8 @@ Dependencies: None.
 ## Status history
 
 - **2026-10-12, Reviewed.** Built on 2026-10-12 by the lead, outside a sprint, because the next core run would delete the NetCDF files. Waiting for the owner's acceptance.
+
+- **2026-10-12, Done.** The product owner accepted it. The evidence is the checks of 2026-10-12 read from the files themselves (details items 1 to 4).
 
 ## Evidence and details
 

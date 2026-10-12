@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-106"
 title: "Write per-segment depth history to TimescaleDB"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P1
 estimate: M
@@ -57,6 +57,8 @@ Dependencies: [[US-105-decide-what-flood-history-the-industry-apps-need|US-105]]
 - **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] at the product owner's request.
 
 - **2026-10-12, Reviewed.** The event-triggered run of `flood_history` passed on the server, with a screenshot (details item 15). Open for `Done`: the owner's acceptance. The compression ratio on the full storm is 9.7, measured in [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]].
+
+- **2026-10-12, Done.** The product owner accepted it. The evidence is the screenshot `us-106-event-run.jpg` of the event-triggered run and the compression ratio of 9.7 from [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]. The first run emitted by `routing_adapter` itself is not tested yet, and the story does not wait for it.
 
 ## Evidence and details
 

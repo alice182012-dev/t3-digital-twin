@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-127"
 title: "Build the history and metrics from the restored road values"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: M
@@ -33,6 +33,8 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 
 - **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-125-restore-the-snapshot-into-test-databases|US-125]] and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] are `Reviewed` and not `Done`, and the owner agreed to build against them. At most two stories were `In progress` ([[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and this one).
 - **2026-10-12, Reviewed.** Built, tested, and run on the server (details item 1 to 6). Its `Done` waits for the `Done` of US-125 and US-106, a server screenshot, and the owner's acceptance.
+
+- **2026-10-12, Done.** The product owner accepted it. The terminal screenshot was not saved before the acceptance, so the evidence is the captured output of the two server runs (`us-127-server-check-output.txt`). Save `us-127-server-check-output.png` from a run of the script when convenient.
 
 ## Evidence and details
 

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-125"
 title: "Restore the snapshot into test databases"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P1
 estimate: M
@@ -36,6 +36,8 @@ Dependencies: [[US-124-save-the-storm-replay-results-and-derived-data|US-124]] i
 
 - **2026-10-12, In progress.** Started on the owner's request, outside the sprint plan, so it has no `sprint`. [[US-124-save-the-storm-replay-results-and-derived-data|US-124]] is `Reviewed` and not `Done`, and the owner agreed to build against it. At most two stories were `In progress` ([[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and this one).
 - **2026-10-12, Reviewed.** Built, tested, and run on the server (details item 1 to 6). Open for `Done`: a server screenshot, the acceptance of US-124, and the owner's acceptance.
+
+- **2026-10-12, Done.** The product owner accepted it. The terminal screenshot was not saved before the acceptance, so the evidence is the captured output of the server run (`us-125-server-check-output.txt`). Save `us-125-server-check-output.png` from a run of the script when convenient.
 
 ## Evidence and details
 

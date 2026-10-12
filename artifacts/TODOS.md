@@ -11,9 +11,8 @@ Index: [[Home]].
 <!-- next-action:start -->
 Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish D-038" and seven picks of 17 points. [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]] holds the picks and the risk. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ended early on 2026-10-12 with 10 of 13 points ([[decision-log|D-040]]).
 1. Next: [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] (`In progress`). It is on the server, and `edge_depth` holds the rows of two stored storm runs. The first real `9c` run and the check over 50 consecutive runs are open. Then [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]] and [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], which depend on it.
-2. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Reviewed`. The event-triggered `flood_history` run passed on 2026-10-12 with a server screenshot. It waits for your acceptance. The compression ratio on the full storm is 9.7 ([[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]). [[US-113-backfill-per-segment-depth-history|US-113]], [[US-122-point-depth-history-at-the-edge-table|US-122]], and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] wait behind it.
-3. [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Reviewed` (outside the sprint, built and run on the server) and waits for a server screenshot, the acceptance of [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], and your acceptance. [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]] is `Reviewed` too (built and run on the server), and its `Done` needs US-125 and US-106 `Done`.
-   Done outside the plan on 2026-10-12, with no `sprint`: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]]. The live check of a dry newest run for US-119 waits for one to occur.
+2. [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] is `Done` (accepted 2026-10-12, 3 of 17 points). [[US-113-backfill-per-segment-depth-history|US-113]] is next, then [[US-122-point-depth-history-at-the-edge-table|US-122]] and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
+3. Done outside the plan on 2026-10-12, with no `sprint`: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], [[US-125-restore-the-snapshot-into-test-databases|US-125]], and [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]. The live check of a dry newest run for US-119 waits for one to occur, and US-125 and US-127 have a text capture and no screenshot.
 4. In the backlog: [[decision-log|D-039]] (the storm test dataset, stories [[US-125-restore-the-snapshot-into-test-databases|US-125]] to [[US-128-run-the-test-suites-against-the-test-databases|US-128]]), [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], and [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. A story gets `sprint` only at sprint planning.
 5. Owner items.
    - The flag for [[decision-log|D-034]] is on, and the server read-back of 2026-10-12 shows `TIME_AWARE_ROUTING=true` for `floodmap-backend`.
@@ -30,16 +29,11 @@ Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish D-038
 **Sprint file:** [[SPR-014-finish-the-edge-depth-table-replacement|SPR-014]]
 
 **Status:** active.
-17 points picked, 0 done.
+17 points picked, 3 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
 **Story:** [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
-P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-106 Write per-segment depth history to TimescaleDB
-
-**Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 ### Ready - US-113 Backfill per-segment depth history from flood_road_values
@@ -67,19 +61,20 @@ P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
+### Done - US-106 Write per-segment depth history to TimescaleDB
+
+**Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
+P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
 ## Product backlog
 
-22 stories.
+19 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
   Compare the live app with the mockup in Aside at 1366x768
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Not started.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
-- [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], P1, S, Reviewed.
-  Save the storm-replay results and derived data
-- [[US-125-restore-the-snapshot-into-test-databases|US-125]], P1, M, Reviewed.
-  Restore the snapshot into test databases
 - [[US-008-switch-the-search-geocoder-s-default-locale|US-008]], P2, S, Reviewed.
   Switch the search geocoder's default locale to `vi`
 - [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
@@ -92,6 +87,10 @@ The top 10 by priority:
   Time out a route request in the client
 - [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
   Show the recommended route and the through-water option in the app
+- [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], P2, L, Not started.
+  Show a pinned demo flood when no rain is forecast
+- [[US-128-run-the-test-suites-against-the-test-databases|US-128]], P2, S, Not started.
+  Run the test suites against the test databases
 
 ## Open blockers
 
