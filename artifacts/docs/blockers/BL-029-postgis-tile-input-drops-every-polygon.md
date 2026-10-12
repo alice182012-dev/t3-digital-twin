@@ -61,3 +61,4 @@ Pending, and not scheduled. [[US-104-compare-the-two-inputs-of-the-flood-tile-bu
 
 - **2026-10-12, open.** Found while measuring US-104. The harness `marie-curie/us-104/bench_tiles.py` reproduces it on the first `postgis` build, and its warped variant builds tiles.
 - **2026-10-12, open, P3.** US-104 answered with 5 paired runs and kept `files`, so the blocker no longer holds up a story. The severity went from P2 to P3.
+- **2026-10-12, open, P3.** The owner archived [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]], so no story depends on a working `postgis` mode. The blocker stays open and unscheduled until a host without the worker's disk needs the tile build.

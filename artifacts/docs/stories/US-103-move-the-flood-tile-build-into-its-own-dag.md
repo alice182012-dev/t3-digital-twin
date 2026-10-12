@@ -66,7 +66,7 @@ On the server, after the replay has stopped and the change is pulled:
   `flood_mapping_full` stays paused until the branch `us-103-flood-tiles-dag` is pulled on the server.
 - **2026-10-10, code written on branch `us-103-flood-tiles-dag`.**
   It decided the open design choice ([[decision-log|D-027]]): an Asset `flood_depth_files`, emitted by the new task `3b_publish_depth_files`, which runs after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`.
-  The `.tif` folder is the default input. A second input, the PostGIS raster, is in the code behind `FLOOD_TILES_INPUT=postgis`, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] compares the two.
+  The `.tif` folder is the default input. A second input, the PostGIS raster, is in the code behind `FLOOD_TILES_INPUT=postgis`, and [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] measured the two and was archived without a decision to use the second.
   The unit tests pass on the Mac.
   The server acceptance check below is still open.
 - **2026-10-10, Done.**
