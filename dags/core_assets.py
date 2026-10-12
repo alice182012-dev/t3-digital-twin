@@ -9,9 +9,13 @@ file imports this module as `core_assets`.
 ended. Its `extra` is `{"run_ts": "<run_ts>", "depth_dir": "<folder of the depth_*.tif files>"}`. The files live on the
 worker's disk, so a consumer reads them from `depth_dir` and must not delete them: `flood_tiles` owns the age-based
 cleanup (core_paths.py).
+
+`flood_on_roads` of `routing_adapter` emits FLOOD_ROAD_VALUES once a run's per-piece depths are in `flood_road_values`.
+Its `extra` is `{"run_ts": "<run_ts>"}`. `flood_history` runs on it and copies the run into TimescaleDB.
 """
 from airflow.sdk import Asset
 
 
 FLOOD_DEPTH_RASTER = Asset("flood_depth_raster_tile")
 FLOOD_DEPTH_FILES = Asset("flood_depth_files")
+FLOOD_ROAD_VALUES = Asset("flood_road_values")

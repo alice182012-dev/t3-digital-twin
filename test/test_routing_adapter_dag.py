@@ -23,6 +23,7 @@ import run_output  # noqa: E402
 from test_run_output import FakeConnection, published  # noqa: E402
 
 PUBLISHED = fakes.FakeAsset("flood_depth_raster_tile")
+ROAD_VALUES = fakes.FakeAsset("flood_road_values")
 
 
 def load_routing_module():
@@ -136,7 +137,7 @@ class RoutingTaskTests(unittest.TestCase):
         self.ti = MagicMock()
         self.context = {"ti": self.ti, "triggering_asset_events": triggered_by("20260924T170639")}
 
-    def test_flood_on_roads_computes_the_run_of_the_event(self):
+    def test_flood_on_roads_computes_the_run_of_the_event_and_publishes_it(self):
         flood_on_roads = MagicMock()
         flood_on_roads.compute.return_value = MagicMock(
             timesteps=(
@@ -149,11 +150,14 @@ class RoutingTaskTests(unittest.TestCase):
         )
         self.dag_module.flood_on_roads = flood_on_roads
 
+        outlet_events = {ROAD_VALUES: types.SimpleNamespace(extra=None)}
+
         with patch("builtins.print"):
-            result = self.dag_module.task_flood_on_roads(**self.context)
+            result = self.dag_module.task_flood_on_roads(**self.context, outlet_events=outlet_events)
 
         self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "rows": 6})
         self.assertEqual(flood_on_roads.compute.call_args.args[1:], ("20260924T170639",))
+        self.assertEqual(outlet_events[ROAD_VALUES].extra, {"run_ts": "20260924T170639"})
 
     def built_table(self, path="/opt/airflow/edge_depth_tables/20260924T170639.bin"):
         return MagicMock(

@@ -11,7 +11,7 @@ import sys
 import os
 import psycopg2
 
-from core_assets import FLOOD_DEPTH_RASTER
+from core_assets import FLOOD_DEPTH_RASTER, FLOOD_ROAD_VALUES
 
 
 BASE_PATH = "/opt/airflow"
@@ -160,7 +160,8 @@ def task_load_road_segments(**kwargs):
 
 def task_flood_on_roads(**kwargs):
     """Writes this run's per-piece flood depth into flood_road_values, the table routing reads,
-    from the tiles task 9b loaded under the same run name."""
+    from the tiles task 9b loaded under the same run name. On success it emits FLOOD_ROAD_VALUES with the run_ts,
+    which schedules flood_history_dag.py."""
     run_ts = published_run_ts(kwargs)
 
     print(f"🌊 Computing flood on roads for run {run_ts}")
@@ -172,6 +173,7 @@ def task_flood_on_roads(**kwargs):
     for step in result.timesteps:
         print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
     print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
+    kwargs["outlet_events"][FLOOD_ROAD_VALUES].extra = {"run_ts": run_ts}
     return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
 
 
@@ -235,6 +237,7 @@ with DAG(
         task_id="flood_on_roads",
         python_callable=task_flood_on_roads,
         inlets=[FLOOD_DEPTH_RASTER],
+        outlets=[FLOOD_ROAD_VALUES],
         pool=POOL_ROUTING,
     )
     t_prune = PythonOperator(
