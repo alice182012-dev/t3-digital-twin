@@ -98,8 +98,10 @@ An edge that an earlier run wet and the winning run did not wet therefore has no
 A run that `edge_depth_run` does not list is an error. Task `9c` writes the registry row and has no ordering against `flood_on_roads`, so a load that runs first fails and the DAG retries once.
 
 `depth_history.edge_key` is `graph_edge.edge_key` (`<osm_way_id>:<position>`). `create_timescale_tables.py` renames the column `segment_id` of an older table to `edge_key`, which keeps the compressed chunks.
-Rows loaded before the move keep their piece ids (`<way>#<index>`), which never equal an edge key. They cannot be mapped to edges, because the pieces and the edges split a way at different points.
-A moment that only old rows cover has no row for any edge, so an edge key reads dry there. A later run for the same moment replaces the old rows.
+Rows loaded before the move held piece ids (`<way>#<index>`), which cannot be mapped to edges, because the pieces and the edges split a way at different points.
+They came from test rain, so the owner decided on 2026-10-12 to delete them.
+The rename step deletes every row of `depth_history` and `history_moment` once, so no moment reads as dry for an edge key without a run behind it.
+Rebuild the history from runs in `edge_depth` ([[US-113-backfill-per-segment-depth-history|US-113]]).
 
 ## Open items
 

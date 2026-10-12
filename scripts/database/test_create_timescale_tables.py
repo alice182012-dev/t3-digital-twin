@@ -123,6 +123,8 @@ class DepthHistoryMigrationTests(unittest.TestCase):
                                                timescaledb.compress_orderby = 'valid_time');
                 INSERT INTO depth_history (segment_id, valid_time, depth_m, cycle, issued_at)
                 VALUES ('601455783#2', '2026-01-01 00:00+00', 0.3, 'constant_cycle', '2026-01-01 00:00+00');
+                CREATE TABLE history_moment (valid_time TIMESTAMPTZ PRIMARY KEY, issued_at TIMESTAMPTZ NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), CHECK (valid_time >= issued_at));
                 SELECT compress_chunk(c) FROM show_chunks('depth_history') c;
                 """
             )
@@ -131,19 +133,28 @@ class DepthHistoryMigrationTests(unittest.TestCase):
     def tearDownClass(cls):
         drop_test_schema(cls.conn, cls.schema)
 
-    def test_the_script_renames_the_key_and_keeps_the_compressed_rows(self):
+    def test_the_script_renames_the_key_deletes_the_piece_keyed_rows_and_then_leaves_new_rows_alone(self):
         with self.conn, self.conn.cursor() as cur:
+            cur.execute("INSERT INTO history_moment (valid_time, issued_at) VALUES "
+                        "('2026-01-01 00:00+00', '2026-01-01 00:00+00')")
             cur.execute(create_timescale_tables.SQL)
+            cur.execute("SELECT count(*) FROM depth_history")
+            old_rows = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM history_moment")
+            old_moments = cur.fetchone()[0]
+            cur.execute("INSERT INTO depth_history (edge_key, valid_time, depth_m, cycle, issued_at) "
+                        "VALUES ('100:0', '2026-01-02 00:00+00', 0.2, 'constant_cycle', '2026-01-02 00:00+00')")
             cur.execute(create_timescale_tables.SQL)
             cur.execute("SELECT edge_key, depth_m FROM depth_history")
-            rows = cur.fetchall()
+            new_rows = cur.fetchall()
             cur.execute(
                 "SELECT segmentby FROM timescaledb_information.hypertable_compression_settings "
                 "WHERE hypertable = %s::regclass", (f"{self.schema}.depth_history",)
             )
             segmentby = cur.fetchall()
 
-        self.assertEqual(rows, [("601455783#2", 0.3)])
+        self.assertEqual((old_rows, old_moments), (0, 0))
+        self.assertEqual(new_rows, [("100:0", 0.2)])
         self.assertEqual(segmentby, [("edge_key",)])
 
 

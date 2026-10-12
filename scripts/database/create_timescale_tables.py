@@ -64,8 +64,9 @@ SELECT create_hypertable(
 );
 
 -- US-122 (D-038): depth_history is keyed by graph_edge.edge_key, not by the road_segment piece id. A table made before
--- that has segment_id, so rename it first. Rows loaded before the move keep their piece ids ('way#index'), which
--- never collide with an edge key ('way:position'), and a load of a later run replaces them for its moments.
+-- that has segment_id, so rename it first. Its rows hold piece ids ('way#index'), which cannot be mapped to edges, and
+-- they came from test rain (the owner's decision of 2026-10-12). They are deleted with their history_moment rows, so
+-- no moment reads as dry for an edge key without a run behind it. Rebuild them from edge_depth runs.
 DO $$
 BEGIN
     IF EXISTS (
@@ -73,6 +74,10 @@ BEGIN
         WHERE attrelid = to_regclass('depth_history') AND attname = 'segment_id' AND NOT attisdropped
     ) THEN
         ALTER TABLE depth_history RENAME COLUMN segment_id TO edge_key;
+        DELETE FROM depth_history;
+        IF to_regclass('history_moment') IS NOT NULL THEN
+            DELETE FROM history_moment;
+        END IF;
     END IF;
 END
 $$;
