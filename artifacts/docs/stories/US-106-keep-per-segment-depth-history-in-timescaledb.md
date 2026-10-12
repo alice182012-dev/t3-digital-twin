@@ -31,7 +31,7 @@ The loader converts `forecast_time` (Vietnam time, no offset) to a UTC `valid_ti
 A piece that the earlier run wets and the winning run does not wet gets depth 0, or loses its earlier row, so the earlier depth does not stay as the answer ([[decision-log|D-032]]).
 `flood_history` also writes a `history_moment` table (`valid_time` as primary key, with `issued_at`) for every moment the run covers, even when no piece is wet.
 The task runs before the 24-hour prune of `flood_road_values` can remove the run.
-The `timescaledb-data` volume moves to a host path on D: before the first load, as `airflow-logs` already does in `compose.yml`, because C: holds Docker's disk image ([[BL-022-docker-data-vhdx-fills-c-drive-again|BL-022]]).
+The `timescaledb-data` volume stays on C:. The owner decided on 2026-10-12 not to move it to D:, because D: is a hard disk drive and a database needs the speed of the SSD. The history is about 1.3 GB a year compressed ([[decision-log|D-032]]), so it does not repeat [[BL-022-docker-data-vhdx-fills-c-drive-again|BL-022]]. The story records the volume size after the first loads.
 `create_timescale_tables.py` runs from the DAG on every run, like `0b_ensure_schema` does for `storage-postgres`.
 
 Given a replay run on the server, when `flood_history` finishes, then `depth_history` has one row per wet road piece and step of that run, a count query on `flood_road_values` for the same run gives the same number, and the hypertable exists on the real TimescaleDB server (`SELECT * FROM timescaledb_information.hypertables`).
