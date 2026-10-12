@@ -55,6 +55,17 @@ Rana keeps the result of each run until about 2026-11-09, which is a second copy
 
 ## Test databases
 
-The plan is two databases on the existing servers: `minio_custom_test` in `storage-postgres` and `flood_metrics_test` in `timescaledb`.
-A restore script fills them from the snapshot ([[US-125-restore-the-snapshot-into-test-databases|US-125]]).
-They are not built yet.
+Two databases on the existing servers: `minio_custom_test` in `storage-postgres` and `flood_metrics_test` in `timescaledb`.
+The script `scripts/testdata/restore_snapshot.py` fills them from the snapshot ([[US-125-restore-the-snapshot-into-test-databases|US-125]]).
+Run it in the Airflow worker:
+
+```
+docker exec airflow_new-airflow-worker-1 python /opt/airflow/scripts/testdata/restore_snapshot.py
+```
+
+- **Names.** `TEST_POSTGRES_DB` and `TEST_TIMESCALE_DB` set them. The script refuses a name that does not end in `_test`.
+- **Pipeline code under test.** Set `POSTGRES_DB=minio_custom_test` and `TIMESCALE_DB=flood_metrics_test`, and the code reads the test databases.
+- **What it loads.** The eight tables of `snapshot/` in foreign key order, in one transaction, so a second run gives the same rows. It runs the DDL of `scripts/database/`, so the other tables exist and are empty. `flood_metrics_test` has the Timescale schema and no rows.
+- **Cost.** About 2 minutes for a second run, and 2,628 MB for `minio_custom_test` on 2026-10-12. Docker's local volumes grew by about 3.5 GB.
+- **Gaps.** `graph_edge` has no `edge_key`, and `edge_depth` and `edge_depth_run` are empty, because the snapshot predates [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] and [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
+- **Test.** `scripts/testdata/test_restore_snapshot.py` runs against a throwaway PostGIS, and CI runs it (`restore-snapshot-test.yml`).
