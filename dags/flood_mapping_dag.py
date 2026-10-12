@@ -23,6 +23,7 @@ try:
     import archive_results
     import create_simulation
     import hotstart_policy
+    import forecast_mode
     import standing_flood
     import download_result
     import calculate_depth
@@ -34,6 +35,7 @@ try:
     import database.create_graph_edge_table
     import database.create_edge_depth_tables
     import database.create_flood_run_output_table
+    import database.create_forecast_mode_table
     import database.create_timescale_tables
     import flood_extent
     import raster_load
@@ -82,6 +84,22 @@ def run_slot(kwargs):
     return create_simulation.clock_slot(kwargs.get("logical_date") or datetime.now(timezone.utc))
 
 
+def record_forecast_mode(kwargs, decision, standing, gate_open):
+    """Writes the gate decision to forecast_mode for the backend. A failure here is printed and does not stop the gate,
+    because a simulation that should run matters more than the banner."""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        try:
+            mode = forecast_mode.record_decision(
+                conn, run_slot(kwargs), decision["max_intensity_mm_hr"], decision["threshold_mm_hr"], standing, gate_open
+            )
+        finally:
+            conn.close()
+        print(f"🚦 Forecast mode: {mode}")
+    except Exception as error:
+        print(f"❌ Could not write forecast_mode: {error}")
+
+
 def task_check_forecast_rain(**kwargs):
     """Choose the full pipeline when a forecast window from the run's slot reaches the rain threshold, or when
     an earlier run's flood still stands (standing_flood). Only a dry state skips the run."""
@@ -100,6 +118,7 @@ def task_check_forecast_rain(**kwargs):
         f"intervals={decision['interval_count']}"
     )
     if decision["should_run"]:
+        record_forecast_mode(kwargs, decision, standing=None, gate_open=True)
         return "1_trigger_simulation"
 
     conn = psycopg2.connect(**DB_CONFIG)
@@ -112,6 +131,7 @@ def task_check_forecast_rain(**kwargs):
         f"🌊 Standing flood: {standing['reason']}, {standing['dry_runs_in_a_row']} of "
         f"{standing['dry_runs_to_stop']} dry runs in a row, newest run {standing['newest_run_age_min']} min old"
     )
+    record_forecast_mode(kwargs, decision, standing=standing["stands"], gate_open=standing["stands"])
     if standing["stands"]:
         return "1_trigger_simulation"
     print("✅ Dry state: skipping simulation, processing, and upload as a successful DAG run")
@@ -210,6 +230,7 @@ def task_ensure_schema(**kwargs):
     database.create_graph_edge_table.main()
     database.create_edge_depth_tables.main()
     database.create_flood_run_output_table.main()
+    database.create_forecast_mode_table.main()
     database.create_timescale_tables.main()
 
 
@@ -250,6 +271,19 @@ def task_publish_depth_files(**kwargs):
     return {"run_ts": run_ts, "depth_dir": depth_dir}
 
 
+def mark_forecast_mode_live(kwargs):
+    """The run's first step is published, so its PENDING row becomes LIVE. A failure is printed and does not fail 9b."""
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        try:
+            changed = forecast_mode.mark_live(conn, run_slot(kwargs))
+        finally:
+            conn.close()
+        print("🚦 Forecast mode: LIVE" if changed else "🚦 Forecast mode: no PENDING row to move to LIVE")
+    except Exception as error:
+        print(f"❌ Could not move forecast_mode to LIVE: {error}")
+
+
 def task_load_depth_raster(**kwargs):
     """Loads every depth_*.tif of this run into flood_depth_raster_tile, reprojected to EPSG:4326, so
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
@@ -267,6 +301,7 @@ def task_load_depth_raster(**kwargs):
     finally:
         conn.close()
     print(f"✅ Depth rasters loaded: {len(loaded)} timesteps")
+    mark_forecast_mode_live(kwargs)
     kwargs["outlet_events"][FLOOD_DEPTH_RASTER].extra = {"run_ts": run_ts}
     return {"run_ts": run_ts, "timesteps": len(loaded)}
 

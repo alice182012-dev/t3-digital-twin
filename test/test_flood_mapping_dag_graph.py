@@ -181,6 +181,21 @@ class FloodMappingDagGraphTests(unittest.TestCase):
             self.dag_module.psycopg2.connect.return_value, 3.6, self.dag_module.DRY_DEPTH_M
         )
 
+    def test_the_gate_records_its_decision_for_the_backend(self):
+        self.dag_module.forecast_mode = MagicMock()
+        self.gate(True, 5.2, self.DRY)
+        self.gate(False, 3.6, self.WET)
+        self.gate(False, 0.4, self.DRY)
+
+        calls = self.dag_module.forecast_mode.record_decision.call_args_list
+        self.assertEqual([call.args[2:] for call in calls], [(5.2, 5.0, None, True), (3.6, 5.0, True, True), (0.4, 5.0, False, False)])
+
+    def test_a_failed_status_write_does_not_stop_the_gate(self):
+        self.dag_module.forecast_mode = MagicMock()
+        self.dag_module.forecast_mode.record_decision.side_effect = RuntimeError("database down")
+
+        self.assertEqual(self.gate(True, 5.2, self.DRY), "1_trigger_simulation")
+
     def test_ensure_schema_creates_the_tables_its_downstream_tasks_write(self):
         database = MagicMock()
         self.dag_module.database = database
@@ -196,6 +211,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         database.create_graph_edge_table.main.assert_called_once_with()
         database.create_edge_depth_tables.main.assert_called_once_with()
         database.create_flood_run_output_table.main.assert_called_once_with()
+        database.create_forecast_mode_table.main.assert_called_once_with()
 
     def test_no_core_task_waits_on_a_routing_task(self):
         """A DAG run takes its state from its leaf tasks. The leaves are core tasks only, so a routing failure
@@ -308,6 +324,32 @@ class DepthRunTests(unittest.TestCase):
         args = raster_load.load_run.call_args.args
         self.assertEqual(args[1:3], (self.tmp.name, "20260924T170639"))
         self.assertEqual(event.extra, {"run_ts": "20260924T170639"})
+
+    def load_depth_raster_with(self, forecast_mode):
+        raster_load = MagicMock()
+        raster_load.load_run.return_value = ["a"]
+        self.dag_module.raster_load = raster_load
+        self.dag_module.forecast_mode = forecast_mode
+        self.dag_module.create_simulation = MagicMock()
+        self.dag_module.DB_CONFIG = {}
+        event = types.SimpleNamespace(extra={})
+        with patch("builtins.print"):
+            return self.dag_module.task_load_depth_raster(
+                ti=self.ti, outlet_events={FakeAsset("flood_depth_raster_tile"): event}
+            )
+
+    def test_load_depth_raster_moves_the_forecast_mode_of_its_slot_to_live(self):
+        forecast_mode = MagicMock()
+
+        self.load_depth_raster_with(forecast_mode)
+
+        forecast_mode.mark_live.assert_called_once()
+
+    def test_a_failed_move_to_live_does_not_fail_the_task(self):
+        forecast_mode = MagicMock()
+        forecast_mode.mark_live.side_effect = RuntimeError("database down")
+
+        self.assertEqual(self.load_depth_raster_with(forecast_mode)["timesteps"], 1)
 
     def test_publish_depth_files_announces_the_run_and_its_folder(self):
         event = types.SimpleNamespace(extra={})

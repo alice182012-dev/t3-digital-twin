@@ -10,11 +10,11 @@ last_updated: 2026-10-12
 # Core output contract
 
 The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read.
-This page lists what it publishes: seven PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
+This page lists what it publishes: ten PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
 Routing is the first consumer.
 The story is `US-071` ([[EP-10-routing-first-consumer|routing-first-consumer-stories]] Story C1).
 
-The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the seven column tables on this page and compares them with the live database.
+The test `floodmap/graphhopper-flood-road/backend/test_core_contract.py` parses the column tables on this page and compares them with the live database.
 It fails when a column name, type, nullability, or position differs, or when a primary key or unique constraint differs.
 The `Primary key columns` and `Unique columns` bullets are its input for keys.
 The table headings and the `| Column | Type | Nullable |` tables are its input, so change them only together with the schema.
@@ -244,6 +244,35 @@ One row says that one output of one run is published.
   `FLOOD_EXTENT_KEEP_RUNS` changes the number.
   The prune runs when task `9_build_flood_tiles` publishes, and it keeps the run being published.
 
+### forecast_mode
+
+One row is one rain gate decision of one run of `flood_mapping_full`.
+
+| Column | Type | Nullable |
+| ------ | ---- | -------- |
+| `slot` | `timestamp without time zone` | no |
+| `decided_at` | `timestamp without time zone` | no |
+| `rain_peak_mm_hr` | `double precision` | no |
+| `gate_mm_hr` | `double precision` | no |
+| `standing_flood` | `boolean` | yes |
+| `mode` | `text` | no |
+
+- **Key.** The primary key is `slot`.
+- **Primary key columns.** `slot`.
+- **Time.** `slot` is the 15-minute slot of the DAG run, in UTC without an offset.
+  `decided_at` is `NOW()` cast to `timestamp without time zone`.
+- **Mode.** `mode` is `LIVE`, `PENDING`, or `DEMO` (a `CHECK` allows only these).
+  - `LIVE`: the gate is open, and a `depth_raster` row of `flood_run_output` is younger than 45 minutes.
+  - `PENDING`: the gate is open, and no such row exists. The simulation is still running.
+  - `DEMO`: the gate is closed, so no rain above `gate_mm_hr` is forecast and no flood stands.
+- **Fields.** `rain_peak_mm_hr` is the forecast peak and `gate_mm_hr` is the threshold (`FLOOD_RAIN_THRESHOLD_MM_HR`).
+  `standing_flood` is NULL when the forecast rain alone opened the gate, because the task does not read the flood then.
+- **Reading.** The newest row by `slot` is the current mode.
+- **Writer.** Task `0_check_forecast_rain` writes the row on every decision, and it creates the table, because a dry state ends the run before `0b_ensure_schema` (`scripts/forecast_mode.py`).
+  Task `9b_load_depth_raster` moves the row of its slot from `PENDING` to `LIVE` after the depth rasters are published.
+  A failed write is printed and does not stop the gate or `9b`.
+- **Retention.** The last 7 days, deleted at each write.
+
 ### graph_edge
 
 One row is one edge of the GraphHopper graph.
@@ -376,6 +405,7 @@ Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the s
 - `flood_road_file`
 - `flood_road_values`
 - `flood_run_output`
+- `forecast_mode`
 - `graph_edge`
 
 ### analysis_reader
