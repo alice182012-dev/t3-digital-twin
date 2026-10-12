@@ -6,7 +6,8 @@ on:
       - "floodmap/graphhopper-flood-road/backend/flood_areas.py"
       - "floodmap/graphhopper-flood-road/backend/test_flood_areas.py"
       - "floodmap/graphhopper-flood-road/scripts/flood_utils.py"
-      - "scripts/database/create_flood_road_tables.py"
+      - "scripts/database/create_edge_depth_tables.py"
+      - "scripts/database/create_graph_edge_table.py"
       - "scripts/database/db_config.py"
       - ".github/workflows/flood-areas-test.yml"
   pull_request:
@@ -14,7 +15,8 @@ on:
       - "floodmap/graphhopper-flood-road/backend/flood_areas.py"
       - "floodmap/graphhopper-flood-road/backend/test_flood_areas.py"
       - "floodmap/graphhopper-flood-road/scripts/flood_utils.py"
-      - "scripts/database/create_flood_road_tables.py"
+      - "scripts/database/create_edge_depth_tables.py"
+      - "scripts/database/create_graph_edge_table.py"
       - "scripts/database/db_config.py"
       - ".github/workflows/flood-areas-test.yml"
   workflow_dispatch:

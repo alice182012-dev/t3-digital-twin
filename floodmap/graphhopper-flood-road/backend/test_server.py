@@ -35,13 +35,16 @@ from osgeo import gdal, osr
 
 import create_flood_depth_raster_tables
 import create_flood_extent_tables
-import create_flood_road_tables
+import create_flood_run_output_table
+import create_edge_depth_tables
+import create_graph_edge_table
 import raster_load
 
 gdal.UseExceptions()
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
-RUN = "2026-05-22T06:00:00+00:00"
+VALID_TIME_UTC = "2026-05-22T09:00:00"
+RUN = "20260522T060000"
 # Depth 0.25m clears motorbike's b4 band (>= 0.20m), so a route request with this
 # valid_time must come out graded: flood_areas.derive_areas returns a non-empty
 # FeatureCollection, and server._handle_route must inject ch.disable + custom_model.
@@ -125,9 +128,10 @@ def load_depth_runs(conn, workdir: Path) -> Path:
     """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
     Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon;")
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon, flood_run_output;")
         cur.execute(create_flood_depth_raster_tables.SQL)
         cur.execute(create_flood_extent_tables.SQL)
+        cur.execute(create_flood_run_output_table.SQL)
     conn.commit()
 
     runs = {OLD_RUN: ([SHARED_FILE, OLD_ONLY_FILE], 0.0), NEW_RUN: ([SHARED_FILE], 10.0)}
@@ -153,17 +157,21 @@ def points_url(base: str, **params) -> str:
 
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
-        cur.execute(create_flood_road_tables.SQL)
+        cur.execute("DROP TABLE IF EXISTS edge_depth, edge_depth_run, graph_edge_export, graph_edge;")
+        cur.execute(create_graph_edge_table.SQL)
+        cur.execute(create_edge_depth_tables.SQL)
         cur.execute(
-            "INSERT INTO flood_road_file (id, timestamp, source_file, forecast_times)"
-            " VALUES (1, %s, 'test', ARRAY[%s::timestamp]);",
-            (RUN, VALID_TIME),
+            "INSERT INTO graph_edge (edge_id, length_m, geom, edge_key)"
+            " VALUES (1, 1, ST_GeomFromText(%s, 4326), '1000:0');",
+            (FLOODED_SEGMENT,),
         )
         cur.execute(
-            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, geom_4326)"
-            " VALUES (1, %s, %s, 0.25, ST_GeomFromText(%s, 4326));",
-            (RUN, VALID_TIME, FLOODED_SEGMENT),
+            "INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times) VALUES (%s, 'test', ARRAY[%s::timestamp]);",
+            (RUN, VALID_TIME_UTC),
+        )
+        cur.execute(
+            "INSERT INTO edge_depth (run_ts, valid_time_utc, edge_key, depth_cm) VALUES (%s, %s, '1000:0', 25);",
+            (RUN, VALID_TIME_UTC),
         )
     conn.commit()
 

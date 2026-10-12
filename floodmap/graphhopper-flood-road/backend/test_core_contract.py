@@ -16,6 +16,8 @@ from pathlib import Path
 from core_contract import Column, Keys, contract_tables, parse_contract, parse_keys, parse_reader_roles
 
 CONTRACT_TABLES = {
+    "edge_depth",
+    "edge_depth_run",
     "flood_depth_raster_tile",
     "flood_extent_polygon",
     "flood_extent_step",
