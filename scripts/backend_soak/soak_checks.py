@@ -314,6 +314,31 @@ def resolve_run(cur, run_arg, valid_time_arg):
     return run, parsed.astimezone(timezone.utc).replace(tzinfo=None)
 
 
+def engine_cell(hints, valid_times):
+    """The (run, naive UTC forecast time) the time-aware engine judged, or None when the hints carry no `td.run`.
+    The engine departs at `td.departure` (epoch seconds) and floors it to a step, so the cell is the latest of the
+    run's `valid_times` at or before the departure, or the first one when the departure is earlier."""
+    run = (hints or {}).get("td.run")
+    if not run or not valid_times:
+        return None
+    departure = datetime.fromtimestamp(float(hints["td.departure"]), timezone.utc).replace(tzinfo=None)
+    steps = sorted(valid_times)
+    return run, max((t for t in steps if t <= departure), default=steps[0])
+
+
+def probe_engine_cell(cur, backend):
+    start, end = TRIPS["short"]
+    _, payload, _ = post_json(f"{backend}/route", {"points": [start, end], "profile": "motorbike",
+                                                   "points_encoded": False, "instructions": False})
+    hints = payload.get("hints") if isinstance(payload, dict) else None
+    run = (hints or {}).get("td.run")
+    if not run:
+        return None
+    cur.execute("SELECT valid_times FROM edge_depth_run WHERE run_ts = %s", (run,))
+    row = cur.fetchone()
+    return engine_cell(hints, row[0] if row else None)
+
+
 def pick_roads(cur, run, vt, per_bucket):
     """Up to `per_bucket` isolated edges per depth bucket of one run and forecast time, as (bucket label, edge_key,
     depth in cm, edge GeoJSON, previous edge GeoJSON, next edge GeoJSON)."""
@@ -338,7 +363,8 @@ def run_roads(args) -> int:
                  "database": os.environ["POSTGRES_DB"], "user": os.environ["POSTGRES_USER"],
                  "password": os.environ["POSTGRES_PASSWORD"]}
     with psycopg2.connect(**db_config) as conn, conn.cursor() as cur:
-        run, vt = resolve_run(cur, args.run, args.valid_time)
+        cell = probe_engine_cell(cur, args.backend) if args.run is None and args.valid_time is None else None
+        run, vt = cell or resolve_run(cur, args.run, args.valid_time)
         picks = pick_roads(cur, run, vt, args.per_bucket)
 
     body_times = {"valid_time": (vt + LOCAL_OFFSET).strftime("%Y-%m-%dT%H:%M:%S+07:00"), "run": run}
@@ -499,8 +525,8 @@ def main(argv=None) -> int:
     containers.set_defaults(func=run_containers)
     roads = sub.add_parser("roads")
     roads.add_argument("--backend", default="http://localhost:8010")
-    roads.add_argument("--run", help="run name or local timestamp, for example 20261002T021500. Default: the newest.")
-    roads.add_argument("--valid-time", help="forecast time, for example 2026-10-02T02:15:00+07:00. Default: the run's first step.")
+    roads.add_argument("--run", help="run name or local timestamp, for example 20261002T021500. Default: the cell the engine judges, else the newest run.")
+    roads.add_argument("--valid-time", help="forecast time, for example 2026-10-02T02:15:00+07:00. Default: the cell the engine judges, else the run's first step.")
     roads.add_argument("--per-bucket", type=int, default=4)
     roads.add_argument("--tol-m", type=float, default=6.0)
     roads.add_argument("--verbose", action="store_true", help="print every check, not only the failed ones")

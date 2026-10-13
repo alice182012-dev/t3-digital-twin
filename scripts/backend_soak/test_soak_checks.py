@@ -4,13 +4,14 @@ import os
 import sys
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import psycopg2
 
 from soak_checks import (
     VEHICLE_LIMIT_CM,
+    engine_cell,
     expected_outcome,
     far_point,
     judge_containers,
@@ -176,6 +177,35 @@ class JudgeVehicleTest(unittest.TestCase):
 
     def test_crosses_is_skipped_when_the_dry_route_does_not_cross(self):
         self.assertEqual(judge_vehicle("crosses", [(True, False), (True, False)], self.DRY_DETOURS), "skip")
+
+
+class EngineCellTest(unittest.TestCase):
+    STEPS = [datetime(2026, 10, 10, 22, 30), datetime(2026, 10, 10, 22, 45), datetime(2026, 10, 10, 23, 0)]
+
+    @staticmethod
+    def hints(moment):
+        return {"td.status": "applied", "td.run": "20261010T223000",
+                "td.departure": int(moment.replace(tzinfo=timezone.utc).timestamp())}
+
+    def test_a_departure_inside_the_table_floors_to_the_step_at_or_before_it(self):
+        self.assertEqual(engine_cell(self.hints(datetime(2026, 10, 10, 22, 50)), self.STEPS),
+                         ("20261010T223000", datetime(2026, 10, 10, 22, 45)))
+
+    def test_a_departure_on_a_step_keeps_that_step(self):
+        self.assertEqual(engine_cell(self.hints(datetime(2026, 10, 10, 22, 30)), self.STEPS),
+                         ("20261010T223000", datetime(2026, 10, 10, 22, 30)))
+
+    def test_a_departure_after_the_table_is_the_last_step(self):
+        self.assertEqual(engine_cell(self.hints(datetime(2026, 10, 11, 19, 0)), self.STEPS),
+                         ("20261010T223000", datetime(2026, 10, 10, 23, 0)))
+
+    def test_a_departure_before_the_table_is_the_first_step(self):
+        self.assertEqual(engine_cell(self.hints(datetime(2026, 10, 10, 12, 0)), self.STEPS),
+                         ("20261010T223000", datetime(2026, 10, 10, 22, 30)))
+
+    def test_hints_without_td_run_give_no_cell(self):
+        self.assertIsNone(engine_cell({"td.status": "fallback"}, self.STEPS))
+        self.assertIsNone(engine_cell({}, self.STEPS))
 
 
 class LatencyTableTest(unittest.TestCase):
