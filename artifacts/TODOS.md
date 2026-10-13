@@ -47,7 +47,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-15 stories.
+17 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -66,10 +66,10 @@ The top 10 by priority:
   Show the recommended route and the through-water option in the app
 - [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], P2, M, Not started.
   Show the demo flood banner and the pinned frame
-- [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
-  Write a project `DESIGN.md` with real design tokens
-- [[US-061-show-the-place-name-faster-after-a|US-061]], P3, S, Not started.
-  Show the place name faster after a map tap
+- [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]], P2, S, Ready.
+  Skip a flood_mapping_full run whose slot is hours old
+- [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], P2, S, Ready.
+  Delete the postgis input of the flood tile build
 
 ## Open blockers
 
