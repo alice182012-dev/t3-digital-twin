@@ -30,7 +30,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-16 stories.
+17 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -51,8 +51,8 @@ The top 10 by priority:
   Show the demo flood banner and the pinned frame
 - [[US-141-host-photon-for-vietnam-next-to-the-backend|US-141]], P2, M, Not started.
   Host Photon for Vietnam next to the backend
-- [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
-  Write a project `DESIGN.md` with real design tokens
+- [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]], P2, S, Ready.
+  Stop the standing-flood chain when the depths stop changing
 
 ## Open blockers
 

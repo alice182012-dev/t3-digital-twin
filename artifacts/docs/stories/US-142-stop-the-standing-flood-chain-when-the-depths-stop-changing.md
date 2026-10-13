@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-142"
 title: "Stop the standing-flood chain when the depths stop changing"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Draft
+status: Ready
 kind: story
 priority: P2
 estimate: S
@@ -32,4 +32,4 @@ Dependencies: None. `flood_mapping_full` stays paused until this is deployed or 
 
 ## Status history
 
-- **2026-10-13, Draft.** Raised from [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]] when the owner ruled it not a blocker. It is in the backlog and has no `sprint`.
+- **2026-10-13, Ready.** Raised from [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]] when the owner ruled it not a blocker. It is in the backlog and has no `sprint`.
