@@ -28,7 +28,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 11 points of work remain.
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-41 points picked, 30 done.
+43 points picked, 30 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
@@ -49,6 +49,11 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 **Story:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
 P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
+
+### Ready - US-137 Make the tests of test/ pass without a 3Di client of the pinned version
+
+**Story:** [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-110 Decide whether pipeline tables leave the public schema
 
