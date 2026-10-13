@@ -62,7 +62,7 @@ These come from the vault's own caveats.
 - The written proof exists ([[sticky-closure-proof]], [[US-090-write-the-fifo-lemma-and-the-correctness|US-090]], `Done`). It proves the reference search exact (Theorem 1) and the engine search exact when it runs to the end (Theorem 2). It gives no polynomial bound for the engine's weighted search, so claim the same-order cost only for the reference search, or for the engine when the weight is the travel time. The engine does not use landmarks, and it returns no route if it hits `maxVisitedNodes` or the timeout.
 - The 15-minute refresh is not the weakest link for short convective bursts. The rain forecast is. That is an inference in `artifacts/docs/concepts/flood-map-reaction-time-findings.md`, not a measurement. No source gives a measured rate of rise in cm per minute for Hanoi.
 - The IMERG area average over the model extent totals 84.95 mm with a peak of 8.73 mm/h, against about 200 mm at the heaviest stations. The replay is gentler than the news reports. Source: `artifacts/logs/2026-10-08.md`, section "US-088".
-- The `DEMO` flood is a stored frame of the replayed 2026-09-16 storm, shown when no rain is forecast ([[decision-log|D-030]]). It is not a forecast and not a live result. Do not describe a `DEMO` map, route, or depth as live output. The pinned frame is run `20261011T001500` at 2026-10-10 19:00 UTC, which is pinned and accepted ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]), and whose serving by the backend is checked on the server and not accepted ([[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]). In `DEMO` the route skips the time-aware engine ([[decision-log|D-043]]), so a `DEMO` route is no result for Paper A.
+- The `DEMO` flood is a stored frame of the replayed 2026-09-16 storm, shown when no rain is forecast ([[decision-log|D-030]]). It is not a forecast and not a live result. Do not describe a `DEMO` map, route, or depth as live output. The pinned frame is run `20261011T001500` at 2026-10-10 19:00 UTC, which is pinned and accepted ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]), and whose serving by the backend is accepted on written results, with no server screenshot ([[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]). In `DEMO` the route skips the time-aware engine ([[decision-log|D-043]]), so a `DEMO` route is no result for Paper A.
 - No real-rain result exists for the `results_3di.nc` archive. The mount and the test-rain skip are `Done` ([[US-094-archive-results-3di-nc-and-a-run|US-094]]). The copy, the free-space floor, and the growth need a real forecast above 5 mm/h, and the rain gate stays at 5 mm/h ([[decision-log|D-037]], [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]).
 - `depth_history` holds the model's own forecast values, not observations ([[decision-log|D-028]]). Its rows before the move to `edge_key` were test rain. The server migration of 2026-10-13 deleted them ([[decision-log|D-042]]), and the table now holds only the run loaded since.
 - `background_cycle` and the 24-bar histogram were dropped (D-009). Do not describe them as part of the built system.
@@ -85,15 +85,8 @@ The server was reachable on 2026-10-13, and the stories of that day hold the evi
 
 ## Built and not yet checked on the server
 
-One story is `Reviewed` on 2026-10-13.
-It is built, tested, and checked on the server in part.
-The product owner has not accepted it.
-Do not present it as an accepted server result.
-The story holds what it still needs.
-
-| Story | Built and checked | Still open (from the story) |
-| --- | --- | --- |
-| [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | `GET /flood/mode` answers `LIVE`, `PENDING`, and `DEMO` on the server. In `DEMO`, `GET /flood/points`, `GET /flood/areas`, and `POST /route` read the pinned step ([[decision-log\|D-043]]). At 21.01320, 105.76418 the depth is 0.80 m in `DEMO` and 0.10 m in `LIVE` at the first step. | Screenshots of the `LIVE` and `PENDING` answers and of the route comparison. The owner's acceptance. The `LIVE` result on pairs between wet edges is explained: the endpoints were on closed edges, and `DEMO` and `LIVE` judge different steps ([[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]], [[decision-log|D-044]]). Compare the modes only between dry points away from the flood. |
+No story is `Reviewed` on 2026-10-13.
+The stories of the day are `Done` or `In progress`, as the following paragraphs say.
 
 [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `In progress`, not `Reviewed`.
 Its code and its two tables are on the server, and task `9c_build_edge_depth_table` wrote 16,370 rows for one run on a hand-made event.
@@ -103,7 +96,7 @@ The first `9c` run on a real simulation and the check over 50 consecutive runs a
 `scripts/testdata/rebuild_tiles.py` rebuilds the depth raster tiles of a stored storm run from its NetCDF, in about 5 minutes per run, and a second call skips the run.
 The road-values part is not built.
 
-Accepted on 2026-10-13, after a server check: [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] (the pin), [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (the `forecast_mode` row), [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]].
+Accepted on 2026-10-13, after a server check: [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] (the three modes, on written results), [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] (the pin), [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (the `forecast_mode` row), [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]].
 Their limits matter for any claim.
 
 - `US-111`: the move of a row from `PENDING` to `LIVE` was run on the server for the functions, against a scratch database, and not for the DAG task, which needs a cold start with a forecast above the gate. The DAG tests cover the task.
@@ -133,7 +126,7 @@ Accepted earlier: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] (th
 | Storage growth over the replay (US-069) | B | `Done` under `D-015`. Hour 6 to hour 12 growth was under the 10 percent pass mark. The hour-6 method is not recorded. | `US-069`, `artifacts/logs/2026-10-10.md` |
 | Depth history store and its compression | B | `US-106` `Done`. The compression ratio is 9.7 on the full storm (`US-127`) and 1.7 on one run. The `edge_key` move is on the server (`US-122` `Done`, 20,989 rows over 2,874 edges and 8 moments for one run). The backfill is not (`US-113` `Ready`). | [[timescaledb-schema]], `US-106`, [[US-127-build-the-history-and-metrics-from-the-restored-road-values\|US-127]] |
 | Flood tile build as its own DAG, and the two inputs compared | B | `US-103` `Done`. `US-104` `Superseded` after 5 paired runs, and the `postgis` input builds no tiles as shipped. | [[decision-log\|D-027]], [[BL-029-postgis-tile-input-drops-every-polygon\|BL-029]] (`open`) |
-| Forecast mode `LIVE`, `PENDING`, `DEMO`, and the pinned demo flood | B | `US-111` `Done`: the `forecast_mode` row is on the server. `US-129` `Done`: the pin is on the server. `US-130` `Reviewed`: the three modes are checked on the server and not accepted. The frontend banner is `Not started` ([[US-131-show-the-demo-flood-banner-and-the-pinned-frame\|US-131]]). | `D-030`, `D-043` |
+| Forecast mode `LIVE`, `PENDING`, `DEMO`, and the pinned demo flood | B | `US-111` `Done`: the `forecast_mode` row is on the server. `US-129` `Done`: the pin is on the server. `US-130` `Done`: the three modes are checked on the server, and the owner accepted the written results with no screenshot. The frontend banner is `Not started` ([[US-131-show-the-demo-flood-banner-and-the-pinned-frame\|US-131]]). | `D-030`, `D-043` |
 | Real-rain archive of `results_3di.nc` and its growth | B | Pending a forecast above 5 mm/h. | `US-114`, `D-037` |
 | Edge depth table replaces `flood_road_values` (staged) | B | In progress. `US-116`, `US-117`, `US-119` `Done`. `US-118` `In progress`. `US-120` to `US-122` `Done`. `US-123`, the deletion, is `Ready`. The closed share per vehicle from `edge_depth` is within 2 points of the piece-based share (`US-121`). | [[decision-log\|D-038]], [[SPR-014-finish-the-remaining-backend\|SPR-014]] |
 | Test dataset: snapshot, restore, history and metrics from it | B | `US-124`, `US-125`, `US-127` `Done`. `US-126` `In progress` (the tile rebuild is built, the road values are not). `US-128` `Ready`. | [[test-dataset]], [[EP-22-keep-a-real-storm-as-the-test-dataset\|EP-22]] |
