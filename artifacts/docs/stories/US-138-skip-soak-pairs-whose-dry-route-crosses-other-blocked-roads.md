@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-138"
 title: "Skip soak pairs whose dry route crosses other blocked roads"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -36,6 +36,7 @@ Dependencies: [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]] is
 - **2026-10-13, draft.** Raised by the answer of [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: its dependency is `Done`, it fits one sprint, and its acceptance is a run of the check on the server. It is `Ready` and not `In progress`, because [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] fill the two places.
 - **2026-10-13, Reviewed.** Built and run on the server. At the pinned step the check gives 0 failures, judges 7 blocked pairs, and skips the three pairs of [[decision-log|D-050]] (details items 1 to 4). The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 5, including the narrowing of the rule to the `crosses` and `found` promises.
 
 ## Evidence and details
 

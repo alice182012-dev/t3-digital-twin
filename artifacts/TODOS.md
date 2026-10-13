@@ -9,14 +9,15 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
+Sprint 14 runs from 2026-10-12 to 2026-10-25, and 7 points of work remain.
 1. Current task: the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] runs in the worker on the test dataset. It started at 04:07 UTC on 2026-10-13, takes about 6 minutes per run, and ends at about 09:15 UTC. The session job reads `data/mapping/testdata_rebuild/run50.log` every 20 minutes and records the result in the story. Then ask the owner to accept US-118.
-2. Next: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server. The code is on `modular`, and the server steps wait for the end of the check, because the check reads `scripts/` from the server checkout. In this order:
-   - Pull `modular` on the server with `git pull --ff-only alice modular`.
-   - Rebuild `analysis` from the desktop, because its list of core outputs lost `road_values`, and rerun `create_routing_reader_role.py` for `routing_reader` and `analysis_reader`.
-   - Unpause `flood_mapping_full` (the owner approved it on 2026-10-13, after the check ends). The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
-   - Check `/flood/areas`, `/route`, and `/flood/points` against their answers before the deletion.
-   - Ask the owner to confirm the drop of `road_segment`, `flood_road_values`, `flood_road_file`, and `flood_road_values_shadow` (irreversible), then drop them and record the freed storage.
+2. Next: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server. The code is on `modular`, and the pre-flight is done (the story, 2026-10-13: the pull is a fast-forward, the new DAGs import without error, and no database object depends on the old tables). Start when the check of step 1 ends, because the check reads `scripts/` from the server checkout. In this order:
+   - Pull: `git pull --ff-only alice modular` on the server. No container is recreated. Wait one minute and check `airflow dags list-import-errors` is empty.
+   - Rerun `create_routing_reader_role.py` in the worker for `routing_reader` and `analysis_reader`. The worker mounts the new contract page, so the roles lose their grants on the old tables.
+   - Ask the owner to rebuild `analysis` from the desktop (its list of core outputs lost `road_values`). Until then its `/health` keeps the last run that has all four outputs.
+   - Unpause `flood_mapping_full` (approved by the owner). Only the run of 03:45 UTC, frozen at `3b_publish_depth_files`, carries on, because the other slots are dry and skip. Its depth folder exists. Its run name is `20261013T110000`. Then `9b` loads the tiles, `routing_adapter` runs only `9c`, and `flood_history` runs on the asset `edge_depth`. Measure the task durations of `3b`, `9b`, and `9c`: their sum is the time after `3_calculate_depth`, and it must be under 5 minutes. The waiting time of the pause does not count.
+   - Run `sh marie-curie/us123/capture.sh after` on the Mac and `diff -r marie-curie/us123/before marie-curie/us123/after`, which checks that `/flood/areas`, `/route`, and `/flood/points` answer as before. The runs of `edge_depth` have changed since the capture, so compare the answers for run `20261011T001500` only (the pinned run).
+   - Ask the owner to confirm the drop (irreversible, about 377 MB). Then drop `flood_road_values`, `flood_road_file`, `road_segment`, and `flood_road_values_shadow`, in this order, in one transaction, and record the freed storage.
 3. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
@@ -27,7 +28,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-47 points picked, 38 done.
+47 points picked, 40 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
@@ -38,11 +39,6 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-138 Skip soak pairs whose dry route crosses other blocked roads
-
-**Story:** [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]].
-P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
