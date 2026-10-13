@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-118"
 title: "Write the edge depth to a queryable table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: In progress
+status: Done
 kind: story
 priority: P1
 estimate: M
@@ -47,6 +47,7 @@ Dependencies: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] is `Don
 - **2026-10-12, In progress.** Task `9c` now also reads `demo_pin` and passes the pinned run's table to the publish step, so the retention of the edge depth files keeps it ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]). The prune of `edge_depth` rows keeps the pinned run too.
 - **2026-10-13, In progress.** The first `9c` run on a real simulation happened: the slot 03:30 UTC ran a real 3Di simulation (sim 452776, forecast 0 mm/h through the standing-flood rule), and `9c` built run `20261013T104500` in 24.2 s with 1,219 rows in `edge_depth`. The owner approved the check over 50 consecutive runs on the test dataset. It runs in the worker against `minio_custom_test` (the first 50 runs of the manifest, tiles from the NetCDF, then `build_edge_depth.py`, with the tiles deleted after each run). The first two runs took 43.7 s and 48.9 s to build, and about 5 minutes each to rebuild the tiles, so the loop needs about 6 minutes per run. The log is `data/mapping/testdata_rebuild/run50.log` in the worker, and the loop started at 04:07 UTC and should end at about 09:15 UTC.
 - **2026-10-13, In progress.** The check over 50 consecutive runs ended with no failure. The longest `9c` build is 79.5 s, against the limit of 150 s (details item 7). The owner has not accepted the story.
+- **2026-10-13, Done.** The product owner accepted it. The criteria of the story are met: the rows and the registry of a replay run (US-118 tests and the server run of 2026-10-12), the run with no wet edge, the second build with the same rows, and 50 consecutive runs with the longest `9c` build at 79.5 s (details item 7). Two real runs on the server confirm the task: the run of 03:30 UTC (24.2 s) and the run of 09:45 UTC (25 s from `9b` to the end of `9c`).
 
 ## Evidence and details
 

@@ -99,3 +99,8 @@ Verified on 2026-10-05 in the cloud session: 83 tests in `scripts/edge_depth/`, 
 - The file name is `<run_ts>.bin`, as `scripts/edge_depth/build_edge_depth.py` writes it. The format does not require the extension.
 - The hash algorithm is fixed by the export (`US-039`, built 2026-10-05). It is a SHA-256, written as 64 lowercase hex characters, over the node count, the edge count, and for each edge in id order its base node, adjacent node, point count, and points in 1e-7 degrees. `ExportEdges` writes it to `graph.json` as `graph_hash`, and the table's `graphHash` header holds the same text. See `java/time-aware-routing/README.md`. Run on the server graph on 2026-10-05: 67,833 edges, 51,328 nodes, hash `8c13d8841f8335a39207a38bb833bfc70d8e7d0709d46953076e4e5142c716ce` for the graph of that day.
 - The Java reader (`US-043`) passes the same bytes. `scripts/edge_depth/golden_fixture.py` writes one fixture (3,000 edges, 9 steps, edge-case values) to `java/time-aware-routing/src/test/resources/edge-depth/`, and both readers are tested against it.
+
+## Measured on the server
+
+On 2026-10-13, 50 consecutive runs of the test dataset built in 43.7 s at the shortest, 69.9 s on average, and 79.5 s at the longest, with the write of the `edge_depth` rows, against the limit of 150 s ([[US-118-write-the-edge-depth-to-a-queryable-table|US-118]]). The test database kept every run, so the figure is an upper bound for production, which keeps 24 hours.
+Two real runs took 24.2 s (03:30 UTC) and 24 s (09:51 UTC) for task `9c`.

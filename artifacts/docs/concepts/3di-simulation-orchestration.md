@@ -70,6 +70,7 @@ event that `9b_load_depth_raster` ever emitted.
 Until 2026-10-13 the DAG also had the tasks `load_road_segments`, `flood_on_roads`, and `prune_flood_road_values`,
 which wrote the per-piece tables `road_segment` and `flood_road_values`. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]
 deleted them and the tables ([[decision-log|D-038]]), because every reader moved to the edge depth tables.
+On 2026-10-13 a run took 148 s from the end of `3_calculate_depth` to the end of `9c` ([[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]).
 After `9c` commits the `edge_depth` rows and the `edge_depth_run` row, it emits the asset `edge_depth`
 (`EDGE_DEPTH_ROWS` in `dags/core_assets.py`) with the `run_ts`, and the DAG `flood_history` runs on that event.
 
