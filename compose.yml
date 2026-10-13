@@ -73,6 +73,10 @@ x-airflow-common: &airflow-common
     # depths (FLOOD_UTILS_DIR). Mount only this folder, read-only, not all of ./floodmap: it has
     # no import dependency on the rest of that tree (checked: stdlib only).
     - ./floodmap/graphhopper-flood-road/scripts:/opt/airflow/floodmap/graphhopper-flood-road/scripts:ro
+    # scripts/database/create_routing_reader_role.py imports the parser core_contract.py (stdlib only) and reads the
+    # contract page, both found from its REPO folder, which is /opt/airflow here. Mount just those two files.
+    - ./floodmap/graphhopper-flood-road/backend/core_contract.py:/opt/airflow/floodmap/graphhopper-flood-road/backend/core_contract.py:ro
+    - ./artifacts/docs/concepts/core-output-contract.md:/opt/airflow/artifacts/docs/concepts/core-output-contract.md:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     airflow-redis:
