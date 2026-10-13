@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-137"
 title: "Make the tests of test/ pass without a 3Di client of the pinned version"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Ready
+status: Reviewed
 kind: story
 priority: P2
 estimate: S
@@ -39,7 +39,20 @@ Dependencies: None.
 
 - **2026-10-13, draft.** Found when [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] changed the tests of `test/`. The owner asked on the same day to fix the failing tests first.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request. It is `Ready` and not `In progress`, because [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] already fill the two places.
+- **2026-10-13, Reviewed.** Built and checked on the Mac and in the worker (details items 1 to 4). The owner has not accepted it.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** the test counts in details items 2 and 3. No screenshot.
+
+**Details:**
+
+1. `test/conftest.py` puts `scripts/` on `sys.path` and gives a stand-in class to each name that `create_simulation.py` imports from `threedi_api_client.openapi` and the installed client lacks (`Action`, `ApiException`, `FromTemplate`, `TimedSavedState`, `TimeseriesRain`). A real name is never replaced.
+   `test/test_environment_matches_requirements.py` compares the installed client with the pin in `requirements.txt`. On a difference it skips with both versions in the reason. On a match it asserts that no stand-in was installed.
+   The three test files that need the stand-ins import `conftest`, because `python -m unittest` does not load `conftest.py` and the worker has no pytest.
+2. On the Mac (Python 3.14, client 4.2.6), `python3 -m pytest -q test/` gives 129 passed and 1 skipped (the version test), with no failure and no collection error. Two more runs with `-p no:cacheprovider` gave the same. `python3 -m unittest discover -s test` gives 130 tests, OK, 1 skipped.
+   Before the change it gave 10 failed and 2 collection errors.
+3. In the worker (Python 3.12, client 5.0.5), `python -m unittest discover -s test -p <file>` gives OK for the version test (1 test, not skipped, so no stand-in is installed), `test_flood_rain_gate` (6), `test_threedi_auth_alert` (4), and `test_calculate_depth` (2).
+   The other test files need `compose.yml` and the repository layout, which the copy in the worker did not have, so they were not run there.
+4. The manual script moved with `git mv` from `test/test_threedi_state_test.py` to `scripts/threedi_state_check.py`, with its docstring and paths adjusted. It creates two real simulations on 3Di, so it was not run. No other file refers to the old path.
+

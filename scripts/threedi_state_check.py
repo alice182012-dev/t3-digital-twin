@@ -8,7 +8,7 @@ download_result.py directly.
 This creates two REAL simulations on 3Di and consumes real compute quota.
 
 Usage (from repo root):
-    python test/test_threedi_state_test.py
+    python scripts/threedi_state_check.py
 """
 
 import os
@@ -17,8 +17,8 @@ from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(TEST_DIR)  # airflow_new/
+SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(SCRIPTS_DIR)  # airflow_new/
 BASE_PATH = REPO_ROOT
 SCRIPTS_PATH = os.path.join(BASE_PATH, "scripts")
 

@@ -40,6 +40,11 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
+### Reviewed - US-137 Make the tests of test/ pass without a 3Di client of the pinned version
+
+**Story:** [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
 **Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
@@ -49,11 +54,6 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 **Story:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
 P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
-
-### Ready - US-137 Make the tests of test/ pass without a 3Di client of the pinned version
-
-**Story:** [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]].
-P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-110 Decide whether pipeline tables leave the public schema
 

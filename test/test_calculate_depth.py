@@ -9,6 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
+import conftest  # noqa: F401  # unittest does not load conftest.py on its own
+
 ROOT = Path(__file__).resolve().parents[1]
 
 try:

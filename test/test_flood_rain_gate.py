@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import conftest  # noqa: F401  # unittest does not load conftest.py on its own
 
 ROOT = Path(__file__).resolve().parents[1]
 
