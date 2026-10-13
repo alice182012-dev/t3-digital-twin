@@ -11,7 +11,7 @@ Index: [[Home]].
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
 1. Watch the standing-flood chain that started at the slot of 09:45 UTC on 2026-10-13 (the revived run counted as a fresh publish). It must stop after 5 dry runs in a row. Count the real simulations it ran and record the number.
-2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
+2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is unpaused and runs only on a flood that stands or a forecast above 5 mm/h.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
