@@ -23,6 +23,7 @@ Four subcommands.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import re
@@ -194,12 +195,11 @@ def far_point(neighbour, piece, fraction: float = 0.9):
     return point_along(list(neighbour) if near_first else list(neighbour)[::-1], fraction)
 
 
-def dry_shows_promise(outcome: str, control) -> bool:
-    """True when the dry control makes the pair a test: a dry route that crosses the piece for a blocked or
-    crosses promise, or at least exists for a found promise. `control` is a list of (route_found,
-    route_crosses_piece), one per travel direction."""
-    if outcome == "found":
-        return any(found for found, _ in control)
+def dry_shows_promise(control) -> bool:
+    """True when the dry control makes the pair a test: a dry route exists and crosses the piece, whatever the
+    promise. A found promise needs the crossing too, because a dry route that avoids the piece cannot show
+    that the flood made the route costly there. `control` is a list of (route_found, route_crosses_piece), one
+    per travel direction."""
     return any(found and crosses for found, crosses in control)
 
 
@@ -207,10 +207,10 @@ def judge_vehicle(outcome: str, directions, control) -> str:
     """Return "pass", "fail", or "skip".
 
     directions and control are lists of (route_found, route_crosses_piece), one per travel direction.
-    The control is the same pair of points with no flood model. A pair is only a test when the control
-    shows the promise can be seen.
+    The control is the same pair of points with no flood model. A pair is only a test when the dry route
+    crosses the piece, for every outcome.
     """
-    if not dry_shows_promise(outcome, control):
+    if not dry_shows_promise(control):
         return "skip"
     flood_found = any(found for found, _ in directions)
     flood_crosses = any(found and crosses for found, crosses in directions)
@@ -219,6 +219,11 @@ def judge_vehicle(outcome: str, directions, control) -> str:
     if outcome == "blocked":
         return "fail" if flood_crosses else "pass"
     return "pass" if flood_crosses else "fail"
+
+
+def route_wkt(coordinates) -> str:
+    """A LineString in EPSG:4326, longitude first, for ST_GeogFromText."""
+    return "LINESTRING(" + ", ".join(f"{lon} {lat}" for lon, lat in coordinates) + ")"
 
 
 def unproven_vehicles(depths_cm, rows) -> list[str]:
@@ -287,6 +292,42 @@ WHERE NOT EXISTS (
 ORDER BY md5(c.segment_id)
 LIMIT %(n)s
 """
+
+
+# The dry route runs on an edge this deep or deeper, other than the picked piece, so the flooded request is
+# expected to find no route for a reason the pick did not isolate (US-138).
+OTHER_BLOCKED_TOL_M = 6.0
+OTHER_BLOCKED_REASON = "dry route runs on another blocked edge"
+
+# The bounding box test (0.0001 degree is about 11 m, above the tolerance) lets the gist index of graph_edge.geom
+# prune before the geography distance runs.
+OTHER_BLOCKED_SQL = """
+SELECT e.edge_key
+FROM edge_depth d
+JOIN graph_edge e USING (edge_key)
+WHERE d.run_ts = %(run)s AND d.valid_time_utc = %(vt)s
+  AND d.depth_cm >= %(limit)s AND e.edge_key <> %(picked)s
+  AND e.geom && ST_Expand(ST_GeomFromText(%(route)s, 4326), 0.0001)
+  AND ST_DWithin(e.geom::geography, ST_GeogFromText(%(route)s), %(tol)s)
+ORDER BY e.edge_key
+LIMIT 1
+"""
+
+
+def needs_isolated_route(outcome: str) -> bool:
+    """Whether the dry route must be free of other blocked edges for this promise. A blocked promise holds whatever
+    else is closed, and the dry route of a blocked pair runs along the neighbouring edges of the same deep road, so
+    only the promises that need a flooded route (crosses and found) are skipped by that rule."""
+    return outcome != "blocked"
+
+
+def other_blocked_edge(cur, run, vt, vehicle, picked_key, route):
+    """The edge_key of an edge of the run and step at or above the vehicle's limit, other than the picked piece,
+    within OTHER_BLOCKED_TOL_M of the dry route, or None."""
+    cur.execute(OTHER_BLOCKED_SQL, {"run": run, "vt": vt, "limit": VEHICLE_LIMIT_CM[vehicle], "picked": picked_key,
+                                    "route": route_wkt(route), "tol": OTHER_BLOCKED_TOL_M})
+    row = cur.fetchone()
+    return row[0] if row else None
 
 
 def post_json(url: str, body: dict, timeout: float = 120.0):
@@ -380,49 +421,57 @@ def run_roads(args) -> int:
     db_config = {"host": os.environ["POSTGRES_HOST"], "port": int(os.environ["POSTGRES_PORT"]),
                  "database": os.environ["POSTGRES_DB"], "user": os.environ["POSTGRES_USER"],
                  "password": os.environ["POSTGRES_PASSWORD"]}
-    with psycopg2.connect(**db_config) as conn, conn.cursor() as cur:
+    with contextlib.closing(psycopg2.connect(**db_config)) as conn, conn.cursor() as cur:
         cell = probe_engine_cell(cur, args.backend) if args.run is None and args.valid_time is None else None
         run, vt = cell or resolve_run(cur, args.run, args.valid_time)
         picks = pick_roads(cur, run, vt, args.per_bucket, args.oversample)
 
-    body_times = {"valid_time": (vt + LOCAL_OFFSET).strftime("%Y-%m-%dT%H:%M:%S+07:00"), "run": run}
-    server_errors = 0
-    rows = []
-    judged = {}
-    for label, segment_id, cm, piece_json, before_json, after_json in picks:
-        vehicles = [v for v in VEHICLE_LIMIT_CM if judged.get((label, v), 0) < args.per_bucket]
-        if not vehicles:
-            continue
-        piece = [tuple(c) for c in json.loads(piece_json)["coordinates"]]
-        start = far_point([tuple(c) for c in json.loads(before_json)["coordinates"]], piece)
-        end = far_point([tuple(c) for c in json.loads(after_json)["coordinates"]], piece)
-        waypoints = [point_along(piece, 0.2), point_along(piece, 0.8)]
+        body_times = {"valid_time": (vt + LOCAL_OFFSET).strftime("%Y-%m-%dT%H:%M:%S+07:00"), "run": run}
+        server_errors = 0
+        skipped_other_blocked = 0
+        rows = []
+        judged = {}
+        for label, segment_id, cm, piece_json, before_json, after_json in picks:
+            vehicles = [v for v in VEHICLE_LIMIT_CM if judged.get((label, v), 0) < args.per_bucket]
+            if not vehicles:
+                continue
+            piece = [tuple(c) for c in json.loads(piece_json)["coordinates"]]
+            start = far_point([tuple(c) for c in json.loads(before_json)["coordinates"]], piece)
+            end = far_point([tuple(c) for c in json.loads(after_json)["coordinates"]], piece)
+            waypoints = [point_along(piece, 0.2), point_along(piece, 0.8)]
 
-        def route_pair(base, vehicle, extra):
-            nonlocal server_errors
-            result = []
-            for a, b in ((start, end), (end, start)):
-                status, payload, _ = post_json(
-                    f"{base}/route",
-                    {"points": [list(a), list(b)], "profile": vehicle, "points_encoded": False,
-                     "instructions": False, **extra},
-                )
-                if status >= 500:
-                    server_errors += 1
-                coords = route_coordinates(payload)
-                result.append((status == 200 and bool(coords), route_passes_through(coords, waypoints, args.tol_m)))
-            return result
+            def route_pair(base, vehicle, extra):
+                nonlocal server_errors
+                result, routes = [], []
+                for a, b in ((start, end), (end, start)):
+                    status, payload, _ = post_json(
+                        f"{base}/route",
+                        {"points": [list(a), list(b)], "profile": vehicle, "points_encoded": False,
+                         "instructions": False, **extra},
+                    )
+                    if status >= 500:
+                        server_errors += 1
+                    coords = route_coordinates(payload)
+                    result.append((status == 200 and bool(coords), route_passes_through(coords, waypoints, args.tol_m)))
+                    routes.append(coords)
+                return result, routes
 
-        for vehicle in vehicles:
-            outcome = expected_outcome(cm, vehicle)
-            control = route_pair(args.graphhopper, vehicle, {})
-            directions = route_pair(args.backend, vehicle, body_times) if dry_shows_promise(outcome, control) else []
-            verdict = judge_vehicle(outcome, directions, control)
-            if verdict != "skip":
-                judged[(label, vehicle)] = judged.get((label, vehicle), 0) + 1
-            rows.append({"bucket": label, "edge_key": segment_id, "depth_cm": cm,
-                         "vehicle": vehicle, "expected": outcome, "flood": directions, "control": control,
-                         "verdict": verdict})
+            for vehicle in vehicles:
+                outcome = expected_outcome(cm, vehicle)
+                control, dry_routes = route_pair(args.graphhopper, vehicle, {})
+                row = {"bucket": label, "edge_key": segment_id, "depth_cm": cm,
+                       "vehicle": vehicle, "expected": outcome, "flood": [], "control": control}
+                if dry_shows_promise(control):
+                    dry_route = next(route for route, (found, crosses) in zip(dry_routes, control) if found and crosses)
+                    if needs_isolated_route(outcome) and other_blocked_edge(cur, run, vt, vehicle, segment_id, dry_route):
+                        skipped_other_blocked += 1
+                        rows.append({**row, "verdict": "skip", "reason": OTHER_BLOCKED_REASON})
+                        continue
+                    row["flood"], _ = route_pair(args.backend, vehicle, body_times)
+                row["verdict"] = judge_vehicle(outcome, row["flood"], control)
+                if row["verdict"] != "skip":
+                    judged[(label, vehicle)] = judged.get((label, vehicle), 0) + 1
+                rows.append(row)
     failures = sum(row["verdict"] == "fail" for row in rows)
     unproven = unproven_vehicles([pick[2] for pick in picks], rows)
     summary = {}
@@ -431,6 +480,7 @@ def run_roads(args) -> int:
         summary[key] = summary.get(key, 0) + 1
     print(json.dumps({"run": run, "valid_time_utc": vt.isoformat(), "roads": len(picks), "checks": len(rows),
                       "summary": summary, "failures": failures, "blocked_unproven": unproven,
+                      "skipped_other_blocked": skipped_other_blocked,
                       "server_errors": server_errors,
                       "failed_rows": [row for row in rows if row["verdict"] == "fail"],
                       **({"rows": rows} if args.verbose else {})}, indent=1))

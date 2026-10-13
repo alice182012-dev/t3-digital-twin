@@ -10,6 +10,7 @@ from pathlib import Path
 import psycopg2
 
 from soak_checks import (
+    needs_isolated_route,
     VEHICLE_LIMIT_CM,
     dry_shows_promise,
     engine_cell,
@@ -19,10 +20,12 @@ from soak_checks import (
     judge_vehicle,
     latency_table,
     next_limit_cm,
+    other_blocked_edge,
     percentile,
     pick_roads,
     point_along,
     resolve_run,
+    route_wkt,
     route_passes_through,
     run_logs,
     scan_logs,
@@ -173,6 +176,10 @@ class JudgeVehicleTest(unittest.TestCase):
     def test_found_is_skipped_when_the_dry_route_is_not_found_either(self):
         self.assertEqual(judge_vehicle("found", [(False, False), (False, False)], self.DRY_NONE), "skip")
 
+    def test_found_is_skipped_when_the_dry_route_does_not_cross_the_piece(self):
+        self.assertEqual(judge_vehicle("found", [(False, False), (False, False)], self.DRY_DETOURS), "skip")
+        self.assertEqual(judge_vehicle("found", [(True, False), (True, False)], self.DRY_DETOURS), "skip")
+
     def test_crosses_needs_a_route_over_the_piece_in_at_least_one_direction(self):
         self.assertEqual(judge_vehicle("crosses", [(False, False), (True, True)], self.DRY_CROSSES), "pass")
         self.assertEqual(judge_vehicle("crosses", [(True, False), (True, False)], self.DRY_CROSSES), "fail")
@@ -182,14 +189,18 @@ class JudgeVehicleTest(unittest.TestCase):
 
 
 class DryShowsPromiseTest(unittest.TestCase):
-    def test_blocked_needs_a_dry_route_that_crosses(self):
-        self.assertTrue(dry_shows_promise("blocked", [(True, False), (True, True)]))
-        self.assertFalse(dry_shows_promise("blocked", [(True, False), (True, False)]))
-        self.assertFalse(dry_shows_promise("blocked", [(False, True), (False, False)]))
+    def test_a_dry_route_that_crosses_the_piece_in_one_direction_shows_the_promise(self):
+        self.assertTrue(dry_shows_promise([(True, False), (True, True)]))
 
-    def test_found_needs_only_a_dry_route(self):
-        self.assertTrue(dry_shows_promise("found", [(True, False), (False, False)]))
-        self.assertFalse(dry_shows_promise("found", [(False, False), (False, False)]))
+    def test_a_dry_route_that_avoids_the_piece_or_is_missing_does_not(self):
+        self.assertFalse(dry_shows_promise([(True, False), (True, False)]))
+        self.assertFalse(dry_shows_promise([(False, True), (False, False)]))
+        self.assertFalse(dry_shows_promise([(False, False), (False, False)]))
+
+
+class RouteWktTest(unittest.TestCase):
+    def test_coordinates_become_a_longitude_first_linestring(self):
+        self.assertEqual(route_wkt([(105.7, 21.0), (105.71, 21.001)]), "LINESTRING(105.7 21.0, 105.71 21.001)")
 
 
 class UnprovenVehiclesTest(unittest.TestCase):
@@ -287,13 +298,14 @@ class PickRoadsTests(unittest.TestCase):
             cur.execute(f"SET search_path TO {SCHEMA}, public")
             cur.execute(create_graph_edge_table.SQL)
             cur.execute(create_edge_depth_tables.SQL)
-            for edge_id, (key, lon) in enumerate([("100:0", 105.72), ("100:1", 105.7205), ("100:2", 105.721), ("200:0", 105.75)]):
+            for edge_id, (key, lon) in enumerate([("100:0", 105.72), ("100:1", 105.7205), ("100:2", 105.721), ("200:0", 105.75), ("300:0", 105.73), ("400:0", 105.74)]):
                 cur.execute("INSERT INTO graph_edge (edge_id, edge_key, length_m, geom) VALUES (%s, %s, 50, ST_GeomFromText(%s, 4326))",
                             (edge_id, key, edge_wkt(lon)))
             cur.execute("INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times) VALUES (%s, 'h', ARRAY[%s]::timestamp[])",
                         (RUN, VT_UTC))
             cur.execute("INSERT INTO edge_depth VALUES (%s, %s, '100:0', 8), (%s, %s, '100:1', 25), "
-                        "(%s, %s, '100:2', 8), (%s, %s, '200:0', 25)", (RUN, VT_UTC) * 4)
+                        "(%s, %s, '100:2', 8), (%s, %s, '200:0', 25), (%s, %s, '300:0', 90), (%s, %s, '400:0', 25)",
+                        (RUN, VT_UTC) * 6)
 
     @classmethod
     def tearDownClass(cls):
@@ -304,6 +316,10 @@ class PickRoadsTests(unittest.TestCase):
 
     def tearDown(self):
         self.conn.rollback()
+
+    @staticmethod
+    def route_at(lon, lat=21.0):
+        return [(lon, lat), (lon + 0.0002, lat)]
 
     def cursor(self):
         cur = self.conn.cursor()
@@ -320,6 +336,26 @@ class PickRoadsTests(unittest.TestCase):
     def test_a_forecast_time_with_no_wet_edge_gives_no_pick(self):
         with self.cursor() as cur:
             self.assertEqual(pick_roads(cur, RUN, datetime(2026, 10, 10, 15, 0), per_bucket=3), [])
+
+    def test_a_route_beside_a_deep_edge_that_is_not_the_picked_one_returns_it(self):
+        with self.cursor() as cur:
+            self.assertEqual(other_blocked_edge(cur, RUN, VT_UTC, "car", "100:1", self.route_at(105.7302)), "300:0")
+
+    def test_a_route_beside_only_the_picked_edge_returns_nothing(self):
+        with self.cursor() as cur:
+            self.assertIsNone(other_blocked_edge(cur, RUN, VT_UTC, "car", "100:1", self.route_at(105.7205)))
+
+    def test_a_route_beside_an_edge_below_the_limit_returns_nothing(self):
+        with self.cursor() as cur:
+            self.assertIsNone(other_blocked_edge(cur, RUN, VT_UTC, "car", "100:1", self.route_at(105.7402)))
+
+    def test_the_limit_is_the_vehicles(self):
+        with self.cursor() as cur:
+            self.assertEqual(other_blocked_edge(cur, RUN, VT_UTC, "motorbike", "100:1", self.route_at(105.7402)), "400:0")
+
+    def test_an_edge_farther_than_the_tolerance_is_not_beside_the_route(self):
+        with self.cursor() as cur:
+            self.assertIsNone(other_blocked_edge(cur, RUN, VT_UTC, "car", "100:1", self.route_at(105.7302, lat=21.0002)))
 
     def test_the_default_is_the_newest_run_and_its_first_step(self):
         with self.cursor() as cur:
@@ -409,3 +445,12 @@ class JudgeContainersTest(unittest.TestCase):
         problems = judge_containers([DOCKER_500, GH_UP], SINCE)
         self.assertEqual(len(problems), 1)
         self.assertIn("could not read", problems[0])
+
+
+class NeedsIsolatedRouteTest(unittest.TestCase):
+    def test_a_blocked_promise_does_not_need_an_isolated_route(self):
+        self.assertFalse(needs_isolated_route("blocked"))
+
+    def test_the_promises_that_need_a_flooded_route_do(self):
+        self.assertTrue(needs_isolated_route("crosses"))
+        self.assertTrue(needs_isolated_route("found"))
