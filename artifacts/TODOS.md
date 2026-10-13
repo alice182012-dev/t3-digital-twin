@@ -9,12 +9,12 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 14 runs from 2026-10-12 to 2026-10-25, and 11 points of work remain.
+Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
 1. Current task: the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] runs in the worker on the test dataset. It started at 04:07 UTC on 2026-10-13, takes about 6 minutes per run, and ends at about 09:15 UTC. The session job reads `data/mapping/testdata_rebuild/run50.log` every 20 minutes and records the result in the story. Then ask the owner to accept US-118.
 2. Next: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server. The code is on `modular`, and the server steps wait for the end of the check, because the check reads `scripts/` from the server checkout. In this order:
    - Pull `modular` on the server with `git pull --ff-only alice modular`.
    - Rebuild `analysis` from the desktop, because its list of core outputs lost `road_values`, and rerun `create_routing_reader_role.py` for `routing_reader` and `analysis_reader`.
-   - Ask the owner when to unpause `flood_mapping_full`. The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
+   - Unpause `flood_mapping_full` (the owner approved it on 2026-10-13, after the check ends). The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
    - Check `/flood/areas`, `/route`, and `/flood/points` against their answers before the deletion.
    - Ask the owner to confirm the drop of `road_segment`, `flood_road_values`, and `flood_road_file` (irreversible), then drop them and record the freed storage.
 3. After US-123: the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], because three tables fewer are left to classify.
@@ -28,7 +28,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 11 points of work remain.
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-43 points picked, 30 done.
+43 points picked, 34 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
@@ -39,16 +39,6 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-128 Run the test suites against the test databases
-
-**Story:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
-P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
-
-### Reviewed - US-137 Make the tests of test/ pass without a 3Di client of the pinned version
-
-**Story:** [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]].
-P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 

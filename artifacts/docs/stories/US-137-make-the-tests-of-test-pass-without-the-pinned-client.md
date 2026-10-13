@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-137"
 title: "Make the tests of test/ pass without a 3Di client of the pinned version"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -41,6 +41,7 @@ Dependencies: None.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request. It is `Ready` and not `In progress`, because [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] already fill the two places.
 - **2026-10-13, Reviewed.** Built and checked on the Mac and in the worker (details items 1 to 4). The owner has not accepted it.
 - **2026-10-13, Reviewed.** The scope grew by one item: the command of [[US-128-run-the-test-suites-against-the-test-databases|US-128]] found 9 more collection errors in three folders of the same kind, and a `pytest.ini` fixed them (details item 5).
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 5, with no screenshot.
 
 ## Evidence and details
 

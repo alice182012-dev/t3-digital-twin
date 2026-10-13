@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-128"
 title: "Run the test suites against the test databases"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -36,6 +36,7 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 - **2026-10-12, Ready.** Picked for the sprint at the product owner's request. [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Done`. Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 - **2026-10-13, Ready.** The design changed after a check of the suites: scratch databases instead of the dataset databases ([[decision-log|D-048]]). The code is being written. The run on the server waits for the end of the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and for [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]], so it runs the final suites.
 - **2026-10-13, Reviewed.** Built and run on the server. `python3 scripts/testdata/run_db_tests.py` gave 753 passed, 0 failed, 0 errors, and 8 skipped, and the rows of the restored tables did not change (details items 1 to 4). The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 6, with no screenshot.
 
 ## Evidence and details
 
