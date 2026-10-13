@@ -48,7 +48,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-17 stories.
+18 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
