@@ -774,3 +774,15 @@ is the maximum.
 - **Affects:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], [[core-output-contract]].
 - **Revisit if:** a trigger fires, or the number of Django models that touch the shared database grows.
 
+## D-050: The three soak failures come from the choice of pairs, and the routing is correct
+
+- **Date:** 2026-10-13
+- **Status:** active. The owner has not read it.
+- **Decided by:** The development team, on 2026-10-13, as the answer of the spike [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]].
+- **Decision:** The three pairs that failed the soak `roads` check on 2026-10-13 are not routing faults. The check judges a route that crosses deep roads far from the picked piece, and the pair selection does not exclude them. [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]] fixes the selection.
+- **Why:** For each pair, the flooded request answers "Connection between locations not found" in both directions, and the dry route (sent to GraphHopper) crosses 3 blocked polygons. Two of them cover edges of 106 to 146 cm that lie on the route, against limits of 30 cm (car) and 35 cm (truck). The start, the end, and the picked piece have no edge at or above the limit within 60 m. The pick looks only at the neighbourhood of the piece (about 170 m), and the route is 32 to 70 points long. For the `found` pairs of edge `400545823:1` the dry route does not even cross the picked piece.
+- **Alternatives:** (1) Blame the 22 m buffer of the flood areas ([[graphhopper-backend]]). Not chosen, because the deep edges lie on the route, at distance 0. The buffer may widen one of the three polygons (an edge of 94 cm lies 26 m from the route), and that is not the cause. (2) Change the routing. Not chosen, because it is correct.
+- **Evidence:** the details of [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]] and `marie-curie/us136/result.json`.
+- **Affects:** [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]], [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]], [[graphhopper-backend]].
+- **Revisit if:** a pair fails with no deep road on its dry route.
+
