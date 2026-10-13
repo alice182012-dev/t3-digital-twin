@@ -1,15 +1,15 @@
 ---
 date_open: 2026-10-12
-date_closed: 
+date_closed: 2026-10-13
 type: blocker
-status: open
+status: resolved
 severity: P3
 subsystem: flood-extent
-approaches_tried: 0
-approaches_remaining: 2
+approaches_tried: 1
+approaches_remaining: 0
 tags: [blocker, flood-tiles, postgis, us-104, crs]
 related: ["[[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]", "[[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]", "[[minio-flood-extent-pipeline]]", "[[decision-log|D-027]]", "[[2026-10-12]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # The postgis input of the flood tile build drops every polygon
@@ -49,7 +49,7 @@ A is the smaller change. B is the one that removes the assumption. [[US-104-comp
 
 ## Decision and explanation
 
-Pending, and not scheduled. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] measured on 2026-10-12 that the warp variant is 32 to 35 s slower per run than the `files` mode and fails the 1 percent area check, so [[decision-log|D-027]] keeps `files`. Nothing is blocked while the DAG runs in `files` mode. Fix this only when a host without the worker's disk needs the tile build.
+Resolved on 2026-10-13 by deleting the input ([[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]), which is neither option A nor option B. Earlier: pending, and not scheduled. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]] measured on 2026-10-12 that the warp variant is 32 to 35 s slower per run than the `files` mode and fails the 1 percent area check, so [[decision-log|D-027]] keeps `files`. Nothing is blocked while the DAG runs in `files` mode. Fix this only when a host without the worker's disk needs the tile build.
 
 ## Related topics
 
@@ -62,3 +62,4 @@ Pending, and not scheduled. [[US-104-compare-the-two-inputs-of-the-flood-tile-bu
 - **2026-10-12, open.** Found while measuring US-104. The harness `marie-curie/us-104/bench_tiles.py` reproduces it on the first `postgis` build, and its warped variant builds tiles.
 - **2026-10-12, open, P3.** US-104 answered with 5 paired runs and kept `files`, so the blocker no longer holds up a story. The severity went from P2 to P3.
 - **2026-10-12, open, P3.** The owner archived [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]], so no story depends on a working `postgis` mode. The blocker stays open and unscheduled until a host without the worker's disk needs the tile build.
+- **2026-10-13, resolved.** [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] deleted the `postgis` input of the flood tile build, the variable `FLOOD_TILES_INPUT`, and `raster_export.py`. The owner kept `files` ([[decision-log|D-027]]), nothing set the variable, and no user reached the path, so the fix is to remove the option and not to repair it. Merged into `modular` and pulled on the server on 2026-10-13.

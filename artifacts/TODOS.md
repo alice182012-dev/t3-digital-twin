@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
-1. Current task: merge the branches `us-139-stale-run-guard` ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]) and `us-140-delete-postgis-tile-input` ([[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]) into `modular`, pull them on the server, check that the tests pass and the DAGs import, and check the skip of a stale run with `airflow tasks test flood_mapping_full 3_calculate_depth <date 6 hours old>`. Close [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]] and update [[minio-flood-extent-pipeline]] at the merge. The restart of the scheduler and the worker reads the new limit `FLOOD_STALE_RUN_MINUTES`, so do it between runs.
+1. Ask the owner to accept [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] (merged and deployed on 2026-10-13, both `Reviewed`, backlog only). Real simulations run from the slot of 09:45 UTC until 5 dry runs in a row. Watch that the run stops after 5 dry runs.
 2. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
@@ -60,7 +60,5 @@ The top 10 by priority:
   The route panel stayed on its grey loading bars
 - [[BL-021-place-name-slow-after-map-tap|BL-021]], P3, open.
   The place name takes seconds to show after a map tap
-- [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]], P3, open.
-  The postgis input of the flood tile build drops every polygon
 
 All blockers: [[Blockers board]].

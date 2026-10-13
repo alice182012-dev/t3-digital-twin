@@ -102,6 +102,12 @@ after the replay is unverified. The owner unpaused it again on 2026-10-13, and a
 `flood_forecast_consecutive_state_test` (both `schedule=None`) and `zz_cold_start_probe` unpaused on
 2026-10-08. `zz_cold_start_probe` has no file in `dags/` in the repository, so its schedule is unverified.
 
+## The stale-run guard
+
+Five tasks of `flood_mapping_full` (`0_check_forecast_rain`, `1_trigger_simulation`, `3_calculate_depth`, `3b_publish_depth_files`, and `9b_load_depth_raster`) skip when the slot of the run is older than `FLOOD_STALE_RUN_MINUTES` (default 120, and 0 turns the guard off). The decorator `skip_stale_run` raises `AirflowSkipException` before the task body, with the slot, its age, and the limit in the message, so no simulation starts and nothing is published. The logic is in `scripts/stale_run.py`, and the limit is read when the DAG file is parsed, so a bad value fails the import ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]).
+It exists because an unpause on 2026-10-13 resumed a run of 2026-10-10 and later a run of 03:45 UTC, and the standing-flood rule counted each resumed run as a fresh publish and started real simulations with no rain.
+On the server, `airflow tasks test` of `3_calculate_depth`, `3b_publish_depth_files`, and `9b_load_depth_raster` for a slot 7 hours old gave the state `skipped` with the message and no traceback.
+
 ## The rain gate
 
 `task_check_forecast_rain` calls `create_simulation.get_rain_forecast()` (Tomorrow.io, 15-minute

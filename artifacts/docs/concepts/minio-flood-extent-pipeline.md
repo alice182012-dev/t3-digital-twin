@@ -44,14 +44,8 @@ the asset `FLOOD_DEPTH_FILES` (`dags/core_assets.py`). Task `3b_publish_depth_fi
 `publish_run` once for each run in the triggering events, oldest first. A failure in `flood_tiles` does
 not fail the core run.
 
-`FLOOD_TILES_INPUT` picks the input. `files` (the default) reads the announced `depth_*.tif` folder and starts
-when `3b_publish_depth_files` ends. `postgis` runs on `flood_depth_raster_tile` (the event of `9b`), exports the
-first `FLOOD_EXTENT_TILE_STEPS` steps with `scripts/flood_extent/raster_export.py` into a temporary folder in
-EPSG:4326, builds from it, and removes it. The task returns `input_seconds` and `build_seconds` for each run.
-The modes write the same bucket and rows, so run one at a time. Keep `files`. [[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]]
-measured on 2026-10-12 that `postgis` builds no tiles as shipped, because the engine needs the source CRS and the
-export is in EPSG:4326 ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]). With a warp back to EPSG:3405 it is
-32 to 35 s slower per run and its band areas differ from `files` by 1.0 to 1.7 percent ([[decision-log|D-027]]).
+The tile build reads the announced `depth_*.tif` folder and starts when `3b_publish_depth_files` ends. The task returns `build_seconds` for each run.
+Until 2026-10-13 a second input, `postgis`, exported the steps from `flood_depth_raster_tile` in EPSG:4326. It built no tiles as shipped, because the engine needs the source CRS ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]), and with a warp it was 32 to 35 s slower per run and its band areas differed by 1.0 to 1.7 percent ([[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]], [[decision-log|D-027]]). [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] deleted the input, the variable `FLOOD_TILES_INPUT`, and `raster_export.py`.
 
 The 24-hour cleanup of `RESULT_DIR` and `DEPTH_ROOT_DIR` is part of `publish_run`, so `flood_tiles` owns
 it. It deletes by file age, so it cannot take the files of a run that another consumer still reads. A

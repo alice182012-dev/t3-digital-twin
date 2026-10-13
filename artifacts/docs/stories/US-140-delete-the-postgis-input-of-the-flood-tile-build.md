@@ -33,8 +33,9 @@ Dependencies: None. Deploy it after the server steps of [[US-123-delete-flood-on
 
 ## Status history
 
-- **2026-10-13, Ready.** Raised from [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]], whose cleanest fix is to delete the option. It is in the backlog and has no `sprint`, as the product owner asked. The code is built on the branch `us-140-delete-postgis-tile-input`, which is not merged into `modular` until the server steps of US-123 end.
+- **2026-10-13, Ready.** Raised from [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]], whose cleanest fix is to delete the option. It is in the backlog and has no `sprint`, as the product owner asked. The branch `us-140-delete-postgis-tile-input` is merged into `modular`.
 - **2026-10-13, Reviewed.** Built and checked on the branch `us-140-delete-postgis-tile-input` (commit "Delete the postgis input of the flood tile build"), which is not merged into `modular` and not on the server (details items 1 to 4). The owner has not accepted it.
+- **2026-10-13, Reviewed.** Merged into `modular` and pulled on the server on 2026-10-13: the scheduler lists the DAG `flood_tiles` with its one task `9_build_flood_tiles` and no import error, [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]] is `resolved`, and [[minio-flood-extent-pipeline]] is updated. The owner has not accepted it.
 
 ## Evidence and details
 
