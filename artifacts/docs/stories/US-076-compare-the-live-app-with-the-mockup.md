@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-076"
 story_label: "1"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: In progress
 priority: P1
 estimate: M
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Compare the live app with the mockup in Aside at 1366x768"
@@ -27,3 +27,5 @@ Evidence: None yet.
 
 - **2026-10-10, estimate S to M.** Compared with US-024 (S for three screens).
   This story covers six screens and two missing states, so it is about three times that, with a screenshot pair for each.
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
+- **2026-10-13, In progress.** Started as the first story of [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

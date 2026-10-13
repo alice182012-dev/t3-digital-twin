@@ -8,7 +8,7 @@ status: Ready
 kind: story
 priority: P1
 estimate: S
-sprint: 14
+sprint: 
 subsystem: core-output
 source_ideas: []
 related: ["[[US-094-archive-results-3di-nc-and-a-run|US-094]]", "[[EP-15-archive-and-netcdf-retirement]]", "[[decision-log|D-016]]", "[[decision-log|D-019]]"]
@@ -53,6 +53,7 @@ Estimate: S.
 - **2026-10-12, Ready.** Picked for the sprint at the product owner's request, against the framework rule that keeps a story waiting on an external event out of the sprint. The proof needs a real forecast above 5 mm/h, and none is expected, so this story may leave the sprint at the review ([[decision-log|D-037]]). Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 - **2026-10-13, Ready.** Two real-mode runs archived on the server, and the owner decided that this counts ([[decision-log|D-045]]). The runs of the slots 03:30 and 03:45 UTC used `tomorrow.io` with the test variables unset, and the standing-flood rule opened the gate with a forecast of 0 mm/h. Each archived `results_3di.nc` and `run_record.json` under `archive/452776` and `archive/452778` (2,132,081 and 2,254,372 bytes), and the task logged "584.5 GB free" for each. The record holds `sim_id`, `run_timestamp`, `rain_input` (source `tomorrow.io`), `model_id`, `graph_hash`, `bytes`, and `sha256`. That meets the first, third, and fourth Given. Still open: the files after the 24-hour cleanup (check from 03:46 UTC on 2026-10-14), and the growth over a week of real-mode runs. The story stays `Ready` because two stories are `In progress`.
 - **2026-10-13, Ready.** The product owner put it in monitoring and will come back to it when real rain comes. It stays in [[SPR-014-finish-the-remaining-backend|SPR-014]] and leaves the sprint at the review of 2026-10-25 if it is not `Done`. The runs of 2026-10-13 already show the files and the record ([[decision-log|D-045]]).
+- **2026-10-13, Ready.** [[SPR-014-finish-the-remaining-backend|SPR-014]] ended early ([[decision-log|D-051]]), so the story left the sprint and `sprint` is empty. It stays in monitoring until real rain comes.
 
 ## Evidence and details
 

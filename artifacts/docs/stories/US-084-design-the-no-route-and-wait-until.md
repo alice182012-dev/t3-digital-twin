@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-084"
 story_label: "9"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P2
 estimate: M
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Design the no-route and \"wait until\" states, then match the UI to the design"
@@ -25,3 +25,4 @@ Evidence: None yet.
 
 - **2026-10-10, estimate S to M.** Compared with US-057 and US-009 (XS and S: one message each).
   Two states need a design that the product owner approves, then a match at two screen sizes, so the risk and the screenshots double.
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

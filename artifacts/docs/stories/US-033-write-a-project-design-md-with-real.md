@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-033"
 story_label: "2"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P3
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend, floodmap-backend
 related: ["[[EP-07-carried-over-backlog]]"]
 title: "Write a project `DESIGN.md` with real design tokens"
@@ -24,3 +24,4 @@ Blocks nothing.
 
 - **2026-10-10, estimate M to S.** Compared with US-025 and US-026 (S each: match one screen to the mockup).
   Extracting tokens from one mockup and two CSS modules into one file is the same size, with no unknowns.
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

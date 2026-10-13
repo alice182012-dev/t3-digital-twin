@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-080"
 story_label: "5"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P3
 estimate: XS
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Keep \"As of\" and bring the `US-007` record in line"
@@ -24,3 +24,7 @@ The blocker stays `monitoring` for the pipeline delay.
 Dependencies: None.
 Covers G5.
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-085"
 story_label: "10"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P2
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Time out a route request in the client"
@@ -21,3 +21,7 @@ A request that answers in time is not affected.
 Dependencies: None.
 Blocker tracking: [[BL-018-route-panel-stuck-on-loading-bars|route-panel-stuck-on-loading-bars]]
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

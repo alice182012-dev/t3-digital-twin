@@ -9,50 +9,112 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
-1. `flood_mapping_full` is paused. Unpause it for real rain, or after [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] (backlog) gives the chain a stop test that ignores the model's permanent water.
-2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is unpaused and runs only on a flood that stands or a forecast above 5 mm/h.
+[[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] runs from 2026-10-13 to 2026-10-25 with 35 points picked against a forecast of 45.
+1. Start with [[US-076-compare-the-live-app-with-the-mockup|US-076]], because six stories depend on its screenshots.
+2. `flood_mapping_full` is paused until [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] gives the chain a stop test, or real rain comes.
+3. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (backlog, `Ready`). Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]).
 <!-- next-action:end -->
 
-## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
+## Current sprint: Sprint 15, 2026-10-13 to 2026-10-25
 
-**Goal:** Finish the remaining backend: every backend story in the backlog is `Done`, starting with [[decision-log|D-038]] (every reader of flood depth reads the edge depth table, and the old sampler and `flood_road_values` are deleted).
+**Goal:** Match the frontend to the approved mockup: the live app is compared with screens 2a to 2f at 1366x768, every difference is fixed or logged, and the demo flood banner, the route panel, and the two missing states (no route, "wait until") are built.
 
-**Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
+**Sprint file:** [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]
 
 **Status:** active.
-47 points picked, 45 done.
+35 points picked, 0 done.
 
-### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
+### In progress - US-076 Compare the live app with the mockup in Aside at 1366x768
 
-**Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
-P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+**Story:** [[US-076-compare-the-live-app-with-the-mockup|US-076]].
+P1, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-008 Switch the search geocoder's default locale to `vi`
+
+**Story:** [[US-008-switch-the-search-geocoder-s-default-locale|US-008]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-077 Match the depth chart columns and the route tab text to screen 2e
+
+**Story:** [[US-077-match-the-depth-chart-columns-and-the|US-077]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-078 Show the place names on the start and destination pins
+
+**Story:** [[US-078-show-the-place-names-on-the-start|US-078]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-084 Design the no-route and "wait until" states, then match the UI to the design
+
+**Story:** [[US-084-design-the-no-route-and-wait-until|US-084]].
+P2, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-085 Time out a route request in the client
+
+**Story:** [[US-085-time-out-a-route-request-in-the|US-085]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-098 Show the recommended route and the through-water option in the app
+
+**Story:** [[US-098-show-the-recommended-route-and-the-through|US-098]].
+P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
+
+### Ready - US-131 Show the demo flood banner and the pinned frame
+
+**Story:** [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]].
+P2, M (3 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Ready - US-142 Stop the standing-flood chain when the depths stop changing
+
+**Story:** [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Ready - US-033 Write a project `DESIGN.md` with real design tokens
+
+**Story:** [[US-033-write-a-project-design-md-with-real|US-033]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-079 Name the page "Floodmap" and remove the "Powered by GraphHopper" line and its links
+
+**Story:** [[US-079-name-the-page-floodmap-and-remove-the|US-079]].
+P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-080 Keep "As of" and bring the `US-007` record in line
+
+**Story:** [[US-080-keep-as-of-and-bring-the-us|US-080]].
+P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-081 Draw a second dashed line for the selected mode's depth limit
+
+**Story:** [[US-081-draw-a-second-dashed-line-for-the|US-081]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-082 Show the travel time and the maximum depth on each route tab
+
+**Story:** [[US-082-show-the-travel-time-and-the-maximum|US-082]].
+P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-083 Design a mobile layout of screen 2e
+
+**Story:** [[US-083-build-a-mobile-version-of-screen-2e|US-083]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Ready - US-143 Build the mobile version of screen 2e
+
+**Story:** [[US-143-build-the-mobile-version-of-screen-2e|US-143]].
+P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ## Product backlog
 
-17 stories.
-The top 10 by priority:
+3 stories.
+The top 3 by priority:
 
-- [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
-  Compare the live app with the mockup in Aside at 1366x768
-- [[US-008-switch-the-search-geocoder-s-default-locale|US-008]], P2, S, Reviewed.
-  Switch the search geocoder's default locale to `vi`
-- [[US-077-match-the-depth-chart-columns-and-the|US-077]], P2, S, Not started.
-  Match the depth chart columns and the route tab text to screen 2e
-- [[US-078-show-the-place-names-on-the-start|US-078]], P2, S, Not started.
-  Show the place names on the start and destination pins
-- [[US-084-design-the-no-route-and-wait-until|US-084]], P2, M, Not started.
-  Design the no-route and "wait until" states, then match the UI to the design
-- [[US-085-time-out-a-route-request-in-the|US-085]], P2, S, Not started.
-  Time out a route request in the client
-- [[US-098-show-the-recommended-route-and-the-through|US-098]], P2, S, Not started.
-  Show the recommended route and the through-water option in the app
-- [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], P2, M, Not started.
-  Show the demo flood banner and the pinned frame
+- [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Ready.
+  Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-141-host-photon-for-vietnam-next-to-the-backend|US-141]], P2, M, Not started.
   Host Photon for Vietnam next to the backend
-- [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]], P2, S, Ready.
-  Stop the standing-flood chain when the depths stop changing
+- [[US-061-show-the-place-name-faster-after-a|US-061]], P3, S, Not started.
+  Show the place name faster after a map tap
 
 ## Open blockers
 

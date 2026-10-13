@@ -4,10 +4,10 @@ type: sprint
 sprint_id: "SPR-014"
 sprint: 14
 start_date: 2026-10-12
-end_date: 2026-10-25
-status: active
+end_date: 2026-10-13
+status: done
 tags: [sprint]
-related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[decision-log|D-038]]", "[[decision-log|D-040]]"]
+related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[decision-log|D-038]]", "[[decision-log|D-040]]", "[[decision-log|D-051]]"]
 ---
 
 # SPR-014 Sprint 14: Finish the remaining backend
@@ -59,24 +59,26 @@ SORT priority ASC, file.name ASC
 
 ## Review
 
-Fill this on 2026-10-25. Walk through each story that is `Done` by its evidence screenshot, and record the product owner's accept or reject.
+Ended early on 2026-10-13 at the product owner's request ([[decision-log|D-051]]).
+Every `Done` story was accepted by the owner on the day it closed, so this review adds no new acceptance.
 
-- **Goal met:** yes or no, with one sentence.
-- **Points delivered:** N of N forecast.
-- **Not done:** each story that left the sprint, back to the backlog with `sprint` cleared.
-- **Estimate misses:** each `Done` story whose size was clearly wrong, with the number it should have had (1, 2, 3, or 5). Check that the reference stories in [[scrum-framework]] still fit.
+- **Goal met:** yes, for every backend story except the time-gated one. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted the old sampler and `flood_road_values`, and every reader of flood depth reads the edge depth table ([[decision-log|D-038]]).
+- **Points delivered:** 45 of 47 picked, against a forecast of 16. The sprint lasted two days, so the points do not measure a two-week sprint.
+- **Not done:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2 points) left the sprint and is back in the backlog with `sprint` cleared. It stays `Ready` and in monitoring until real rain above 5 mm/h comes.
+- **Estimate misses:** none recorded. The owner and the team check the `Done` stories against the reference stories at refinement.
 
 ## Retrospective
 
-Three bullets and one action. Check the last retrospective's action first.
+The team drafted this on 2026-10-13. The product owner has not read it.
+The action of the last retrospective does not apply, because the retrospective of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] was not held.
 
-- **Worked:**
-- **Did not work:**
-- **Action:** a story, a rule change, or an `L-nnn` lesson.
+- **Worked:** the staged replacement of `flood_road_values` ([[decision-log|D-038]]) with a 50-run check before the drop, and acceptance by the owner on the day each story closed.
+- **Did not work:** unpausing `flood_mapping_full` resumed a run left over from 2026-10-10, and the standing-flood rule then started two real simulations with no rain ([[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]). A story that waits on real rain ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]) was picked anyway and could not close.
+- **Action:** a story. [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] gives the chain a stop test, and the owner picks it before `flood_mapping_full` is unpaused for good.
 
 ## Refinement for the next sprint
 
-The top of the backlog after this review: the order, the stories split, and the questions to answer.
+Open at the planning of Sprint 15. The backlog holds 17 stories, and only [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] is `Ready`. The rest are frontend stories of [[EP-19-frontend-against-the-mockup|EP-19]] that need refinement first.
 
 ## Status history
 
@@ -105,3 +107,4 @@ The top of the backlog after this review: the order, the stories split, and the 
 - **2026-10-13, active.** The owner rebuilt `analysis` and accepted [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]], so it is `Done`, and 45 of 47 points are done. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2 points) is the only story of the sprint that is open, and its cleanup check is time-gated.
 - **2026-10-13, active.** The branches of [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] are merged into `modular` and pulled on the server, and both are `Reviewed`. They are in the backlog and have no `sprint`.
 - **2026-10-13, active.** The product owner accepted [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], so they are `Done` (outside the sprint, no `sprint`), and put [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] in monitoring until real rain comes. 45 of 47 points are done, and US-114 (2 points) is the only story open.
+- **2026-10-13, done.** The product owner ended the sprint early at 45 of 47 points ([[decision-log|D-051]]). [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] left the sprint. The review and the retrospective are above.

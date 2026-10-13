@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-078"
 story_label: "3"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P2
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Show the place names on the start and destination pins"
@@ -21,3 +21,7 @@ A point with only coordinates shows no label.
 Dependencies: Story 1.
 Covers G2.
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

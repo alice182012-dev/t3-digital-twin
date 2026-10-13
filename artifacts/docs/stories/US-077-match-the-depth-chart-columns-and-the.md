@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-077"
 story_label: "2"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P2
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Match the depth chart columns and the route tab text to screen 2e"
@@ -23,3 +23,7 @@ The PRD decision of 2026-09-23 ("30 minutes, matching the mockup") stays true fo
 Dependencies: Story 1 (screenshots of the chart and the tabs).
 Covers G1 and G3.
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

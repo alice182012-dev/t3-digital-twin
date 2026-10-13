@@ -786,3 +786,14 @@ is the maximum.
 - **Affects:** [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]], [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]], [[graphhopper-backend]].
 - **Revisit if:** a pair fails with no deep road on its dry route.
 
+## D-051: End Sprint 14 early on 2026-10-13 and plan Sprint 15 now
+
+- **Date:** 2026-10-13
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-13, who chose to end Sprint 14 now over waiting until 2026-10-25 or only drafting the Sprint 15 picks.
+- **Decision:** [[SPR-014-finish-the-remaining-backend|SPR-014]] ends on 2026-10-13 with 45 of 47 points `Done`. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] leaves the sprint and returns to the backlog with `sprint` cleared. [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] is planned on 2026-10-13 and runs to Sunday 2026-10-25, so Sprint 16 still starts on Monday 2026-10-26.
+- **Why:** The only open story waits on real rain above 5 mm/h, which may not come for weeks, and the rest of the backend is `Done`.
+- **Alternatives:** (1) Keep the dates of [[decision-log|D-026]] and plan on 2026-10-26. Not chosen. (2) Draft the picks without assigning `sprint`. Not chosen.
+- **Evidence:** the Review section of [[SPR-014-finish-the-remaining-backend|SPR-014]].
+- **Affects:** [[decision-log|D-026]], which fixes a sprint's dates after it starts. This is the second exception after [[decision-log|D-040]].
+- **Revisit if:** a third early end happens. [[decision-log|D-040]] named this as the sign that the planning of the sprint is too coarse.

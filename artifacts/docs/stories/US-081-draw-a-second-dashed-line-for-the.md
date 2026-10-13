@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-081"
 story_label: "6"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P3
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Draw a second dashed line for the selected mode's depth limit"
@@ -21,3 +21,7 @@ The limits come from one owner (`US-074`).
 Dependencies: Story 2, and `US-074` for the limits.
 Covers the first "Try next" line of the mockup (G6).
 Evidence: None yet.
+
+## Status history
+
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

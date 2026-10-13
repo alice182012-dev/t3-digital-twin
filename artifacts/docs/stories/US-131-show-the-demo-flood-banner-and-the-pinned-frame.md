@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-131"
 title: "Show the demo flood banner and the pinned frame"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Not started
+status: Ready
 kind: story
 priority: P2
 estimate: M
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 source_ideas: []
 related: ["[[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]]", "[[decision-log|D-030]]", "[[decision-log|D-013]]", "[[test-dataset]]"]
@@ -37,6 +37,7 @@ On the server, with a screenshot of each mode.
 ## Status history
 
 - **2026-10-12, draft.** Split from [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]]. It stays in the backlog because it is frontend work and the sprint covers the backend.
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 
 ## Evidence and details
 

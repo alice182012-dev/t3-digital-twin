@@ -4,10 +4,10 @@ type: user-story
 us_id: "US-082"
 story_label: "7"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 priority: P3
 estimate: M
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-11-frontend-mockup-recheck]]", "[[SP-04-frontend-recheck|sprint-plan-4]]"]
 title: "Show the travel time and the maximum depth on each route tab"
@@ -26,3 +26,4 @@ Evidence: None yet.
 
 - **2026-10-10, estimate S to M.** Compared with US-006 (M: a travel time for each of four modes, one request each).
   One depth request for each tab has the same shape, and the cost of those requests is unknown.
+- **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].

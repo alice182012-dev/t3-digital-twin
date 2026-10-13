@@ -7,7 +7,7 @@ epic: "[[EP-19-frontend-against-the-mockup]]"
 status: Reviewed
 priority: P2
 estimate: S
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 related: ["[[EP-02-frontend-polish]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 title: "Switch the search geocoder's default locale to `vi`"
@@ -32,3 +32,4 @@ Details:
 
 - **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed.
   It also said: sprint "1 (completed outside formal sprint tracking, 2026-09-23)".
+- **2026-10-13, Reviewed.** Picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]. Only the check through the browser UI at `100.67.84.55:8082` and the owner's acceptance are left.

@@ -8,7 +8,7 @@ status: Ready
 kind: story
 priority: P2
 estimate: S
-sprint: 
+sprint: 15
 subsystem: airflow-pipeline, 3di-orchestration
 source_ideas: []
 related: ["[[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]", "[[US-101-keep-simulating-while-the-flood-still-stands|US-101]]", "[[decision-log|D-037]]"]
@@ -33,3 +33,4 @@ Dependencies: None. `flood_mapping_full` stays paused until this is deployed or 
 ## Status history
 
 - **2026-10-13, Ready.** Raised from [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]] when the owner ruled it not a blocker. It is in the backlog and has no `sprint`.
+- **2026-10-13, Ready.** Picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]. The owner decides the unpause of `flood_mapping_full` after it is `Done`.
