@@ -714,3 +714,15 @@ is the maximum.
 - **Affects:** [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] (its route comparison), [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]].
 - **Revisit if:** a `LIVE` route between dry points 150 m from the water finds no connection while `DEMO` routes the pair.
 
+## D-045: A standing-flood run counts as the real-rain run of the archive proof
+
+- **Date:** 2026-10-13
+- **Status:** active.
+- **Decided by:** The owner, on 2026-10-13, who approved the proposal in the session (the reply was "approve both").
+- **Decision:** For the first Given of [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], a run in real mode (`FLOOD_TEST_RAIN_CSV` and `FLOOD_TEST_RAIN_MM_HR` unset, rain from Tomorrow.io) counts as the real-rain run, whether the gate opened by a forecast above 5 mm/h or by the standing-flood rule. The checks of the 24-hour cleanup and of the growth over a week stay open.
+- **Why:** The archive copy, the free-space log, and the run record run in the same tasks for both paths. The story was written before the standing-flood rule ([[US-101-keep-simulating-while-the-flood-still-stands|US-101]]) gave a second way to open the gate. The owner said that no rain is expected ([[decision-log|D-037]]), so waiting for a forecast above 5 mm/h could take weeks.
+- **Alternatives:** (1) Keep waiting for a forecast above 5 mm/h. Not chosen, because it blocks [[US-095-retire-the-netcdf-values-ingest|US-095]] and [[US-086-prune-old-rows-of-flood-road-values|US-086]] for no change in the code that runs. (2) Lower the rain gate for a test. Not chosen, because [[decision-log|D-037]] keeps the gate at 5 mm/h.
+- **Evidence:** the run records `archive/452776/run_record.json` and `archive/452778/run_record.json`, and the logs of task `2b_archive_results` of the runs of 03:30 and 03:45 UTC.
+- **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
+- **Revisit if:** the archive task behaves differently for a run that a forecast opened.
+
