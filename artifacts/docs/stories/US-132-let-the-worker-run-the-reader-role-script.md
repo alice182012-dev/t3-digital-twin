@@ -36,7 +36,7 @@ Dependencies: None.
 
 ## Evidence and details
 
-**Evidence:** the output of the script in the worker, run twice (details item 3). No screenshot yet.
+**Evidence:** the screenshot `US-132-server-reader-role-in-worker-2026-10-13.png`, which shows the script run twice in the worker with the same 11-table list (details item 3).
 
 **Details:**
 

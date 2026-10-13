@@ -36,7 +36,7 @@ Dependencies: None.
 
 ## Evidence and details
 
-**Evidence:** the value read in each Airflow container after the recreation (details item 2). No screenshot yet.
+**Evidence:** the screenshot `US-134-server-gate-in-every-container-2026-10-13.png`, which shows 5 in the scheduler, worker, API server, and DAG processor after the recreation (details item 2).
 
 **Details:**
 
