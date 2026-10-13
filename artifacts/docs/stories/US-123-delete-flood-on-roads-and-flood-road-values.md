@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-123"
 title: "Delete flood_on_roads, road_segment, and flood_road_values"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Ready
+status: In progress
 kind: story
 priority: P2
 estimate: S
@@ -32,6 +32,7 @@ Dependencies: [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-tab
 
 - **2026-10-12, draft.** Split from [[decision-log|D-038]], which replaces `flood_road_values` with the edge depth table in stages. It stays in the backlog until the owner accepts the decision.
 - **2026-10-12, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: its dependencies are `Done` or in the same sprint, and its acceptance check is written.
+- **2026-10-13, In progress.** The code change is written in a worktree by a subagent and will be checked before it reaches the server. The plan is in the next action of `TODOS.md`. The change keeps the test dataset scripts working: `restore_snapshot.py` stops loading the old road tables, and `build_history_and_metrics.py` takes its run list from `edge_depth_run`. The server needs the DAG unpaused for the replay run, and the tables are dropped only after the owner confirms.
 
 ## Evidence and details
 

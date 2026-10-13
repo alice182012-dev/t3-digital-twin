@@ -50,15 +50,15 @@ Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the r
 **Story:** [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
+### In progress - US-123 Delete flood_on_roads, road_segment, and flood_road_values
+
+**Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
+P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
 **Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
-### Ready - US-123 Delete flood_on_roads, road_segment, and flood_road_values
-
-**Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
-P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 ### Ready - US-128 Run the test suites against the test databases
 
