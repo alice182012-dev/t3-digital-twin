@@ -11,6 +11,7 @@ import psycopg2
 
 from soak_checks import (
     VEHICLE_LIMIT_CM,
+    dry_shows_promise,
     engine_cell,
     expected_outcome,
     far_point,
@@ -25,6 +26,7 @@ from soak_checks import (
     route_passes_through,
     run_logs,
     scan_logs,
+    unproven_vehicles,
 )
 
 NGINX_OK = '2026-10-01T19:16:32.426645197Z 172.18.0.1 - - [01/Oct/2026:19:16:32 +0000] "POST /api/gh/route?key= HTTP/1.1" 200 2096 "-" "UA"'
@@ -177,6 +179,36 @@ class JudgeVehicleTest(unittest.TestCase):
 
     def test_crosses_is_skipped_when_the_dry_route_does_not_cross(self):
         self.assertEqual(judge_vehicle("crosses", [(True, False), (True, False)], self.DRY_DETOURS), "skip")
+
+
+class DryShowsPromiseTest(unittest.TestCase):
+    def test_blocked_needs_a_dry_route_that_crosses(self):
+        self.assertTrue(dry_shows_promise("blocked", [(True, False), (True, True)]))
+        self.assertFalse(dry_shows_promise("blocked", [(True, False), (True, False)]))
+        self.assertFalse(dry_shows_promise("blocked", [(False, True), (False, False)]))
+
+    def test_found_needs_only_a_dry_route(self):
+        self.assertTrue(dry_shows_promise("found", [(True, False), (False, False)]))
+        self.assertFalse(dry_shows_promise("found", [(False, False), (False, False)]))
+
+
+class UnprovenVehiclesTest(unittest.TestCase):
+    def row(self, vehicle, expected, verdict):
+        return {"vehicle": vehicle, "expected": expected, "verdict": verdict}
+
+    def test_all_blocked_pairs_skipped_leaves_every_vehicle_with_an_edge_unproven(self):
+        rows = [self.row(v, "blocked", "skip") for v in VEHICLE_LIMIT_CM]
+        self.assertEqual(unproven_vehicles([45.0], rows), ["motorbike", "car", "truck", "foot"])
+
+    def test_a_judged_blocked_pair_proves_its_vehicle_pass_or_fail(self):
+        rows = [self.row("motorbike", "blocked", "pass"), self.row("car", "blocked", "fail"),
+                self.row("truck", "blocked", "skip"), self.row("foot", "crosses", "pass")]
+        self.assertEqual(unproven_vehicles([45.0], rows), ["truck", "foot"])
+
+    def test_no_edge_at_or_above_a_limit_is_not_a_failure_for_that_vehicle(self):
+        self.assertEqual(unproven_vehicles([25.0], [self.row("motorbike", "blocked", "pass")]), [])
+        self.assertEqual(unproven_vehicles([25.0], [self.row("motorbike", "blocked", "skip")]), ["motorbike"])
+        self.assertEqual(unproven_vehicles([], []), [])
 
 
 class EngineCellTest(unittest.TestCase):
