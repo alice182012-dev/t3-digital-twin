@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-110"
 title: "Decide whether pipeline tables leave the public schema"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: spike
 priority: P3
 estimate: S
@@ -41,6 +41,7 @@ Dependencies: None.
 
 - **2026-10-12, Ready.** Picked for the sprint at the product owner's request. It is a spike, so it ends with an answer and a `D-nnn` decision, and it works in `marie-curie/`. Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
 - **2026-10-13, Reviewed.** The answer is in the details and in [[decision-log|D-049]]: stay in `public`, and move later with a trigger. The spike ran on read-only queries against the server database and not on a copy, because it changed nothing. The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted the answer and [[decision-log|D-049]] on the written results of details items 1 to 5.
 
 ## Evidence and details
 

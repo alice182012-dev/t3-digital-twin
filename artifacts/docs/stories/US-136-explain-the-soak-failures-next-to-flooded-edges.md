@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-136"
 title: "Explain the soak failures next to flooded edges"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Reviewed
+status: Done
 kind: spike
 priority: P2
 estimate: S
@@ -36,6 +36,7 @@ Dependencies: [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]] is
 
 - **2026-10-13, draft.** Found when [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]] ran on the server. It is in the backlog and has no `sprint`.
 - **2026-10-13, Reviewed.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and answered the same day on read-only queries and requests against the server ([[decision-log|D-050]]). The three failures are a flaw of the pair selection and not a routing fault. The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted the answer and [[decision-log|D-050]] on the written results of details items 1 to 7.
 
 ## Evidence and details
 

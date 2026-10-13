@@ -17,7 +17,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
    - Unpause `flood_mapping_full` (the owner approved it on 2026-10-13, after the check ends). The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
    - Check `/flood/areas`, `/route`, and `/flood/points` against their answers before the deletion.
    - Ask the owner to confirm the drop of `road_segment`, `flood_road_values`, `flood_road_file`, and `flood_road_values_shadow` (irreversible), then drop them and record the freed storage.
-3. Open for the owner: the spike [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]] is `Reviewed`. Its fix, [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]], waits in the backlog until the owner brings it into the sprint.
+3. [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]]: the check is being built on the Mac. Run it on the server at the pinned step in `DEMO` mode, and expect the three pairs of [[decision-log|D-050]] to be skipped.
 4. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
@@ -28,7 +28,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-45 points picked, 34 done.
+47 points picked, 38 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
@@ -40,24 +40,19 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### Reviewed - US-136 Explain the soak failures next to flooded edges
-
-**Story:** [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]].
-P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]], spike.
-
-### Reviewed - US-110 Decide whether pipeline tables leave the public schema
-
-**Story:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
-P3, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.
-
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
 **Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
+### Ready - US-138 Skip soak pairs whose dry route crosses other blocked roads
+
+**Story:** [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]].
+P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
+
 ## Product backlog
 
-16 stories.
+15 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -76,10 +71,10 @@ The top 10 by priority:
   Show the recommended route and the through-water option in the app
 - [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], P2, M, Not started.
   Show the demo flood banner and the pinned frame
-- [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]], P2, S, Not started.
-  Skip soak pairs whose dry route crosses other blocked roads
 - [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
   Write a project `DESIGN.md` with real design tokens
+- [[US-061-show-the-place-name-faster-after-a|US-061]], P3, S, Not started.
+  Show the place name faster after a map tap
 
 ## Open blockers
 
