@@ -48,6 +48,13 @@ The NetCDF checksums are in `manifest.json`, and the snapshot checksums and row 
 Hash each file and compare it with its entry.
 On 2026-10-12, 58 of 58 NetCDF files, 8 of 8 CSV files, and 60 of 60 binary and graph files matched ([[US-124-save-the-storm-replay-results-and-derived-data|US-124]]).
 
+## Run the database suites
+
+The command `python3 scripts/testdata/run_db_tests.py` runs the database suites of the repository against scratch databases on the two servers ([[US-128-run-the-test-suites-against-the-test-databases|US-128]], [[decision-log|D-048]]).
+It does not use `minio_custom_test` and `flood_metrics_test`, because about 9 suites create and drop tables in `public`. It only counts the rows of the restored tables there, before and after, and it fails when a count changes.
+Run it on the Mac, with the SSH key of the server. `--only FOLDER` runs one folder and `--dry-run` prints the plan.
+`test_restore_snapshot.py` stays skipped on the Mac, because it needs the snapshot folder of the worker.
+
 ## Retention
 
 The dataset has no retention, and the owner deletes it.

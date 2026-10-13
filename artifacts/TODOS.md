@@ -17,7 +17,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 11 points of work remain.
    - Ask the owner when to unpause `flood_mapping_full`. The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
    - Check `/flood/areas`, `/route`, and `/flood/points` against their answers before the deletion.
    - Ask the owner to confirm the drop of `road_segment`, `flood_road_values`, and `flood_road_file` (irreversible), then drop them and record the freed storage.
-3. After US-123, in this order: [[US-128-run-the-test-suites-against-the-test-databases|US-128]], so it runs the final suites, then the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], because three tables fewer are left to classify.
+3. After US-123: the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], because three tables fewer are left to classify.
 4. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
@@ -40,6 +40,11 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
+### Reviewed - US-128 Run the test suites against the test databases
+
+**Story:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
+P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
+
 ### Reviewed - US-137 Make the tests of test/ pass without a 3Di client of the pinned version
 
 **Story:** [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]].
@@ -49,11 +54,6 @@ P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 **Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
-### Ready - US-128 Run the test suites against the test databases
-
-**Story:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
-P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
 
 ### Ready - US-110 Decide whether pipeline tables leave the public schema
 

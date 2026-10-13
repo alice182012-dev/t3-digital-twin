@@ -190,7 +190,7 @@ def tunnel_command(local_postgis: int, local_timescale: int) -> list[str]:
 
 
 def credentials_command() -> list[str]:
-    return [*DOCKER, "exec", WORKER, "printenv", *WORKER_VARIABLES]
+    return [*DOCKER, "exec", WORKER, "env"]
 
 
 def suite_paths(name: str) -> list[str]:
@@ -250,12 +250,27 @@ def wait_for_port(port: int, tunnel: subprocess.Popen) -> None:
     raise RuntimeError(f"port {port} did not accept a connection within {TUNNEL_WAIT_SECONDS} s")
 
 
+# db_config.py falls back to these when the worker leaves a variable unset, and the worker sets no TIMESCALE_USER or
+# TIMESCALE_DB, so the runner uses the same values.
+DEFAULTS = {"TIMESCALE_USER": "flood_metrics", "TIMESCALE_DB": "flood_metrics"}
+
+
+def parse_worker_environment(env_output: str) -> dict[str, str]:
+    """The WORKER_VARIABLES of the `env` output of the worker, with the db_config defaults for the ones it leaves unset.
+    Raises when a variable has no value and no default."""
+    found = dict(line.split("=", 1) for line in env_output.splitlines() if "=" in line)
+    values = {name: found.get(name, DEFAULTS.get(name, "")) for name in WORKER_VARIABLES}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        raise RuntimeError(f"the worker has no value for {', '.join(missing)}")
+    return values
+
+
 def read_worker_environment() -> dict[str, str]:
     result = subprocess.run(credentials_command(), capture_output=True, text=True)
-    values = result.stdout.splitlines()
-    if result.returncode != 0 or len(values) != len(WORKER_VARIABLES):
-        raise RuntimeError(f"could not read {', '.join(WORKER_VARIABLES)} from {WORKER}: {result.stderr.strip()}")
-    return dict(zip(WORKER_VARIABLES, values))
+    if result.returncode != 0:
+        raise RuntimeError(f"could not read the environment of {WORKER}: {result.stderr.strip()}")
+    return parse_worker_environment(result.stdout)
 
 
 def connect(user: str, password: str, port: int, database: str):

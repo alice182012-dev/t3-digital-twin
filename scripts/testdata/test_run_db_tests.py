@@ -146,3 +146,21 @@ class PlanTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ParseWorkerEnvironmentTest(unittest.TestCase):
+    ENV = "PATH=/usr/bin\nPOSTGRES_USER=minio_custom\nPOSTGRES_PASSWORD=pw1\nPOSTGRES_DB=minio_custom\nTIMESCALE_PASSWORD=pw2\n"
+
+    def test_unset_timescale_user_and_db_take_the_db_config_defaults(self):
+        values = run_db_tests.parse_worker_environment(self.ENV)
+        self.assertEqual(values["TIMESCALE_USER"], "flood_metrics")
+        self.assertEqual(values["TIMESCALE_DB"], "flood_metrics")
+        self.assertEqual(values["POSTGRES_PASSWORD"], "pw1")
+
+    def test_a_set_variable_wins_over_the_default(self):
+        values = run_db_tests.parse_worker_environment(self.ENV + "TIMESCALE_USER=other\n")
+        self.assertEqual(values["TIMESCALE_USER"], "other")
+
+    def test_a_missing_password_raises(self):
+        with self.assertRaisesRegex(RuntimeError, "TIMESCALE_PASSWORD"):
+            run_db_tests.parse_worker_environment("POSTGRES_USER=a\nPOSTGRES_PASSWORD=b\nPOSTGRES_DB=c\n")

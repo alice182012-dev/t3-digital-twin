@@ -40,6 +40,7 @@ Dependencies: None.
 - **2026-10-13, draft.** Found when [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] changed the tests of `test/`. The owner asked on the same day to fix the failing tests first.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request. It is `Ready` and not `In progress`, because [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] already fill the two places.
 - **2026-10-13, Reviewed.** Built and checked on the Mac and in the worker (details items 1 to 4). The owner has not accepted it.
+- **2026-10-13, Reviewed.** The scope grew by one item: the command of [[US-128-run-the-test-suites-against-the-test-databases|US-128]] found 9 more collection errors in three folders of the same kind, and a `pytest.ini` fixed them (details item 5).
 
 ## Evidence and details
 
@@ -55,4 +56,8 @@ Dependencies: None.
 3. In the worker (Python 3.12, client 5.0.5), `python -m unittest discover -s test -p <file>` gives OK for the version test (1 test, not skipped, so no stand-in is installed), `test_flood_rain_gate` (6), `test_threedi_auth_alert` (4), and `test_calculate_depth` (2).
    The other test files need `compose.yml` and the repository layout, which the copy in the worker did not have, so they were not run there.
 4. The manual script moved with `git mv` from `test/test_threedi_state_test.py` to `scripts/threedi_state_check.py`, with its docstring and paths adjusted. It creates two real simulations on 3Di, so it was not run. No other file refers to the old path.
+5. A `pytest.ini` at the repository root puts the folders of the scripts and of the backend on `pythonpath`, as the worker does with its `PYTHONPATH`.
+   It fixed `scripts/flood_extent` (1 error, `create_flood_extent_tables`), the 7 top-level files of `scripts` (`archive_results`, `depth_inputs`, `forecast_mode`, `hotstart_policy`, `rain_replay`, `render_todos`, `standing_flood`), and the backend `test_server.py` (`raster_load`).
+   After it, the folders give 50, 93, and 129 passed, and the command of US-128 gives 753 passed with no error ([[US-128-run-the-test-suites-against-the-test-databases|US-128]], details item 2).
+   Each folder still runs alone, because two test files of the same name in different folders collide in one session.
 
