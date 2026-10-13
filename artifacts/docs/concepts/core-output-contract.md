@@ -48,6 +48,7 @@ One row is the step of the demo flood. The table has at most one row.
 - **Writer.** `python scripts/database/demo_pin.py` chooses the step and replaces the row.
   `--run` and `--valid-time` take a given step instead.
   Task `0b_ensure_schema` creates the table, and a database without it has no pin.
+  On the server (2026-10-13) the row holds run `20261011T001500` at 2026-10-10 19:00 UTC with 2,853 wet edges, and a publish and its prunes left the pinned run in every table and folder.
 - **Retention.** The row stays until it is replaced.
   Every prune of a run table keeps the pinned run, and no prune deletes the row:
   `flood_depth_raster_tile`, `flood_extent_step`, `flood_extent_polygon`, `flood_run_output`, `edge_depth` and `edge_depth_run`, the tiles in MinIO, and the edge depth file of the run.
