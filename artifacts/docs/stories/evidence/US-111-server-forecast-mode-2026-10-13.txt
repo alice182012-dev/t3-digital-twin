@@ -1,0 +1,8 @@
+$ docker --context=remote-server exec airflow_new-storage-postgres-1 psql -U minio_custom -d minio_custom -c "select * from forecast_mode order by slot desc limit 1"
+        slot         |         decided_at         | rain_peak_mm_hr | gate_mm_hr | standing_flood | mode 
+---------------------+----------------------------+-----------------+------------+----------------+------
+ 2026-10-13 02:45:00 | 2026-10-13 02:47:55.577599 |               0 |          5 | f              | DEMO
+(1 row)
+
+$ docker --context=remote-server exec -e PGPASSWORD=... airflow_new-storage-postgres-1 psql -U routing_reader -d minio_custom -c "insert into forecast_mode(slot,rain_peak_mm_hr,gate_mm_hr,mode) values (now(),0,5,'DEMO')"
+ERROR:  permission denied for table forecast_mode

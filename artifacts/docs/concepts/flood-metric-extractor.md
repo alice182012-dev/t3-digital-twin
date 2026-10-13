@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
 related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # Flood metric extractor
@@ -49,6 +49,10 @@ The metric times are local time (UTC+7), as in the rows written before, while th
 Rows from before US-121 have `segment_key`, which is `md5(ST_AsEWKB(geom_4326))` of the piece, and no
 `edge_key`. They are kept, and a check allows exactly one of the two keys per row.
 After a graph re-import, a row keeps its key. Read a key by the rule in [[graph-reimport-procedure]].
+
+On the server (2026-10-13), `extract_run.py 20261010T223000` wrote 11,496 rows, which is 2,874 edges times 4 vehicle types.
+The share of wet edges that each vehicle cannot pass is within 2 points of the share of wet pieces from `flood_road_values` (car 16.7% and 15.1%, motorbike 27.3% and 25.3%).
+The edge count is higher because the graph has more edges than the run has pieces.
 
 ## Metric definitions
 

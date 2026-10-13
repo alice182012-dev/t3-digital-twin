@@ -9,24 +9,27 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the remaining backend" and 14 picks of 34 points against a forecast of 16 ([[decision-log|D-041]]). [[SPR-014-finish-the-remaining-backend|SPR-014]] holds the table and the risks. [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ended early on 2026-10-12 with 10 of 13 points ([[decision-log|D-040]]).
-1. Next, when the server is reachable (planned for 2026-10-13). Order matters, because later steps read what earlier ones write.
-   1. Preflight. Run `git push origin modular` for the commits after the head of US-120. On the server, run `git pull --ff-only alice modular` and check Airflow has no import errors and `check_tables.py` reports `FRESH`.
-   2. Create and migrate the tables by hand, so no DAG run depends on the order: `create_forecast_mode_table.py`, `create_demo_pin_table.py`, `create_flood_metrics_tables.py` (adds `edge_key`), and `create_timescale_tables.py` (renames the key and deletes the old history, [[decision-log|D-042]]). Then rerun `create_routing_reader_role.py routing_reader`, and ask the owner to rebuild `floodmap-backend` from the desktop.
-   3. Check [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]]. US-111 needs a `psql` read of the newest `forecast_mode` row and the refused `INSERT` as `routing_reader`. US-120 needs the gate result on the same runs as the old gate and the soak picks routing. US-121 needs the totals against the piece-based totals. US-122 needs one run loaded twice.
-   4. Prepare the pin. The storm runs must be in `edge_depth` (it keeps 24 hours) and their tiles rebuilt ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]]). Then run `demo_pin.py` for [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], list the pinned rows and files before and after the prunes, and check the three modes and the pinned point read and route for [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]].
-   5. Take the server screenshots, ask the owner to accept each story, and set `Done` only after that.
-2. Then, in this order: [[US-113-backfill-per-segment-depth-history|US-113]] (rebuilds the history that D-042 deleted), [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] (only after US-120 to US-122 are `Done`, and it moves the `FLOOD_ROAD_VALUES` event to `9c`), [[US-128-run-the-test-suites-against-the-test-databases|US-128]], and the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] stays `In progress` until a `9c` run on a real simulation and the check over 50 consecutive runs.
+Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the remaining backend" and 14 picks of 34 points against a forecast of 16 ([[decision-log|D-041]]). 12 points are `Done` on 2026-10-13. [[SPR-014-finish-the-remaining-backend|SPR-014]] holds the table and the risks.
+1. Next, on the server. The batch is deployed and `flood_mapping_full` stays paused by the owner's choice.
+   1. Take the missing screenshots for [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] (the `LIVE` and `PENDING` answers and the route comparison), ask the owner to accept it and [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], and set `Done` only after that.
+   2. The prune check of US-129 (the pinned rows and files before and after a prune) needs a real run of `flood_mapping_full`. Ask the owner when to unpause the DAG.
+   3. Finish [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]]: the tiles are built, and the road values (`flood_on_roads.compute` and the comparison with the snapshot rows) are not.
+2. Then, in this order: [[US-113-backfill-per-segment-depth-history|US-113]] (rebuilds the history that D-042 deleted, and its dependencies are `Done`), [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] (US-120 to US-122 are `Done`, and it moves the `FLOOD_ROAD_VALUES` event to `9c`), [[US-128-run-the-test-suites-against-the-test-databases|US-128]], and the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]]. [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] stays `In progress` until a `9c` run on a real simulation and the check over 50 consecutive runs.
    - Also on the server: read the `.env` values of the 2026-10-08 replay (the last `[CHECK]` of the paper handoff page), and look at the 10 tests of `test/` that fail on the Mac.
 3. Risk: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] needs a real forecast above 5 mm/h and will probably leave the sprint at the review. The sprint is 18 points over the forecast, so more stories may leave.
-4. Done on 2026-10-12: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (3 of 34 points, in the sprint), and outside the plan, with no `sprint`: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], [[US-125-restore-the-snapshot-into-test-databases|US-125]], and [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]. The live check of a dry newest run for US-119 waits for one to occur.
-5. In the backlog, frontend only: the stories of [[EP-19-frontend-against-the-mockup|EP-19]], [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], and [[US-098-show-the-recommended-route-and-the-through|US-098]]. A story gets `sprint` only at sprint planning, or by the owner's request as on 2026-10-12.
-6. Owner items.
-   - The flag for [[decision-log|D-034]] is on, and the server read-back of 2026-10-12 shows `TIME_AWARE_ROUTING=true` for `floodmap-backend`.
-   - The server `.env` of 2026-10-12 has `EDGE_TABLE_KEEP_RUNS=8` and the two analysis passwords. The backup is `.env.bak-2026-10-12-us112`.
+4. Done on 2026-10-13: [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]] (9 points). Done on 2026-10-12: [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (3 points), and outside the plan, with no `sprint`: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], [[US-125-restore-the-snapshot-into-test-databases|US-125]], and [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]. The live check of a dry newest run for US-119 waits for one to occur.
+5. Found on 2026-10-13, with no story yet. Ask the owner which become backlog stories.
+   - `create_routing_reader_role.py` fails in the worker, which mounts neither `core_contract.py` nor the contract page.
+   - The soak `roads` check skipped all 51 `blocked` pairs ([[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], details item 7), so it shows no kept `blocked` promise.
+   - The scheduler container has `FLOOD_RAIN_THRESHOLD_MM_HR=0.01` and the worker has 5.
+   - In `LIVE` mode no route was found between 10 pairs of wet edges where `DEMO` found one ([[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]).
+6. In the backlog, frontend only: the stories of [[EP-19-frontend-against-the-mockup|EP-19]], [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], and [[US-098-show-the-recommended-route-and-the-through|US-098]]. A story gets `sprint` only at sprint planning, or by the owner's request as on 2026-10-12.
+7. Owner items.
+   - The flag for [[decision-log|D-034]] is on, and `floodmap-backend` has `TIME_AWARE_ROUTING=true`.
+   - The server `.env` has `EDGE_TABLE_KEEP_RUNS=8` and the two analysis passwords. The backup is `.env.bak-2026-10-12-us112`.
    - The 50 GB floor is set and the rain gate stays at 5 mm/h ([[decision-log|D-037]]).
    - The owner reads the "Decided by" line of [[decision-log|D-031]] and of [[decision-log|D-043]].
-7. The review is on 2026-10-25. A story that is not `Done` at the review leaves the sprint.
+8. The review is on 2026-10-25. A story that is not `Done` at the review leaves the sprint.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
@@ -36,32 +39,17 @@ Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the r
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-34 points picked, 3 done.
+34 points picked, 12 done.
 
 ### In progress - US-118 Write the edge depth to a queryable table
 
 **Story:** [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### Reviewed - US-111 Write the forecast mode status row (part one of the pinned demo flood)
+### In progress - US-126 Rebuild the raster tiles and road values from the NetCDF
 
-**Story:** [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]].
-P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
-### Reviewed - US-120 Read the rain gate and the soak checks from the edge table
-
-**Story:** [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]].
-P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-121 Read the flood metrics from the edge table
-
-**Story:** [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]].
-P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
-
-### Reviewed - US-122 Point depth_history at the edge table
-
-**Story:** [[US-122-point-depth-history-at-the-edge-table|US-122]].
-P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+**Story:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]].
+P3, M (3 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
 
 ### Reviewed - US-129 Pin the peak step of the demo flood
 
@@ -98,15 +86,30 @@ P2, S (2 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
 **Story:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
 P3, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]], spike.
 
-### Ready - US-126 Rebuild the raster tiles and road values from the NetCDF
-
-**Story:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]].
-P3, M (3 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
-
 ### Done - US-106 Write per-segment depth history to TimescaleDB
 
 **Story:** [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Done - US-111 Write the forecast mode status row (part one of the pinned demo flood)
+
+**Story:** [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Done - US-120 Read the rain gate and the soak checks from the edge table
+
+**Story:** [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]].
+P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Done - US-121 Read the flood metrics from the edge table
+
+**Story:** [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]].
+P2, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Done - US-122 Point depth_history at the edge table
+
+**Story:** [[US-122-point-depth-history-at-the-edge-table|US-122]].
+P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
 ## Product backlog
 

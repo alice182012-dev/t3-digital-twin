@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-126"
 title: "Rebuild the raster tiles and road values from the NetCDF"
 epic: "[[EP-22-keep-a-real-storm-as-the-test-dataset]]"
-status: Ready
+status: In progress
 kind: story
 priority: P3
 estimate: M
@@ -35,6 +35,7 @@ Dependencies: [[US-125-restore-the-snapshot-into-test-databases|US-125]] is `Don
 - **2026-10-12, draft.** On demand since the owner's answer of the same day, so it is P3. Raised with [[decision-log|D-039]]. Its size M is a guess. It is rated again when the time of one run is measured, and it is split if it is L.
 
 - **2026-10-12, Ready.** Picked for the sprint at the product owner's request. Its condition, that a test needs raster tiles, is met by [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], which rebuilds the tiles of the demo step. The worker has the libraries that `calculate_depth` imports (checked 2026-10-12). Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]].
+- **2026-10-13, In progress.** The tile part is built and checked on the server. `scripts/testdata/rebuild_tiles.py` takes run names of the test dataset, finds each NetCDF in `manifest.json`, runs `calculate_depth.run_calculate_depth`, and loads the result with `raster_load.load_run`, the call of task `9b_load_depth_raster`. It keeps every run in the table, so a rebuild deletes nothing. It writes to the database that `POSTGRES_DB` names. On the server, run `20261010T041500` was rebuilt into `minio_custom_test` in about 5 minutes, with 8 steps and 7,040 rows, and a second run skipped it. The tables of production kept their 8 runs. The runs `20261010T223000` and `20261011T001500` are not in the manifest, and their tiles were already in production. Still open: the road values (`flood_on_roads.compute` and the comparison with the snapshot rows).
 
 ## Evidence and details
 

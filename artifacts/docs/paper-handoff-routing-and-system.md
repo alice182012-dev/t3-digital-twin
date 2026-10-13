@@ -1,6 +1,6 @@
 ---
 date: 2026-10-08
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 type: reference
 status: draft
 tags: [paper, arxiv, handoff, routing, system]
@@ -13,7 +13,7 @@ This page is the brief for the agent that writes two papers about the t3-digital
 It maps every claim to the file that backs it.
 It says which results exist, which are pending, and which the agent must never state as fact.
 
-Written 2026-10-08 and brought up to date on 2026-10-12, on branch `modular`.
+Written 2026-10-08 and brought up to date on 2026-10-13, on branch `modular`.
 Everything here is a pointer.
 The agent reads the cited files and checks each number against its source before using it.
 
@@ -62,50 +62,61 @@ These come from the vault's own caveats.
 - The written proof exists ([[sticky-closure-proof]], [[US-090-write-the-fifo-lemma-and-the-correctness|US-090]], `Done`). It proves the reference search exact (Theorem 1) and the engine search exact when it runs to the end (Theorem 2). It gives no polynomial bound for the engine's weighted search, so claim the same-order cost only for the reference search, or for the engine when the weight is the travel time. The engine does not use landmarks, and it returns no route if it hits `maxVisitedNodes` or the timeout.
 - The 15-minute refresh is not the weakest link for short convective bursts. The rain forecast is. That is an inference in `artifacts/docs/concepts/flood-map-reaction-time-findings.md`, not a measurement. No source gives a measured rate of rise in cm per minute for Hanoi.
 - The IMERG area average over the model extent totals 84.95 mm with a peak of 8.73 mm/h, against about 200 mm at the heaviest stations. The replay is gentler than the news reports. Source: `artifacts/logs/2026-10-08.md`, section "US-088".
-- The `DEMO` flood is a stored frame of the replayed 2026-09-16 storm, shown when no rain is forecast ([[decision-log|D-030]]). It is not a forecast and not a live result. Do not describe a `DEMO` map, route, or depth as live output.
+- The `DEMO` flood is a stored frame of the replayed 2026-09-16 storm, shown when no rain is forecast ([[decision-log|D-030]]). It is not a forecast and not a live result. Do not describe a `DEMO` map, route, or depth as live output. The pinned frame is run `20261011T001500` at 2026-10-10 19:00 UTC, which is built and checked on the server but not accepted ([[US-129-pin-the-peak-step-of-the-demo-flood|US-129]]). In `DEMO` the route skips the time-aware engine ([[decision-log|D-043]]), so a `DEMO` route is no result for Paper A.
 - No real-rain result exists for the `results_3di.nc` archive. The mount and the test-rain skip are `Done` ([[US-094-archive-results-3di-nc-and-a-run|US-094]]). The copy, the free-space floor, and the growth need a real forecast above 5 mm/h, and the rain gate stays at 5 mm/h ([[decision-log|D-037]], [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]).
-- `depth_history` holds the model's own forecast values, not observations ([[decision-log|D-028]]). Its rows before the move to `edge_key` were test rain and are deleted at the migration ([[decision-log|D-042]]).
+- `depth_history` holds the model's own forecast values, not observations ([[decision-log|D-028]]). Its rows before the move to `edge_key` were test rain. The server migration of 2026-10-13 deleted them ([[decision-log|D-042]]), and the table now holds only the run loaded since.
 - `background_cycle` and the 24-bar histogram were dropped (D-009). Do not describe them as part of the built system.
 
 ## Server state
 
 Verified read-only on the server unless a line says otherwise.
-Items marked "2026-10-08" were not read again on 2026-10-12.
+Items marked "2026-10-08" were not read again on 2026-10-12 or 2026-10-13.
+The server was reachable on 2026-10-13, and the stories of that day hold the evidence.
 
 - The time-aware engine is deployed and was tested on the server on 2026-10-07. On 2026-10-12 the product owner decided that `TIME_AWARE_ROUTING` stays on for `floodmap-backend` ([[decision-log|D-034]]). The read-back at about 10:50 +07 printed `true` in the running container. The flag was set in the server `.env` without `scripts/routing_proof/rollout.ps1`, and no screenshot was taken, so the read-back is the only evidence. The default in `compose.yml` is still `false`.
-- `POST /route` answers from the time-aware engine first. The legacy custom model built from `/flood/areas` runs only when the engine cannot answer ([[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], details item 7).
+- With `TIME_AWARE_ROUTING` on, the engine ignores the `run` and `valid_time` of a request. It judges the newest edge depth table at the later of the request time and the clock. A check or an experiment that sends a run and a time to the live backend therefore does not test that step. Read `td.run` and `td.departure` from the route hints to learn the step the engine judged. The soak `roads` check does this since 2026-10-13 ([[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], details items 4 and 5).
+- On 2026-10-13 the owner rebuilt `floodmap-backend`. It now reads `edge_depth` and `graph_edge` instead of `flood_road_values` for the map overlay, the route fallback, the forecast mode, and the pinned step. The tables `forecast_mode` and `demo_pin` exist, `flood_segment_metrics` has an `edge_key` column, and `depth_history` is keyed by `edge_key` ([[decision-log|D-038]]).
+- `POST /route` answers from the time-aware engine first. The legacy custom model built from `/flood/areas` runs only when the engine cannot answer ([[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], details item 7). In forecast mode `DEMO` the route skips the engine ([[decision-log|D-043]]).
 - The recorded server proof of 2026-10-07 ([[US-055-prove-the-engine-on-the-server-and|US-055]], `Done`): `compare` changed 37.5% of routes with a median detour of 0.94, `crossings` 0, `departures` 3 of 3 trips, `latency` all 6 cells within 2 times the `US-046` baseline, `scenario-check.sh` 32 of 32. The numbers are in `artifacts/docs/concepts/graphhopper-backend.md`, section "The time-aware search (US-050)". Read the raw outputs from the evidence screenshots before quoting them.
-- The pipeline runs four DAGs: `flood_mapping_full`, `routing_adapter`, `flood_tiles` ([[decision-log|D-027]]), and `flood_history` ([[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]]). The cycle is 15 minutes (D-014). The rain forecast is Tomorrow.io (D-013). The rain gate is 5 mm/h, with a rule that keeps simulating while a flood still stands ([[US-101-keep-simulating-while-the-flood-still-stands|US-101]], [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]).
+- The pipeline runs four DAGs: `flood_mapping_full`, `routing_adapter`, `flood_tiles` ([[decision-log|D-027]]), and `flood_history` ([[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]]). The cycle is 15 minutes (D-014). The rain forecast is Tomorrow.io (D-013). The rain gate is 5 mm/h, with a rule that keeps simulating while a flood still stands ([[US-101-keep-simulating-while-the-flood-still-stands|US-101]], [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]]). The gate and the standing-flood rule read `edge_depth` since 2026-10-13. On the server the owner keeps `flood_mapping_full` paused, so no scheduled run has used the new reads.
 - The replay of 2026-10-08 read `hanoi_20260916_storm.csv` with start `2026-10-08T08:45:00Z`, gate 5 mm/h, lookahead 2 hours, simulation duration 7200 s, and worker concurrency 4 (2026-10-08). [CHECK: `compose.yml` defaults worker concurrency to 1 and `SAMPLE_RATE` to 1, and the server `.env` was not re-read.]
 - Retention, current values from `core-output-contract.md`, section "Retention": the newest 8 runs for the raster tiles, the polygons, the steps, the MinIO tiles, and the edge depth files (`EDGE_TABLE_KEEP_RUNS`, [[decision-log|D-033]]), and 24 hours for `edge_depth` and `edge_depth_run` (`EDGE_DEPTH_KEEP_HOURS`). `FLOOD_EXTENT_TILE_STEPS` is 2. `flood_road_values` keeps 24 hours ([[decision-log|D-017]]). The five netcdf tables were dropped on 2026-10-10 ([[decision-log|D-022]]).
 - The worker still carried variables of the retired GeoJSON chain on 2026-10-08 (`SAMPLE_RATE=20`, `UPDATE_INTERVAL`, `KEEP_LOCAL_GEOJSON`, `VALHALLA_PORT`). The `sample_rate_1_bottleneck` memory note describes that retired chain. Do not cite it as a limit of the current pipeline. Cite the current critical path from `artifacts/archive/plans/us-037-narrow-the-per-run-critical-path.md` instead.
 
 ## Built and not yet checked on the server
 
-These stories are `Reviewed` on 2026-10-12.
-Each is built and tested against a throwaway database and is not deployed.
-The server was unreachable that day (SSH to port 22 timed out), and the product owner has not accepted any of them.
-Do not present them as server results.
+Two stories are `Reviewed` on 2026-10-13.
+Each is built, tested, and checked on the server in part.
+The product owner has not accepted either.
+Do not present them as accepted server results.
 The story holds what each one still needs.
 
-| Story | Built | Still open (from the story) |
+| Story | Built and checked | Still open (from the story) |
 | --- | --- | --- |
-| [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast\|US-111]] | Table `forecast_mode`, one row per gate decision, written by task `0_check_forecast_rain` and moved from `PENDING` to `LIVE` by `9b_load_depth_raster`. 9 tests. | Pull on the server, a `psql` read of the newest row, the refused `INSERT` as `routing_reader`, the screenshot. |
-| [[US-129-pin-the-peak-step-of-the-demo-flood\|US-129]] | Table `demo_pin`, filled by `scripts/database/demo_pin.py`, and every prune keeps the pinned run. | Storm runs in `edge_depth`, the tiles of the chosen step ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf\|US-126]]), the choice of the step, the listing before and after the prunes. |
-| [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | `GET /flood/mode`, and `GET /flood/points`, `GET /flood/areas`, and `POST /route` read the pinned run in `DEMO` ([[decision-log\|D-043]]). | Grants of `routing_reader` on `forecast_mode` and `demo_pin`, the pinned step's tiles, the server screenshots of each mode. |
-| [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table\|US-120]] | The standing-flood rain gate and the soak `roads` check read `edge_depth`. | The gate result on the same runs as the old gate, the soak picks on the server, the screenshot. A run whose deepest edge is 4.5 to 4.99 cm now counts as wet, where the old gate counted it dry. |
-| [[US-121-read-the-flood-metrics-from-the-edge-table\|US-121]] | `extract_run.py` reads `edge_depth` and keys `flood_segment_metrics` rows by `edge_key`. | Totals against the piece-based totals on the storm runs. |
-| [[US-122-point-depth-history-at-the-edge-table\|US-122]] | `load_run.py` writes `depth_history` keyed by `edge_key`, and the schema step renames the column and deletes the old rows ([[decision-log\|D-042]]). | The migration on the server database, one run loaded twice, the rebuild of the history ([[US-113-backfill-per-segment-depth-history\|US-113]]). |
+| [[US-129-pin-the-peak-step-of-the-demo-flood\|US-129]] | Table `demo_pin`, filled by `scripts/database/demo_pin.py`, and every prune keeps the pinned run. On the server it pinned run `20261011T001500` at 2026-10-10 19:00 UTC, with 2,853 wet edges. | The pinned rows and files before and after the prunes, which need a real run of `flood_mapping_full`. The owner's acceptance. |
+| [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | `GET /flood/mode` answers `LIVE`, `PENDING`, and `DEMO` on the server. In `DEMO`, `GET /flood/points`, `GET /flood/areas`, and `POST /route` read the pinned step ([[decision-log\|D-043]]). At 21.01320, 105.76418 the depth is 0.80 m in `DEMO` and 0.10 m in `LIVE` at the first step. | Screenshots of the `LIVE` and `PENDING` answers and of the route comparison. The owner's acceptance. [CHECK: of 10 route pairs between wet edges, 1 routed in `DEMO` and none in `LIVE`. The story did not investigate the cause of the `LIVE` result, so do not read it as a routing result.] |
 
 [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `In progress`, not `Reviewed`.
 Its code and its two tables are on the server, and task `9c_build_edge_depth_table` wrote 16,370 rows for one run on a hand-made event.
 The first `9c` run on a real simulation and the check over 50 consecutive runs are open.
 
-On the server and accepted: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] (the stable key, details in "Shared background"), [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]] (keyed by `segment_id` until `US-122` deploys).
+[[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] is `In progress`.
+`scripts/testdata/rebuild_tiles.py` rebuilds the depth raster tiles of a stored storm run from its NetCDF, in about 5 minutes per run, and a second call skips the run.
+The road-values part is not built.
+
+Accepted on 2026-10-13, after a server check: [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (the `forecast_mode` row), [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]].
+Their limits matter for any claim.
+
+- `US-111`: the move of a row from `PENDING` to `LIVE` by `9b_load_depth_raster` was not run on the server, because it needs a real run. The DAG tests cover it.
+- `US-120`: the soak `roads` check passed 104 pairs with 0 failures, but all 51 `blocked` pairs were skipped. That run shows no kept `blocked` promise.
+- `US-121`: the share of closed edges per vehicle is within 2 points of the piece-based share for run `20261010T223000`. The old extractor was not run on that run, and the piece-based numbers come from `flood_road_values`.
+- `US-122`: the history holds the one run loaded on 2026-10-13. [[US-113-backfill-per-segment-depth-history|US-113]] (`Ready`) rebuilds the rest.
+
+Accepted earlier: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] (the stable key, details in "Shared background"), [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 `US-119` checked its first criterion, a newest run with no wet edge hiding an older wet run, only against PostGIS, because the server has no such run yet.
 `US-117` has the captured output of its server check and no screenshot, which the owner waived at acceptance.
 
-## Results status on 2026-10-12
+## Results status on 2026-10-13
 
 | Result | Used by | Status | Where it lands |
 | --- | --- | --- | --- |
@@ -120,12 +131,12 @@ On the server and accepted: [[US-117-export-a-stable-key-with-each-graph-edge|US
 | Question 3, proof | A | `Done`. The written proof. | [[sticky-closure-proof]], `US-090` |
 | Question 3, conservatism of sticky against an arrival-only reference | A | `Done` 2026-10-10. `BL-027` `resolved`. The decision to keep sticky is `D-023`. | `US-093`, [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph\|BL-027]] |
 | Storage growth over the replay (US-069) | B | `Done` under `D-015`. Hour 6 to hour 12 growth was under the 10 percent pass mark. The hour-6 method is not recorded. | `US-069`, `artifacts/logs/2026-10-10.md` |
-| Depth history store and its compression | B | `US-106` `Done`. The compression ratio is 9.7 on the full storm (`US-127`) and 1.7 on one run. The `edge_key` move and the backfill are not on the server (`US-122` `Reviewed`, `US-113` `Ready`). | [[timescaledb-schema]], `US-106`, [[US-127-build-the-history-and-metrics-from-the-restored-road-values\|US-127]] |
+| Depth history store and its compression | B | `US-106` `Done`. The compression ratio is 9.7 on the full storm (`US-127`) and 1.7 on one run. The `edge_key` move is on the server (`US-122` `Done`, 20,989 rows over 2,874 edges and 8 moments for one run). The backfill is not (`US-113` `Ready`). | [[timescaledb-schema]], `US-106`, [[US-127-build-the-history-and-metrics-from-the-restored-road-values\|US-127]] |
 | Flood tile build as its own DAG, and the two inputs compared | B | `US-103` `Done`. `US-104` `Superseded` after 5 paired runs, and the `postgis` input builds no tiles as shipped. | [[decision-log\|D-027]], [[BL-029-postgis-tile-input-drops-every-polygon\|BL-029]] (`open`) |
-| Forecast mode `LIVE`, `PENDING`, `DEMO`, and the pinned demo flood | B | Built, not deployed. See "Built and not yet checked on the server". The frontend banner is `Not started` ([[US-131-show-the-demo-flood-banner-and-the-pinned-frame\|US-131]]). | `D-030`, `D-043` |
+| Forecast mode `LIVE`, `PENDING`, `DEMO`, and the pinned demo flood | B | `US-111` `Done`: the `forecast_mode` row is on the server. `US-129` and `US-130` `Reviewed`: the pin and the three modes are checked on the server and not accepted. The frontend banner is `Not started` ([[US-131-show-the-demo-flood-banner-and-the-pinned-frame\|US-131]]). | `D-030`, `D-043` |
 | Real-rain archive of `results_3di.nc` and its growth | B | Pending a forecast above 5 mm/h. | `US-114`, `D-037` |
-| Edge depth table replaces `flood_road_values` (staged) | B | In progress. `US-116`, `US-117`, `US-119` `Done`. `US-118` `In progress`. `US-120` to `US-122` `Reviewed`. `US-123`, the deletion, is `Ready`. | [[decision-log\|D-038]], [[SPR-014-finish-the-remaining-backend\|SPR-014]] |
-| Test dataset: snapshot, restore, history and metrics from it | B | `US-124`, `US-125`, `US-127` `Done`. `US-126` and `US-128` `Ready`. | [[test-dataset]], [[EP-22-keep-a-real-storm-as-the-test-dataset\|EP-22]] |
+| Edge depth table replaces `flood_road_values` (staged) | B | In progress. `US-116`, `US-117`, `US-119` `Done`. `US-118` `In progress`. `US-120` to `US-122` `Done`. `US-123`, the deletion, is `Ready`. The closed share per vehicle from `edge_depth` is within 2 points of the piece-based share (`US-121`). | [[decision-log\|D-038]], [[SPR-014-finish-the-remaining-backend\|SPR-014]] |
+| Test dataset: snapshot, restore, history and metrics from it | B | `US-124`, `US-125`, `US-127` `Done`. `US-126` `In progress` (the tile rebuild is built, the road values are not). `US-128` `Ready`. | [[test-dataset]], [[EP-22-keep-a-real-storm-as-the-test-dataset\|EP-22]] |
 
 Sprint 14 ends 2026-10-25 and holds more points than the forecast ([[decision-log|D-041]]).
 Any story not `Done` at that review leaves the sprint, so re-read the story status before the writing starts.
@@ -144,7 +155,7 @@ Read in this order.
 4. `artifacts/docs/concepts/minio-flood-extent-pipeline.md`. Depth raster to polygon tiles in MinIO plus a PostGIS audit copy.
 5. `artifacts/docs/concepts/flood-on-roads.md`, `road-segment-table.md`, `flood-metric-extractor.md`, `timescaledb-schema.md`. Depth per road piece and the metrics derived from it. [[decision-log|D-038]] replaces the piece-based tables with the edge depth table, in stages, so check each page against the story status before you describe the current state.
 6. `artifacts/docs/concepts/edge-depth-table-format.md` and `core-output-contract.md`, sections `edge_depth` and `edge_depth_run`. Task `9c_build_edge_depth_table` writes the binary file for the engine and, since `US-118`, the wet edges to `edge_depth` with a run registry. A run with no wet edge has a registry row and no depth rows.
-7. `artifacts/docs/concepts/graphhopper-backend.md`. The backend in `floodmap/graphhopper-flood-road/backend/server.py`, between the frontend and a pinned GraphHopper. It also holds the forecast mode and the demo step (`flood_mode.py`, `GET /flood/mode`).
+7. `artifacts/docs/concepts/graphhopper-backend.md`. The backend in `floodmap/graphhopper-flood-road/backend/server.py`, between the frontend and a pinned GraphHopper. It also holds the forecast mode and the demo step (`flood_mode.py`, `GET /flood/mode`). Since 2026-10-13 it reads `edge_depth` and `graph_edge` for the map overlay, the route fallback, the forecast mode, and the pinned step.
 8. `artifacts/docs/concepts/test-dataset.md` and `analysis-service.md`. The kept storm replay and the container for analysis applications.
 
 The edge identity is a stable `edge_key` of the form `<osm_way_id>:<position>`.
@@ -286,7 +297,7 @@ Other work for Paper A: [[US-096-check-each-road-at-the-requested-departure|US-0
 
 ## How to run the writing job
 
-1. Re-read this page, `artifacts/TODOS.md`, and the logs dated after 2026-10-12. Update the results table and the list of built-and-unchecked stories.
+1. Re-read this page, `artifacts/TODOS.md`, and the logs dated after 2026-10-13. Update the results table and the list of built-and-unchecked stories.
 2. Ask the author to confirm the two titles and the one-claim statements above.
 3. For each paper, run `research-writing-assistant:paper-orchestration`: outline with an evidence map first (`/ars-outline` is available), then one section at a time, each checked against its cited file.
 4. Run `research-writing-assistant:peer-review` and `/ars-citation-check` before calling a draft ready. Verify every citation was opened (see `failed-sources.md`).

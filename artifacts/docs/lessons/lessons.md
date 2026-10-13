@@ -218,3 +218,19 @@ A scheduled step that skips on a quiet trigger writes no output. A later step th
 **How to apply.** Before you add a skip branch to a pipeline that keeps saved state, ask what the state describes and how long it lasts. If the state lasts longer than the trigger, the skip must also read the state. Check the change in a replay that has a quiet stretch inside the event. Every slot must run or log a hotstart, and the first table after the stretch must sit within a band of the table before it.
 
 Full incident: [[BL-028-rain-gate-stops-simulation-while-the-flood-still-stands|BL-028]], which stays in `docs/blockers/`.
+
+## L-013
+
+**Check which cell the system judged, not the one you asked for.**
+
+A check that picks its test data by run and time assumes the system judges that run and time.
+The time-aware engine does not.
+It departs at the later of the request time and the clock, and it reports the step it used in the response hints.
+
+**How to apply.**
+Before you trust a pass or a fail from a check of a system that depends on time, read what the system reports about its own input.
+Here that is `td.run` and `td.departure`.
+Then pick the test data at that cell.
+If a check never passes one outcome, as the soak check never passed a blocked pair, the check cannot see that outcome.
+
+Full incident: [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], details items 4 to 7.

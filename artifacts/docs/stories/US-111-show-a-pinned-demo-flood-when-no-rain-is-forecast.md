@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-111"
 title: "Write the forecast mode status row (part one of the pinned demo flood)"
 epic: "[[EP-17-flood-data-pipeline-and-core-output|EP-17]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -72,7 +72,28 @@ Read the newest status row with `psql`, and take a screenshot of the query resul
 
 - **2026-10-12, Ready.** Split into four stories at the product owner's request, and this part is picked for [[SPR-014-finish-the-remaining-backend|SPR-014]]. The plan of the original story moved to the parts.
 - **2026-10-12, Reviewed.** Part one is built and tested, not deployed. Table `forecast_mode` holds one row per gate decision (`slot`, `decided_at`, `rain_peak_mm_hr`, `gate_mm_hr`, `standing_flood`, `mode`). Task `0_check_forecast_rain` writes it, and `9b_load_depth_raster` moves its run's row from `PENDING` to `LIVE`. The mode is `DEMO` when the gate is closed, `LIVE` when it is open and a `depth_raster` row of `flood_run_output` is younger than 45 minutes, and `PENDING` otherwise. `standing_flood` is NULL when the forecast rain alone opened the gate, because the task does not read the flood then. A failed write is printed and stops neither the gate nor `9b`. The table is on [[core-output-contract]] and in the `routing_reader` list. 9 tests in `scripts/test_forecast_mode.py` pass against a throwaway PostGIS, and the DAG tests cover the gate and the move to `LIVE`. Still open: the pull on the server, a `psql` read of the newest row, the `INSERT` that `routing_reader` is refused, and the screenshot.
+- **2026-10-13, Done.** The product owner accepted it after the server check. The evidence is the output file `US-111-server-forecast-mode-2026-10-13.txt`.
 
 ## Evidence and details
 
-Fill this when the story reaches `Done`.
+**Evidence:** `artifacts/docs/stories/evidence/US-111-server-forecast-mode-2026-10-13.txt`, the output of the two `psql` commands that the owner ran against the server on 2026-10-13.
+
+**Details:**
+
+1. The server is on head `458352c` after `git pull --ff-only alice modular`.
+   Airflow lists no import error, and `check_tables.py` says `FRESH`.
+2. `create_forecast_mode_table.py` ran in the worker and made `forecast_mode`.
+   `create_routing_reader_role.py routing_reader` ran there too.
+   The worker mounts neither `core_contract.py` nor the contract page, so both were copied to the worker's `/tmp` for the run and removed afterwards.
+   The role now reads `forecast_mode` and `demo_pin`.
+3. `flood_mapping_full` is paused, so no scheduled run wrote a row.
+   `airflow tasks test flood_mapping_full 0_check_forecast_rain` ran in the worker.
+   The row has slot `2026-10-13 02:45:00`, forecast peak 0, gate 5, `standing_flood` false, and mode `DEMO`.
+4. The same task run in the scheduler container wrote a gate of 0.01, because `FLOOD_RAIN_THRESHOLD_MM_HR` is 0.01 there and 5 in the worker.
+   Real runs execute in the worker.
+   The test ran again in the worker, and it replaced the row of the same slot.
+5. `routing_reader` reads the newest row, and its `INSERT` fails with `permission denied for table forecast_mode`.
+6. Not tested on the server: the move of a row from `PENDING` to `LIVE` by `9b_load_depth_raster`, which needs a real run.
+   The DAG tests cover it.
+7. The three modes were read through the backend with a temporary row of slot `2030-01-01`, which was deleted afterwards ([[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]).
+

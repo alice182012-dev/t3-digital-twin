@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [graphhopper, routing]
 related: ["[[T3-Digital-Twin_Architecture]]", "[[2026-09-14]]", "[[BL-001-graphhopper-vehicle-profile-rejection|graphhopper-vehicle-profile-rejection]]", "[[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[minio-flood-extent-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # GraphHopper flood-road backend
@@ -205,7 +205,7 @@ request's own `profile` and each vehicle gets its own limit. See
 
 `scripts/backend_soak/run_soak.sh` gives the verdict of the soak (`US-034`). It reads the state of the three containers, scans their logs since the soak start, and runs `soak_checks.py roads` inside `airflow_new-floodmap-backend-1`. It exits with 0 only if every Docker call answered, no container started inside the window or was OOM killed, no log holds a 5xx response or an error line, and no check failed. A log with no timestamped line fails, because a failed read leaves only error text (`US-064`). `soak_checks.py` also has a `latency` command, which `US-046` used for the baselines in [[BL-011-routing-not-time-aware|routing-not-time-aware]], and tests in `scripts/backend_soak/` (42).
 
-The `roads` check reads one run of `flood_road_values` and picks road pieces in five depth buckets: below every limit, between the motorbike and car limits, between the car and truck limits, between the truck and foot limits, and past every limit. The pick is deterministic (`md5` of the segment id). A piece is a candidate only if its two neighbours on the same way exist and are no deeper than the next limit, and no piece that would block an allowed vehicle lies within about 170 m. For each piece, each profile, and both directions, the check routes from the neighbour before the piece to the neighbour after it. It sends the request once with the flood fields and once without, the dry control. `expected_outcome` takes the promise from the bands of `DEPTH_BANDS`.
+The `roads` check reads one run and step of `edge_depth` and picks road pieces (edges of `graph_edge`) in five depth buckets: below every limit, between the motorbike and car limits, between the car and truck limits, between the truck and foot limits, and past every limit. The pick is deterministic (`md5` of the segment id). A piece is a candidate only if its two neighbours on the same way exist and are no deeper than the next limit, and no piece that would block an allowed vehicle lies within about 170 m. For each piece, each profile, and both directions, the check routes from the neighbour before the piece to the neighbour after it. It sends the request once with the flood fields and once without, the dry control. `expected_outcome` takes the promise from the bands of `DEPTH_BANDS`.
 
 | Depth against the vehicle's limit | Band | Promise | Pass when |
 | --- | --- | --- | --- |
@@ -216,6 +216,10 @@ The `roads` check reads one run of `flood_road_values` and picks road pieces in 
 The check skips a pair when the dry control cannot show the promise. For a blocked or open promise the dry route must cross the piece. For a costly promise the dry route must exist. In those pairs the network (a one-way piece, a dual carriageway, a road closed to foot) and not the flood decides the result.
 
 Run on the 2026-10-02 03:00 run, the check covered 23 roads and 92 pairs of road and profile. It passed 86, skipped 6, and failed none. All 40 blocked promises held.
+
+With `TIME_AWARE_ROUTING` on, the engine ignores the `run` and `valid_time` of a request. It departs at the later of `valid_time` and the clock, floors that to a step of the newest table, and reports `td.run` and `td.departure` in the hints. Without `--run` and `--valid-time`, the `roads` check therefore sends one probe route, reads those hints, and picks edges at that step (`engine_cell` in `soak_checks.py`). A replayed run is judged at its last step. In `DEMO` mode every route uses the pinned step and the probe finds no `td.run`, so run the check in `LIVE` mode.
+
+On 2026-10-13 the check covered 26 roads and 104 pairs at run `20261011T001500`, 19:00 UTC. It passed 42, skipped 62, and failed none. All 51 blocked pairs were skipped, because the dry control route did not cross the piece, so that run shows no kept blocked promise ([[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]]).
 
 ### What a stricter first version found
 

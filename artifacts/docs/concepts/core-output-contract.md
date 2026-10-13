@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [contract, core-output, routing, postgis, minio, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[routing-first-consumer-contract]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[edge-depth-table-format]]", "[[graphhopper-backend]]", "[[flood-on-roads]]", "[[US-108-publish-a-run-manifest-for-the-core-outputs|US-108]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # Core output contract
@@ -293,6 +293,7 @@ One row is one rain gate decision of one run of `flood_mapping_full`.
 - **Fields.** `rain_peak_mm_hr` is the forecast peak and `gate_mm_hr` is the threshold (`FLOOD_RAIN_THRESHOLD_MM_HR`).
   `standing_flood` is NULL when the forecast rain alone opened the gate, because the task does not read the flood then.
 - **Reading.** The newest row by `slot` is the current mode.
+  The role `routing_reader` can `SELECT` the table and cannot `INSERT` into it (checked on the server on 2026-10-13).
 - **Writer.** Task `0_check_forecast_rain` writes the row on every decision, and it creates the table, because a dry state ends the run before `0b_ensure_schema` (`scripts/forecast_mode.py`).
   Task `9b_load_depth_raster` moves the row of its slot from `PENDING` to `LIVE` after the depth rasters are published.
   A failed write is printed and does not stop the gate or `9b`.

@@ -4,7 +4,7 @@ type: concept
 status: parked
 tags: [timescaledb, schema, histogram, sprint-1]
 related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # TimescaleDB schema for histograms, forecast series, and depth history
@@ -102,6 +102,8 @@ Rows loaded before the move held piece ids (`<way>#<index>`), which cannot be ma
 They came from test rain, so the owner decided on 2026-10-12 to delete them.
 The rename step deletes every row of `depth_history` and `history_moment` once, so no moment reads as dry for an edge key without a run behind it.
 Rebuild the history from runs in `edge_depth` ([[US-113-backfill-per-segment-depth-history|US-113]]).
+The migration ran on the server on 2026-10-13, and both tables held no row after it.
+Loading run `20261010T223000` twice gave 20,989 rows over 2,874 edges and 8 moments each time.
 
 ## Open items
 
