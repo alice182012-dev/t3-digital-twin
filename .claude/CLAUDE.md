@@ -1,12 +1,3 @@
-## gstack (REQUIRED, global install)
-
-The hook `.claude/hooks/check-gstack.sh` blocks skill use when gstack is missing and prints the install steps.
-If it blocks, stop and tell the user to install it
-(`git clone --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack`, then
-`cd ~/.claude/skills/gstack && ./setup --team`, then restart).
-Do not skip skills or work around a missing gstack.
-Use `/browse` for all web browsing.
-
 ## Docker: check which machine you're on first
 
 The Docker host is the Windows machine at `100.67.84.55` (user `TECOTEC`).
@@ -51,15 +42,35 @@ docker --context remote-server exec airflow_new-storage-postgres-1 psql -U minio
 
 ## Skill routing
 
-When a request matches a skill, invoke it. When in doubt, invoke it.
-Ideas: `/office-hours`. Scope: `/plan-ceo-review`. Architecture: `/plan-eng-review`. Design: `/design-consultation`, `/plan-design-review`.
-Bugs: `/investigate`. QA: `/qa`, `/qa-only`. Review: `/review`. Visual polish: `/design-review`.
-Ship: `/ship`, `/land-and-deploy`. Save or resume: `/context-save`, `/context-restore`. Spec: `/spec`.
-
-gstack owns the lifecycle and pstack owns how code is written.
 Implementation goes through `pstack:poteto-mode`.
-Review a diff first with `pstack:interrogate`, then `/review` as the pre-ship gate.
-Use gstack for business altitude ("safe to ship") and pstack for engineering altitude ("well structured").
+The `mattpocock-skills` plugin supplies the grill, review, and debugging steps below.
+
+1. **Grill first.** Before writing a new feature or a new story, ask the user to run `/grill-with-docs`.
+   The skill is user-invoked only, so Claude cannot start it.
+   Do not write the story or any code until the session reaches a shared understanding.
+   Its two outputs go to the vault homes, not to the skill's default paths:
+   - A resolved term goes into the "Language" section at the top of the concept page for its subsystem in `artifacts/docs/concepts/` (decision `D-052`). Do not create `CONTEXT.md`. Until the page exists, the session carries the term.
+   - A decision that meets the skill's three ADR tests goes into `artifacts/docs/decisions/decision-log.md` as the next `D-nnn`, never into `docs/adr/`.
+2. **Review.** Review a diff with `pstack:interrogate`, then run `mattpocock-skills:code-review` as the pre-ship gate.
+   Pass the story file as the spec argument, because the story is the one home of the plan and the skill's issue-tracker lookup does not apply here.
+3. **Hard bugs.** For a hard bug or a performance regression, use `mattpocock-skills:diagnosing-bugs`.
+   Its feedback loop starts from the end-to-end reproduction required by the global bug-fixing rule.
+4. **Specs.** When the user runs `/to-spec`, do not publish to an issue tracker and do not apply a triage label.
+   Write the vault files below in the main session, after the skill's seam check with the user.
+   Invoke `pstack:technical-writing` and `pstack:unslop` first.
+   - Each item of its "User Stories" list becomes one file from `artifacts/templates/user-story.md`, named `US-nnn-<slug>.md` in `artifacts/docs/stories/`, with status `Not started` and no `sprint`.
+     Take `nnn` from `artifacts/Home.md` and raise it there. Fill the story's one-sentence form, its Given/When/Then, and its estimate. Split an L before it is written.
+   - The Problem Statement, Solution, and Out of Scope go into one epic from `artifacts/templates/epic.md`, and each story links to it in `epic`. Use an existing epic when the spec extends one.
+   - An implementation or testing decision that meets the three ADR tests goes into `decision-log.md` as the next `D-nnn`. Any other goes into the Given/When/Then of the story it affects.
+   - Write the plan once, in the stories. Do not create a spec file.
+5. **Tickets.** When the user runs `/to-tickets`, do not write to `.scratch/` and do not publish to an issue tracker. A ticket is a story, so write the vault files in the main session, after the skill's quiz with the user.
+   Invoke `pstack:technical-writing` and `pstack:unslop` first.
+   - Each ticket becomes one story file from `artifacts/templates/user-story.md`, named `US-nnn-<slug>.md` in `artifacts/docs/stories/`, with status `Not started` and no `sprint`.
+     Take `nnn` from `artifacts/Home.md` and raise it there, in dependency order with blockers first.
+   - "What to build" becomes the one-sentence form, the acceptance criteria become the Given/When/Then, and "Blocked by" becomes the `Dependencies:` line with `US-nnn` codes.
+   - Size each slice to an `estimate`, and split an L before it is written.
+   - Link each story to its epic in `epic`.
+   - When `/to-spec` already wrote stories for the same work, re-cut those files (split, merge, add `Dependencies:`) and do not create a second set.
 
 ## Plans and Scrum
 

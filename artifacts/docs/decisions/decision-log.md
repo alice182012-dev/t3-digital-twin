@@ -797,3 +797,15 @@ is the maximum.
 - **Evidence:** the Review section of [[SPR-014-finish-the-remaining-backend|SPR-014]].
 - **Affects:** [[decision-log|D-026]], which fixes a sprint's dates after it starts. This is the second exception after [[decision-log|D-040]].
 - **Revisit if:** a third early end happens. [[decision-log|D-040]] named this as the sign that the planning of the sprint is too coarse.
+
+## D-052: Keep resolved terms in a Language section of the concept page, and have no `CONTEXT.md`
+
+- **Date:** 2026-10-14
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-14, who chose the concept page over a section in an existing page or the decision log.
+- **Decision:** A term that a grill session resolves goes into a "Language" section at the top of the concept page for its subsystem in `artifacts/docs/concepts/`. The repo has no `CONTEXT.md`. When the page does not exist yet, the session carries the term until the page is written.
+- **Why:** The vault already has one home for how a subsystem works, and a separate glossary file would be a second place to look and keep current. A term next to the design it names is read with that design.
+- **Alternatives:** (1) A `CONTEXT.md` at the repo root, which the "Grill first" rule asked for. Not chosen, because it adds a file outside the vault layout. (2) A section in `3di-simulation-orchestration.md`. Not chosen, because a term of one subsystem would sit in the page of another. (3) Only the decision log. Not chosen, because a reader would find a term only by reading the decision that set it.
+- **Evidence:** the "Grill first" rule in `.claude/CLAUDE.md`, changed in the same work block.
+- **Affects:** the "Grill first" rule in `.claude/CLAUDE.md`, which no longer names `CONTEXT.md`.
+- **Revisit if:** a term is shared by two subsystems and no single concept page is its natural home.
