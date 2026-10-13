@@ -17,8 +17,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 9 points of work remain.
    - Unpause `flood_mapping_full` (the owner approved it on 2026-10-13, after the check ends). The run of 03:45 UTC is frozen at `3b_publish_depth_files` and resumes then, so it serves as the check run: `routing_adapter` has only `9c`, the time from `3_calculate_depth` to the end of `9c` is under 5 minutes, and `flood_history` runs on the new asset.
    - Check `/flood/areas`, `/route`, and `/flood/points` against their answers before the deletion.
    - Ask the owner to confirm the drop of `road_segment`, `flood_road_values`, `flood_road_file`, and `flood_road_values_shadow` (irreversible), then drop them and record the freed storage.
-3. [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]]: the check is being built on the Mac. Run it on the server at the pinned step in `DEMO` mode, and expect the three pairs of [[decision-log|D-050]] to be skipped.
-4. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
+3. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
@@ -40,15 +39,15 @@ P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 **Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
+### Reviewed - US-138 Skip soak pairs whose dry route crosses other blocked roads
+
+**Story:** [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]].
+P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
+
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
 **Story:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
-### Ready - US-138 Skip soak pairs whose dry route crosses other blocked roads
-
-**Story:** [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]].
-P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ## Product backlog
 
