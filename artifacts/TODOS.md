@@ -10,8 +10,8 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
-1. Ask the owner to accept [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] (merged and deployed on 2026-10-13, both `Reviewed`, backlog only). Real simulations run from the slot of 09:45 UTC until 5 dry runs in a row. Watch that the run stops after 5 dry runs.
-2. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
+1. Watch the standing-flood chain that started at the slot of 09:45 UTC on 2026-10-13 (the revived run counted as a fresh publish). It must stop after 5 dry runs in a row. Count the real simulations it ran and record the number.
+2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
@@ -30,7 +30,7 @@ P1, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ## Product backlog
 
-18 stories.
+16 stories.
 The top 10 by priority:
 
 - [[US-076-compare-the-live-app-with-the-mockup|US-076]], P1, M, Not started.
@@ -49,10 +49,10 @@ The top 10 by priority:
   Show the recommended route and the through-water option in the app
 - [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], P2, M, Not started.
   Show the demo flood banner and the pinned frame
-- [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]], P2, S, Reviewed.
-  Skip a flood_mapping_full run whose slot is hours old
-- [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], P2, S, Reviewed.
-  Delete the postgis input of the flood tile build
+- [[US-141-host-photon-for-vietnam-next-to-the-backend|US-141]], P2, M, Not started.
+  Host Photon for Vietnam next to the backend
+- [[US-033-write-a-project-design-md-with-real|US-033]], P3, S, Not started.
+  Write a project `DESIGN.md` with real design tokens
 
 ## Open blockers
 

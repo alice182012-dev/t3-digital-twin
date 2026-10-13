@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-139"
 title: "Skip a flood_mapping_full run whose slot is hours old"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -39,6 +39,7 @@ Dependencies: None. Deploy it after the server steps of [[US-123-delete-flood-on
 - **2026-10-13, Ready.** Raised by the unpause of 2026-10-13 ([[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]). It is in the backlog and has no `sprint`, as the product owner asked. The branch `us-139-stale-run-guard` is merged into `modular`.
 - **2026-10-13, Reviewed.** Built and tested on the branch `us-139-stale-run-guard` (commit "Skip a flood_mapping_full run whose slot is hours old"), which is not merged into `modular` and not on the server (details items 1 to 5). The owner has not accepted it.
 - **2026-10-13, Reviewed.** Merged into `modular` and pulled on the server on 2026-10-13. In the worker under real Airflow, `airflow tasks test` of `3_calculate_depth`, `3b_publish_depth_files`, and `9b_load_depth_raster` for a slot 7 hours old gave the state `skipped` with the message "Run slot 2026-10-13T03:00:00Z is 422 minutes old, over the limit of 120 minutes (FLOOD_STALE_RUN_MINUTES). Skipping so an old run does no work." and no traceback, before any work. A fresh run of the slot 10:00 UTC after the pull ran normally. `1_trigger_simulation` and `0_check_forecast_rain` were not tested on the server, because a failed guard there would start a real simulation or write a row. The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 5 and the run on the server. It has no `sprint`.
 
 ## Evidence and details
 
