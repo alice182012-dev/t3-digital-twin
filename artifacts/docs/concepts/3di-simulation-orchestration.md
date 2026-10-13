@@ -103,7 +103,7 @@ equals the slot, or the newest state at most two cycles older, else it cold star
 [[BL-013-flood-mapping-full-worker-concurrency-serializes-runs|flood-mapping-full-worker-concurrency-serializes-runs]]. The plan is
 [[fifteen-minute-cycle-tiles-and-histogram]]. The user unpaused `flood_mapping_full` at about
 15:05 +07 on 2026-10-08 for the 12-hour replay (`artifacts/TODOS.md`). Whether the DAG stays unpaused
-after the replay is unverified. The server also had the test DAGs `calculate_depth_manual_test` and
+after the replay is unverified. The owner unpaused it again on 2026-10-13, and a run left over from 2026-10-10 resumed with it. The server also had the test DAGs `calculate_depth_manual_test` and
 `flood_forecast_consecutive_state_test` (both `schedule=None`) and `zz_cold_start_probe` unpaused on
 2026-10-08. `zz_cold_start_probe` has no file in `dags/` in the repository, so its schedule is unverified.
 
