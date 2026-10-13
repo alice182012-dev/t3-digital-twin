@@ -40,6 +40,7 @@ Dependencies: None. The owner decides the deploy of a new service.
 ## Status history
 
 - **2026-10-13, draft.** Raised by the measurement of [[BL-021-place-name-slow-after-map-tap|BL-021]]. It is in the backlog and has no `sprint`.
+- **2026-10-13, Not started.** The product owner put it on hold and will come back to it later. It stays in the backlog with no `sprint`, and nothing is built. [[BL-021-place-name-slow-after-map-tap|BL-021]] keeps the measurement of 2026-10-13.
 
 ## Evidence and details
 
