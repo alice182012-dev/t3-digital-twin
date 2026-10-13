@@ -55,13 +55,13 @@ The legend bands (`5 to 10 cm` and so on) differ from the mockup on purpose, so 
 | G5 | 2b, all | The legend and the popup say "As of `time`", and the mockup says "Updated" and "now" | [[US-080-keep-as-of-and-bring-the-us\|US-080]] |
 | G6 | 2e | No second dashed line, no time and depth on the tabs, no mobile layout | [[US-081-draw-a-second-dashed-line-for-the\|US-081]], [[US-082-show-the-travel-time-and-the-maximum\|US-082]], [[US-083-build-a-mobile-version-of-screen-2e\|US-083]] |
 | G7 | states | The no-route box and the "wait until" line have no approved design | [[US-084-design-the-no-route-and-wait-until\|US-084]] |
-| N1 | 2a, 2b | The Map and Flood tiles are flat grey and blue-grey blocks, and the mockup shows photo thumbnails with a white border | none yet |
-| N2 | 2b | The legend sits top-right and covers the zoom, locate, and layer buttons of the map, and the mockup puts the legend bottom-right with a tick scale | none yet |
-| N3 | 2c | The routing panel is the stock GraphHopper card (settings gear, "Add location", "Settings", GPX, "Details"), and the mockup has a full-height panel with a black selected-mode pill, a close X, and a dotted connector | none yet |
-| N4 | 2e | An Elevation widget sits bottom-left, and the mockup has none | none yet |
+| N1 | 2a, 2b | The Map and Flood tiles are flat grey and blue-grey blocks, and the mockup shows photo thumbnails with a white border | [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles\|US-144]] |
+| N2 | 2b | The legend sits top-right and covers the zoom, locate, and layer buttons of the map, and the mockup puts the legend bottom-right with a tick scale | [[US-145-stop-the-legend-from-covering-the-map-controls\|US-145]] |
+| N3 | 2c | The routing panel is the stock GraphHopper card (settings gear, "Add location", "Settings", GPX, "Details"), and the mockup has a full-height panel with a black selected-mode pill, a close X, and a dotted connector | [[US-146-match-the-routing-panel-frame-to-the-mockup\|US-146]] |
+| N4 | 2e | An Elevation widget sits bottom-left, and the mockup has none | [[US-147-remove-the-elevation-widget-from-the-route-view\|US-147]] |
 | N5 | 2b | The popup shows "Selected location" while the name is unresolved (still after 7 s), reads "Water depth as of `date time`: N cm" and has no district line, and the search pill keeps "Search Floodmap" where the mockup shows the place name | [[BL-021-place-name-slow-after-map-tap\|BL-021]], [[US-141-host-photon-for-vietnam-next-to-the-backend\|US-141]] |
-| N6 | 2f | After "Route to this place" the destination field holds raw coordinates, and the mockup holds the place name | none yet |
-| N7 | 2d | Autofill rows are one line with a pin icon and the district at the right edge, and the mockup has two lines (name, then district) with no icon. Six rows read "C5" and differ only by district | none yet |
+| N6 | 2f | After "Route to this place" the destination field holds raw coordinates, and the mockup holds the place name | [[US-148-show-the-place-name-in-the-destination-field\|US-148]] |
+| N7 | 2d | Autofill rows are one line with a pin icon and the district at the right edge, and the mockup has two lines (name, then district) with no icon. Six rows read "C5" and differ only by district | [[US-149-match-the-autofill-rows-to-the-mockup\|US-149]] |
 
 ## Stories
 

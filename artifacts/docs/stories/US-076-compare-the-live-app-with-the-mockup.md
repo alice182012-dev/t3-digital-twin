@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-076"
 story_label: "1"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 priority: P1
 estimate: M
 sprint: 15
@@ -30,6 +30,7 @@ Evidence: None yet.
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 - **2026-10-13, In progress.** Started as the first story of [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 - **2026-10-13, Reviewed.** Screens 2a to 2f and the two states are captured at 1366x768 and the differences are logged in [[EP-19-frontend-against-the-mockup|EP-19]]. It waits for the owner's acceptance.
+- **2026-10-13, Done.** The product owner accepted it. Six stories were drafted from the differences ([[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] to [[US-149-match-the-autofill-rows-to-the-mockup|US-149]]), and [[floodmap-frontend]] holds the method.
 
 ## Evidence and details
 
@@ -39,4 +40,5 @@ Pairs are in `artifacts/docs/stories/evidence/US-076/`: `mock-2a` to `mock-2f` a
 2. Forced states: the no-route shot answers `POST /route` with a 400 `ConnectionNotFoundException` in the page, and the real `route/departures` answer is "Timing check unavailable". The wait-until shot also fakes the departures answer ("clear from 23:02"). Both show the real UI code, not a real routing failure.
 3. Result: 7 gaps from the earlier list (`G1` to `G7`) are confirmed and 7 new rows (`N1` to `N7`) are in [[EP-19-frontend-against-the-mockup|EP-19]].
 4. Not covered: the step list with depth per turn, and the depth badges on a long route. The shot of 2e shows the panel and the chart only.
-5. Found on the way: with no raster for the hour, the chart is hidden and the mode is `LIVE` (`GET /flood/mode`), because `flood_mapping_full` is paused. A visitor sees no chart until the pipeline runs.
+5. Concept: [[floodmap-frontend]] records where the flood parts live and how to repeat the comparison.
+6. Found on the way: with no raster for the hour, the chart is hidden and the mode is `LIVE` (`GET /flood/mode`), because `flood_mapping_full` is paused. A visitor sees no chart until the pipeline runs.

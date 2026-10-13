@@ -22,12 +22,7 @@ Index: [[Home]].
 **Sprint file:** [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]
 
 **Status:** active.
-35 points picked, 0 done.
-
-### Reviewed - US-076 Compare the live app with the mockup in Aside at 1366x768
-
-**Story:** [[US-076-compare-the-live-app-with-the-mockup|US-076]].
-P1, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+35 points picked, 3 done.
 
 ### Reviewed - US-008 Switch the search geocoder's default locale to `vi`
 
@@ -106,15 +101,27 @@ P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ## Product backlog
 
-3 stories.
-The top 3 by priority:
+9 stories.
+The top 9 by priority:
 
 - [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], P1, S, Ready.
   Prove the real-rain archive on the first run above 5 mm/h and measure growth
 - [[US-141-host-photon-for-vietnam-next-to-the-backend|US-141]], P2, M, Not started.
   Host Photon for Vietnam next to the backend
+- [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]], P2, S, Not started.
+  Stop the legend from covering the map controls
+- [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]], P2, M, Not started.
+  Match the routing panel frame to the mockup
+- [[US-148-show-the-place-name-in-the-destination-field|US-148]], P2, S, Not started.
+  Show the place name in the destination field after Route to this place
 - [[US-061-show-the-place-name-faster-after-a|US-061]], P3, S, Not started.
   Show the place name faster after a map tap
+- [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]], P3, S, Not started.
+  Use the mockup thumbnails for the Map and Flood tiles
+- [[US-147-remove-the-elevation-widget-from-the-route-view|US-147]], P3, XS, Not started.
+  Remove the Elevation widget from the route view
+- [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], P3, S, Not started.
+  Match the autofill rows to the mockup
 
 ## Open blockers
 

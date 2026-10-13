@@ -83,3 +83,4 @@ The top of the backlog after this review: the order, the stories split, and the 
 ## Status history
 
 - **2026-10-13, active.** Planned right after [[SPR-014-finish-the-remaining-backend|SPR-014]] ended early ([[decision-log|D-051]]). Sixteen stories are picked with `sprint: 15`, and they make 35 points against a forecast of 45.
+- **2026-10-13, active.** The product owner accepted [[US-076-compare-the-live-app-with-the-mockup|US-076]], so it is `Done` (3 of 35 points). Six backlog stories, [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] to [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], were drafted from its differences and have no `sprint`.
