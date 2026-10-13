@@ -2,9 +2,9 @@
 
     python build_history_and_metrics.py   # inside the Airflow worker, after restore_snapshot.py
 
-It reads the runs of `flood_road_file` in `minio_custom_test`, oldest first, and for each run loads the history into
-`flood_metrics_test` with load_run.write_run and writes the metrics into `minio_custom_test` with extract_run. No raster
-tile is needed, because a run's moments come from its forecast times. Then it compresses every chunk of depth_history
+It reads the runs of `edge_depth_run` in `minio_custom_test`, oldest first, and for each run loads the history into
+`flood_metrics_test` with load_run.write_run and writes the metrics into `minio_custom_test` with extract_run. Both read
+`edge_depth`, so build the edge depth rows of each run first (build_edge_depth.build_table). Then it compresses every chunk of depth_history
 and prints the compression ratio. A second run gives the same rows, because each load replaces what it writes and
 the chunks are decompressed first. It refuses a database whose name does not end in `_test`.
 """
@@ -18,15 +18,13 @@ from pathlib import Path
 import psycopg2
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
-for folder in ("testdata", "database", "flood_history", "flood_metrics", "flood_roads"):
+for folder in ("testdata", "database", "flood_history", "flood_metrics"):
     sys.path.insert(0, str(SCRIPTS_DIR / folder))
 
 import extract_run  # noqa: E402
 import load_run  # noqa: E402
 from db_config import DB_CONFIG, TIMESCALE_DB_CONFIG  # noqa: E402
 from restore_snapshot import check_test_database  # noqa: E402
-
-_RUN_TS_FORMAT = "YYYYMMDD\"T\"HH24MISS"
 
 _DECOMPRESS_SQL = "SELECT decompress_chunk(c, if_compressed => true) FROM show_chunks('depth_history') c"
 _COMPRESS_SQL = "SELECT compress_chunk(c, if_not_compressed => true) FROM show_chunks('depth_history') c"
@@ -37,9 +35,10 @@ _STATS_SQL = (
 
 
 def run_names(conn) -> list[str]:
-    """The runs of flood_road_file, oldest first, as the DAG names them."""
+    """The runs of edge_depth_run, oldest first, as the DAG names them. A run_ts is a fixed-width string, so its text
+    order is its time order."""
     with conn.cursor() as cur:
-        cur.execute(f"SELECT to_char(timestamp, '{_RUN_TS_FORMAT}') FROM flood_road_file ORDER BY timestamp")
+        cur.execute("SELECT run_ts FROM edge_depth_run ORDER BY run_ts")
         return [row[0] for row in cur.fetchall()]
 
 

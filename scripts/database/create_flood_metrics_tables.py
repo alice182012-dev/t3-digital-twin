@@ -5,7 +5,7 @@ from db_config import DB_CONFIG
 # Lives in storage-postgres, next to the edge depth table, so the extractor does not depend on the
 # TimescaleDB service. Story 4 of timescaledb-and-flood-metrics copies from this table.
 #
-# A row from the piece-based extraction has segment_key, md5(ST_AsEWKB(geom_4326)) of its flood_road_values rows, and
+# A row from the piece-based extraction has segment_key, md5(ST_AsEWKB(geom_4326)) of its road piece rows, and
 # no edge_key. A row from the edge-based extraction (US-121, D-038) has graph_edge.edge_key and no segment_key or
 # road_name. Old rows are kept, so the rule for a key after a graph re-import is the one in graph-reimport-procedure.
 #

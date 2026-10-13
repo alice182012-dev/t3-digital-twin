@@ -1,7 +1,7 @@
 """The run manifest `flood_run_output`: one row per run and published output (US-108).
 
 A consumer outside Airflow reads this table to learn which outputs of a run are ready, instead of
-polling flood_depth_raster_tile, flood_road_values, and the edge depth `latest` file. Each writer
+polling flood_depth_raster_tile, flood_extent_polygon, and the edge depth `latest` file. Each writer
 calls `record` as its last write, so a row never names an output that is not there.
 """
 
@@ -14,7 +14,6 @@ from enum import Enum
 class Output(str, Enum):
     DEPTH_RASTER = "depth_raster"
     EXTENT = "extent"
-    ROAD_VALUES = "road_values"
     EDGE_DEPTH = "edge_depth"
 
 

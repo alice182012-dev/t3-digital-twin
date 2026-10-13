@@ -1,8 +1,8 @@
 """Flood depth over time along a route, for POST /flood/forecast.
 
 Reads `flood_depth_raster_tile` (run_ts, valid_time_utc, one EPSG:4326 tile per row), the same
-table as flood_points.py, which holds every depth step of every retained run. flood_road_values is
-not used: it only covers road segments, and matching a route to its rows has no stable key.
+table as flood_points.py, which holds every depth step of every retained run. edge_depth is
+not used: it only covers road edges, and matching a route to its rows has no stable key.
 
 Request body:
 

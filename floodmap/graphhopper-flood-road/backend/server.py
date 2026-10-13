@@ -2,7 +2,7 @@
 """GraphHopper flood-road backend.
 
 Fork of ../valhalla-flood-road-test/backend/server.py for Workstream B of
-the Phase 2 plan. PostGIS (flood_road_values.geom_4326) is now the source
+the Phase 2 plan. PostGIS (the edge depth tables) is now the source
 of truth for flood geometry instead of a polled MinIO GeoJSON file, and
 GraphHopper's custom_model.areas replaces Valhalla's linear_cost_factors /
 exclude_locations. /flood/areas and POST /route share one derivation

@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import NamedTuple
 
@@ -22,10 +22,10 @@ from psycopg2.extras import execute_values
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_DIR / "database"))
-sys.path.insert(0, str(SCRIPTS_DIR / "flood_roads"))
-from flood_on_roads import VIETNAM_UTC_OFFSET, run_timestamp  # noqa: E402
 
 CYCLE = "constant_cycle"
+# The run name and the depth_*.tif names carry Vietnam local time, which edge_depth_run.valid_times keeps naive.
+VIETNAM_UTC_OFFSET = timedelta(hours=7)
 
 
 class DepthRow(NamedTuple):
@@ -60,6 +60,10 @@ class LoadResult:
 
 class LoadRunError(ValueError):
     pass
+
+
+def run_timestamp(run_ts: str) -> datetime:
+    return datetime.strptime(run_ts, "%Y%m%dT%H%M%S")
 
 
 def vietnam_to_utc(local: datetime) -> datetime:

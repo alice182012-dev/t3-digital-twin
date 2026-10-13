@@ -24,7 +24,7 @@ import create_flood_run_output_table  # noqa: E402
 import server  # noqa: E402
 
 DSN = os.environ.get("FLOOD_TEST_DSN")
-ALL_FOUR = ("depth_raster", "extent", "road_values", "edge_depth")
+ALL_OUTPUTS = ("depth_raster", "extent", "edge_depth")
 
 
 @unittest.skipUnless(DSN, "FLOOD_TEST_DSN unset")
@@ -52,16 +52,16 @@ class NewestCompleteRunTests(unittest.TestCase):
     def test_no_run_gives_none(self):
         self.assertIsNone(server.newest_complete_run(self.conn))
 
-    def test_a_newer_run_with_three_outputs_is_skipped_for_an_older_run_with_four(self):
-        self.publish("20261011T000000", ALL_FOUR)
-        self.publish("20261011T001500", ALL_FOUR[:3])
+    def test_a_newer_run_with_two_outputs_is_skipped_for_an_older_run_with_three(self):
+        self.publish("20261011T000000", ALL_OUTPUTS)
+        self.publish("20261011T001500", ALL_OUTPUTS[:2])
 
         self.assertEqual(server.newest_complete_run(self.conn), "20261011T000000")
 
     def test_the_newest_of_two_complete_runs_wins(self):
-        self.publish("20261010T234500", ALL_FOUR)
-        self.publish("20261011T001500", ALL_FOUR)
-        self.publish("20261011T000000", ALL_FOUR)
+        self.publish("20261010T234500", ALL_OUTPUTS)
+        self.publish("20261011T001500", ALL_OUTPUTS)
+        self.publish("20261011T000000", ALL_OUTPUTS)
 
         self.assertEqual(server.newest_complete_run(self.conn), "20261011T001500")
 

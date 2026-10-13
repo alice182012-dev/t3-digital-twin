@@ -46,6 +46,27 @@ class GuardTests(unittest.TestCase):
         restore_snapshot.check_test_database("minio_custom_test", "minio_custom")
 
 
+class ManifestTests(unittest.TestCase):
+    def read(self, tables):
+        with tempfile.TemporaryDirectory() as tmp:
+            snapshot = Path(tmp) / "snapshot"
+            snapshot.mkdir()
+            entries = [
+                {"file": f"snapshot/{table}.csv.gz", "table": table, "columns": ["a"], "rows": 1, "sha256": "x"}
+                for table in tables
+            ]
+            (snapshot / "MANIFEST.json").write_text(json.dumps({"tables": entries}))
+            return [file.table for file in restore_snapshot.read_manifest(snapshot)]
+
+    def test_a_table_beyond_the_order_is_left_out_of_the_files_to_load(self):
+        listed = [*reversed(restore_snapshot.RESTORE_ORDER), "retired_a", "retired_b"]
+        self.assertEqual(self.read(listed), list(restore_snapshot.RESTORE_ORDER))
+
+    def test_a_table_of_the_order_missing_from_the_manifest_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.read(restore_snapshot.RESTORE_ORDER[1:])
+
+
 @unittest.skipUnless(DSN, "RESTORE_TEST_DSN is not set")
 class RestoreTests(unittest.TestCase):
     @classmethod
@@ -84,23 +105,16 @@ class RestoreTests(unittest.TestCase):
         restore_snapshot.create_schema(source, restore_snapshot.POSTGIS_DDL)
         with source.cursor() as cur:
             cur.execute(
-                "INSERT INTO flood_road_file (id, timestamp, source_file, geojson_type, feature_count, forecast_times)"
-                " VALUES (7, '2026-10-10 04:15', 'flood_on_roads_20261010T041500', 'FeatureCollection', 2,"
-                " ARRAY['2026-10-10 04:15'::timestamp, '2026-10-10 04:30'::timestamp])"
-            )
-            cur.execute(
-                "INSERT INTO flood_road_values (id, file_id, timestamp, road_name, forecast_time, depth, geom_4326)"
-                " VALUES (40, 7, '2026-10-10 04:15', 'Đường \"A\", số 1', '2026-10-10 04:15', 0.25,"
-                " ST_GeomFromText(%s, 4326)), (41, 7, '2026-10-10 04:15', NULL, '2026-10-10 04:30', NULL, NULL)",
-                (SEGMENT_WKT,),
+                "INSERT INTO flood_segment_metrics (id, run_ts, segment_key, road_name, vehicle_type, impassable_from_m,"
+                " window_start, window_end, passability, geom_4326)"
+                " VALUES (40, '20261010T041500', 'k1', 'Đường \"A\", số 1', 'car', 0.3, '2026-10-10 04:15',"
+                " '2026-10-10 06:15', 'never_impassable', ST_GeomFromText(%s, 4326)),"
+                " (41, '20261010T041500', 'k2', NULL, 'car', 0.3, '2026-10-10 04:15', '2026-10-10 06:15',"
+                " 'never_impassable', ST_GeomFromText(%s, 4326))",
+                (SEGMENT_WKT, SEGMENT_WKT),
             )
             cur.execute("INSERT INTO graph_edge (edge_id, length_m, geom) VALUES (1, 55.5, ST_GeomFromText(%s, 4326))", (SEGMENT_WKT,))
             cur.execute("INSERT INTO graph_edge_export (graph_hash, edge_count) VALUES ('abc', 1)")
-            cur.execute(
-                "INSERT INTO road_segment (segment_id, way_id, piece_index, road_name, highway, length_m, geom)"
-                " VALUES ('way/1#0', 1, 0, 'A', 'residential', 55.5, ST_GeomFromText(%s, 4326))",
-                (SEGMENT_WKT,),
-            )
             cur.execute("INSERT INTO flood_extent_step (run_ts, valid_time_utc, is_empty) VALUES ('20261010T041500', '2026-10-09 21:15', true)")
         source.commit()
 
@@ -181,22 +195,25 @@ class RestoreTests(unittest.TestCase):
         _, first = self.restore()
         _, second = self.restore()
         self.assertEqual(first, second)
-        self.assertEqual(first["flood_road_values"], 2)
+        self.assertEqual(first["flood_segment_metrics"], 2)
 
     def test_the_serial_columns_continue_after_the_restored_ids(self):
         self.restore()
         conn = self.connect()
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO flood_road_file (timestamp, source_file) VALUES ('2026-10-11 00:00', 'next') RETURNING id"
+                "INSERT INTO flood_segment_metrics (run_ts, segment_key, vehicle_type, impassable_from_m, window_start,"
+                " window_end, passability, geom_4326) VALUES ('next', 'k3', 'car', 0.3, '2026-10-11 00:00',"
+                " '2026-10-11 02:00', 'never_impassable', ST_GeomFromText(%s, 4326)) RETURNING id",
+                (SEGMENT_WKT,),
             )
-            self.assertEqual(cur.fetchone()[0], 8)
+            self.assertEqual(cur.fetchone()[0], 42)
         conn.rollback()
         conn.close()
 
     def test_a_changed_file_is_refused_before_anything_loads(self):
         files = restore_snapshot.read_manifest(self.snapshot_dir)
-        path = self.snapshot_dir / "road_segment.csv.gz"
+        path = self.snapshot_dir / "graph_edge.csv.gz"
         original = path.read_bytes()
         try:
             path.write_bytes(original + b"x")
@@ -216,7 +233,7 @@ class RestoreTests(unittest.TestCase):
             with self.assertRaises(psycopg2.Error):
                 restore_snapshot.load_snapshot(conn, files)
             conn.rollback()
-            self.assertEqual(restore_snapshot.table_counts(conn, ["flood_road_values"])["flood_road_values"], 2)
+            self.assertEqual(restore_snapshot.table_counts(conn, ["flood_segment_metrics"])["flood_segment_metrics"], 2)
             conn.close()
         finally:
             broken.write_bytes(original)
@@ -224,13 +241,13 @@ class RestoreTests(unittest.TestCase):
     def test_the_production_database_is_not_touched(self):
         conn = psycopg2.connect(**self.config)
         with conn.cursor() as cur:
-            cur.execute("SELECT to_regclass('flood_road_values')")
+            cur.execute("SELECT to_regclass('flood_segment_metrics')")
             before = cur.fetchone()[0]
         conn.close()
         self.restore()
         conn = psycopg2.connect(**self.config)
         with conn.cursor() as cur:
-            cur.execute("SELECT to_regclass('flood_road_values')")
+            cur.execute("SELECT to_regclass('flood_segment_metrics')")
             self.assertEqual(cur.fetchone()[0], before)
         conn.close()
 

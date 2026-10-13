@@ -5,9 +5,8 @@ example 20260924T164803)
 
 Inputs are the export of the graph's edges (graph_edges.py) and flood_depth_raster_tile
 (scripts/flood_extent/raster_load.py). Each edge is sampled at the midpoint of every metre along it, and
-the value is the deepest sample, in centimetres. This is the statistic of flood_on_roads (decision D-006 in
-artifacts/docs/decisions/decision-log.md), and the sampling SQL is that of scripts/flood_roads/flood_on_roads.py
-with graph_edge in place of road_segment. An edge that touches no wet pixel, or lies outside the tiles, reads 0.
+the value is the deepest sample, in centimetres. This is the statistic of the retired per-piece sampler (decision D-006 in
+artifacts/docs/decisions/decision-log.md, replaced by this table in D-038). An edge that touches no wet pixel, or lies outside the tiles, reads 0.
 
 The file is <out-dir>/<RUN_TS>.bin in the format of edge_depth_table.py, tagged with the graph hash of the
 export. It is written under a temporary name and renamed, so an interrupted build leaves no partial file and
@@ -78,7 +77,7 @@ _TIMESTEPS_SQL = """
 SELECT DISTINCT valid_time_utc FROM flood_depth_raster_tile WHERE run_ts = %(run_ts)s ORDER BY 1
 """
 
-# The same method as flood_on_roads._SAMPLE_SQL. Each sample is matched to its pixel by grid
+# Each sample is matched to its pixel by grid
 # arithmetic and an equality join on the wet pixels, so every tile is unpacked once. Only edges
 # touching a tile with a wet pixel are sampled, and only edges with a wet sample are returned.
 _SAMPLE_SQL = """

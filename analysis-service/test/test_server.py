@@ -73,7 +73,7 @@ def test_the_query_asks_for_the_four_outputs_and_returns_the_run_ts():
     conn = FakeConnection(("20261011T001500",))
 
     assert server.newest_complete_run(conn) == "20261011T001500"
-    assert conn.executed[0][1] == {"outputs": ["depth_raster", "edge_depth", "extent", "road_values"]}
+    assert conn.executed[0][1] == {"outputs": ["depth_raster", "edge_depth", "extent"]}
 
 
 def test_the_query_returns_none_when_no_run_has_all_four():

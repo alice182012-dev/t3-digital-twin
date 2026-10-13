@@ -25,8 +25,8 @@ SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 FLOOD_UTILS_DIR = SCRIPTS_DIR.parent / "floodmap" / "graphhopper-flood-road" / "scripts"
 
 # edge_depth holds the wet edges only, so a dry step of a wet edge has no row. edge_depth_run.valid_times lists every
-# step of the run, and extract fills the missing ones with 0, as flood_road_values did for a wet piece. The edge
-# depth tables hold UTC, and flood_road_values, flood_history, and the metrics already written hold local time.
+# step of the run, and extract fills the missing ones with 0, as the old per-piece rows did for a wet piece. The edge
+# depth tables hold UTC, and flood_history and the metrics already written hold local time.
 VIETNAM_UTC_OFFSET = timedelta(hours=7)
 
 STEPS_SQL = "SELECT valid_times FROM edge_depth_run WHERE run_ts = %(run)s"

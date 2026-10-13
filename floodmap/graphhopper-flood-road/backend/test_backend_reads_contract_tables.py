@@ -299,7 +299,7 @@ def test_tables_read_follows_from_and_join() -> None:
     assert tables_read("WITH w AS (SELECT * FROM base) SELECT * FROM w JOIN other o ON true") == {"base", "other"}
     cte = "WITH a AS NOT MATERIALIZED (SELECT 1 FROM x), b (c) AS (SELECT c FROM a) SELECT * FROM b"
     assert tables_read(cte) == {"x"}
-    assert tables_read("SELECT v.depth FROM flood_road_values AS v WHERE v.depth > 0") == {"flood_road_values"}
+    assert tables_read("SELECT v.depth FROM edge_depth AS v WHERE v.depth > 0") == {"edge_depth"}
     assert tables_read("SELECT * FROM t1 a, t2 AS b, t3") == {"t1", "t2", "t3"}
     assert tables_read("SELECT * FROM generate_series(1, 3) g, ST_MakePoint(1, 2) AS p, tile") == {"tile"}
     assert tables_read("SELECT * FROM unnest(%(lons)s::float8[]) WITH ORDINALITY AS s(lon, ord), tile") == {"tile"}
@@ -322,22 +322,22 @@ def test_tables_read_rejects_an_interpolated_table() -> None:
 
 
 def test_a_table_outside_the_contract_fails_with_its_line() -> None:
-    allowed = frozenset({"flood_road_values"})
-    source = 'X = 1\nQ = """\nSELECT 1\nFROM road_segment\n"""\n'
+    allowed = frozenset({"edge_depth"})
+    source = 'X = 1\nQ = """\nSELECT 1\nFROM flood_segment_metrics\n"""\n'
     assert violations(source, "fake.py", allowed) == [
-        "fake.py:4: reads road_segment, which the core output contract does not list"
+        "fake.py:4: reads flood_segment_metrics, which the core output contract does not list"
     ]
-    concatenated = 'Q = (\n    "SELECT 1 "\n    + "FROM flood_road_values JOIN road_segment ON true"\n)\n'
+    concatenated = 'Q = (\n    "SELECT 1 "\n    + "FROM edge_depth JOIN flood_segment_metrics ON true"\n)\n'
     assert violations(concatenated, "fake.py", allowed) == [
-        "fake.py:2: reads road_segment, which the core output contract does not list"
+        "fake.py:2: reads flood_segment_metrics, which the core output contract does not list"
     ]
 
 
 def test_an_interpolated_table_fails_with_its_line() -> None:
-    allowed = frozenset({"flood_road_values"})
+    allowed = frozenset({"edge_depth"})
     for source in (
-        'T = "flood_road_values"\nQ = f"SELECT 1 FROM {T}"\n',
-        'T = "flood_road_values"\nQ = "SELECT 1 FROM " + T\n',
+        'T = "edge_depth"\nQ = f"SELECT 1 FROM {T}"\n',
+        'T = "edge_depth"\nQ = "SELECT 1 FROM " + T\n',
     ):
         assert violations(source, "fake.py", allowed) == [
             "fake.py:2: a table name in this SQL is interpolated, so the guard cannot check it"

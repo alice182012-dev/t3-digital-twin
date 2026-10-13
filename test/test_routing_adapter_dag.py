@@ -8,7 +8,6 @@ import os
 import sys
 import types
 import unittest
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +22,7 @@ import run_output  # noqa: E402
 from test_run_output import FakeConnection, published  # noqa: E402
 
 PUBLISHED = fakes.FakeAsset("flood_depth_raster_tile")
-ROAD_VALUES = fakes.FakeAsset("flood_road_values")
+EDGE_DEPTH_ROWS = fakes.FakeAsset("edge_depth")
 
 
 def load_routing_module():
@@ -45,17 +44,9 @@ class RoutingAdapterGraphTests(unittest.TestCase):
     def test_dag_id(self):
         self.assertEqual(self.dag.dag_id, "routing_adapter")
 
-    def test_holds_exactly_the_four_routing_tasks(self):
-        self.assertEqual(
-            set(self.dag.tasks),
-            {"load_road_segments", "flood_on_roads", "prune_flood_road_values", "9c_build_edge_depth_table"},
-        )
-
-    def test_the_road_tasks_run_in_order_and_9c_waits_for_nothing(self):
-        self.assertEqual(
-            self.dag.edges,
-            {("load_road_segments", "flood_on_roads"), ("flood_on_roads", "prune_flood_road_values")},
-        )
+    def test_holds_only_the_edge_depth_task(self):
+        self.assertEqual(set(self.dag.tasks), {"9c_build_edge_depth_table"})
+        self.assertEqual(self.dag.edges, set())
 
     def test_runs_on_the_asset_9b_emits(self):
         self.assertEqual(self.dag.kwargs["schedule"], [PUBLISHED])
@@ -73,26 +64,11 @@ class RoutingAdapterGraphTests(unittest.TestCase):
     def test_every_task_runs_in_the_routing_pool(self):
         self.assertEqual({task.kwargs["pool"] for task in self.dag.tasks.values()}, {"routing_adapter"})
 
-    def test_9c_takes_the_pool_slot_before_the_road_tasks(self):
-        weights = {name: task.kwargs.get("priority_weight", 1) for name, task in self.dag.tasks.items()}
+    def test_9c_reads_the_published_asset_and_emits_the_edge_depth_asset(self):
+        task = self.dag.tasks["9c_build_edge_depth_table"]
 
-        self.assertEqual(
-            weights,
-            {"load_road_segments": 1, "flood_on_roads": 1, "prune_flood_road_values": 1, "9c_build_edge_depth_table": 10},
-        )
-
-    def test_the_tasks_that_need_a_run_read_the_published_asset(self):
-        inlets = {name: task.kwargs.get("inlets") for name, task in self.dag.tasks.items()}
-
-        self.assertEqual(
-            inlets,
-            {
-                "load_road_segments": None,
-                "flood_on_roads": [PUBLISHED],
-                "prune_flood_road_values": None,
-                "9c_build_edge_depth_table": [PUBLISHED],
-            },
-        )
+        self.assertEqual(task.kwargs["inlets"], [PUBLISHED])
+        self.assertEqual(task.kwargs["outlets"], [EDGE_DEPTH_ROWS])
 
 
 class PublishedRunTests(unittest.TestCase):
@@ -137,29 +113,12 @@ class RoutingTaskTests(unittest.TestCase):
         self.dag_module.demo_pin = MagicMock()
         self.dag_module.demo_pin.kept_runs.side_effect = lambda cur, run_ts: frozenset({run_ts})
         self.ti = MagicMock()
-        self.context = {"ti": self.ti, "triggering_asset_events": triggered_by("20260924T170639")}
-
-    def test_flood_on_roads_computes_the_run_of_the_event_and_publishes_it(self):
-        flood_on_roads = MagicMock()
-        flood_on_roads.compute.return_value = MagicMock(
-            timesteps=(
-                MagicMock(forecast_time=datetime(2026, 9, 24, 17, 6, 39), rows=3, wet_pieces=2),
-                MagicMock(forecast_time=datetime(2026, 9, 24, 18, 6, 39), rows=3, wet_pieces=0),
-            ),
-            rows=6,
-            target_table="flood_road_values",
-            seconds=1.0,
-        )
-        self.dag_module.flood_on_roads = flood_on_roads
-
-        outlet_events = {ROAD_VALUES: types.SimpleNamespace(extra=None)}
-
-        with patch("builtins.print"):
-            result = self.dag_module.task_flood_on_roads(**self.context, outlet_events=outlet_events)
-
-        self.assertEqual(result, {"run_ts": "20260924T170639", "timesteps": 2, "rows": 6})
-        self.assertEqual(flood_on_roads.compute.call_args.args[1:], ("20260924T170639",))
-        self.assertEqual(outlet_events[ROAD_VALUES].extra, {"run_ts": "20260924T170639"})
+        self.outlet_events = {EDGE_DEPTH_ROWS: types.SimpleNamespace(extra=None)}
+        self.context = {
+            "ti": self.ti,
+            "triggering_asset_events": triggered_by("20260924T170639"),
+            "outlet_events": self.outlet_events,
+        }
 
     def built_table(self, path="/opt/airflow/edge_depth_tables/20260924T170639.bin"):
         return MagicMock(
@@ -266,6 +225,32 @@ class RoutingTaskTests(unittest.TestCase):
         with patch("builtins.print"):
             self.dag_module.task_build_edge_depth_table(**self.context)
 
+    def test_the_event_carries_the_run_ts_once_the_table_is_built_and_published(self):
+        self.build_and_publish(FakeConnection())
+
+        self.assertEqual(self.outlet_events[EDGE_DEPTH_ROWS].extra, {"run_ts": "20260924T170639"})
+
+    def test_an_older_table_still_emits_the_event_because_its_rows_are_committed(self):
+        self.build_and_publish(FakeConnection(), latest="20260924T171639.bin")
+
+        self.assertEqual(self.outlet_events[EDGE_DEPTH_ROWS].extra, {"run_ts": "20260924T170639"})
+
+    def test_a_failed_build_or_publish_emits_no_event(self):
+        for failure in ("build", "publish"):
+            with self.subTest(failure=failure):
+                self.dag_module.build_edge_depth = MagicMock()
+                self.dag_module.publish_edge_depth = MagicMock()
+                if failure == "build":
+                    self.dag_module.build_edge_depth.build_table.side_effect = RuntimeError("no export")
+                else:
+                    self.dag_module.build_edge_depth.build_table.return_value = self.built_table("/tables/x.bin")
+                    self.dag_module.publish_edge_depth.publish_table.side_effect = ValueError("not a valid table")
+
+                with patch("builtins.print"), self.assertRaises((RuntimeError, ValueError)):
+                    self.dag_module.task_build_edge_depth_table(**self.context)
+
+                self.assertIsNone(self.outlet_events[EDGE_DEPTH_ROWS].extra)
+
     def test_a_published_table_records_its_edge_depth_row(self):
         conn = FakeConnection()
 
@@ -288,84 +273,6 @@ class RoutingTaskTests(unittest.TestCase):
             self.build_and_publish(conn, publish_error=ValueError("not a valid table"))
 
         self.assertEqual(published(conn), set())
-
-    def pruned(self, **fields):
-        result = dict(
-            newest_run=datetime(2026, 10, 9, 16, 0), cutoff=datetime(2026, 10, 8, 16, 0),
-            runs_deleted=2, rows_deleted=70000, runs_kept=97,
-        )
-        result.update(fields)
-        return MagicMock(**result)
-
-    def test_prune_keeps_24_hours_by_default_and_reports_what_it_deleted(self):
-        prune = self.dag_module.prune_flood_road_values = MagicMock()
-        prune.prune.return_value = self.pruned()
-
-        with patch("builtins.print"):
-            result = self.dag_module.task_prune_flood_road_values(**self.context)
-
-        self.assertEqual(prune.prune.call_args.args[1:], (24,))
-        self.assertEqual(
-            result,
-            {"newest_run": "2026-10-09T16:00:00", "cutoff": "2026-10-08T16:00:00", "runs_deleted": 2,
-             "rows_deleted": 70000, "runs_kept": 97},
-        )
-
-    def test_prune_of_an_empty_table_reports_zero(self):
-        prune = self.dag_module.prune_flood_road_values = MagicMock()
-        prune.prune.return_value = self.pruned(newest_run=None, cutoff=None, runs_deleted=0, rows_deleted=0, runs_kept=0)
-
-        with patch("builtins.print"):
-            result = self.dag_module.task_prune_flood_road_values(**self.context)
-
-        self.assertEqual(
-            result, {"newest_run": None, "cutoff": None, "runs_deleted": 0, "rows_deleted": 0, "runs_kept": 0}
-        )
-
-    def test_the_prune_window_can_be_set_by_environment(self):
-        with patch.dict(os.environ, {"FLOOD_ROAD_VALUES_KEEP_HOURS": "6"}):
-            dag_module = load_routing_module()
-        dag_module.DB_CONFIG = {}
-        dag_module.prune_flood_road_values = MagicMock()
-        dag_module.prune_flood_road_values.prune.return_value = self.pruned()
-
-        with patch("builtins.print"):
-            dag_module.task_prune_flood_road_values(**self.context)
-
-        self.assertEqual(dag_module.prune_flood_road_values.prune.call_args.args[1:], (6,))
-
-    def test_a_prune_window_that_is_not_a_positive_integer_fails_the_task_and_deletes_nothing(self):
-        for value in ("0", "-3", "1.5", "abc", ""):
-            with self.subTest(value=value):
-                with patch.dict(os.environ, {"FLOOD_ROAD_VALUES_KEEP_HOURS": value}):
-                    dag_module = load_routing_module()
-                dag_module.DB_CONFIG = {}
-                dag_module.prune_flood_road_values = MagicMock()
-
-                with patch("builtins.print"), self.assertRaisesRegex(ValueError, "FLOOD_ROAD_VALUES_KEEP_HOURS"):
-                    dag_module.task_prune_flood_road_values(**self.context)
-
-                dag_module.prune_flood_road_values.prune.assert_not_called()
-
-    def test_load_road_segments_loads_the_production_roads_file(self):
-        loader = self.dag_module.load_road_segments = MagicMock(
-            DEFAULT_ROADS_PATH="/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson"
-        )
-        loader.load.return_value = MagicMock(inserted=0, updated=0, deleted=0, total=35652)
-
-        with patch.dict(os.environ), patch("builtins.print"):
-            os.environ.pop("ROADS_GEOJSON_PATH", None)
-            result = self.dag_module.task_load_road_segments(**self.context)
-
-        self.assertEqual(result, {"inserted": 0, "updated": 0, "deleted": 0, "total": 35652})
-        self.assertEqual(loader.load.call_args.args[1], "/opt/airflow/data/mapping/inputs/toa-do-duong-hanoi.geojson")
-
-    def test_a_bad_roads_file_fails_the_task(self):
-        self.dag_module.load_road_segments = MagicMock(DEFAULT_ROADS_PATH="/x.geojson")
-        self.dag_module.load_road_segments.load.side_effect = ValueError("feature 0 has no properties['@id']")
-
-        with patch("builtins.print"), self.assertRaises(ValueError):
-            self.dag_module.task_load_road_segments(**self.context)
 
 
 if __name__ == "__main__":

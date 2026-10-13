@@ -15,7 +15,7 @@ import psycopg2
 
 # The values of run_output.Output in scripts/database/run_output.py. The image does not ship scripts/, so the names
 # are repeated here, and test/test_server.py fails when the two differ.
-CORE_OUTPUTS = frozenset({"depth_raster", "extent", "road_values", "edge_depth"})
+CORE_OUTPUTS = frozenset({"depth_raster", "extent", "edge_depth"})
 
 READER_CONFIG = {
     "host": os.environ.get("POSTGRES_HOST", "storage-postgres"),

@@ -52,7 +52,6 @@ One row is the step of the demo flood. The table has at most one row.
 - **Retention.** The row stays until it is replaced.
   Every prune of a run table keeps the pinned run, and no prune deletes the row:
   `flood_depth_raster_tile`, `flood_extent_step`, `flood_extent_polygon`, `flood_run_output`, `edge_depth` and `edge_depth_run`, the tiles in MinIO, and the edge depth file of the run.
-  The prune of `flood_road_values` does not, because [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes that table.
 - **Not yet true.** The tile build tiles only the first two steps of a run, so the pinned step has tiles only when it is one of them ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] rebuilds the others).
 
 ### edge_depth
@@ -175,76 +174,6 @@ One row says that one forecast step of one run is fully published: its tiles are
   A rewrite sets `published_at` to `NOW()` again.
 - **Retention.** The newest 8 runs by `run_ts` (`prune_step_rows`, `publish.py:113-132`).
 
-### flood_road_file
-
-One row registers one run of `flood_on_roads`, whether or not the run has any wet road piece.
-
-| Column | Type | Nullable |
-| ------ | ---- | -------- |
-| `id` | `bigint` | no |
-| `timestamp` | `timestamp without time zone` | no |
-| `source_file` | `text` | no |
-| `geojson_type` | `text` | yes |
-| `feature_count` | `integer` | yes |
-| `created_at` | `timestamp without time zone` | yes |
-| `forecast_times` | `timestamp without time zone[]` | yes |
-
-- **Key.** The primary key is `id`.
-  `source_file` is unique, and it is `flood_on_roads_<run_ts>`.
-- **Primary key columns.** `id`.
-- **Unique columns.** `source_file`.
-- **Time.** `timestamp` is the run, in Vietnam local time (+07) without an offset, the same value as `flood_road_values.timestamp`.
-  `forecast_times` holds the forecast times the run covers, in the same local time as `flood_road_values.forecast_time`.
-- **Why it exists.** A run in which no road piece is wet writes no rows to `flood_road_values`, so the registry is the only record that the run covers a time.
-  The map overlay and the route fallback no longer read it (`US-119`).
-- **Which rows exist.** The writer registers every run, including a run with `feature_count` 0.
-  A run from the older GeoJSON chain, `scripts/database/geojson_to_pg.py`, has `forecast_times` NULL until `create_flood_road_tables.py` backfills it from its rows.
-  A shadow run (`flood_on_roads.py --target`) registers no times.
-- **Writer.** Task `flood_on_roads` of the DAG `routing_adapter`, in the same transaction as its rows in `flood_road_values`.
-- **Retention.** The prune of `flood_road_values` deletes the registry rows of the runs it deletes.
-  A run with no rows in `flood_road_values` is not found by that prune, so its registry row stays.
-  The rows are small, and an old row covers only past times.
-
-### flood_road_values
-
-One row is the flood depth of one road piece at one forecast time, from one run.
-
-| Column | Type | Nullable |
-| ------ | ---- | -------- |
-| `id` | `bigint` | no |
-| `file_id` | `bigint` | no |
-| `timestamp` | `timestamp without time zone` | no |
-| `road_name` | `text` | yes |
-| `forecast_time` | `timestamp without time zone` | no |
-| `depth` | `double precision` | yes |
-| `geom` | `jsonb` | yes |
-| `created_at` | `timestamp without time zone` | yes |
-| `geom_4326` | `geometry(Geometry,4326)` | yes |
-| `segment_id` | `text` | yes |
-
-- **Key.** The primary key is `id`.
-  `file_id` references `flood_road_file.id` with `ON DELETE CASCADE`.
-  No constraint makes (`timestamp`, `forecast_time`, `segment_id`) unique.
-  The writer keeps it unique: it deletes the run's rows for those forecast times and inserts new ones in one transaction, under an advisory lock (`scripts/flood_roads/flood_on_roads.py:176-224`).
-- **Primary key columns.** `id`.
-- **Time.** `timestamp` is the run, and `forecast_time` is the forecast step.
-  Both are Vietnam local time (+07) without an offset, not UTC.
-  `timestamp` is `run_ts` read as a time, and `forecast_time` is `valid_time_utc` plus 7 hours (`flood_on_roads.py:30-32`, `flood_on_roads.py:59-61`, `flood_on_roads.py:211`).
-- **Units.** `depth` is in metres.
-  It is the deepest of the samples taken every 1 m along the piece (decision D-006, `flood_on_roads.py:1-11`).
-- **CRS.** `geom_4326` is EPSG:4326.
-  `geom` is the same line as GeoJSON text.
-- **Which rows exist.** A piece that is wet at any step of a run gets a row at every step of that run, with 0 where it is dry.
-  A piece that is dry at every step has no row (`flood_on_roads.py:148-167`).
-  `segment_id` is the id of the piece in `road_segment`.
-  It is NULL on rows from the older GeoJSON chain, `scripts/database/geojson_to_pg.py`, which `flood_mapping_full` does not call.
-- **Writer.** Task `flood_on_roads` of the DAG `routing_adapter` calls `flood_on_roads.compute`.
-  It runs on the `FLOOD_DEPTH_RASTER` event of `9b_load_depth_raster` and after `load_road_segments` (`dags/routing_adapter_dag.py:145-159`, `dags/routing_adapter_dag.py:198`).
-- **Retention.** None found.
-  No code in `dags/` or `scripts/` deletes old runs from this table, so it keeps every run.
-  This is unverified on the live server.
-  `US-086` (Sprint 12, not started) adds a prune.
-
 ### flood_run_output
 
 One row says that one output of one run is published.
@@ -257,11 +186,10 @@ One row says that one output of one run is published.
 
 - **Key.** The primary key is (`run_ts`, `output`).
 - **Primary key columns.** `run_ts`, `output`.
-- **Outputs.** The `output` column holds one of four values.
+- **Outputs.** The `output` column holds one of three values.
   Each value names the task that writes its row.
   - `depth_raster`: task `9b_load_depth_raster` of `flood_mapping_full`, in the same transaction as the tiles in `flood_depth_raster_tile`.
   - `extent`: task `9_build_flood_tiles`, after the last tile step.
-  - `road_values`: task `flood_on_roads` of `routing_adapter`, in the same transaction as its rows in `flood_road_values`.
   - `edge_depth`: task `9c_build_edge_depth_table`, after the file rename, when `latest` names that file.
 - **Writer.** Each task writes its row only after its output is published.
   A failed task writes no row for that run.
@@ -361,7 +289,6 @@ Two exceptions apply.
   It is the +07 time of the run's earliest depth file, in the form `YYYYMMDDTHHMMSS` (`run_ts_for_depth_dir` in `flood_extent.py:334-342`).
   It is fixed width, so its text order is its time order.
 - **Names.** The depth file names, the tile object names, and the `.bin` file names use the same +07 form.
-- **Exception: `flood_road_values`.** `timestamp` and `forecast_time` are +07 without an offset (see the table section earlier on this page).
 - **`created_at` and `published_at`.** `NOW()` cast to `timestamp without time zone`, so they use the database session's time zone.
   The repository does not set that time zone, so this page does not verify that it is UTC.
 
@@ -375,8 +302,9 @@ The row covers only the outputs of task `9_build_flood_tiles`.
 Task `9b_load_depth_raster` writes `flood_depth_raster_tile` in parallel and can finish before or after it.
 When 9b succeeds, it emits the Airflow asset `flood_depth_raster_tile` with `{"run_ts": "<run_ts>"}` in the event's `extra` (`dags/core_assets.py`, `US-073`).
 The event says that every timestep of that run is in `flood_depth_raster_tile`.
-The DAG `routing_adapter` runs on it, and its tasks `flood_on_roads` and `9c_build_edge_depth_table` write the other two outputs for that run.
-A consumer outside Airflow reads `flood_run_output` instead of polling three places: the rows of `flood_depth_raster_tile`, the rows of `flood_road_values`, and the file that `latest` names.
+The DAG `routing_adapter` runs on it, and its task `9c_build_edge_depth_table` writes the `edge_depth` output for that run.
+Then `9c` emits the Airflow asset `edge_depth` (`EDGE_DEPTH_ROWS` in `dags/core_assets.py`) with `{"run_ts": "<run_ts>"}`, after the rows of `edge_depth` and `edge_depth_run` are committed, and the DAG `flood_history` runs on that event.
+A consumer outside Airflow reads `flood_run_output` instead of polling three places: the rows of `flood_depth_raster_tile`, the rows of `flood_extent_polygon`, and the file that `latest` names.
 `artifacts/TODOS.md` records `routing_adapter` as running on the server from 2026-10-07 16:00 +07.
 The timing of the asset trigger on the server is still being read (`US-073`).
 
@@ -388,7 +316,6 @@ The timing of the asset trigger on the server is still being read (`US-073`).
 | `flood_extent_polygon` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
 | `flood_extent_step` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
 | Tiles in `flood-extent` | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, `publish.py` |
-| `flood_road_values` | Rows older than `FLOOD_ROAD_VALUES_KEEP_HOURS` (default 24) before the newest run, pruned by the task `prune_flood_road_values` (US-086, D-017) | 45 runs and 1,087,512 rows after the first prune on 2026-10-09, from 413 runs and 14,836,828 rows (7,398 MB). After `VACUUM FULL` the table with its indexes is 537 MB |
 | `flood_run_output` (US-108) | Newest 8 runs | `FLOOD_EXTENT_KEEP_RUNS`, task `9_build_flood_tiles` |
 | `edge_depth`, `edge_depth_run` | The 24 hours before the newest run | `EDGE_DEPTH_KEEP_HOURS`, `edge_depth_rows.py` |
 | `graph_edge` | The loaded graph | `graph_edges.py` |
@@ -418,7 +345,7 @@ The parser fails when a role lists no table, lists a table this page does not de
 - **New tables.** A table the writer creates later is not readable by any role, because the database has no default privileges.
   `TRUNCATE` keeps the grant.
 - **Test.** `floodmap/graphhopper-flood-road/backend/test_reader_role.py` connects with the backend's settings, `POSTGRES_USER` and `POSTGRES_PASSWORD`.
-  It checks that `SELECT` works on each table of the role, and that writes, a read of `road_segment`, and a read of a contract table outside the role's list fail with a permission error.
+  It checks that `SELECT` works on each table of the role, and that writes, a read of `flood_segment_metrics` (a table outside every contract list), and a read of a contract table outside the role's list fail with a permission error.
 
 ### routing_reader
 
@@ -431,8 +358,6 @@ Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the s
 - `flood_depth_raster_tile`
 - `flood_extent_polygon`
 - `flood_extent_step`
-- `flood_road_file`
-- `flood_road_values`
 - `flood_run_output`
 - `forecast_mode`
 - `graph_edge`
@@ -441,9 +366,8 @@ Its variables are `ROUTING_READER_USER` and `ROUTING_READER_PASSWORD`, and the s
 
 An analysis application connects as this role. The service that runs it is described in [[analysis-service]].
 Its variables are `ANALYSIS_READER_USER` and `ANALYSIS_READER_PASSWORD`.
-It reads the flood results and not the road graph, so `graph_edge` and `road_segment` are not on its list.
+It reads the flood results and not the road graph, so `graph_edge` is not on its list.
 
-- `flood_road_values`
 - `flood_extent_step`
 - `flood_extent_polygon`
 - `flood_depth_raster_tile`

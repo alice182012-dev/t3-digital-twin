@@ -44,8 +44,7 @@ SELECT create_hypertable(
     'institution_histogram_bar', by_range('issued_at'), if_not_exists => TRUE
 );
 
--- constant_cycle's per-segment series already lives in storage-postgres
--- (flood_road_values), so only background_cycle's is stored here.
+-- Only background_cycle's per-segment series is stored here. constant_cycle's is in depth_history.
 CREATE TABLE IF NOT EXISTS background_forecast_depth (
     segment_id TEXT NOT NULL,
     issued_at TIMESTAMPTZ NOT NULL,
@@ -63,7 +62,7 @@ SELECT create_hypertable(
     'background_forecast_depth', by_range('issued_at'), if_not_exists => TRUE
 );
 
--- US-122 (D-038): depth_history is keyed by graph_edge.edge_key, not by the road_segment piece id. A table made before
+-- US-122 (D-038): depth_history is keyed by graph_edge.edge_key, not by a road piece id. A table made before
 -- that has segment_id, so rename it first. Its rows hold piece ids ('way#index'), which cannot be mapped to edges, and
 -- they came from test rain (the owner's decision of 2026-10-12). They are deleted with their history_moment rows, so
 -- no moment reads as dry for an edge key without a run behind it. Rebuild them from edge_depth runs.

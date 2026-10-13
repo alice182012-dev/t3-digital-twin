@@ -16,7 +16,7 @@ import os
 
 from test_core_contract import CONTRACT_TABLES, READER_ROLES
 
-OUTSIDE_THE_CONTRACT = "road_segment"
+OUTSIDE_THE_CONTRACT = "flood_segment_metrics"
 # Inside the model border, see .claude/CLAUDE.md.
 LON, LAT = 105.75, 21.0
 
@@ -95,8 +95,15 @@ def check_reads_outside_the_role_are_refused(conn, role: str) -> None:
 
 
 def test_each_role_is_refused_the_tables_outside_its_list() -> None:
-    assert tables_outside("routing_reader") == ["road_segment"]
-    assert tables_outside("analysis_reader") == ["graph_edge", "road_segment"]
+    assert tables_outside("routing_reader") == ["flood_segment_metrics"]
+    assert tables_outside("analysis_reader") == [
+        "demo_pin",
+        "edge_depth",
+        "edge_depth_run",
+        "flood_segment_metrics",
+        "forecast_mode",
+        "graph_edge",
+    ]
 
 
 def main() -> int:

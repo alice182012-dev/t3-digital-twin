@@ -11,7 +11,7 @@ import sys
 import os
 import psycopg2
 
-from core_assets import FLOOD_DEPTH_RASTER, FLOOD_ROAD_VALUES
+from core_assets import EDGE_DEPTH_ROWS, FLOOD_DEPTH_RASTER
 
 
 BASE_PATH = "/opt/airflow"
@@ -22,8 +22,6 @@ sys.path.append(SCRIPTS_PATH)
 sys.path.append(os.path.join(SCRIPTS_PATH, "database"))
 # edge_depth/*.py import each other as top-level modules.
 sys.path.append(os.path.join(SCRIPTS_PATH, "edge_depth"))
-# prune_flood_road_values imports flood_on_roads as a top-level module.
-sys.path.append(os.path.join(SCRIPTS_PATH, "flood_roads"))
 
 try:
     import build_edge_depth
@@ -31,9 +29,6 @@ try:
     import publish_edge_depth
     import run_output
     from db_config import DB_CONFIG
-    from roads import load_road_segments
-    from flood_roads import flood_on_roads
-    import prune_flood_road_values
 except ImportError as e:
     print(f"❌ Import error: {e}")
 
@@ -45,12 +40,10 @@ except ImportError as e:
 EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_export"))
 EDGE_TABLE_DIR = os.getenv("EDGE_TABLE_DIR", os.path.join(BASE_PATH, "edge_depth_tables"))
 EDGE_TABLE_KEEP_RUNS = int(os.getenv("EDGE_TABLE_KEEP_RUNS", "8"))
-# The runs of edge_depth that stay: those within this many hours before the newest run (US-118), like FLOOD_ROAD_VALUES_KEEP_HOURS.
+# The runs of edge_depth that stay: those within this many hours before the newest run (US-118).
 EDGE_DEPTH_KEEP_HOURS = int(os.getenv("EDGE_DEPTH_KEEP_HOURS", "24"))
-# Parsed when prune_flood_road_values runs, so a bad value fails that task and not the whole DAG file.
-FLOOD_ROAD_VALUES_KEEP_HOURS = os.getenv("FLOOD_ROAD_VALUES_KEEP_HOURS", "24")
 # One slot, so routing holds at most one of the worker's Celery slots and the core's depth and tile tasks keep the
-# rest. It also keeps two routing runs from writing road_segment at once. Airflow 3 forbids database access at
+# rest. Airflow 3 forbids database access at
 # DAG-parse time, so the pool is created once by hand (README, "Create the Airflow pools").
 POOL_ROUTING = "routing_adapter"
 
@@ -86,7 +79,10 @@ def task_build_edge_depth_table(**kwargs):
     loaded under the same run name, and the export of the graph's edges from EDGE_EXPORT_DIR.
 
     Its last write is the run's `edge_depth` row in flood_run_output, only when `latest` names this run's table.
-    An older run that finishes after a newer one leaves `latest` alone, so its table is not the published one."""
+    An older run that finishes after a newer one leaves `latest` alone, so its table is not the published one.
+
+    On success it emits EDGE_DEPTH_ROWS with the run_ts, which schedules flood_history_dag.py. The `edge_depth` rows
+    and the registry row are committed inside build_table, before the event, so flood_history never runs ahead of them."""
     ti = kwargs["ti"]
     run_ts = published_run_ts(kwargs)
 
@@ -143,87 +139,8 @@ def task_build_edge_depth_table(**kwargs):
                 run_output.record(cur, run_ts, run_output.Output.EDGE_DEPTH)
         finally:
             conn.close()
+    kwargs["outlet_events"][EDGE_DEPTH_ROWS].extra = {"run_ts": run_ts}
     return report
-
-
-def task_load_road_segments(**kwargs):
-    """Makes road_segment match the roads file. A file that has not changed reports zero changes;
-    a bad file raises before anything is written."""
-    roads_path = os.getenv("ROADS_GEOJSON_PATH", load_road_segments.DEFAULT_ROADS_PATH)
-    print(f"🛣️ Loading road pieces into road_segment: {roads_path}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = load_road_segments.load(conn, roads_path)
-    finally:
-        conn.close()
-    print(
-        f"✅ road_segment: {result.inserted} inserted, {result.updated} updated, "
-        f"{result.deleted} deleted, {result.total} rows total"
-    )
-    if result.updated or result.deleted:
-        # See artifacts/docs/concepts/road-segment-table.md, "Limits of the id".
-        print("⚠️ Existing segment_id values now describe different road; older per-piece results no longer line up")
-    return {
-        "inserted": result.inserted,
-        "updated": result.updated,
-        "deleted": result.deleted,
-        "total": result.total,
-    }
-
-
-def task_flood_on_roads(**kwargs):
-    """Writes this run's per-piece flood depth into flood_road_values, the table routing reads,
-    from the tiles task 9b loaded under the same run name. On success it emits FLOOD_ROAD_VALUES with the run_ts,
-    which schedules flood_history_dag.py."""
-    run_ts = published_run_ts(kwargs)
-
-    print(f"🌊 Computing flood on roads for run {run_ts}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = flood_on_roads.compute(conn, run_ts)
-    finally:
-        conn.close()
-    for step in result.timesteps:
-        print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
-    print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
-    kwargs["outlet_events"][FLOOD_ROAD_VALUES].extra = {"run_ts": run_ts}
-    return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
-
-
-def flood_road_values_keep_hours():
-    try:
-        hours = int(FLOOD_ROAD_VALUES_KEEP_HOURS)
-    except ValueError:
-        hours = 0
-    if hours < 1:
-        raise ValueError(
-            f"❌ FLOOD_ROAD_VALUES_KEEP_HOURS must be a positive integer, got {FLOOD_ROAD_VALUES_KEEP_HOURS!r}"
-        )
-    return hours
-
-
-def task_prune_flood_road_values(**kwargs):
-    """Deletes the runs of flood_road_values older than FLOOD_ROAD_VALUES_KEEP_HOURS before its newest run
-    (US-086, D-017)."""
-    keep_hours = flood_road_values_keep_hours()
-
-    print(f"🧹 Pruning flood_road_values to the {keep_hours} h before its newest run")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = prune_flood_road_values.prune(conn, keep_hours)
-    finally:
-        conn.close()
-    print(
-        f"✅ Deleted {result.runs_deleted} runs ({result.rows_deleted} rows) older than {result.cutoff}; "
-        f"{result.runs_kept} runs kept, newest {result.newest_run}"
-    )
-    return {
-        "newest_run": result.newest_run.isoformat() if result.newest_run else None,
-        "cutoff": result.cutoff.isoformat() if result.cutoff else None,
-        "runs_deleted": result.runs_deleted,
-        "rows_deleted": result.rows_deleted,
-        "runs_kept": result.runs_kept,
-    }
 
 
 default_args = {
@@ -237,33 +154,16 @@ default_args = {
 with DAG(
     "routing_adapter",
     default_args=default_args,
-    description="Routing inputs (road pieces, flood on roads, edge depth table) for each run flood_mapping_full publishes",
+    description="Routing input (edge depth table and rows) for each run flood_mapping_full publishes",
     schedule=[FLOOD_DEPTH_RASTER],
     start_date=datetime(2026, 2, 5),
     catchup=False,
     tags=["routing", "flood"],
 ) as dag:
-    t_roads = PythonOperator(
-        task_id="load_road_segments", python_callable=task_load_road_segments, pool=POOL_ROUTING
-    )
-    t_flood_roads = PythonOperator(
-        task_id="flood_on_roads",
-        python_callable=task_flood_on_roads,
-        inlets=[FLOOD_DEPTH_RASTER],
-        outlets=[FLOOD_ROAD_VALUES],
-        pool=POOL_ROUTING,
-    )
-    t_prune = PythonOperator(
-        task_id="prune_flood_road_values", python_callable=task_prune_flood_road_values, pool=POOL_ROUTING
-    )
     t9c = PythonOperator(
         task_id="9c_build_edge_depth_table",
         python_callable=task_build_edge_depth_table,
         inlets=[FLOOD_DEPTH_RASTER],
+        outlets=[EDGE_DEPTH_ROWS],
         pool=POOL_ROUTING,
-        # Takes the pool's one slot before the road tasks: 9c must end within 5 minutes of 3_calculate_depth
-        # (US-045), and the road tasks have no limit.
-        priority_weight=10,
     )
-
-    t_roads >> t_flood_roads >> t_prune

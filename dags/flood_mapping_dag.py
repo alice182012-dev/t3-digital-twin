@@ -28,10 +28,8 @@ try:
     import download_result
     import calculate_depth
     import netcdf_input
-    import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
-    import database.create_road_segment_table
     import database.create_graph_edge_table
     import database.create_edge_depth_tables
     import database.create_flood_run_output_table
@@ -224,10 +222,8 @@ def task_archive_results(**kwargs):
 
 def task_ensure_schema(**kwargs):
     print("🛠️ 0b. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
-    database.create_flood_road_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
-    database.create_road_segment_table.main()
     database.create_graph_edge_table.main()
     database.create_edge_depth_tables.main()
     database.create_flood_run_output_table.main()

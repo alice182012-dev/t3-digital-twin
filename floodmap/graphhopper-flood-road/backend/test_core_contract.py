@@ -22,8 +22,6 @@ CONTRACT_TABLES = {
     "flood_depth_raster_tile",
     "flood_extent_polygon",
     "flood_extent_step",
-    "flood_road_file",
-    "flood_road_values",
     "flood_run_output",
     "forecast_mode",
     "graph_edge",
@@ -32,7 +30,7 @@ CONTRACT_TABLES = {
 READER_ROLES = {
     "routing_reader": frozenset(CONTRACT_TABLES),
     "analysis_reader": frozenset(
-        {"flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "flood_road_values", "flood_run_output"}
+        {"flood_depth_raster_tile", "flood_extent_polygon", "flood_extent_step", "flood_run_output"}
     ),
 }
 
@@ -246,8 +244,8 @@ def test_rejects_a_role_with_no_table() -> None:
 
 
 def test_rejects_a_table_the_contract_does_not_describe() -> None:
-    assert _reader_roles_error("### reader_three\n\n- `road_segment`\n") == (
-        "line 51: role reader_three lists road_segment, which the contract does not describe"
+    assert _reader_roles_error("### reader_three\n\n- `flood_segment_metrics`\n") == (
+        "line 51: role reader_three lists flood_segment_metrics, which the contract does not describe"
     )
 
 

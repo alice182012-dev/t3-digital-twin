@@ -1,7 +1,7 @@
 """Loads calculate_depth.py's per-timestep depth.tif files into PostGIS as queryable raster tiles.
 
-GET /flood/points needs the exact depth at an arbitrary lat/lon, which flood_road_values (depth at
-road segments only) and flood_extent_polygon (banded ranges only) can't answer. depth.tif is
+GET /flood/points needs the exact depth at an arbitrary lat/lon, which the edge depth rows (depth along
+road edges only) and flood_extent_polygon (banded ranges only) can't answer. depth.tif is
 always the source of truth for depth values, so this loads it into `flood_depth_raster_tile`,
 cut into TILE_SIZE x TILE_SIZE tiles. A whole timestep is about 10000 x 5500 pixels (209 MB
 decoded), and ST_Value on a one-row raster unpacks all of it per lookup; a lookup that selects

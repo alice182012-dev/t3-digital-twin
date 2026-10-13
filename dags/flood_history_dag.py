@@ -1,9 +1,8 @@
 """The per-edge depth history in TimescaleDB, one load per run (US-106, US-122, D-032, D-038).
 
-`flood_on_roads` of `routing_adapter` emits FLOOD_ROAD_VALUES, and this DAG runs on that event. It copies the run's
-rows of edge_depth into depth_history and the run's moments into history_moment (scripts/flood_history/load_run.py).
-Task 9c writes those rows and has no ordering against flood_on_roads, so a run whose 9c has not written its registry
-row fails here until a retry finds it. edge_depth keeps the 24 hours before the newest run, so the run is still
+`9c_build_edge_depth_table` of `routing_adapter` emits EDGE_DEPTH_ROWS, and this DAG runs on that event. It copies the
+run's rows of edge_depth into depth_history and the run's moments into history_moment (scripts/flood_history/load_run.py).
+9c emits the event after it commits the rows and the registry row of the run, so the load always finds them. edge_depth keeps the 24 hours before the newest run, so the run is still
 there when this DAG reads it. A failure here touches neither the core run nor routing.
 """
 from airflow import DAG
@@ -12,7 +11,7 @@ from datetime import datetime, timedelta
 import sys
 import os
 
-from core_assets import FLOOD_ROAD_VALUES
+from core_assets import EDGE_DEPTH_ROWS
 
 
 SCRIPTS_PATH = os.path.join("/opt/airflow", "scripts")
@@ -28,21 +27,21 @@ except ImportError as e:
 
 
 def published_runs(kwargs):
-    """The runs this DAG run loads, from the `run_ts` in the extra of the FLOOD_ROAD_VALUES events, oldest first.
+    """The runs this DAG run loads, from the `run_ts` in the extra of the EDGE_DEPTH_ROWS events, oldest first.
 
     Unlike routing_adapter_dag.published_run_ts, every run of folded events is loaded, not only the newest: routing
     needs only the newest run, but a run left out of the history leaves its early moments unknown. The load order does
     not change the result, since the later issued_at wins each moment. A manual run has no triggering event and loads
-    the newest run flood_on_roads ever published.
+    the newest run 9c ever published.
     """
     triggering = kwargs.get("triggering_asset_events") or {}
     events = [event for asset_events in triggering.values() for event in asset_events]
     manual = not events
     if manual:
-        events = kwargs["inlet_events"][FLOOD_ROAD_VALUES]
+        events = kwargs["inlet_events"][EDGE_DEPTH_ROWS]
     runs = sorted({event.extra["run_ts"] for event in events if "run_ts" in (event.extra or {})})
     if not runs:
-        raise ValueError(f"❌ No {FLOOD_ROAD_VALUES.name} event carries a run_ts")
+        raise ValueError(f"❌ No {EDGE_DEPTH_ROWS.name} event carries a run_ts")
     if manual:
         runs = runs[-1:]
     print(f"📨 Runs {runs} from the {'newest published event' if manual else 'triggering events'}")
@@ -82,8 +81,8 @@ default_args = {
 with DAG(
     "flood_history",
     default_args=default_args,
-    description="Per-piece depth history in TimescaleDB for each run routing_adapter writes",
-    schedule=[FLOOD_ROAD_VALUES],
+    description="Per-edge depth history in TimescaleDB for each run routing_adapter writes",
+    schedule=[EDGE_DEPTH_ROWS],
     start_date=datetime(2026, 2, 5),
     catchup=False,
     tags=["flood", "history", "timescaledb"],
@@ -91,5 +90,5 @@ with DAG(
     PythonOperator(
         task_id="load_depth_history",
         python_callable=task_load_depth_history,
-        inlets=[FLOOD_ROAD_VALUES],
+        inlets=[EDGE_DEPTH_ROWS],
     )

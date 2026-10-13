@@ -203,16 +203,19 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         with patch("builtins.print"):
             self.dag_module.task_ensure_schema()
 
-        database.create_timescale_tables.main.assert_called_once_with()
-        database.create_flood_road_tables.main.assert_called_once_with()
-        database.create_flood_extent_tables.main.assert_called_once_with()
-        database.create_flood_depth_raster_tables.main.assert_called_once_with()
-        database.create_road_segment_table.main.assert_called_once_with()
-        database.create_graph_edge_table.main.assert_called_once_with()
-        database.create_edge_depth_tables.main.assert_called_once_with()
-        database.create_flood_run_output_table.main.assert_called_once_with()
-        database.create_demo_pin_table.main.assert_called_once_with()
-        database.create_forecast_mode_table.main.assert_called_once_with()
+        self.assertEqual(
+            sorted(call[0] for call in database.mock_calls),
+            [
+                "create_demo_pin_table.main",
+                "create_edge_depth_tables.main",
+                "create_flood_depth_raster_tables.main",
+                "create_flood_extent_tables.main",
+                "create_flood_run_output_table.main",
+                "create_forecast_mode_table.main",
+                "create_graph_edge_table.main",
+                "create_timescale_tables.main",
+            ],
+        )
 
     def test_no_core_task_waits_on_a_routing_task(self):
         """A DAG run takes its state from its leaf tasks. The leaves are core tasks only, so a routing failure

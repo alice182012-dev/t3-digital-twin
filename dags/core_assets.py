@@ -10,12 +10,13 @@ ended. Its `extra` is `{"run_ts": "<run_ts>", "depth_dir": "<folder of the depth
 worker's disk, so a consumer reads them from `depth_dir` and must not delete them: `flood_tiles` owns the age-based
 cleanup (core_paths.py).
 
-`flood_on_roads` of `routing_adapter` emits FLOOD_ROAD_VALUES once a run's per-piece depths are in `flood_road_values`.
-Its `extra` is `{"run_ts": "<run_ts>"}`. `flood_history` runs on it and copies the run into TimescaleDB.
+`9c_build_edge_depth_table` of `routing_adapter` emits EDGE_DEPTH_ROWS once a run's rows are in `edge_depth` and its
+registry row is in `edge_depth_run`. Its `extra` is `{"run_ts": "<run_ts>"}`. `flood_history` runs on it and copies the
+run into TimescaleDB.
 """
 from airflow.sdk import Asset
 
 
 FLOOD_DEPTH_RASTER = Asset("flood_depth_raster_tile")
 FLOOD_DEPTH_FILES = Asset("flood_depth_files")
-FLOOD_ROAD_VALUES = Asset("flood_road_values")
+EDGE_DEPTH_ROWS = Asset("edge_depth")

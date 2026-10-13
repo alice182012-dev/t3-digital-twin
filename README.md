@@ -35,12 +35,9 @@ flowchart LR
   TILES -->|"flood_extent_polygon, flood_extent_step"| PG[("storage-postgres, PostGIS")]
   RASTER -->|"flood_depth_raster_tile"| PG
   RASTER -.->|"asset event, run_ts"| ADAPTER["routing_adapter DAG"]
-  ADAPTER --> ROADS["load_road_segments"]
-  ROADS -->|"road_segment"| PG
-  ADAPTER --> FOR["flood_on_roads"]
-  FOR -->|"flood_road_values"| PG
   ADAPTER --> EDGE["9c_build_edge_depth_table"]
   EDGE -->|"edge depth table"| VOL[("edge-depth-tables volume")]
+  EDGE -->|"edge_depth, edge_depth_run"| PG
   PG --> BE["floodmap-backend"]
   BE -->|"route request with custom_model"| GH["graphhopper"]
   GH --> BE
@@ -65,7 +62,7 @@ succeeds. Set `FLOOD_TEST_RAIN_MM_HR` to use a fixed rain rate instead of callin
 Three Airflow pools keep runs from blocking each other. `threedi_trigger` (2 slots) holds the rain
 check and the 3Di trigger, which wait on remote APIs. `depth_calc` (1 slot) holds the CPU-heavy
 depth calculation, so two runs never compute depth at the same time. `routing_adapter` (1 slot)
-holds the three routing tasks, so routing takes at most one worker slot. Airflow 3 does not let a
+holds the routing task, so routing takes at most one worker slot. Airflow 3 does not let a
 DAG file create a pool, so you create all three once by hand. See
 [Create the Airflow pools](#create-the-airflow-pools).
 
@@ -101,19 +98,15 @@ to EPSG:4326 and loads it into `flood_depth_raster_tile` as 256 by 256 pixel til
 the newest 8 runs by default (`FLOOD_RASTER_KEEP_RUNS`). The backend reads this table for the depth
 at one point and for the depth along a route over time.
 
-### Flood on roads writes the table routing reads
+### The edge depth table holds the flood depth routing reads
 
-`load_road_segments` makes the `road_segment` table match the roads file
-`data/mapping/inputs/toa-do-duong-hanoi.geojson`. Each OSM way is cut into pieces of at most 50 m,
-with a `segment_id` such as `way/11835354#0`. An unchanged file reports zero changes.
+`9c_build_edge_depth_table` runs `scripts/edge_depth/build_edge_depth.py` after the raster load.
+It samples each GraphHopper edge once per metre against the run's raster tiles and keeps the deepest
+sample. It writes the depths to the binary table that the routing engine reads and, in the same
+pass, the wet edges to `edge_depth` with one registry row per run in `edge_depth_run`. When both are
+committed, the task emits the asset event that schedules the `flood_history` DAG.
 
-`flood_on_roads` runs `scripts/flood_roads/flood_on_roads.py` after the raster load. It samples
-each road piece once per metre against the run's raster tiles, and it writes the deepest sample as
-the piece's `depth` in `flood_road_values`. A piece that is wet at any timestep gets a row at every
-timestep, with depth 0 when it is dry.
-
-For the details, see [`flood-on-roads.md`](artifacts/docs/concepts/flood-on-roads.md) and
-[`road-segment-table.md`](artifacts/docs/concepts/road-segment-table.md).
+For the details, see [`edge-depth-table-format.md`](artifacts/docs/concepts/edge-depth-table-format.md).
 
 ### Flood-extent vector tiles in MinIO draw the map layer
 
@@ -136,7 +129,7 @@ For the details, see
 library HTTP server on port 8010. It reads PostGIS through a `psycopg2` connection pool.
 
 On `POST /route`, the frontend adds `valid_time`, `run`, and `vehicle_type` to a normal GraphHopper
-route body. The backend removes those fields and selects the `flood_road_values` rows for that
+route body. The backend removes those fields and selects the `edge_depth` rows for that
 time. It buffers each flooded piece by 22 m, merges the buffers into polygons, and drops any
 polygon under 400 m². It groups the polygons into depth bands relative to the vehicle's flood
 limit:
@@ -189,10 +182,12 @@ time to peak and when a road becomes passable again. It writes them to `flood_se
 
 ### Other DAGs and the storage UI
 
-`dags/` holds six more DAGs besides `flood_mapping_full`:
+`dags/` holds seven more DAGs besides `flood_mapping_full`:
 
-- `routing_adapter` runs on the asset event of `9b_load_depth_raster`. It loads `road_segment`,
-  writes `flood_road_values`, and builds the edge depth table for that run.
+- `routing_adapter` runs on the asset event of `9b_load_depth_raster`. It builds the edge depth
+  table and the `edge_depth` rows for that run.
+- `flood_history` runs on the asset event of `9c_build_edge_depth_table`. It copies the run into the
+  depth history in TimescaleDB.
 - `flood_forecast_consecutive_state_test` runs two synthetic rain events by hand to test a
   hotstart.
 - `calculate_depth_manual_test` runs the depth calculation by hand.
@@ -289,7 +284,7 @@ Each port has an override variable in `compose.yml`, such as `FLOOD_ROUTING_FRON
   `core_assets.py` defines the assets that link them, and `core_paths.py` the folders they share.
 - `scripts/` holds the Python code that the DAG tasks call. It has the 3Di client and simulation
   steps at its top level. Its subfolders are `database/` for table creation, `flood_extent/` for
-  tiles and raster loading, `flood_roads/`, `roads/`, `flood_metrics/`, `initial_wl/`, and
+  tiles and raster loading, `edge_depth/`, `flood_metrics/`, `initial_wl/`, and
   `manholes/`.
 - `test/` holds `unittest` tests for the DAG graphs, the rain gate, the depth calculation, 3Di
   calls, and MinIO bucket routing.

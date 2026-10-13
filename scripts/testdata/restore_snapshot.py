@@ -32,10 +32,8 @@ import create_edge_depth_tables  # noqa: E402
 import create_flood_depth_raster_tables  # noqa: E402
 import create_flood_extent_tables  # noqa: E402
 import create_flood_metrics_tables  # noqa: E402
-import create_flood_road_tables  # noqa: E402
 import create_flood_run_output_table  # noqa: E402
 import create_graph_edge_table  # noqa: E402
-import create_road_segment_table  # noqa: E402
 import create_timescale_tables  # noqa: E402
 from db_config import DB_CONFIG, TIMESCALE_DB_CONFIG  # noqa: E402
 
@@ -43,23 +41,18 @@ DEFAULT_SNAPSHOT_DIR = "/opt/airflow/data/testdata/storm-2026-10-10/snapshot"
 TEST_SUFFIX = "_test"
 
 POSTGIS_DDL = (
-    create_flood_road_tables.SQL,
     create_flood_extent_tables.SQL,
     create_flood_depth_raster_tables.SQL,
-    create_road_segment_table.SQL,
     create_graph_edge_table.SQL,
     create_flood_metrics_tables.SQL,
     create_flood_run_output_table.SQL,
     create_edge_depth_tables.SQL,
 )
 
-# A table comes after the tables it references. flood_road_values.file_id references flood_road_file.id.
+# A table comes after the tables it references.
 RESTORE_ORDER = (
     "graph_edge_export",
     "graph_edge",
-    "road_segment",
-    "flood_road_file",
-    "flood_road_values",
     "flood_extent_step",
     "flood_extent_polygon",
     "flood_segment_metrics",
@@ -86,7 +79,8 @@ def check_test_database(name: str, production: str) -> None:
 
 
 def read_manifest(snapshot_dir: Path) -> list[SnapshotFile]:
-    """The files to load, in RESTORE_ORDER. Raises when the manifest lacks a table of the order or holds another."""
+    """The files to load, in RESTORE_ORDER. Raises when the manifest lacks a table of the order. A table it lists
+    beyond the order, such as one the snapshot kept from a retired table, is neither verified nor loaded."""
     manifest = json.loads((snapshot_dir / "MANIFEST.json").read_text())
     by_table = {
         entry["table"]: SnapshotFile(
@@ -98,8 +92,9 @@ def read_manifest(snapshot_dir: Path) -> list[SnapshotFile]:
         )
         for entry in manifest["tables"]
     }
-    if set(by_table) != set(RESTORE_ORDER):
-        raise ValueError(f"the manifest holds {sorted(by_table)}, the restore order expects {sorted(RESTORE_ORDER)}")
+    missing = set(RESTORE_ORDER) - set(by_table)
+    if missing:
+        raise ValueError(f"the manifest lacks {sorted(missing)}, which the restore order expects")
     return [by_table[table] for table in RESTORE_ORDER]
 
 

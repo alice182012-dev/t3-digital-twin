@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location("dag_graph_fakes", ROOT / "test/te
 fakes = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fakes)
 
-ROAD_VALUES = fakes.FakeAsset("flood_road_values")
+EDGE_DEPTH_ROWS = fakes.FakeAsset("edge_depth")
 
 
 def load_history_module():
@@ -38,14 +38,14 @@ class FloodHistoryGraphTests(unittest.TestCase):
         task = self.dag.tasks["load_depth_history"]
 
         self.assertEqual(set(self.dag.tasks), {"load_depth_history"})
-        self.assertEqual(task.kwargs["inlets"], [ROAD_VALUES])
+        self.assertEqual(task.kwargs["inlets"], [EDGE_DEPTH_ROWS])
         self.assertNotIn("pool", task.kwargs)
 
-    def test_runs_on_the_asset_flood_on_roads_emits(self):
+    def test_runs_on_the_asset_9c_emits(self):
         routing = fakes.load_dag_module("dags/routing_adapter_dag.py").dag
 
-        self.assertEqual(self.dag.kwargs["schedule"], [ROAD_VALUES])
-        self.assertEqual(routing.tasks["flood_on_roads"].kwargs["outlets"], [ROAD_VALUES])
+        self.assertEqual(self.dag.kwargs["schedule"], [EDGE_DEPTH_ROWS])
+        self.assertEqual(routing.tasks["9c_build_edge_depth_table"].kwargs["outlets"], [EDGE_DEPTH_ROWS])
 
 
 class LoadDepthHistoryTaskTests(unittest.TestCase):
@@ -67,7 +67,7 @@ class LoadDepthHistoryTaskTests(unittest.TestCase):
             return self.dag_module.task_load_depth_history(**context)
 
     def test_ensures_the_schema_then_loads_the_run_of_the_event(self):
-        result = self.run_task(triggering_asset_events={ROAD_VALUES: [event("20260924T164500")]})
+        result = self.run_task(triggering_asset_events={EDGE_DEPTH_ROWS: [event("20260924T164500")]})
 
         self.assertEqual(self.calls, ["schema", "20260924T164500"])
         self.assertEqual(
@@ -75,20 +75,20 @@ class LoadDepthHistoryTaskTests(unittest.TestCase):
         )
 
     def test_folded_events_load_every_run_oldest_first(self):
-        self.run_task(triggering_asset_events={ROAD_VALUES: [event("20260924T170000"), event("20260924T164500")]})
+        self.run_task(triggering_asset_events={EDGE_DEPTH_ROWS: [event("20260924T170000"), event("20260924T164500")]})
 
         self.assertEqual(self.calls, ["schema", "20260924T164500", "20260924T170000"])
 
     def test_a_manual_run_loads_the_newest_published_run(self):
-        inlet_events = {ROAD_VALUES: [event("20260924T164500"), event("20260924T171500"), event("20260924T170000")]}
+        inlet_events = {EDGE_DEPTH_ROWS: [event("20260924T164500"), event("20260924T171500"), event("20260924T170000")]}
 
         self.run_task(triggering_asset_events={}, inlet_events=inlet_events)
 
         self.assertEqual(self.calls, ["schema", "20260924T171500"])
 
     def test_events_without_a_run_ts_fail_before_touching_the_database(self):
-        with self.assertRaisesRegex(ValueError, "No flood_road_values event carries a run_ts"):
-            self.run_task(triggering_asset_events={ROAD_VALUES: [types.SimpleNamespace(extra={})]})
+        with self.assertRaisesRegex(ValueError, "No edge_depth event carries a run_ts"):
+            self.run_task(triggering_asset_events={EDGE_DEPTH_ROWS: [types.SimpleNamespace(extra={})]})
 
         self.assertEqual(self.calls, [])
 
@@ -96,7 +96,7 @@ class LoadDepthHistoryTaskTests(unittest.TestCase):
         self.dag_module.load_run = MagicMock(load=MagicMock(side_effect=ValueError("no flood_depth_raster_tile rows")))
 
         with self.assertRaises(ValueError):
-            self.run_task(triggering_asset_events={ROAD_VALUES: [event("20260924T164500")]})
+            self.run_task(triggering_asset_events={EDGE_DEPTH_ROWS: [event("20260924T164500")]})
 
 
 if __name__ == "__main__":

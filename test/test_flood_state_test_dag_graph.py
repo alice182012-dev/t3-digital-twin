@@ -10,7 +10,6 @@ import os
 import sys
 import types
 import unittest
-from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -20,44 +19,34 @@ ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_TASKS = {
     "0_ensure_schema",
-    "load_road_segments",
     "1_trigger_event1",
     "2_download_event1",
     "3_calculate_depth_event1",
     "3b_build_tiles_event1",
     "3c_load_depth_raster_event1",
-    "3d_flood_on_roads_event1",
     "4_trigger_event2",
     "5_download_event2",
     "6_calculate_depth_event2",
     "6b_build_tiles_event2",
     "6c_load_depth_raster_event2",
-    "6d_flood_on_roads_event2",
 }
 
 EXPECTED_EDGES = {
-    ("0_ensure_schema", "load_road_segments"),
     ("0_ensure_schema", "3b_build_tiles_event1"),
     ("0_ensure_schema", "3c_load_depth_raster_event1"),
-    ("0_ensure_schema", "3d_flood_on_roads_event1"),
     ("0_ensure_schema", "6b_build_tiles_event2"),
     ("0_ensure_schema", "6c_load_depth_raster_event2"),
-    ("0_ensure_schema", "6d_flood_on_roads_event2"),
-    ("load_road_segments", "3d_flood_on_roads_event1"),
-    ("load_road_segments", "6d_flood_on_roads_event2"),
     ("1_trigger_event1", "2_download_event1"),
     ("2_download_event1", "3_calculate_depth_event1"),
     ("2_download_event1", "4_trigger_event2"),
     ("4_trigger_event2", "5_download_event2"),
     ("3_calculate_depth_event1", "3b_build_tiles_event1"),
     ("3_calculate_depth_event1", "3c_load_depth_raster_event1"),
-    ("3c_load_depth_raster_event1", "3d_flood_on_roads_event1"),
     ("3b_build_tiles_event1", "6_calculate_depth_event2"),
     ("3c_load_depth_raster_event1", "6_calculate_depth_event2"),
     ("5_download_event2", "6_calculate_depth_event2"),
     ("6_calculate_depth_event2", "6b_build_tiles_event2"),
     ("6_calculate_depth_event2", "6c_load_depth_raster_event2"),
-    ("6c_load_depth_raster_event2", "6d_flood_on_roads_event2"),
 }
 
 
@@ -158,10 +147,8 @@ class StateTestDagGraphTests(unittest.TestCase):
         for task_id, depth_task in [
             ("3b_build_tiles_event1", "3_calculate_depth_event1"),
             ("3c_load_depth_raster_event1", "3_calculate_depth_event1"),
-            ("3d_flood_on_roads_event1", "3_calculate_depth_event1"),
             ("6b_build_tiles_event2", "6_calculate_depth_event2"),
             ("6c_load_depth_raster_event2", "6_calculate_depth_event2"),
-            ("6d_flood_on_roads_event2", "6_calculate_depth_event2"),
         ]:
             self.assertEqual(self.dag.tasks[task_id].kwargs["op_kwargs"], {"depth_task_id": depth_task}, task_id)
 
@@ -172,11 +159,14 @@ class StateTestDagGraphTests(unittest.TestCase):
         with patch("builtins.print"):
             self.dag_module.task_ensure_schema()
 
-        database.create_flood_road_tables.main.assert_called_once_with()
-        database.create_flood_extent_tables.main.assert_called_once_with()
-        database.create_flood_depth_raster_tables.main.assert_called_once_with()
-        database.create_road_segment_table.main.assert_called_once_with()
-        database.create_flood_run_output_table.main.assert_called_once_with()
+        self.assertEqual(
+            sorted(call[0] for call in database.mock_calls),
+            [
+                "create_flood_depth_raster_tables.main",
+                "create_flood_extent_tables.main",
+                "create_flood_run_output_table.main",
+            ],
+        )
 
 
 class SharedRunNameTests(unittest.TestCase):
@@ -231,21 +221,6 @@ class SharedRunNameTests(unittest.TestCase):
             self.assertEqual(result, {"run_ts": "20260925T101500", "timesteps": 2})
             self.assertEqual(raster_load.load_run.call_args.args[1:3], (self.dirs[depth_task], "20260925T101500"))
             self.assertEqual(raster_load.load_run.call_args.kwargs["keep_runs"], 1000)
-
-    def test_both_events_compute_flood_on_roads_for_event_1s_run_name(self):
-        flood_on_roads = MagicMock()
-        flood_on_roads.compute.return_value = MagicMock(
-            timesteps=(MagicMock(forecast_time=datetime(2026, 9, 25, 10, 15), rows=3, wet_pieces=2),),
-            rows=3,
-            target_table="flood_road_values",
-            seconds=1.0,
-        )
-        self.dag_module.flood_on_roads = flood_on_roads
-
-        for depth_task in self.dirs:
-            result = self.run_task(self.dag_module.task_flood_on_roads, depth_task)
-            self.assertEqual(result, {"run_ts": "20260925T101500", "timesteps": 1, "rows": 3})
-            self.assertEqual(flood_on_roads.compute.call_args.args[1:], ("20260925T101500",))
 
     def test_event_2_timesteps_overlapping_event_1_fail_before_publishing(self):
         self.dirs["6_calculate_depth_event2"] = self.depth_dir(
