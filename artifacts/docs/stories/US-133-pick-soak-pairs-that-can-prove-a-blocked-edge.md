@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-133"
 title: "Pick soak pairs that can prove a blocked edge"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -33,6 +33,7 @@ Dependencies: [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US
 - **2026-10-13, draft.** Found during the server checks of [[SPR-014-finish-the-remaining-backend|SPR-014]]. The owner asked for a story on the same day.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: it has no open dependency, it fits one sprint, and its acceptance is a check on the server.
 - **2026-10-13, Reviewed.** Built and run on the server. The owner has not accepted it. The check now over-samples edges, sends the dry control straight to GraphHopper, and exits 1 when a vehicle with an edge at or above its limit has no judged blocked pair (`blocked_unproven`). On the pinned flood it judged 7 blocked pairs and proved all four vehicles, and it reported 3 failures that [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]] holds.
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 7, with no screenshot. The 3 failed pairs of the run are in [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]].
 
 ## Evidence and details
 

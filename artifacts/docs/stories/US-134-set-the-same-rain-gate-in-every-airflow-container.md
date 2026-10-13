@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-134"
 title: "Set the same rain gate in every Airflow container"
 epic: "[[EP-17-flood-data-pipeline-and-core-output]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P3
 estimate: XS
@@ -33,6 +33,7 @@ Dependencies: None.
 - **2026-10-13, draft.** Found during the server checks of [[SPR-014-finish-the-remaining-backend|SPR-014]]. The owner asked for a story on the same day.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: it has no open dependency, it fits one sprint, and its acceptance is a check on the server.
 - **2026-10-13, Reviewed.** Done on the server. The owner has not accepted it. The scheduler, the API server, and the DAG processor held `FLOOD_RAIN_THRESHOLD_MM_HR=0.01`, and the worker held 5. The owner paused `flood_mapping_full`, and the four containers were recreated with `docker compose up -d --no-deps` over SSH. All four now read 5.
+- **2026-10-13, Done.** The product owner accepted it. The evidence is the screenshot `US-134-server-gate-in-every-container-2026-10-13.png`.
 
 ## Evidence and details
 

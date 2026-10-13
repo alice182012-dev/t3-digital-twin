@@ -405,6 +405,7 @@ Each consumer application connects as its own role, and the role can read only t
 The script `scripts/database/create_routing_reader_role.py` takes a role name as its argument and reads that role's table list from this page with `core_contract.parse_reader_roles`.
 It revokes the role's other table rights and its `CREATE` right on schema `public`, then grants `SELECT` on each listed table.
 Rerun it for a role after its list changes.
+The script runs in the Airflow worker, which mounts `core_contract.py` and this page read-only ([[US-132-let-the-worker-run-the-reader-role-script|US-132]]).
 The parser fails when a role lists no table, lists a table this page does not describe, or appears twice.
 
 - **Name.** The variable `<ROLE>_USER`, where `<ROLE>` is the role name in uppercase, sets the PostgreSQL role name.

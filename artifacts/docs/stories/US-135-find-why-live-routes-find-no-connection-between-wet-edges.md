@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-135"
 title: "Find why LIVE routes find no connection between wet edges"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Reviewed
+status: Done
 kind: spike
 priority: P2
 estimate: S
@@ -35,6 +35,7 @@ Dependencies: [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]
 - **2026-10-13, draft.** Found during the server checks of [[SPR-014-finish-the-remaining-backend|SPR-014]]. The owner asked for a story on the same day.
 - **2026-10-13, Ready.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request, and `Ready` after the INVEST check: it has no open dependency, it fits one sprint, and its acceptance is a check on the server.
 - **2026-10-13, Reviewed.** Answered on the server in `marie-curie/us135/`. The owner has not accepted it, and [[decision-log|D-044]] holds the decision. `LIVE` finds no connection between points on closed edges by design, and `DEMO` and `LIVE` judge different steps. The engine has no fault in these tests.
+- **2026-10-13, Done.** The product owner accepted the answer on the written results of details items 1 to 5 and [[decision-log|D-044]], with no screenshot.
 
 ## Evidence and details
 

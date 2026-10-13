@@ -90,7 +90,8 @@ The engine reads only the table that `latest` names and floors the departure to 
 In `DEMO` with no pinned step, and in `LIVE` and `PENDING`, the three calls read the newest run.
 `POST /flood/forecast` and `POST /flood/profile` do not change with the mode.
 The point read needs the raster tiles of the pinned step, which [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] rebuilds.
-The role `routing_reader` needs `SELECT` on `forecast_mode` and `demo_pin`, so rerun `create_routing_reader_role.py` after the tables exist.
+The role `routing_reader` needs `SELECT` on `forecast_mode` and `demo_pin`, so rerun `create_routing_reader_role.py` after the tables exist. It runs in the Airflow worker.
+A `LIVE` route and a `DEMO` route judge different steps, and a route cannot start on a closed edge. Compare the two modes only between endpoints that are dry at the step of each mode and at least 150 m from an edge at or above the vehicle's limit ([[decision-log|D-044]]).
 
 ## Point depth lookup
 
