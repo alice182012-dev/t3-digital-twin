@@ -701,3 +701,16 @@ is the maximum.
 - **Evidence:** `test_server.py` (a `DEMO` route sends one request, with `custom_model` and no `td_departure`) and [[graphhopper-backend]].
 - **Affects:** [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]], [[US-052-integrate-the-engine-into-the-backend-with|US-052]] only in that the engine is not used in `DEMO`, and the departure advice of [[US-053-build-post-route-departures|US-053]], which does not change with the mode.
 - **Revisit if:** the demo route must show the departure advice, or the engine can read a pinned table.
+
+## D-044: Compare `LIVE` and `DEMO` routes only between points that are dry and away from the flood
+
+- **Date:** 2026-10-13
+- **Status:** active. The owner has not read it.
+- **Decided by:** The development team, on 2026-10-13, while answering [[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]].
+- **Decision:** A `LIVE` route with no connection between points on closed edges is not an engine fault. A test that compares `LIVE` and `DEMO` uses endpoints that are dry at the step of each mode and at least 150 m from an edge at or above the vehicle's limit, and it reads the step of each mode from the hints (`td.run`, `td.departure`) and from `GET /flood/mode`.
+- **Why:** On 2026-10-13, 10 pairs on edges of 25 to 56 cm found no route in `LIVE`, where the motorbike limit is 20 cm. 12 pairs with dry endpoints 150 to 400 m from the water routed in `LIVE` (12 of 12) and in `DEMO` (10 of 12), with equal distances on 3 and distances within 2% on 2 more. 12 pairs within 80 m of the water routed in `LIVE` and not in `DEMO`, whose flood areas have a 22 m buffer and a different step.
+- **Alternatives:** (1) Read the engine's Java code for the closed-endpoint rule. Not chosen, because the data fits the limit and the rule. (2) Change the engine to start on a closed edge. Not chosen, because a route that starts in water is not a route.
+- **Evidence:** `marie-curie/us135/NOTES.txt` and the details of [[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]].
+- **Affects:** [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] (its route comparison), [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]].
+- **Revisit if:** a `LIVE` route between dry points 150 m from the water finds no connection while `DEMO` routes the pair.
+

@@ -93,7 +93,7 @@ The story holds what it still needs.
 
 | Story | Built and checked | Still open (from the story) |
 | --- | --- | --- |
-| [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | `GET /flood/mode` answers `LIVE`, `PENDING`, and `DEMO` on the server. In `DEMO`, `GET /flood/points`, `GET /flood/areas`, and `POST /route` read the pinned step ([[decision-log\|D-043]]). At 21.01320, 105.76418 the depth is 0.80 m in `DEMO` and 0.10 m in `LIVE` at the first step. | Screenshots of the `LIVE` and `PENDING` answers and of the route comparison. The owner's acceptance. [CHECK: of 10 route pairs between wet edges, 1 routed in `DEMO` and none in `LIVE`. The story did not investigate the cause of the `LIVE` result, so do not read it as a routing result.] |
+| [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | `GET /flood/mode` answers `LIVE`, `PENDING`, and `DEMO` on the server. In `DEMO`, `GET /flood/points`, `GET /flood/areas`, and `POST /route` read the pinned step ([[decision-log\|D-043]]). At 21.01320, 105.76418 the depth is 0.80 m in `DEMO` and 0.10 m in `LIVE` at the first step. | Screenshots of the `LIVE` and `PENDING` answers and of the route comparison. The owner's acceptance. The `LIVE` result on pairs between wet edges is explained: the endpoints were on closed edges, and `DEMO` and `LIVE` judge different steps ([[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]], [[decision-log|D-044]]). Compare the modes only between dry points away from the flood. |
 
 [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `In progress`, not `Reviewed`.
 Its code and its two tables are on the server, and task `9c_build_edge_depth_table` wrote 16,370 rows for one run on a hand-made event.

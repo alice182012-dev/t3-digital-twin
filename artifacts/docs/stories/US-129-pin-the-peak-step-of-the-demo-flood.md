@@ -70,3 +70,7 @@ Take a screenshot of the listing of the pinned rows and files before and after t
    The run does not show that the pin protects a run that falls outside the window.
    The listing does not include MinIO, because no vector tile of the pinned run was part of the check.
 7. For [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]: the backend reads `demo_pin` as `routing_reader`, which can `SELECT` the table.
+8. Later the same day, the publish of run `20261013T104500` (a real slot of 03:30 UTC) pruned `edge_depth` and `edge_depth_run` to the pinned run and the new run.
+   Run `20261011T003000`, which is newer than the pinned run, was deleted, and the pinned run `20261011T001500` stayed.
+   This shows the pin protecting a run that the prune would otherwise delete, and it removes the limit of item 6 for the two tables.
+   The edge depth files and the tiles were not listed again.
