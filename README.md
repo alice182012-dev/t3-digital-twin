@@ -168,11 +168,12 @@ toggle between map mode and flood mode, and the depth forecast chart. nginx serv
 
 `floodmap/graphhopper-maps/PINNED_COMMIT.md` records the upstream commit.
 
-### TimescaleDB is running but holds no data
+### TimescaleDB holds the depth history
 
 The `timescaledb` service starts with the stack. `scripts/database/create_timescale_tables.py`
-defines three hypertables: `institution_histogram_bar`, `background_forecast_depth`, and
-`depth_history`. No DAG runs that script, and no code writes rows to TimescaleDB.
+defines four hypertables: `institution_histogram_bar` and `background_forecast_depth` (both stay empty),
+`depth_history`, and `history_moment`. Task `0b_ensure_schema` and the DAG `flood_history` run the script,
+and `flood_history` writes `depth_history` and `history_moment` from `edge_depth` for each run.
 
 `scripts/flood_metrics/extract_run.py` computes flood metrics per graph edge and vehicle, such as
 time to peak and when a road becomes passable again. It writes them to `flood_segment_metrics` in

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [analysis, container, roles, compose]
 related: ["[[core-output-contract]]", "[[timescaledb-schema]]", "[[EP-21-industry-analysis-on-the-flood-data|EP-21]]", "[[US-109-run-an-analysis-service-in-its-own-container|US-109]]", "[[US-107-create-a-read-only-role-for-any-consumer-app|US-107]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # Analysis service
@@ -16,8 +16,8 @@ The code is in `analysis-service/`, and the service is `analysis` in `compose.ym
 ## Endpoint
 
 `GET /health` returns `{"run_ts": "<run>"}`.
-The run is the newest `run_ts` whose set of outputs in `flood_run_output` is exactly `depth_raster`, `extent`, `road_values`, and `edge_depth`, the four values of `run_output.Output`.
-It returns null when no run has all four, answers 503 when the database refuses the connection, and answers 404 for any other path.
+The run is the newest `run_ts` whose set of outputs in `flood_run_output` is exactly `depth_raster`, `extent`, and `edge_depth`, the three values of `run_output.Output` since [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
+It returns null when no run has all three, answers 503 when the database refuses the connection, and answers 404 for any other path.
 The names are repeated in `analysis-service/app/server.py`, because the image does not ship `scripts/`, and a test fails when the two lists differ.
 
 ## Credentials

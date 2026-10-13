@@ -1,7 +1,7 @@
 ---
 date: 2026-09-23
 type: concept
-status: parked
+status: active
 tags: [timescaledb, schema, histogram, sprint-1]
 related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[SP-01-prd-and-backlog|sprint-plan]]"]
 last_updated: 2026-10-13
@@ -12,7 +12,7 @@ last_updated: 2026-10-13
 TimescaleDB holds three kinds of data that `storage-postgres` doesn't: institution histograms,
 the `background_cycle` forecast series, and depth history. The architecture doc lists these three
 in its data-store table (section 5) and specifies the histogram split in section 4.9.
-`scripts/database/create_timescale_tables.py` creates the schema. No DAG runs that script yet.
+`scripts/database/create_timescale_tables.py` creates the schema, and task `0b_ensure_schema` of `flood_mapping_full` and the DAG `flood_history` run it.
 
 The pipeline does not run a `background_cycle` (D-009 in [[decision-log]], 2026-10-01). The `background_cycle`
 enum value, the `background_forecast_depth` table, and bars 7 to 24 below stay in the schema and stay

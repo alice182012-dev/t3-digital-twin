@@ -10,7 +10,7 @@ last_updated: 2026-10-13
 # Core output contract
 
 The 3Di pipeline (the Airflow DAGs `flood_mapping_full` and `routing_adapter`) publishes flood results that other applications read.
-This page lists what it publishes: eleven PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
+This page lists what it publishes: nine PostgreSQL tables, the edge depth files, and the vector tiles in MinIO.
 Routing is the first consumer.
 The story is `US-071` ([[EP-10-routing-first-consumer|routing-first-consumer-stories]] Story C1).
 

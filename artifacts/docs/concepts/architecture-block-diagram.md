@@ -135,6 +135,6 @@ The DAG `flood_history` copies each run from `edge_depth` into the TimescaleDB t
 ([[timescaledb-schema]], [[analysis-service]]). The pipeline tables stay in schema `public` ([[decision-log|D-049]]).
 
 TimescaleDB moved from Designed to Built on 2026-10-05 ([[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]],
-`US-066`), with a `netcdf_values` hypertable that task `3b_upload_netcdf_postgres` filled. On 2026-10-10 the ingest was retired ([[US-095-retire-the-netcdf-values-ingest|US-095]], D-018, D-022): the task, its scripts, and the tables `netcdf_values`, `netcdf_variable_catalog`, and `mesh_elements` are gone, and so are the three `storage-postgres` netcdf tables. `timescaledb` keeps only the three empty histogram tables. `flood_extent_polygon` on
+`US-066`), with a `netcdf_values` hypertable that task `3b_upload_netcdf_postgres` filled. On 2026-10-10 the ingest was retired ([[US-095-retire-the-netcdf-values-ingest|US-095]], D-018, D-022): the task, its scripts, and the tables `netcdf_values`, `netcdf_variable_catalog`, and `mesh_elements` are gone, and so are the three `storage-postgres` netcdf tables. `timescaledb` holds four tables: `depth_history` and `history_moment`, which the DAG `flood_history` fills, and `institution_histogram_bar` and `background_forecast_depth`, which stay empty (D-009). `flood_extent_polygon` on
 `storage-postgres` also got an automated prune the same week ([[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]],
 `US-067`), the other table the same incident found growing unbounded.
