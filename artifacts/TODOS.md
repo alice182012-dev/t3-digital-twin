@@ -24,7 +24,7 @@ Index: [[Home]].
 **Status:** active.
 35 points picked, 0 done.
 
-### In progress - US-076 Compare the live app with the mockup in Aside at 1366x768
+### Reviewed - US-076 Compare the live app with the mockup in Aside at 1366x768
 
 **Story:** [[US-076-compare-the-live-app-with-the-mockup|US-076]].
 P1, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].

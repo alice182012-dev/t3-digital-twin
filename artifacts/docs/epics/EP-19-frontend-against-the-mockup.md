@@ -40,6 +40,29 @@ The first comparison found elements in the mockup with no code behind them. The 
 - [[BL-010-map-shows-forecast-not-now|BL-010]] was resolved by the product owner on 2026-10-10, and [[BL-018-route-panel-stuck-on-loading-bars|BL-018]] is `monitoring`.
 - `US-033` (`DESIGN.md`) must run after the UI is final, so its tokens do not go stale.
 
+## Differences from the mockup
+
+The list of [[US-076-compare-the-live-app-with-the-mockup|US-076]], found on 2026-10-13 by comparing the live app at `100.67.84.55:8082` with the mockup at 1366x768.
+`G1` to `G7` come from the archived [[frontend-mockup-recheck-and-sprint-11-start]] and keep their IDs. `N1` to `N7` are new.
+The legend bands (`5 to 10 cm` and so on) differ from the mockup on purpose, so they are not a row.
+
+| ID | Screen | Difference | Story or blocker |
+| -- | ------ | ---------- | ---------------- |
+| G1 | 2e | The chart labels every 15-minute column, and the mockup has 5 columns of 30 minutes with only full hours labelled | [[US-077-match-the-depth-chart-columns-and-the\|US-077]] |
+| G2 | 2e | The start and destination pins carry no names | [[US-078-show-the-place-names-on-the-start\|US-078]] |
+| G3 | 2e | The tab reads "Route 1", and the mockup reads "Via `road`" | [[US-077-match-the-depth-chart-columns-and-the\|US-077]] |
+| G4 | all | The page title is "GraphHopper Maps \| Route Planner", and the panel shows "Powered by GraphHopper" | [[US-079-name-the-page-floodmap-and-remove-the\|US-079]] |
+| G5 | 2b, all | The legend and the popup say "As of `time`", and the mockup says "Updated" and "now" | [[US-080-keep-as-of-and-bring-the-us\|US-080]] |
+| G6 | 2e | No second dashed line, no time and depth on the tabs, no mobile layout | [[US-081-draw-a-second-dashed-line-for-the\|US-081]], [[US-082-show-the-travel-time-and-the-maximum\|US-082]], [[US-083-build-a-mobile-version-of-screen-2e\|US-083]] |
+| G7 | states | The no-route box and the "wait until" line have no approved design | [[US-084-design-the-no-route-and-wait-until\|US-084]] |
+| N1 | 2a, 2b | The Map and Flood tiles are flat grey and blue-grey blocks, and the mockup shows photo thumbnails with a white border | none yet |
+| N2 | 2b | The legend sits top-right and covers the zoom, locate, and layer buttons of the map, and the mockup puts the legend bottom-right with a tick scale | none yet |
+| N3 | 2c | The routing panel is the stock GraphHopper card (settings gear, "Add location", "Settings", GPX, "Details"), and the mockup has a full-height panel with a black selected-mode pill, a close X, and a dotted connector | none yet |
+| N4 | 2e | An Elevation widget sits bottom-left, and the mockup has none | none yet |
+| N5 | 2b | The popup shows "Selected location" while the name is unresolved (still after 7 s), reads "Water depth as of `date time`: N cm" and has no district line, and the search pill keeps "Search Floodmap" where the mockup shows the place name | [[BL-021-place-name-slow-after-map-tap\|BL-021]], [[US-141-host-photon-for-vietnam-next-to-the-backend\|US-141]] |
+| N6 | 2f | After "Route to this place" the destination field holds raw coordinates, and the mockup holds the place name | none yet |
+| N7 | 2d | Autofill rows are one line with a pin icon and the district at the right edge, and the mockup has two lines (name, then district) with no icon. Six rows read "C5" and differ only by district | none yet |
+
 ## Stories
 
 ```dataview
