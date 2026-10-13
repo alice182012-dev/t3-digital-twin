@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-113"
 title: "Backfill the depth history from the runs of the edge depth table"
 epic: "[[EP-21-industry-analysis-on-the-flood-data]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P1
 estimate: S
@@ -47,6 +47,7 @@ Estimate: S.
 - **2026-10-12, Ready.** Left Sprint 13 to make room for [[US-115-decide-whether-the-edge-depth-table-replaces-flood-road-values|US-115]]. Its parent, [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], may change with the answer of that spike. `sprint` is cleared and the story returns to the backlog.
 - **2026-10-12, sprint 14.** Picked for [[SPR-014-finish-the-remaining-backend|SPR-014]] at the product owner's request.
 - **2026-10-13, Reviewed.** The owner rescoped it ([[decision-log|D-047]]), and the backfill ran on the server for the 2 runs of `edge_depth_run` (details items 1 to 3). The owner has not accepted it.
+- **2026-10-13, Done.** The product owner accepted it on the written results of details items 1 to 4, with no screenshot.
 
 ## Evidence and details
 
