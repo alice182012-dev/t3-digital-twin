@@ -68,7 +68,7 @@ The top 10 by priority:
   Show the demo flood banner and the pinned frame
 - [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]], P2, S, Ready.
   Skip a flood_mapping_full run whose slot is hours old
-- [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], P2, S, Ready.
+- [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], P2, S, Reviewed.
   Delete the postgis input of the flood tile build
 
 ## Open blockers
