@@ -11,6 +11,7 @@ import sys
 import types
 import unittest
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
@@ -87,17 +88,25 @@ class FakeAsset:
     name: str
 
 
+class FakeAirflowSkipException(Exception):
+    pass
+
+
 def module(name, **attrs):
     fake = types.ModuleType(name)
     fake.__dict__.update(attrs)
     return fake
 
 
-def load_dag_module(path="dags/flood_mapping_dag.py"):
+def load_dag_module(path="dags/flood_mapping_dag.py", environment=None):
+    """The stale-run guard is off unless a test sets FLOOD_STALE_RUN_MINUTES, because the tests use fixed slots in the past."""
+    environment = {"FLOOD_STALE_RUN_MINUTES": "0"} if environment is None else environment
     fakes = {
         "airflow": module("airflow", DAG=FakeDag),
         "airflow.sdk": module("airflow.sdk", Asset=FakeAsset),
-        "airflow.exceptions": module("airflow.exceptions", AirflowException=RuntimeError),
+        "airflow.exceptions": module(
+            "airflow.exceptions", AirflowException=RuntimeError, AirflowSkipException=FakeAirflowSkipException
+        ),
         "airflow.providers": module("airflow.providers"),
         "airflow.providers.standard": module("airflow.providers.standard"),
         "airflow.providers.standard.operators": module("airflow.providers.standard.operators"),
@@ -118,7 +127,7 @@ def load_dag_module(path="dags/flood_mapping_dag.py"):
     try:
         # Airflow puts the DAGs folder on sys.path, which is how a DAG file imports core_assets.
         sys.path.append(str(ROOT / "dags"))
-        with patch.dict(sys.modules, fakes), patch("builtins.print"):
+        with patch.dict(sys.modules, fakes), patch.dict(os.environ, environment), patch("builtins.print"):
             spec.loader.exec_module(dag_module)
     finally:
         sys.path[:] = saved_path
@@ -372,6 +381,109 @@ class DepthRunTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.dag_module.task_load_depth_raster(ti=self.ti)
+
+
+class StaleRunGuardTests(unittest.TestCase):
+    NOW = datetime(2026, 10, 13, 6, 0, tzinfo=timezone.utc)
+    TASKS = (
+        "task_check_forecast_rain",
+        "task_run_simulation",
+        "task_calculate_depth",
+        "task_publish_depth_files",
+        "task_load_depth_raster",
+    )
+
+    def load(self, limit="120"):
+        dag_module = load_dag_module(environment={"FLOOD_STALE_RUN_MINUTES": limit})
+        self.work = {
+            name: MagicMock()
+            for name in ("create_simulation", "netcdf_input", "raster_load", "psycopg2", "forecast_mode", "standing_flood")
+        }
+        for name, mock in self.work.items():
+            setattr(dag_module, name, mock)
+        dag_module.run_slot = lambda kwargs: kwargs["logical_date"]
+        dag_module.depth_run = MagicMock(side_effect=ValueError("work started"))
+        fixed_now = self.NOW
+
+        class FixedDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return fixed_now
+
+        dag_module.datetime = FixedDatetime
+        return dag_module
+
+    def call(self, dag_module, task_name, slot):
+        kwargs = {"ti": MagicMock(), "logical_date": slot, "dag": MagicMock(), "outlet_events": MagicMock()}
+        with patch("builtins.print"):
+            return getattr(dag_module, task_name)(**kwargs)
+
+    def test_a_three_hour_old_slot_skips_each_guarded_task_before_any_work(self):
+        dag_module = self.load()
+        slot = datetime(2026, 10, 13, 3, 0, tzinfo=timezone.utc)
+        expected = (
+            "Run slot 2026-10-13T03:00:00Z is 180 minutes old, over the limit of 120 minutes "
+            "(FLOOD_STALE_RUN_MINUTES). Skipping so an old run does no work."
+        )
+        for task_name in self.TASKS:
+            with self.subTest(task=task_name):
+                with self.assertRaises(FakeAirflowSkipException) as raised:
+                    self.call(dag_module, task_name, slot)
+                self.assertEqual(str(raised.exception), expected)
+        for name, mock in self.work.items():
+            self.assertEqual(mock.mock_calls, [], name)
+        dag_module.depth_run.assert_not_called()
+
+    def test_a_twenty_minute_old_slot_runs_the_task(self):
+        dag_module = self.load()
+        slot = datetime(2026, 10, 13, 5, 40, tzinfo=timezone.utc)
+        dag_module.create_simulation.get_rain_forecast.return_value = []
+
+        with self.assertRaises(ValueError) as raised:
+            self.call(dag_module, "task_check_forecast_rain", slot)
+
+        self.assertIn("no rain forecast", str(raised.exception))
+        dag_module.create_simulation.get_rain_forecast.assert_called_once()
+        with self.assertRaises(ValueError) as raised:
+            self.call(dag_module, "task_publish_depth_files", slot)
+        self.assertEqual(str(raised.exception), "work started")
+
+    def test_a_slot_exactly_at_the_limit_runs(self):
+        dag_module = self.load()
+        slot = datetime(2026, 10, 13, 4, 0, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError) as raised:
+            self.call(dag_module, "task_publish_depth_files", slot)
+
+        self.assertEqual(str(raised.exception), "work started")
+
+    def test_the_limit_zero_never_skips(self):
+        dag_module = self.load(limit="0")
+        slot = datetime(2026, 10, 10, 3, 45, tzinfo=timezone.utc)
+
+        with self.assertRaises(ValueError) as raised:
+            self.call(dag_module, "task_publish_depth_files", slot)
+
+        self.assertEqual(str(raised.exception), "work started")
+
+    def test_an_invalid_limit_fails_the_import_and_names_the_variable(self):
+        with self.assertRaises(ValueError) as raised:
+            load_dag_module(environment={"FLOOD_STALE_RUN_MINUTES": "two hours"})
+
+        self.assertEqual(
+            str(raised.exception),
+            "FLOOD_STALE_RUN_MINUTES must be a whole number of minutes, 0 or more, got 'two hours'",
+        )
+
+    def test_the_default_limit_is_two_hours(self):
+        with patch.dict(os.environ):
+            os.environ.pop("FLOOD_STALE_RUN_MINUTES", None)
+            self.assertEqual(load_dag_module(environment={}).STALE_RUN_MINUTES, 120)
+
+    def test_the_guarded_tasks_keep_their_names_for_airflow(self):
+        dag_module = self.load()
+
+        self.assertEqual([getattr(dag_module, name).__name__ for name in self.TASKS], list(self.TASKS))
 
 
 class DownloadResultTests(unittest.TestCase):

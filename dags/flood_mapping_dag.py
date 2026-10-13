@@ -1,8 +1,9 @@
 from airflow import DAG
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowException, AirflowSkipException
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 from datetime import datetime, timedelta, timezone
+import functools
 import sys
 import os
 import psycopg2
@@ -25,6 +26,7 @@ try:
     import hotstart_policy
     import forecast_mode
     import standing_flood
+    import stale_run
     import download_result
     import calculate_depth
     import netcdf_input
@@ -56,6 +58,8 @@ EDGE_EXPORT_DIR = os.getenv("EDGE_EXPORT_DIR", os.path.join(DATA_PATH, "graph_ex
 # each depth.tif; each file is deleted right after it loads, same posture as the flood_tiles work folder.
 DEPTH_RASTER_WORK_DIR = os.path.join(DATA_PATH, "depth_raster_work")
 RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
+# Read at parse time so a bad value fails the DAG import with the variable named.
+STALE_RUN_MINUTES = stale_run.limit_minutes(os.environ)
 # The rain threshold only starts a simulation from a dry state. Once runs exist, the simulation continues until the
 # newest standing_flood.DRY_RUNS_TO_STOP runs of the edge depth table are all under this depth (metres) and no rain is forecast.
 DRY_DEPTH_M = float(os.getenv("FLOOD_DRY_DEPTH_M", "0.05"))
@@ -83,6 +87,21 @@ def run_slot(kwargs):
     return create_simulation.clock_slot(kwargs.get("logical_date") or datetime.now(timezone.utc))
 
 
+def skip_stale_run(task):
+    """Skips the task, and so its downstream tasks, when the run's slot is older than STALE_RUN_MINUTES. An unpause
+    or a long queue revives runs of past slots, and their tasks would start real 3Di simulations."""
+
+    @functools.wraps(task)
+    def guarded(**kwargs):
+        now = datetime.now(timezone.utc)
+        slot = run_slot(kwargs)
+        if stale_run.is_stale(slot, now, STALE_RUN_MINUTES):
+            raise AirflowSkipException(stale_run.message(slot, now, STALE_RUN_MINUTES))
+        return task(**kwargs)
+
+    return guarded
+
+
 def record_forecast_mode(kwargs, decision, standing, gate_open):
     """Writes the gate decision to forecast_mode for the backend. A failure here is printed and does not stop the gate,
     because a simulation that should run matters more than the banner."""
@@ -99,6 +118,7 @@ def record_forecast_mode(kwargs, decision, standing, gate_open):
         print(f"❌ Could not write forecast_mode: {error}")
 
 
+@skip_stale_run
 def task_check_forecast_rain(**kwargs):
     """Choose the full pipeline when a forecast window from the run's slot reaches the rain threshold, or when
     an earlier run's flood still stands (standing_flood). Only a dry state skips the run."""
@@ -137,6 +157,7 @@ def task_check_forecast_rain(**kwargs):
     return None
 
 
+@skip_stale_run
 def task_run_simulation(**kwargs):
     ti = kwargs["ti"]
     print("🚀 1. Trigger Simulation...")
@@ -232,6 +253,7 @@ def task_ensure_schema(**kwargs):
     database.create_timescale_tables.main()
 
 
+@skip_stale_run
 def task_calculate_depth(**kwargs):
     """
     Task này sẽ trả về đường dẫn thư mục UUID vừa tạo.
@@ -260,6 +282,7 @@ def depth_run(ti):
     return depth_dir, flood_extent.run_ts_for_depth_dir(depth_dir)
 
 
+@skip_stale_run
 def task_publish_depth_files(**kwargs):
     """Tell the consumers that this run's depth folder is complete. Task 3 wrote it and task 2b has archived the
     results, so the age-based cleanup of `flood_tiles` cannot take a file the archive still needs."""
@@ -282,6 +305,7 @@ def mark_forecast_mode_live(kwargs):
         print(f"❌ Could not move forecast_mode to LIVE: {error}")
 
 
+@skip_stale_run
 def task_load_depth_raster(**kwargs):
     """Loads every depth_*.tif of this run into flood_depth_raster_tile, reprojected to EPSG:4326, so
     GET /flood/points (Sprint 2) can answer an arbitrary-point depth query with ST_Value instead
