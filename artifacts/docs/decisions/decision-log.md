@@ -750,3 +750,15 @@ is the maximum.
 - **Affects:** [[US-113-backfill-per-segment-depth-history|US-113]], [[timescaledb-schema]].
 - **Revisit if:** the history of runs that left `edge_depth` is needed. The edge depth files of earlier runs are the only source for that.
 
+## D-048: The database suites run against scratch databases and not against the test dataset
+
+- **Date:** 2026-10-13
+- **Status:** active. The owner has not read it.
+- **Decided by:** The development team, on 2026-10-13, while designing [[US-128-run-the-test-suites-against-the-test-databases|US-128]]. The story said that the suites work in their own schema, and a check of the suites showed that this is not true.
+- **Decision:** The command of US-128 creates one scratch database on `storage-postgres` and one on `timescaledb` for each run, runs the database suites against them, and drops them. The dataset databases `minio_custom_test` and `flood_metrics_test` are only read, to count the rows of the restored tables before and after.
+- **Why:** About 9 suites create and drop tables in `public` of their DSN's database: the backend tests `test_flood_areas`, `test_flood_extent_runs`, `test_flood_forecast`, and `test_server`, `scripts/flood_extent/test_publish.py`, `test_raster_load.py`, `scripts/flood_history/test_load_run.py`, `scripts/database/test_run_output.py`, and `test_flood_profile`. Against the dataset they would delete restored tables, and they would delete the `edge_depth` rows that the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] writes.
+- **Alternatives:** (1) A schema per run with `search_path`. Not chosen, because an unqualified `DROP TABLE` of a table that the scratch schema lacks would drop the table of `public`. (2) Fix every suite to use its own schema. Not chosen for now, because it is a larger change for the same result.
+- **Evidence:** the table of suites and their use of schemas in the vault log of 2026-10-13, and the design in [[US-128-run-the-test-suites-against-the-test-databases|US-128]].
+- **Affects:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]], [[test-dataset]].
+- **Revisit if:** the suites move to a schema each, then the command can use the dataset databases.
+
