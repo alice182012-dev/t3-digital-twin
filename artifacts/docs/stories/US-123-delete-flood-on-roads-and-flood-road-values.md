@@ -38,3 +38,5 @@ Dependencies: [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-tab
 ## Evidence and details
 
 Fill this when the story reaches `Done`.
+
+Note of 2026-10-13: the table `flood_road_values_shadow` (8,444 rows, 8.8 MB, written by the shadow run of `flood_on_roads --target`) also has no reader and joins the tables to drop ([[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], details item 5).
