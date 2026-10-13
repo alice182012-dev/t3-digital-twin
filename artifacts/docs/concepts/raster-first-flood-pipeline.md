@@ -154,8 +154,8 @@ load_depth_raster > flood_on_roads > flood_metrics (TimescaleDB)
   `dags/test_dag.py` (DAG `flood_forecast_pipeline_test`) deleted; the `flood-results-full` bucket removed from
   `compose.yml`, `.env.example`, the README, and the MinIO concept page; `create_flood_depth_raster_tables.py`
   creates only `flood_depth_raster_tile`. The server bucket, its objects, and the old table stay until the
-  Stage B deploy. Leftovers for the final cleanup: `scripts/merge_to_minio.py` is dead code and should go
-  with `scripts/mapping/*`; the docstring at `dags/flood_mapping_dag.py:205` still names
+  Stage B deploy. Leftovers for the final cleanup: `scripts/merge_to_minio.py` was dead code, and it was deleted on 2026-10-13
+  (`scripts/mapping/*` went on 2026-09-29); the docstring at `dags/flood_mapping_dag.py:205` still names
   `flood_depth_raster`; `artifacts/raw/T3-Digital-Twin_Architecture.md` (read-only) still lists the bucket
   at lines 94 and 271, for the user to update.
 - **2026-09-24.** Story 3 merged into `stage-b` and `Reviewed`. Findings: the server runs `SAMPLE_RATE=20`, so old

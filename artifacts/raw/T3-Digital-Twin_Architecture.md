@@ -65,7 +65,6 @@ t3-digital-twin/
 │   ├── rain_replay.py, rain_env/replay.ps1, rain_events/  # Rain replay tooling and event files
 │   ├── render_todos.py            # Renders artifacts/TODOS.md from the vault
 │   ├── initial_wl/, manholes/     # Water-level scripts used by the older DAGs
-│   ├── merge_to_minio.py          # Leftover of the GeoJSON chain, no file imports it
 │   └── test_*.py                  # Tests of the scripts at the top level
 ├── analysis-service/              # Image, requirements, app/server.py, and tests of the analysis container
 ├── floodmap/

@@ -108,9 +108,10 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
 - The PRD acceptance asks for a non-NULL pre-closure time on every row. That is not possible for a
   vehicle whose threshold the segment never reaches. For those rows, pre-closure time is NULL by
   design.
-- The only real sample available locally, `flood_road_20260522T103000.geojson`, has two
-  timesteps with equal depths on every segment. It checks the flat case, but not rising or falling
-  depths. A 25-timestep `constant_cycle` run is still needed for a real check of those cases.
+- The only real sample that was available locally, `flood_road_20260522T103000.geojson` (deleted on
+  2026-10-13), had two timesteps with equal depths on every segment. It checked the flat case, but not rising or
+  falling depths. The storm test dataset of 58 runs gives real rising and falling depths ([[test-dataset]],
+  [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]]).
 - The row key changed with [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]]. New rows use `edge_key`, and rows from before keep `segment_key`, which is `md5(ST_AsEWKB(geom_4326))`. The `road_segment` table that this key could have come from was deleted with [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 - Run on real data 2026-10-01 (`US-060`): `extract_run.py 20260930T020000` ran inside
   `airflow_new-airflow-worker-1` and wrote 23,324 rows for 5,831 segments and 4 vehicle types in
