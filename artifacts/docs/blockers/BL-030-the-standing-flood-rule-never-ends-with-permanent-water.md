@@ -67,3 +67,4 @@ The edge `601448364:0` and the other deep edges should be checked on a map befor
 ## Status history
 
 - **2026-10-13, open.** Found when the chain started by the unpause of 09:39 UTC did not stop. Four real simulations ran with a forecast of 0 mm/h by 10:30 UTC, and the depth data of the runs is static.
+- **2026-10-13, open.** The owner chose to pause `flood_mapping_full` and decide the fix later. Paused at about 10:36 UTC to stop the cost. Real-rain monitoring for US-114 waits until the DAG is unpaused.

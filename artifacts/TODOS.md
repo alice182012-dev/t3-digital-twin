@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
-1. Decide [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]: the standing-flood chain started at 09:45 UTC on 2026-10-13 cannot end, because the model keeps permanent water (157 edges at or above 5 cm in every run, 223 cm at one edge). It runs a real 3Di simulation every slot with a forecast of 0 mm/h. The owner decides whether to pause `flood_mapping_full` and which fix to build (option B, a steady-state test, is the smallest).
+1. Decide [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]: the standing-flood chain started at 09:45 UTC on 2026-10-13 cannot end, because the model keeps permanent water (157 edges at or above 5 cm in every run, 223 cm at one edge). It runs a real 3Di simulation every slot with a forecast of 0 mm/h. `flood_mapping_full` is paused until the owner picks a fix (option B, a steady-state test, is the smallest).
 2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is unpaused and runs only on a flood that stands or a forecast above 5 mm/h.
 <!-- next-action:end -->
 
