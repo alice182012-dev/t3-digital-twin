@@ -10,8 +10,8 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 7 points of work remain.
-1. Current task: the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] runs in the worker on the test dataset. It started at 04:07 UTC on 2026-10-13, takes about 6 minutes per run, and ends at about 09:15 UTC. The session job reads `data/mapping/testdata_rebuild/run50.log` every 20 minutes and records the result in the story. Then ask the owner to accept US-118.
-2. Next: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server. The code is on `modular`, and the pre-flight is done (the story, 2026-10-13: the pull is a fast-forward, the new DAGs import without error, and no database object depends on the old tables). Start when the check of step 1 ends, because the check reads `scripts/` from the server checkout. In this order:
+1. Current task: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server, in the order of step 2. The 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] ended at 09:13 UTC with no failure and a longest `9c` build of 79.5 s, so ask the owner to accept US-118.
+2. The server steps of [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]. The code is on `modular`, and the pre-flight is done (the story, 2026-10-13: the pull is a fast-forward, the new DAGs import without error, and no database object depends on the old tables). The check has ended, so the pull is free. In this order:
    - Pull: `git pull --ff-only alice modular` on the server. No container is recreated. Wait one minute and check `airflow dags list-import-errors` is empty.
    - Rerun `create_routing_reader_role.py` in the worker for `routing_reader` and `analysis_reader`. The worker mounts the new contract page, so the roles lose their grants on the old tables.
    - Ask the owner to rebuild `analysis` from the desktop (its list of core outputs lost `road_values`). Until then its `/health` keeps the last run that has all four outputs.
