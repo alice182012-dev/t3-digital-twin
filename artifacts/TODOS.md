@@ -9,11 +9,9 @@ Index: [[Home]].
 ## Next action
 
 <!-- next-action:start -->
-Sprint 14 runs from 2026-10-12 to 2026-10-25, and 4 points of work remain.
-1. Current task: close [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]. The tables are dropped (377.1 MB freed) and a run took 148 s from `3_calculate_depth` to the end of `9c`. One step waits for the owner: rebuild `analysis` on the desktop, as two separate lines in `C:\Users\TECOTEC\airflow_new`, `docker compose build analysis` and then `docker compose up -d --no-deps analysis`. Then ask the owner to accept US-123.
-2. Real simulations run from the slot of 09:45 UTC on 2026-10-13 until 5 dry runs in a row, because the resumed run counted as a fresh publish. [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] closes that gap.
-3. After the server steps of US-123, merge the two branches that wait for it: `us-139-stale-run-guard` ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]) and `us-140-delete-postgis-tile-input` ([[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]), pull them on the server, and check the skip of a stale run with `airflow tasks test flood_mapping_full 3_calculate_depth <date 6 hours old>`. Close [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]] and update [[minio-flood-extent-pipeline]] at that merge.
-4. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
+Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
+1. Current task: merge the branches `us-139-stale-run-guard` ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]) and `us-140-delete-postgis-tile-input` ([[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]) into `modular`, pull them on the server, check that the tests pass and the DAGs import, and check the skip of a stale run with `airflow tasks test flood_mapping_full 3_calculate_depth <date 6 hours old>`. Close [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]] and update [[minio-flood-extent-pipeline]] at the merge. The restart of the scheduler and the worker reads the new limit `FLOOD_STALE_RUN_MINUTES`, so do it between runs.
+2. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
@@ -23,12 +21,7 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 4 points of work remain.
 **Sprint file:** [[SPR-014-finish-the-remaining-backend|SPR-014]]
 
 **Status:** active.
-47 points picked, 43 done.
-
-### Reviewed - US-123 Delete flood_on_roads, road_segment, and flood_road_values
-
-**Story:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
-P2, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+47 points picked, 45 done.
 
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 
