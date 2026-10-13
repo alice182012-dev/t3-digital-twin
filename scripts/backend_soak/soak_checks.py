@@ -10,7 +10,9 @@ Four subcommands.
                    Read the `docker inspect` lines that run_soak.sh prints. Exit code 1 if a container
                    started after the soak start, was OOM killed, is not running, or could not be read.
     roads          Pick real edges from `edge_depth` whose depth lies between two vehicle limits,
-                   call `POST /route` for each vehicle, and compare with the answer the limits give.
+                   call `POST /route` of the backend for each vehicle, and compare with the answer the limits
+                   give. The dry control goes straight to GraphHopper (`--graphhopper`), because the backend
+                   floods even a request with no run and valid_time.
     latency        Time `POST /route` for a short, a medium, and a long trip.
 
 `roads` and `latency` need `psycopg2` and the server's network, so run them inside the backend container:
@@ -396,12 +398,12 @@ def run_roads(args) -> int:
         end = far_point([tuple(c) for c in json.loads(after_json)["coordinates"]], piece)
         waypoints = [point_along(piece, 0.2), point_along(piece, 0.8)]
 
-        def route_pair(vehicle, extra):
+        def route_pair(base, vehicle, extra):
             nonlocal server_errors
             result = []
             for a, b in ((start, end), (end, start)):
                 status, payload, _ = post_json(
-                    f"{args.backend}/route",
+                    f"{base}/route",
                     {"points": [list(a), list(b)], "profile": vehicle, "points_encoded": False,
                      "instructions": False, **extra},
                 )
@@ -413,8 +415,8 @@ def run_roads(args) -> int:
 
         for vehicle in vehicles:
             outcome = expected_outcome(cm, vehicle)
-            control = route_pair(vehicle, {})
-            directions = route_pair(vehicle, body_times) if dry_shows_promise(outcome, control) else []
+            control = route_pair(args.graphhopper, vehicle, {})
+            directions = route_pair(args.backend, vehicle, body_times) if dry_shows_promise(outcome, control) else []
             verdict = judge_vehicle(outcome, directions, control)
             if verdict != "skip":
                 judged[(label, vehicle)] = judged.get((label, vehicle), 0) + 1
@@ -557,6 +559,7 @@ def main(argv=None) -> int:
     roads.add_argument("--backend", default="http://localhost:8010")
     roads.add_argument("--run", help="run name or local timestamp, for example 20261002T021500. Default: the cell the engine judges, else the newest run.")
     roads.add_argument("--valid-time", help="forecast time, for example 2026-10-02T02:15:00+07:00. Default: the cell the engine judges, else the run's first step.")
+    roads.add_argument("--graphhopper", default="http://graphhopper:8989", help="GraphHopper, for the dry control. The control bypasses the backend, because the backend floods a request with no run or valid_time (time-aware engine, DEMO pin).")
     roads.add_argument("--per-bucket", type=int, default=4, help="pairs to judge per depth bucket and vehicle")
     roads.add_argument("--oversample", type=int, default=5, help="candidate edges per bucket as a multiple of --per-bucket, so skipped pairs can be replaced")
     roads.add_argument("--tol-m", type=float, default=6.0)
