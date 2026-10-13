@@ -79,11 +79,6 @@ P1, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
 **Story:** [[US-102-replay|US-102]].
 P0, M (3 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
-### Done - US-070 Stop a slow step
-
-**Story:** [[US-070-slow|US-070]].
-P1, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
-
 ## Product backlog
 
 1 stories.
@@ -104,7 +99,19 @@ All blockers: [[Blockers board]].
     def test_a_quoted_title_keeps_its_quotes(self):
         self.write("sprints", "SPR-013-prove.md", SPRINT)
         self.write("stories", "US-035-slow.md", story("US-035", 'Revalidate \\"loading is slow\\"', "Done", "P1", "S", "13"))
-        self.assertIn('### Done - US-035 Revalidate "loading is slow"', render_vault(self.vault))
+        output = render_vault(self.vault)
+        self.assertNotIn("US-035", output)
+        self.assertIn("2 points picked, 2 done.", output)
+
+    def test_only_open_stories_get_a_heading(self):
+        self.write("sprints", "SPR-013-prove.md", SPRINT)
+        self.write("stories", "US-070-slow.md", story("US-070", "Stop a slow step", "Done", "P1", "S", "13"))
+        self.write("stories", "US-089-start.md", story("US-089", "Start a replay", "In progress", "P1", "M", "13"))
+        output = render_vault(self.vault)
+        self.assertIn("### In progress - US-089 Start a replay", output)
+        self.assertNotIn("### Done", output)
+        self.assertNotIn("US-070", output)
+        self.assertIn("5 points picked, 2 done.", output)
 
     def test_no_sprint_and_no_blockers(self):
         output = render_vault(self.vault)

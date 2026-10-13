@@ -191,6 +191,8 @@ def render_sprint(sprint: Optional[Sprint], stories: list) -> list:
     if not picked:
         lines += ["", "No story has this sprint yet."]
     for status in STATUS_ORDER:
+        if status in CLOSED_STATUSES:
+            continue
         for story in sorted((s for s in picked if s.status == status), key=story_key):
             lines += ["", f"### {story.status} - {story.us_id} {story.title}", ""]
             lines.append(f"**Story:** {link(story.stem, story.us_id)}.\n{describe(story)}")
