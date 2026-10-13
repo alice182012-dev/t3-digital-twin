@@ -101,7 +101,9 @@ A run that `edge_depth_run` does not list is an error. Task `9c` writes the regi
 Rows loaded before the move held piece ids (`<way>#<index>`), which cannot be mapped to edges, because the pieces and the edges split a way at different points.
 They came from test rain, so the owner decided on 2026-10-12 to delete them.
 The rename step deletes every row of `depth_history` and `history_moment` once, so no moment reads as dry for an edge key without a run behind it.
-Rebuild the history from runs in `edge_depth` ([[US-113-backfill-per-segment-depth-history|US-113]]).
+Rebuild the history from runs in `edge_depth` ([[US-113-backfill-per-segment-depth-history|US-113]], [[decision-log|D-047]]).
+The backfill is a call of `load_run.py` for each run of `edge_depth_run`, oldest first.
+On 2026-10-13 it loaded the 2 runs that the table holds, and a second pass gave the same 39,031 rows over 3,021 edges and 24 moments.
 The migration ran on the server on 2026-10-13, and both tables held no row after it.
 Loading run `20261010T223000` twice gave 20,989 rows over 2,874 edges and 8 moments each time.
 

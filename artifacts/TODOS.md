@@ -10,11 +10,11 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the remaining backend" and 18 picks of 41 points against a forecast of 16 ([[decision-log|D-041]]). 25 points are `Done` on 2026-10-13. [[SPR-014-finish-the-remaining-backend|SPR-014]] holds the table and the risks.
-1. Order of the open stories, from their dependencies. 16 points remain: [[US-113-backfill-per-segment-depth-history|US-113]] (2), [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] (2), [[US-128-run-the-test-suites-against-the-test-databases|US-128]] (2), [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (2), [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2), [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] (3, `In progress`), and [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] (3, `In progress`).
+1. Order of the open stories, from their dependencies. 16 points remain. Two stories are `Reviewed` and wait for the owner: [[US-113-backfill-per-segment-depth-history|US-113]] (2) and [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] (3). [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] (3) is `In progress`. Four are `Ready`: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] (2), [[US-128-run-the-test-suites-against-the-test-databases|US-128]] (2), [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] (2), and [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2).
    1. Now, with no dependency between them.
       - The 50-run check of US-118 runs in the worker on the test dataset (started 04:07 UTC on 2026-10-13, about 6 minutes per run, so it ends at about 09:10 UTC). The session job reads `data/mapping/testdata_rebuild/run50.log` and records the result. Then ask the owner to accept US-118. The run also fills `edge_depth` in `minio_custom_test` for 50 runs, which step 3 needs.
-      - Ask the owner two questions that change the order. First, drop the road-values part of [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] and close it as the tile rebuild, because US-123 deletes `flood_on_roads` and `flood_road_values`, so the rebuild and its comparison with the snapshot rows would be thrown away. Second, rescope [[US-113-backfill-per-segment-depth-history|US-113]] to read `edge_depth`, because its text reads `flood_road_values`, the loader moved to `edge_depth` with [[US-122-point-depth-history-at-the-edge-table|US-122]], and [[decision-log|D-042]] says to rebuild the history from runs in `edge_depth`.
-   2. Then [[US-113-backfill-per-segment-depth-history|US-113]] (P1). It comes first among the sprint stories, because `edge_depth` keeps only the pinned run and the newest ones, so the runs it can load shrink with time. It needs only the loader, and it does not wait for US-123. It loads each run of `edge_depth_run` with `load_run.py`.
+      - The owner decided on 2026-10-13 to drop the road values of [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] ([[decision-log|D-046]]) and to rescope [[US-113-backfill-per-segment-depth-history|US-113]] to `edge_depth` ([[decision-log|D-047]]). Both are `Reviewed` and wait for the owner's acceptance.
+   2. [[US-113-backfill-per-segment-depth-history|US-113]] is `Reviewed`: it loaded the 2 runs of `edge_depth_run` on 2026-10-13, and no other run is left to load. Ask the owner to accept it and US-126.
    3. Then [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]. Its dependencies, US-119 to US-122, are `Done`. Write the change while the check of step 1 runs, and test it when the check ends. The change touches about 35 files:
       - The DAGs: `routing_adapter` (drop `flood_on_roads` and move the `FLOOD_ROAD_VALUES` event to `9c`), `flood_mapping_full` (no `create_road_segment_table`), `flood_history` (its trigger), `core_assets.py`, and the state-test DAG.
       - `scripts/flood_roads/`, `scripts/roads/`, `create_flood_road_tables.py`, `create_road_segment_table.py`, `geojson_to_pg.py`, and their tests.
@@ -51,15 +51,15 @@ Sprint 14 is `active` from 2026-10-12 to 2026-10-25, with the goal "Finish the r
 **Story:** [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
 P1, M (3 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
 
-### In progress - US-126 Rebuild the raster tiles and road values from the NetCDF
-
-**Story:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]].
-P3, M (3 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
-
-### Ready - US-113 Backfill per-segment depth history from flood_road_values
+### Reviewed - US-113 Backfill the depth history from the runs of the edge depth table
 
 **Story:** [[US-113-backfill-per-segment-depth-history|US-113]].
 P1, S (2 points), [[EP-21-industry-analysis-on-the-flood-data|EP-21]].
+
+### Reviewed - US-126 Rebuild the raster tiles from the NetCDF
+
+**Story:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]].
+P3, M (3 points), [[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]].
 
 ### Ready - US-114 Prove the real-rain archive on the first run above 5 mm/h and measure growth
 

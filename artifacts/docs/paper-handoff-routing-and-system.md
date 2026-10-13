@@ -92,9 +92,9 @@ The stories of the day are `Done` or `In progress`, as the following paragraphs 
 Its code and its two tables are on the server, and task `9c_build_edge_depth_table` wrote 16,370 rows for one run on a hand-made event.
 The first `9c` run on a real simulation and the check over 50 consecutive runs are open.
 
-[[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] is `In progress`.
+[[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] is `Reviewed`, and the owner has not accepted it.
 `scripts/testdata/rebuild_tiles.py` rebuilds the depth raster tiles of a stored storm run from its NetCDF, in about 5 minutes per run, and a second call skips the run.
-The road-values part is not built.
+The owner dropped the road values on 2026-10-13 ([[decision-log|D-046]]).
 
 Accepted on 2026-10-13, after a server check: [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] (the three modes, on written results), [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] (the pin), [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (the `forecast_mode` row), [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]].
 Their limits matter for any claim.
@@ -103,7 +103,7 @@ Their limits matter for any claim.
 - `US-129`: a publish and its prunes left the pinned run in every table and folder, but the pinned run was inside the kept window, so the run does not show the pin protecting a run that would be pruned.
 - `US-120`: the soak `roads` check passed 104 pairs with 0 failures, but all 51 `blocked` pairs were skipped. That run shows no kept `blocked` promise.
 - `US-121`: the share of closed edges per vehicle is within 2 points of the piece-based share for run `20261010T223000`. The old extractor was not run on that run, and the piece-based numbers come from `flood_road_values`.
-- `US-122`: the history holds the one run loaded on 2026-10-13. [[US-113-backfill-per-segment-depth-history|US-113]] (`Ready`) rebuilds the rest.
+- `US-122`: the history holds the one run loaded on 2026-10-13. [[US-113-backfill-per-segment-depth-history|US-113]] (`Reviewed`) loaded the 2 runs that `edge_depth` holds, and no other run is left to load.
 
 Accepted earlier: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] (the stable key, details in "Shared background"), [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], and [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]].
 `US-119` checked its first criterion, a newest run with no wet edge hiding an older wet run, only against PostGIS, because the server has no such run yet.
@@ -124,12 +124,12 @@ Accepted earlier: [[US-117-export-a-stable-key-with-each-graph-edge|US-117]] (th
 | Question 3, proof | A | `Done`. The written proof. | [[sticky-closure-proof]], `US-090` |
 | Question 3, conservatism of sticky against an arrival-only reference | A | `Done` 2026-10-10. `BL-027` `resolved`. The decision to keep sticky is `D-023`. | `US-093`, [[BL-027-arrival-only-reference-is-inexact-on-the-real-graph\|BL-027]] |
 | Storage growth over the replay (US-069) | B | `Done` under `D-015`. Hour 6 to hour 12 growth was under the 10 percent pass mark. The hour-6 method is not recorded. | `US-069`, `artifacts/logs/2026-10-10.md` |
-| Depth history store and its compression | B | `US-106` `Done`. The compression ratio is 9.7 on the full storm (`US-127`) and 1.7 on one run. The `edge_key` move is on the server (`US-122` `Done`, 20,989 rows over 2,874 edges and 8 moments for one run). The backfill is not (`US-113` `Ready`). | [[timescaledb-schema]], `US-106`, [[US-127-build-the-history-and-metrics-from-the-restored-road-values\|US-127]] |
+| Depth history store and its compression | B | `US-106` `Done`. The compression ratio is 9.7 on the full storm (`US-127`) and 1.7 on one run. The `edge_key` move is on the server (`US-122` `Done`, 20,989 rows over 2,874 edges and 8 moments for one run). The backfill of the 2 runs in `edge_depth` is `Reviewed` (`US-113`). | [[timescaledb-schema]], `US-106`, [[US-127-build-the-history-and-metrics-from-the-restored-road-values\|US-127]] |
 | Flood tile build as its own DAG, and the two inputs compared | B | `US-103` `Done`. `US-104` `Superseded` after 5 paired runs, and the `postgis` input builds no tiles as shipped. | [[decision-log\|D-027]], [[BL-029-postgis-tile-input-drops-every-polygon\|BL-029]] (`open`) |
 | Forecast mode `LIVE`, `PENDING`, `DEMO`, and the pinned demo flood | B | `US-111` `Done`: the `forecast_mode` row is on the server. `US-129` `Done`: the pin is on the server. `US-130` `Done`: the three modes are checked on the server, and the owner accepted the written results with no screenshot. The frontend banner is `Not started` ([[US-131-show-the-demo-flood-banner-and-the-pinned-frame\|US-131]]). | `D-030`, `D-043` |
 | Real-rain archive of `results_3di.nc` and its growth | B | Pending a forecast above 5 mm/h. | `US-114`, `D-037` |
 | Edge depth table replaces `flood_road_values` (staged) | B | In progress. `US-116`, `US-117`, `US-119` `Done`. `US-118` `In progress`. `US-120` to `US-122` `Done`. `US-123`, the deletion, is `Ready`. The closed share per vehicle from `edge_depth` is within 2 points of the piece-based share (`US-121`). | [[decision-log\|D-038]], [[SPR-014-finish-the-remaining-backend\|SPR-014]] |
-| Test dataset: snapshot, restore, history and metrics from it | B | `US-124`, `US-125`, `US-127` `Done`. `US-126` `In progress` (the tile rebuild is built, the road values are not). `US-128` `Ready`. | [[test-dataset]], [[EP-22-keep-a-real-storm-as-the-test-dataset\|EP-22]] |
+| Test dataset: snapshot, restore, history and metrics from it | B | `US-124`, `US-125`, `US-127` `Done`. `US-126` `Reviewed` (the tile rebuild is checked on the server, and the road values are dropped). `US-128` `Ready`. | [[test-dataset]], [[EP-22-keep-a-real-storm-as-the-test-dataset\|EP-22]] |
 
 Sprint 14 ends 2026-10-25 and holds more points than the forecast ([[decision-log|D-041]]).
 Any story not `Done` at that review leaves the sprint, so re-read the story status before the writing starts.

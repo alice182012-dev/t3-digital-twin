@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [testing, test-dataset, netcdf, snapshot]
 related: ["[[decision-log|D-039]]", "[[EP-22-keep-a-real-storm-as-the-test-dataset|EP-22]]", "[[core-output-contract]]", "[[timescaledb-schema]]", "[[3di-simulation-orchestration]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # Test dataset
@@ -35,7 +35,8 @@ The files are read-only.
 
 ## What can be rebuilt
 
-The pipeline functions rebuild every derived table from the NetCDF in this order: `download_result` output to `calculate_depth` (depth GeoTIFF), the tile load of `9b_load_depth_raster`, `flood_on_roads.compute`, `build_edge_depth`, `load_run` of `flood_history`, and `extract_run` for the metrics.
+`scripts/testdata/rebuild_tiles.py` runs the first two steps for the runs it is given ([[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]]), and the owner dropped the road values ([[decision-log|D-046]]), because [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes them.
+The pipeline functions rebuild every derived table from the NetCDF in this order: `download_result` output to `calculate_depth` (depth GeoTIFF), the tile load of `9b_load_depth_raster`, `build_edge_depth`, `load_run` of `flood_history`, and `extract_run` for the metrics.
 The owner decided on 2026-10-12 that this is done when a test needs it and not up front ([[decision-log|D-039]]).
 Four things are not in the snapshot because they did not exist on 2026-10-12: the raster tiles of these runs, the depth GeoTIFFs, the MinIO vector tiles, and `depth_history`.
 The restore script does not load raster tiles.

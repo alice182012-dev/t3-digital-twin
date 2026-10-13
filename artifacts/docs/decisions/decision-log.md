@@ -726,3 +726,27 @@ is the maximum.
 - **Affects:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
 - **Revisit if:** the archive task behaves differently for a run that a forecast opened.
 
+## D-046: US-126 rebuilds the raster tiles only, and the road values are dropped
+
+- **Date:** 2026-10-13
+- **Status:** active.
+- **Decided by:** The owner, on 2026-10-13, who answered "yes drop US-126 road values" to the proposal in the session.
+- **Decision:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] rebuilds the depth rasters and the raster tiles of a stored storm run from its NetCDF, and it does not rebuild road values or compare them with the snapshot rows.
+- **Why:** [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes `flood_on_roads` and `flood_road_values` ([[decision-log|D-038]]), so a rebuild of the road values and its comparison with the snapshot rows would be deleted a few days later. The edge depth rows come from the tiles, and `build_edge_depth.py` rebuilds them.
+- **Alternatives:** Build the road values first and delete them with US-123. Not chosen, because the work has no reader after the deletion.
+- **Evidence:** the script `scripts/testdata/rebuild_tiles.py` and the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], which uses it.
+- **Affects:** [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] (its second Given is removed), [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] (the test dataset scripts leave the old road tables), [[test-dataset]].
+- **Revisit if:** a test needs the old road values after US-123.
+
+## D-047: US-113 backfills the depth history from the runs of the edge depth table
+
+- **Date:** 2026-10-13
+- **Status:** active.
+- **Decided by:** The owner, on 2026-10-13, who answered "rescope US-113" to the proposal in the session.
+- **Decision:** [[US-113-backfill-per-segment-depth-history|US-113]] loads every run that `edge_depth_run` lists into `depth_history`, oldest first, with `scripts/flood_history/load_run.py`. It does not read `flood_road_values`.
+- **Why:** The loader reads `edge_depth` since [[US-122-point-depth-history-at-the-edge-table|US-122]]. The rows that `flood_road_values` holds are keyed by piece and cannot be mapped to edges ([[decision-log|D-042]]), and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deletes that table.
+- **Alternatives:** Backfill from `flood_road_values` before US-123. Not chosen, because the rows have the wrong key.
+- **Evidence:** the details of [[US-113-backfill-per-segment-depth-history|US-113]].
+- **Affects:** [[US-113-backfill-per-segment-depth-history|US-113]], [[timescaledb-schema]].
+- **Revisit if:** the history of runs that left `edge_depth` is needed. The edge depth files of earlier runs are the only source for that.
+
