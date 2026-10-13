@@ -22,7 +22,7 @@ Chosen by the product owner on 2026-10-13 ("Frontend against the mockup").  The 
 
 - **Dates.** The sprint runs from Tuesday 2026-10-13 to Sunday 2026-10-25, which is 13 days. It ends on the Sunday that the calendar of [[decision-log|D-026]] gave to [[SPR-014-finish-the-remaining-backend|SPR-014]], so Sprint 16 still starts on Monday 2026-10-26., confirmed by the owner on 2026-10-13 ([[decision-log|D-051]]).
 - **Velocity.** [[SPR-014-finish-the-remaining-backend|SPR-014]] gave 45 points in two days, and [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] gave 10 in one day ([[Velocity]]). The owner set the forecast at 45 points.
-- **Picks.** Sixteen stories make 35 points, which is 10 under the forecast. The backlog holds no more `Ready` frontend work: [[US-083-build-a-mobile-version-of-screen-2e|US-083]] (an L) was split into a layout part and [[US-143-build-the-mobile-version-of-screen-2e|US-143]], and nothing else of [[EP-19-frontend-against-the-mockup|EP-19]] is left. Stories that come up in the sprint fill the gap.
+- **Picks.** Twenty-two stories make 47 points, which is 2 over the forecast. [[US-083-build-a-mobile-version-of-screen-2e|US-083]] (an L) was split into a layout part and [[US-143-build-the-mobile-version-of-screen-2e|US-143]]. The six stories [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] to [[US-149-match-the-autofill-rows-to-the-mockup|US-149]] came from the differences that [[US-076-compare-the-live-app-with-the-mockup|US-076]] found.
 - **Left out.** [[US-141-host-photon-for-vietnam-next-to-the-backend|US-141]] is on hold by the owner's decision of 2026-10-13. [[US-061-show-the-place-name-faster-after-a|US-061]] waits for it, and the owner set it to the lowest priority. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] waits for real rain.
 - **Order and risk.** [[US-076-compare-the-live-app-with-the-mockup|US-076]] comes first, because six stories depend on its screenshots and its list of differences. Its output can add stories, which enter the sprint only if they threaten the goal. [[US-082-show-the-travel-time-and-the-maximum|US-082]] starts with a check of the cost of one depth request for each tab. [[US-083-build-a-mobile-version-of-screen-2e|US-083]] and [[US-084-design-the-no-route-and-wait-until|US-084]] need the owner's approval of a design before their build.
 - **Two backend stories.** [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] is the action of the last retrospective, and it is the only story that touches the pipeline. [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]] reads the backend of [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]], which is `Done`.
@@ -46,7 +46,13 @@ Chosen by the product owner on 2026-10-13 ("Frontend against the mockup").  The 
 | 14 | [[US-083-build-a-mobile-version-of-screen-2e\|US-083]] | Design a mobile layout of screen 2e | S | 2 | US-077, US-078, US-082 |
 | 15 | [[US-143-build-the-mobile-version-of-screen-2e\|US-143]] | Build the mobile version of screen 2e | M | 3 | US-083 |
 | 16 | [[US-033-write-a-project-design-md-with-real\|US-033]] | Write a project DESIGN.md with real design tokens | S | 2 | US-077 to US-083 |
-| | | Total | | 35 | |
+| 17 | [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles\|US-144]] | Use the mockup thumbnails for the Map and Flood tiles | S | 2 | none |
+| 18 | [[US-145-stop-the-legend-from-covering-the-map-controls\|US-145]] | Stop the legend from covering the map controls | S | 2 | none |
+| 19 | [[US-146-match-the-routing-panel-frame-to-the-mockup\|US-146]] | Match the routing panel frame to the mockup | M | 3 | US-079 |
+| 20 | [[US-147-remove-the-elevation-widget-from-the-route-view\|US-147]] | Remove the Elevation widget from the route view | XS | 1 | none |
+| 21 | [[US-148-show-the-place-name-in-the-destination-field\|US-148]] | Show the place name in the destination field | S | 2 | none |
+| 22 | [[US-149-match-the-autofill-rows-to-the-mockup\|US-149]] | Match the autofill rows to the mockup | S | 2 | none |
+| | | Total | | 47 | |
 
 - **Open decisions.** None.
 
@@ -84,3 +90,4 @@ The top of the backlog after this review: the order, the stories split, and the 
 
 - **2026-10-13, active.** Planned right after [[SPR-014-finish-the-remaining-backend|SPR-014]] ended early ([[decision-log|D-051]]). Sixteen stories are picked with `sprint: 15`, and they make 35 points against a forecast of 45.
 - **2026-10-13, active.** The product owner accepted [[US-076-compare-the-live-app-with-the-mockup|US-076]], so it is `Done` (3 of 35 points). Six backlog stories, [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] to [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], were drafted from its differences and have no `sprint`.
+- **2026-10-13, active.** The product owner picked [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] to [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], so the sprint holds 22 stories and 47 points against a forecast of 45. [[US-077-match-the-depth-chart-columns-and-the|US-077]] is `In progress`.

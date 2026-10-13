@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-077"
 story_label: "2"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Ready
+status: In progress
 priority: P2
 estimate: S
 sprint: 15
@@ -27,3 +27,4 @@ Evidence: None yet.
 ## Status history
 
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
+- **2026-10-13, In progress.** Started after [[US-076-compare-the-live-app-with-the-mockup|US-076]] was accepted.

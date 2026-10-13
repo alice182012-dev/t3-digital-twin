@@ -4,11 +4,11 @@ type: user-story
 us_id: "US-146"
 title: "Match the routing panel frame to the mockup"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Not started
+status: Ready
 kind: story
 priority: P2
 estimate: M
-sprint: 
+sprint: 15
 subsystem: floodmap-frontend
 source_ideas: []
 related: ["[[US-076-compare-the-live-app-with-the-mockup|US-076]]", "[[EP-19-frontend-against-the-mockup|EP-19]]"]
@@ -35,6 +35,7 @@ Evidence: None yet.
 ## Status history
 
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
+- **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 
 ## Evidence and details
 
