@@ -93,7 +93,13 @@ Read the newest status row with `psql`, and take a screenshot of the query resul
    Real runs execute in the worker.
    The test ran again in the worker, and it replaced the row of the same slot.
 5. `routing_reader` reads the newest row, and its `INSERT` fails with `permission denied for table forecast_mode`.
-6. Not tested on the server: the move of a row from `PENDING` to `LIVE` by `9b_load_depth_raster`, which needs a real run.
-   The DAG tests cover it.
+6. Not tested on the server with a real run: the move of a row from `PENDING` to `LIVE` by `9b_load_depth_raster`, which needs a cold start with a forecast above the gate.
+   The DAG tests cover it, and item 8 covers the functions on the server.
 7. The three modes were read through the backend with a temporary row of slot `2030-01-01`, which was deleted afterwards ([[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]).
+8. On 2026-10-13, in the worker and against a scratch database (`us111_scratch_test`, dropped afterwards), the functions of the two tasks gave the expected modes (`evidence/US-111-pending-to-live-scratch-db-2026-10-13.txt`).
+   `record_decision` with the gate open and no published raster gave `PENDING`.
+   After `run_output.record` wrote the `depth_raster` row, `mark_live` changed the row and the mode read `LIVE`.
+   A second `mark_live` changed nothing.
+   The next decision with a raster younger than 45 minutes gave `LIVE` at once, as the real runs of 03:30 and 03:45 UTC did.
+   This checks the functions and not the DAG task.
 

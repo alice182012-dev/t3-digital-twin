@@ -106,7 +106,7 @@ The road-values part is not built.
 Accepted on 2026-10-13, after a server check: [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] (the pin), [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (the `forecast_mode` row), [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]].
 Their limits matter for any claim.
 
-- `US-111`: the move of a row from `PENDING` to `LIVE` by `9b_load_depth_raster` was not run on the server, because it needs a real run. The DAG tests cover it.
+- `US-111`: the move of a row from `PENDING` to `LIVE` was run on the server for the functions, against a scratch database, and not for the DAG task, which needs a cold start with a forecast above the gate. The DAG tests cover the task.
 - `US-129`: a publish and its prunes left the pinned run in every table and folder, but the pinned run was inside the kept window, so the run does not show the pin protecting a run that would be pruned.
 - `US-120`: the soak `roads` check passed 104 pairs with 0 failures, but all 51 `blocked` pairs were skipped. That run shows no kept `blocked` promise.
 - `US-121`: the share of closed edges per vehicle is within 2 points of the piece-based share for run `20261010T223000`. The old extractor was not run on that run, and the piece-based numbers come from `flood_road_values`.
