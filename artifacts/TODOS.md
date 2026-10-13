@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 2 points of work remain.
-1. Decide [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]: the standing-flood chain started at 09:45 UTC on 2026-10-13 cannot end, because the model keeps permanent water (157 edges at or above 5 cm in every run, 223 cm at one edge). It runs a real 3Di simulation every slot with a forecast of 0 mm/h. `flood_mapping_full` is paused until the owner picks a fix (option B, a steady-state test, is the smallest).
+1. `flood_mapping_full` is paused. Unpause it for real rain, or after [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] (backlog) gives the chain a stop test that ignores the model's permanent water.
 2. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is unpaused and runs only on a flood that stands or a forecast above 5 mm/h.
 <!-- next-action:end -->
 
@@ -56,8 +56,6 @@ The top 10 by priority:
 
 ## Open blockers
 
-- [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]], P1, open.
-  The standing-flood rule never ends because the model holds permanent water
 - [[BL-018-route-panel-stuck-on-loading-bars|BL-018]], P2, monitoring.
   The route panel stayed on its grey loading bars
 - [[BL-021-place-name-slow-after-map-tap|BL-021]], P3, open.

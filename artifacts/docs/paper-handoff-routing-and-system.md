@@ -321,7 +321,7 @@ Other work for Paper A: [[US-096-check-each-road-at-the-requested-departure|US-0
 
 ## How to run the writing job
 
-1. Re-read this page, `artifacts/TODOS.md`, and the logs dated after 2026-10-13. Update the results table and the section "Accepted and open work on 2026-10-13". Check three items first: whether `US-114` is `Done`, whether `BL-030` has a fix, and whether `flood_mapping_full` is still paused.
+1. Re-read this page, `artifacts/TODOS.md`, and the logs dated after 2026-10-13. Update the results table and the section "Accepted and open work on 2026-10-13". Check three items first: whether `US-114` is `Done`, whether `US-142` (the stop test for the standing-flood chain) is built, and whether `flood_mapping_full` is still paused.
 2. Ask the author to confirm the two titles and the one-claim statements above.
 3. For each paper, run `research-writing-assistant:paper-orchestration`: outline with an evidence map first (`/ars-outline` is available), then one section at a time, each checked against its cited file.
 4. Run `research-writing-assistant:peer-review` and `/ars-citation-check` before calling a draft ready. Verify every citation was opened (see `failed-sources.md`).
