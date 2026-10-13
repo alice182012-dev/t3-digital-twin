@@ -9,7 +9,7 @@ last_updated: 2026-10-13
 # Block diagram: T3-Digital-Twin architecture
 
 Companion diagram for `artifacts/raw/T3-Digital-Twin_Architecture.md`, section 3 (Container
-diagram). Synced with the code at commit `db99bc1` on the branch `modular` on 2026-10-08. Solid, filled
+diagram). Synced with the code on the branch `modular` on 2026-10-13, after [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]. Solid, filled
 boxes are Built. Dashed, grey boxes are Designed, not built. Dotted arrows lead into or between
 components that are not built. The box `extract_run.py` is Built, not scheduled: no DAG task calls it.
 
@@ -22,7 +22,7 @@ flowchart TB
     NCHMF["NCHMF<br/>(rainfall forecast)"]:::designed
     GAUGE["Gauge network APIs<br/>(hot start)"]:::designed
     DRAINAGE["thoatnuochanoi.vn<br/>(scraped by manholes_dag.py)"]:::built
-    PHOTON["Photon<br/>(place search)"]:::built
+    PHOTON["Photon, public instance<br/>(place search, slow: BL-021)"]:::built
     REPLAY["replay.ps1 + rain_replay.py<br/>(recorded rain event)"]:::built
     CITIZEN["Citizen app"]:::designed
     COUNCIL["Council dashboard"]:::designed
@@ -31,8 +31,9 @@ flowchart TB
   end
 
   subgraph PIPE["Simulation & postprocessing"]
-    AIRFLOW["Airflow DAG flood_mapping_full<br/>flood_mapping_dag.py<br/>(every 15 min, rain gate)"]:::built
-    ADAPTER["Airflow DAG routing_adapter<br/>(runs on the 9b asset event)"]:::built
+    AIRFLOW["Airflow DAG flood_mapping_full<br/>flood_mapping_dag.py<br/>(every 15 min, rain gate,<br/>standing flood, stale-run guard)"]:::built
+    ADAPTER["Airflow DAG routing_adapter<br/>(one task, 9c, on the 9b asset event)"]:::built
+    FLOODHIST["Airflow DAG flood_history<br/>load_run.py<br/>(runs on the asset edge_depth)"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
     METRICS["extract_run.py<br/>(no DAG task)"]:::built
@@ -41,17 +42,21 @@ flowchart TB
   end
 
   subgraph DATA["Data stores"]
-    PG["storage-postgres (PostGIS)<br/>edge_depth, edge_depth_run<br/>flood_extent_polygon (pruned, US-067)<br/>flood_extent_step<br/>flood_depth_raster_tile<br/>graph_edge, graph_edge_export"]:::built
+    PG["storage-postgres (PostGIS)<br/>edge_depth, edge_depth_run<br/>flood_depth_raster_tile<br/>flood_extent_polygon (pruned, US-067), flood_extent_step<br/>flood_run_output, forecast_mode, demo_pin<br/>flood_segment_metrics<br/>graph_edge, graph_edge_export"]:::built
     MINIO["MinIO<br/>flood-extent (.pbf tiles),<br/>initial-wl, manholes-data"]:::built
     EDGEVOL["Docker volume edge-depth-tables<br/>(run.bin files, latest pointer)"]:::built
-    TSDB["timescaledb<br/>histogram tables (empty, D-009)"]:::built
+    TSDB["timescaledb<br/>depth_history, history_moment<br/>(written by flood_history, US-106)"]:::built
     ULS["User Location Store"]:::designed
   end
 
   subgraph ROUTE["Routing & map"]
     GH["graphhopper<br/>(graphhopper-time-aware:local,<br/>java/time-aware-routing)"]:::built
-    BACKEND["floodmap-backend<br/>server.py<br/>(reads as routing_reader)"]:::built
+    BACKEND["floodmap-backend<br/>server.py<br/>(reads as routing_reader,<br/>modes LIVE, PENDING, DEMO)"]:::built
     FRONTEND["flood-routing-frontend<br/>graphhopper-maps"]:::built
+  end
+
+  subgraph ANALYSISSG["Industry analysis"]
+    ANALYSIS["analysis service<br/>(own container and roles,<br/>schema analysis, US-109)"]:::built
   end
 
   subgraph STORAGEUI["Storage UI"]
@@ -70,6 +75,10 @@ flowchart TB
   AIRFLOW --> DEPTH
   RASTERLOAD -->|asset event, run_ts| ADAPTER
   ADAPTER --> EDGETABLE
+  EDGETABLE -->|"asset edge_depth, run_ts"| FLOODHIST
+  PG -->|"edge_depth, edge_depth_run"| FLOODHIST
+  FLOODHIST -->|"depth_history, history_moment"| TSDB
+  AIRFLOW -->|forecast_mode rows| PG
   DEPTH --> RASTERLOAD
   RASTERLOAD -->|flood_depth_raster_tile| PG
   DEPTH --> TILEEXT
@@ -81,7 +90,9 @@ flowchart TB
   PG -->|edge_depth| METRICS
   TILEEXT -->|flood_extent_polygon| PG
   TILEEXT -->|.pbf tiles| MINIO
-  PG -->|contract tables| BACKEND
+  PG -->|"contract tables, forecast_mode, demo_pin"| BACKEND
+  PG -->|analysis_reader| ANALYSIS
+  TSDB -->|analysis_timescale_reader| ANALYSIS
   BACKEND -->|custom_model, or td_departure| GH
   GH --> BACKEND
   BACKEND --> FRONTEND
@@ -107,13 +118,21 @@ and it runs on the asset event of `9b_load_depth_raster`. `floodmap-backend` rea
 map overlay and the route fallback, and the engine reads the files. The plan was [[raster-first-flood-pipeline]].
 
 The `graphhopper` service builds from `java/time-aware-routing` and reads the edge depth files from the
-volume `edge-depth-tables`. `floodmap-backend` mounts the same volume read-only and sends a
-departure to the engine only when `TIME_AWARE_ROUTING` is on. The engine was deployed and tested on the
-server on 2026-10-07 (`US-055`). `scripts/routing_proof/rollout.ps1` turns the flag on for the proof and
-puts it back off unless run with `-LeaveOn`. At rest on 2026-10-08 the backend reads
-`TIME_AWARE_ROUTING=false`, so ordinary live routing is still single-timestep. Whether `-LeaveOn` was
-used is unconfirmed. `US-045` (live timing of task 9c) is still open. The decision record for the engine is
-ADR-008 in the architecture document.
+volume `edge-depth-tables`. `floodmap-backend` mounts the same volume read-only and sends a departure to the engine
+when `TIME_AWARE_ROUTING` is on. The flag is on since 2026-10-12 ([[decision-log|D-034]]). In `DEMO` mode the route skips
+the engine and reads the pinned step through the flood areas ([[decision-log|D-043]]). Task `9c` took 24 s on the real runs
+of 2026-10-13, and a run took 148 s from `3_calculate_depth` to the end of the chain ([[US-045-prove-the-table-on-the-server|US-045]],
+[[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]). The decision record for the engine is ADR-008 in the architecture document.
+
+`flood_mapping_full` writes one row of `forecast_mode` for each slot (`LIVE`, `PENDING`, or `DEMO`), and `demo_pin` holds the
+one step of the stored storm that `DEMO` shows. `GET /flood/mode` answers the mode, and in `DEMO` the point read, the flood areas,
+and the route use the pinned run ([[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]],
+[[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]], [[decision-log|D-030]]). The DAG skips a run whose slot is older than
+two hours, so an unpause cannot revive old work ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]).
+
+The DAG `flood_history` copies each run from `edge_depth` into the TimescaleDB tables `depth_history` and `history_moment`, and the
+`analysis` service reads both databases through its own read-only roles and writes only its schema `analysis`
+([[timescaledb-schema]], [[analysis-service]]). The pipeline tables stay in schema `public` ([[decision-log|D-049]]).
 
 TimescaleDB moved from Designed to Built on 2026-10-05 ([[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]],
 `US-066`), with a `netcdf_values` hypertable that task `3b_upload_netcdf_postgres` filled. On 2026-10-10 the ingest was retired ([[US-095-retire-the-netcdf-values-ingest|US-095]], D-018, D-022): the task, its scripts, and the tables `netcdf_values`, `netcdf_variable_catalog`, and `mesh_elements` are gone, and so are the three `storage-postgres` netcdf tables. `timescaledb` keeps only the three empty histogram tables. `flood_extent_polygon` on
