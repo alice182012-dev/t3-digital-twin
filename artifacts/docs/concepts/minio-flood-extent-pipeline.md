@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
-last_updated: 2026-10-12
+related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
+last_updated: 2026-10-13
 ---
 
 # MinIO flood-extent tile pipeline
@@ -23,9 +23,8 @@ public only through nginx's proxy, never directly.
 
 A fourth bucket, `flood-results-full`, held the GeoJSON of the retired road-mapping chain.
 `compose.yml` stopped creating it on 2026-09-24. The bucket and its objects on the server go at
-the Stage B deploy of [[raster-first-flood-pipeline]]. `scripts/mapping/upload_minio.py`,
-`scripts/mapping/merge_geojson.py`, and `scripts/database/geojson_to_pg.py` still default to that
-bucket name until they are deleted after the flood-on-roads comparison.
+the Stage B deploy of [[raster-first-flood-pipeline]]. The scripts that defaulted to that
+bucket name (`upload_minio.py`, `merge_geojson.py`, and `geojson_to_pg.py`) are deleted.
 
 Inside `flood-extent`, tiles land at `runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf`. `run_ts` is a
 fixed-width `YYYYMMDDTHHMMSS` string, chosen so lexical sort order matches chronological order.
@@ -60,9 +59,8 @@ later consumer of `FLOOD_DEPTH_FILES` must not delete the depth folder. The shar
 `dags/core_paths.py`.
 
 The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
-on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
-which routing reads. Since 2026-09-25 the `flood_on_roads` task writes that table instead, from the
-tiles that `9b_load_depth_raster` loads. See [[flood-on-roads]].
+on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`.
+The `flood_on_roads` task replaced it from 2026-09-25, and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted the task and the table on 2026-10-13. Routing reads `edge_depth` now.
 
 `publish_run` builds and uploads one timestep at a time, `FLOOD_EXTENT_WORKERS` (default 2) of them
 in parallel. If any timestep fails, `publish_run` raises without deleting tiles or rows already
@@ -107,13 +105,13 @@ duplicating it. `flood_extent_runs.list_runs` reads this table, and `list_timest
 `depth.tif` as 256 x 256 pixel PostGIS raster tiles. Its primary key is
 `(run_ts, valid_time_utc, tile_y, tile_x)`, and a GIST index covers `ST_ConvexHull(rast)`. The table
 exists so `GET /flood/points` ([[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]) can answer the exact depth at an
-arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges)
+arbitrary point, which `edge_depth` (per edge) and `flood_extent_polygon` (banded ranges)
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
 
 The `9b_load_depth_raster` task runs beside `3b_publish_depth_files` (which starts `9_build_flood_tiles`) and takes the same `run_ts` from
 `flood_extent.run_ts_for_depth_dir`, so both tables share one (run, valid time) key. The
-`flood_on_roads` task runs after `9b_load_depth_raster` and samples these tiles under the same
+`9c_build_edge_depth_table` task runs after `9b_load_depth_raster` and samples these tiles under the same
 `run_ts`. `raster_load.load_run` reprojects
 each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`. Then it uploads the GeoTIFF once,
 and PostGIS cuts it with `ST_Tile` inside the same `INSERT`. For each timestep the loader deletes

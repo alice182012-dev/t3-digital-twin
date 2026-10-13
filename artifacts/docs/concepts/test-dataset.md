@@ -29,7 +29,7 @@ The files are read-only.
 | `manifest.json` | One entry per run with `sim_id`, `run_ts`, the slot, the rain input, the size, and the SHA-256 of its NetCDF. |
 | `nc/<sim_id>/results_3di.nc` | The 3Di result of the run. This is the source of truth. |
 | `snapshot/MANIFEST.json` | The row count and SHA-256 of each snapshot file. |
-| `snapshot/<table>.csv.gz` | The rows of `flood_road_file`, `flood_road_values`, `flood_extent_step`, `flood_extent_polygon`, `flood_segment_metrics`, `road_segment`, `graph_edge`, and `graph_edge_export`, as CSV with a header. |
+| `snapshot/<table>.csv.gz` | The rows of `flood_road_file`, `flood_road_values`, `flood_extent_step`, `flood_extent_polygon`, `flood_segment_metrics`, `road_segment`, `graph_edge`, and `graph_edge_export`, as CSV with a header. The restore loads only the tables that still exist, so the files of `flood_road_file`, `flood_road_values`, and `road_segment` stay on disk unused ([[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]). |
 | `snapshot/edge_depth/<run_ts>.bin` | The edge depth file of each run ([[edge-depth-table-format]]). |
 | `snapshot/graph_export/` | `graph.json` and `edges.csv` of the graph export. |
 
@@ -51,7 +51,7 @@ On 2026-10-12, 58 of 58 NetCDF files, 8 of 8 CSV files, and 60 of 60 binary and 
 ## Retention
 
 The dataset has no retention, and the owner deletes it.
-The production retention is unchanged: 24 hours for the NetCDF and depth files, 24 hours of `flood_road_values`, the newest 8 runs of tiles and polygons, and the newest 8 edge depth files ([[decision-log|D-033]]).
+The production retention is unchanged: 24 hours for the NetCDF and depth files, 24 hours of `flood_road_values` until [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted it, the newest 8 runs of tiles and polygons, and the newest 8 edge depth files ([[decision-log|D-033]]).
 Rana keeps the result of each run until about 2026-11-09, which is a second copy of the NetCDF files.
 
 ## Test databases
@@ -81,6 +81,6 @@ docker exec airflow_new-airflow-worker-1 python /opt/airflow/scripts/testdata/bu
 ```
 
 - **Result on 2026-10-12.** 219,174 rows in `depth_history`, 65 moments in `history_moment`, and 786,956 rows in `flood_segment_metrics` over 58 runs. A run takes about 2 minutes, and a second run gives the same counts.
-- **Moments.** A run's moments come from `flood_road_file.forecast_times`, so no raster tile is needed.
+- **Moments.** A run's moments come from `edge_depth_run.valid_times`, so no raster tile is needed once the edge depth rows exist. The restore leaves `edge_depth` empty, so build its rows first with `rebuild_tiles.py` and `build_edge_depth.py` (the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] does that for 50 runs).
 - **Compression.** The script compresses every chunk of `depth_history` and prints the ratio. On the full storm it is 9.7, from 36 MB to 3,840 kB. A chunk with dead space from many deletes reads higher (12.0 on the first run), so decompress and compress again before a measurement.
 

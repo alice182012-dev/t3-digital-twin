@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [edge-depth-table, graphhopper, file-format, sprint-5]
 related: ["[[graph-reimport-procedure]]", "[[edge-depth-table-publish]]", "[[edge-depth-table-airflow-task]]", "[[PRD-003-edge-depth-table|edge-depth-table]]", "[[EP-08-edge-depth-table|edge-depth-table-stories]]", "[[SP-02-routing-engine-foundations|sprint-plan-2]]", "[[PRD-004-time-aware-routing-engine|time-aware-routing-engine]]", "[[graphhopper-backend]]", "[[flood-on-roads]]"]
-last_updated: 2026-10-12
+last_updated: 2026-10-13
 ---
 
 # Edge depth table format
@@ -35,7 +35,7 @@ The fixed part of the header is the first 16 bytes. The body starts at `16 + has
 ## Depth values
 
 - The unit is centimetres. The largest value is 65,535, which is 655.35 m.
-- The value is the deepest 1 m sample along the edge at that step, the same statistic as `flood_on_roads` (D-006).
+- The value is the deepest 1 m sample along the edge at that step, the same statistic as the deleted task `flood_on_roads` (D-006).
 - An edge with no model coverage reads 0. The file has no coverage flag (decision of 2026-09-29 in [[PRD-003-edge-depth-table|edge-depth-table]]).
 - The table holds no vehicle limit. Each reader applies its own.
 
@@ -68,7 +68,7 @@ The real graph has 67,833 edges and a run has 8 steps, so a real table is about 
 Task `9c_build_edge_depth_table` of the DAG `routing_adapter` writes `<EDGE_TABLE_DIR>/<run_ts>.bin` after `9b_load_depth_raster` of `flood_mapping_full` emits its asset event. The task runs in `routing_adapter` since commit `77169c3` on the branch `modular`, and `routing_adapter` is unpaused on the server (checked 2026-10-08). `artifacts/TODOS.md` records it running there from 2026-10-07 16:00 +07. The code is `scripts/edge_depth/`. The design and the reasons are in [[edge-depth-table-airflow-task]].
 
 - **Input, the export.** `graph.json` and `edges.csv` from `ExportEdges`, in `EDGE_EXPORT_DIR` (default `data/mapping/graph_export`). Airflow cannot run the export, because it runs in the GraphHopper image, so an operator writes the two files with `java/time-aware-routing/export-edges.sh` and `EXPORT_DEST`. `graph_edges.load_graph_edges` copies them into the PostGIS tables `graph_edge` and `graph_edge_export` when the hash differs from the loaded one, in one transaction.
-- **Sampling.** The method and the SQL of `flood_on_roads`, with `graph_edge` in place of `road_segment`: the midpoint of every metre along the edge, matched to its pixel by grid arithmetic, the deepest sample. Metres are rounded to whole centimetres and capped at 65,535. An edge that touches no wet pixel reads 0.
+- **Sampling.** The method and the SQL that `flood_on_roads` used, with `graph_edge` in place of `road_segment` (both deleted, [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]): the midpoint of every metre along the edge, matched to its pixel by grid arithmetic, the deepest sample. Metres are rounded to whole centimetres and capped at 65,535. An edge that touches no wet pixel reads 0.
 - **Output.** `<run_ts>.bin` in the format above, with the export's graph hash, the run name, and the step times in UTC. It is written under a temporary name and renamed. The `latest` pointer, retention, and the storage choice belong to `US-042`.
 - **A failure does not fail the core run.** The task is in `routing_adapter`, and nothing in `flood_mapping_full` waits for it. `hotstart_policy.should_hotstart` lets a run hotstart only when a run of the previous slot is in state `success` or `running`, so a red core run would force cold starts. A failed 9c turns only the `routing_adapter` run red. The no-op leaf `edge_table_done` that did this job inside the core DAG is gone.
 - **Slow steps.** `build_edge_depth.py` runs `ANALYZE flood_depth_raster_tile` first and cancels a sampling step after `DEFAULT_STEP_TIMEOUT_S` (120 s) (`US-070`).

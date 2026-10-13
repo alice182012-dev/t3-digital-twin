@@ -3,7 +3,7 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [flood-metrics, postgis, sprint-2]
-related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[flood-on-roads]]", "[[decision-log]]"]
+related: ["[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]", "[[PRD-002-t3-digital-twin-architecture-gaps|t3-digital-twin-architecture-gaps]]", "[[T3-Digital-Twin_Architecture]]", "[[routing-depth-threshold-model]]", "[[timescaledb-schema]]", "[[decision-log]]"]
 last_updated: 2026-10-13
 ---
 
@@ -51,15 +51,15 @@ Rows from before US-121 have `segment_key`, which is `md5(ST_AsEWKB(geom_4326))`
 After a graph re-import, a row keeps its key. Read a key by the rule in [[graph-reimport-procedure]].
 
 On the server (2026-10-13), `extract_run.py 20261010T223000` wrote 11,496 rows, which is 2,874 edges times 4 vehicle types.
-The share of wet edges that each vehicle cannot pass is within 2 points of the share of wet pieces from `flood_road_values` (car 16.7% and 15.1%, motorbike 27.3% and 25.3%).
+The share of wet edges that each vehicle cannot pass is within 2 points of the share of wet pieces from the deleted table `flood_road_values` (car 16.7% and 15.1%, motorbike 27.3% and 25.3%).
 The edge count is higher because the graph has more edges than the run has pieces.
 
 ## Metric definitions
 
 "T" is the first timestep of the segment's series. In the current pipeline, `run_ts` is the
 earliest depth timestamp, so T equals the run time. Older runs stored a different folder time,
-which is why the code does not use `flood_road_values.timestamp` as T. All times are the naive
-Vietnam local time that `flood_road_values.forecast_time` stores.
+which is why the code does not use a folder time as T. All times are the naive
+Vietnam local time (UTC+7), the form that the deleted table `flood_road_values` stored.
 
 Event times are sample times, not interpolated threshold crossings. You can reproduce every value
 by reading the segment's rows, and the precision equals the timestep spacing, which is 15 minutes
@@ -111,14 +111,10 @@ segment impassable for routing. For the values in use, see [[routing-depth-thres
 - The only real sample available locally, `flood_road_20260522T103000.geojson`, has two
   timesteps with equal depths on every segment. It checks the flat case, but not rising or falling
   depths. A 25-timestep `constant_cycle` run is still needed for a real check of those cases.
-- The row key may change. No story drives it since `US-021` was dropped. `segment_key` is `md5(ST_AsEWKB(geom_4326))` today. It could become the
-  `segment_id` of the `road_segment` table ([[raster-first-flood-pipeline]], Phase 4), so a road
-  piece has one ID across routing, TimescaleDB, and the route-forecast query. Rows already in
-  `flood_segment_metrics` use the old key and must be rebuilt after the change.
+- The row key changed with [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]]. New rows use `edge_key`, and rows from before keep `segment_key`, which is `md5(ST_AsEWKB(geom_4326))`. The `road_segment` table that this key could have come from was deleted with [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]].
 - Run on real data 2026-10-01 (`US-060`): `extract_run.py 20260930T020000` ran inside
   `airflow_new-airflow-worker-1` and wrote 23,324 rows for 5,831 segments and 4 vehicle types in
   about 4 seconds. The segment count equals the run's distinct `geom_4326` values, and
   `peak_depth_m` equals the largest `depth` of the segment for all 5,831. For that run,
-  `flood_road_values.segment_id` is filled on every row and maps 1 to 1 to the geometry, so the key
-  change above does not change the segment count.
+  the `segment_id` of the deleted table `flood_road_values` was filled on every row and mapped 1 to 1 to the geometry.
 

@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [concept, architecture, contract, routing, sprint-11]
 related: ["[[EP-10-routing-first-consumer|routing-first-consumer-stories]]", "[[SP-03-engine-in-backend-and-rollout|sprint-plan-3]]", "[[architecture-block-diagram]]", "[[graphhopper-backend]]", "[[edge-depth-table-format]]"]
-last_updated: 2026-10-06
+last_updated: 2026-10-13
 ---
 
 # Plan: routing as the first consumer of the core output
@@ -17,6 +17,8 @@ first customer. The scratch note with the cost and benefit of the options is `ma
 (untracked). Stories: [[EP-10-routing-first-consumer|routing-first-consumer-stories]], Sprint 11 of [[SP-03-engine-in-backend-and-rollout|sprint-plan-3]].
 
 ## What routing reads from the core today (read on 2026-10-06)
+
+Items 1 and 5 are history. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted `flood_road_values`, `road_segment`, `load_road_segments`, and `flood_on_roads` on 2026-10-13, and routing reads `edge_depth` and `graph_edge` now.
 
 1. `flood_depth_raster_tile` (6 queries), `flood_extent_polygon` (2), `flood_extent_step` (2), `flood_road_values` (3), in
    `floodmap/graphhopper-flood-road/backend/`.

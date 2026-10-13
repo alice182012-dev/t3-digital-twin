@@ -1,7 +1,7 @@
 ---
 date: 2026-09-24
 type: concept
-status: active
+status: archived
 tags: [postgis, raster, roads, routing, raster-first, sprint-2]
 related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[raster-first-flood-pipeline]]", "[[road-segment-table]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[flood-metric-extractor]]", "[[decision-log]]"]
 last_updated: 2026-09-25

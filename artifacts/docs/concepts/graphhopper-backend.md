@@ -28,9 +28,11 @@ routes around can never drift apart.
 
 The backend reads from separate PostGIS tables, and they are not interchangeable:
 
-- `flood_road_values`, keyed by `(timestamp, forecast_time)`. `flood_areas.py` reads this table to
-  build the `custom_model` for routing. The task `flood_on_roads` of the DAG `routing_adapter` writes it
-  from `flood_depth_raster_tile`, so it has its own writer and its own timing.
+- `edge_depth`, keyed by `(run_ts, valid_time_utc, edge_key)`, with the run registry `edge_depth_run` and the
+  geometry in `graph_edge`. `flood_areas.py` reads them to build the `custom_model` for routing and the overlay of
+  `/flood/areas` ([[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]]). The task
+  `9c_build_edge_depth_table` of the DAG `routing_adapter` writes them from `flood_depth_raster_tile`, so they
+  have their own writer and their own timing.
 - `flood_extent_polygon`, keyed by `(run_ts, valid_time_utc, dn_code)`, and `flood_extent_step`, keyed
   by `(run_ts, valid_time_utc)`. `flood_extent_runs.py` reads the polygon table for `GET /flood/runs`
   and the step table for `GET /flood/timesteps`, the map's timestep picker. See
@@ -42,7 +44,7 @@ The backend reads from separate PostGIS tables, and they are not interchangeable
 
 Routing and map display run on different cadences and different upstream pipelines on purpose. Do
 not point the routing derivation at `flood_extent_polygon`, and do not point the timestep picker at
-`flood_road_values`. `artifacts/raw/T3-Digital-Twin_Architecture.md`, section 4.2, records the decision.
+`edge_depth`. `artifacts/raw/T3-Digital-Twin_Architecture.md`, section 4.2, records the decision.
 
 ## Request flow for POST /route
 
@@ -180,17 +182,14 @@ not list it. It does since 2026-09-29 (see [[US-022-truck-routing-profile|truck-
 fraction of the vehicle's limit. Band `b4`, at the limit or deeper, is impassable.
 [[routing-depth-threshold-model]] lists the bands and their costs.
 
-The bands compare `depth` from `flood_road_values`. On rows that
-`scripts/flood_roads/flood_on_roads.py` writes, `depth` is the deepest 1 m sample along the piece. A
-road piece that is too deep on one short stretch can't be passed, so the maximum is the right test.
-The user chose the maximum for every reader in D-006 of [[decision-log]], and [[flood-on-roads]] has
-the comparison behind it. Rows from the old GeoJSON chain carry one pixel of a 20 m cell in `depth`,
-and the bands grade them the same way. Routing doesn't read `segment_id`.
+The bands compare the depth of the `edge_depth` rows, in whole centimetres. Each value is the deepest 1 m sample along the
+edge (`build_edge_depth.py`). A road edge that is too deep on one short stretch can't be passed, so the maximum is the right test.
+The user chose the maximum for every reader in D-006 of [[decision-log]], and the archived page [[flood-on-roads]] has
+the comparison behind it.
 
-`backend/test_flood_areas.py` builds its table from `scripts/database/create_flood_road_tables.py`'s
-`SQL`, the DDL the server runs. For each vehicle, with the limit read from `flood_utils.py`, it checks
-that a piece at 1.1 times the limit is in `b4` and a piece at 0.9 times the limit is not. It also
-checks one run that mixes old-chain rows and `flood_on_roads.py` rows.
+`backend/test_flood_areas.py` builds its tables from `scripts/database/create_edge_depth_tables.py` and
+`create_graph_edge_table.py`, the DDL the server runs. For each vehicle, with the limit read from `flood_utils.py`, it checks
+that an edge at 1.1 times the limit is in `b4` and an edge at 0.9 times the limit is not.
 
 ## Vehicle thresholds
 
@@ -292,7 +291,7 @@ Plan: [[route-departures-endpoint]]. `POST /route/departures` takes `points` and
   `flood_road_values`; fixed 2026-09-23 by running the migration that was supposed to add and
   backfill it. See [[BL-004-flood-route-missing-geom-column|flood-route-missing-geom-column]] for the full investigation. The GeoJSON
   ingestion chain that also wrote that column left `flood_mapping_full` on 2026-09-24, and
-  `flood_on_roads` in `routing_adapter` now writes `flood_road_values`.
+  `flood_on_roads` in `routing_adapter` then wrote `flood_road_values`, until US-123 deleted both on 2026-10-13.
 - Backend hardening: `server.py` and `flood_areas.py` postdate a single commit (`6394e27`, the
   Valhalla-to-GraphHopper rewrite). `backend/test_flood_areas.py` and `backend/test_server.py`
   (added 2026-09-23) now cover `derive_areas()`, `build_custom_model()`, and the full HTTP surface

@@ -4,10 +4,12 @@ type: concept
 status: active
 tags: [concept, airflow, postgis, raster, routing, timescaledb]
 related: ["[[EP-06-raster-first-pipeline|raster-first-pipeline-stories]]", "[[SP-01-prd-and-backlog|sprint-plan]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[minio-flood-extent-pipeline]]", "[[3di-simulation-orchestration]]", "[[BL-003-airflow-cannot-import-flood-utils|airflow-cannot-import-flood-utils]]", "[[EP-04-timescaledb-and-flood-metrics|timescaledb-and-flood-metrics]]"]
-last_updated: 2026-09-24
+last_updated: 2026-10-13
 ---
 
 # Raster-first flood pipeline
+
+This page is the plan of 2026-09-24. The sampler that it describes (`flood_on_roads`, `road_segment`, and `flood_road_values`) was deleted on 2026-10-13 ([[US-123-delete-flood-on-roads-and-flood-road-values|US-123]], [[decision-log|D-038]]), and the edge depth table replaced it. Read the page as history.
 
 Replace the GeoJSON chain in `dags/flood_mapping_dag.py` with tasks that read the depth rasters
 directly, the way `dags/flood_forecast_state_test_dag.py` already does for tiles.

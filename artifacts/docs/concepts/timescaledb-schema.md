@@ -36,7 +36,7 @@ The script creates one enum type and three hypertables.
 cycle name fails on insert.
 
 `issued_at` is the start time of the simulation run that produced the row, in UTC. For a
-`constant_cycle` run, it matches the `timestamp` column in `flood_road_values`. `valid_time` is
+`constant_cycle` run, it is the run time. `valid_time` is
 the moment a depth applies to. Every time column is `TIMESTAMPTZ`, unlike the naive `TIMESTAMP`
 columns in `storage-postgres`, because the depth files are named in Vietnam local time (UTC+7) and
 a naive column leaves the zone to convention.
@@ -76,8 +76,8 @@ for a question like "is the clinic reachable at 14:00".
 
 ## Forecast series and depth history
 
-`background_forecast_depth` holds only `background_cycle` output. The per-segment series from
-`constant_cycle` is already in `flood_road_values`, and the scope PRD adds TimescaleDB only for data
+`background_forecast_depth` holds only `background_cycle` output. The per-edge series from
+`constant_cycle` is already in `edge_depth` and `depth_history`, and the scope PRD adds TimescaleDB only for data
 those tables don't hold. A CHECK rejects a `valid_time` earlier than `issued_at`.
 
 `depth_history` keeps one depth per segment per moment, with `valid_time` as its time column,
@@ -89,13 +89,13 @@ per segment and moment, so the run with the later `issued_at` wins a moment ([[d
 A moment listed there with no `depth_history` row for an edge means the edge was dry (0 m). A moment missing there is unknown, for example a slot that the rain gate skipped. Both tables are hypertables with 7-day chunks.
 `depth_history` is compressed per chunk once the chunk closes (segment by `edge_key`, order by `valid_time`), and both tables drop data older than 365 days.
 
-The DAG `flood_history` (`dags/flood_history_dag.py`) runs on the asset `FLOOD_ROAD_VALUES`, which `flood_on_roads` of `routing_adapter` emits.
+The DAG `flood_history` (`dags/flood_history_dag.py`) runs on the asset `EDGE_DEPTH_ROWS` (`edge_depth`), which `9c_build_edge_depth_table` of `routing_adapter` emits after it commits the rows.
 `scripts/flood_history/load_run.py` reads the run's moments from `edge_depth_run.valid_times` and its rows from `edge_depth`, which holds the wet edges only ([[US-122-point-depth-history-at-the-edge-table|US-122]], [[decision-log|D-038]]).
 Both are naive UTC, and `depth_m` is `depth_cm / 100`.
 It writes in one transaction under a table-wide advisory lock.
 For each moment it skips the moment when `history_moment` holds a later `issued_at`. Otherwise it deletes the moment's `depth_history` rows, inserts the run's rows, and upserts the moment.
 An edge that an earlier run wet and the winning run did not wet therefore has no row. Loading a run again gives the same rows.
-A run that `edge_depth_run` does not list is an error. Task `9c` writes the registry row and has no ordering against `flood_on_roads`, so a load that runs first fails and the DAG retries once.
+A run that `edge_depth_run` does not list is an error. Task `9c` writes the registry row before it emits the event that starts this DAG, so the load can no longer run first ([[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]).
 
 `depth_history.edge_key` is `graph_edge.edge_key` (`<osm_way_id>:<position>`). `create_timescale_tables.py` renames the column `segment_id` of an older table to `edge_key`, which keeps the compressed chunks.
 Rows loaded before the move held piece ids (`<way>#<index>`), which cannot be mapped to edges, because the pieces and the edges split a way at different points.

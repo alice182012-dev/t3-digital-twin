@@ -3,8 +3,8 @@ date: 2026-09-23
 type: concept
 status: active
 tags: [architecture, diagram]
-related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[road-segment-table]]", "[[decision-log]]", "[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[core-output-contract]]", "[[edge-depth-table-format]]", "[[rain-replay-test-environment]]"]
-last_updated: 2026-10-08
+related: ["[[T3-Digital-Twin_Architecture]]", "[[minio-flood-extent-pipeline]]", "[[graphhopper-backend]]", "[[raster-first-flood-pipeline]]", "[[decision-log]]", "[[US-066-netcdf-values-storage-redesign|netcdf-values-storage-redesign]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]", "[[core-output-contract]]", "[[edge-depth-table-format]]", "[[rain-replay-test-environment]]"]
+last_updated: 2026-10-13
 ---
 # Block diagram: T3-Digital-Twin architecture
 
@@ -35,15 +35,13 @@ flowchart TB
     ADAPTER["Airflow DAG routing_adapter<br/>(runs on the 9b asset event)"]:::built
     DEPTH["calculate_depth.py<br/>depth_*.tif series"]:::built
     RASTERLOAD["raster_load.py<br/>(task 9b_load_depth_raster)"]:::built
-    ROADLOAD["load_road_segments.py<br/>(task load_road_segments)"]:::built
-    ROUTEEXT["flood_on_roads.py<br/>(task flood_on_roads)"]:::built
     METRICS["extract_run.py<br/>(no DAG task)"]:::built
     EDGETABLE["build_edge_depth.py<br/>(task 9c_build_edge_depth_table, US-041)"]:::built
     TILEEXT["flood_extent.py + publish.py<br/>(GRASS raster→polygon,<br/>prune_polygon_rows every publish)"]:::built
   end
 
   subgraph DATA["Data stores"]
-    PG["storage-postgres (PostGIS)<br/>flood_road_values<br/>flood_extent_polygon (pruned, US-067)<br/>flood_extent_step<br/>flood_depth_raster_tile<br/>road_segment, graph_edge,<br/>graph_edge_export"]:::built
+    PG["storage-postgres (PostGIS)<br/>edge_depth, edge_depth_run<br/>flood_extent_polygon (pruned, US-067)<br/>flood_extent_step<br/>flood_depth_raster_tile<br/>graph_edge, graph_edge_export"]:::built
     MINIO["MinIO<br/>flood-extent (.pbf tiles),<br/>initial-wl, manholes-data"]:::built
     EDGEVOL["Docker volume edge-depth-tables<br/>(run.bin files, latest pointer)"]:::built
     TSDB["timescaledb<br/>histogram tables (empty, D-009)"]:::built
@@ -71,20 +69,16 @@ flowchart TB
   HE -.->|model, templates| ThreeDI
   AIRFLOW --> DEPTH
   RASTERLOAD -->|asset event, run_ts| ADAPTER
-  ADAPTER --> ROADLOAD
-  ADAPTER --> ROUTEEXT
   ADAPTER --> EDGETABLE
   DEPTH --> RASTERLOAD
   RASTERLOAD -->|flood_depth_raster_tile| PG
-  ROADLOAD -->|road_segment| PG
-  PG -->|tiles, road pieces| ROUTEEXT
   DEPTH --> TILEEXT
-  ROUTEEXT -->|flood_road_values| PG
+  EDGETABLE -->|edge_depth rows| PG
   PG -->|tiles, graph_edge| EDGETABLE
   EDGETABLE -->|"run.bin, edge depth table"| EDGEVOL
   EDGEVOL -->|read-only| GH
   EDGEVOL -->|read-only| BACKEND
-  PG -->|flood_road_values| METRICS
+  PG -->|edge_depth| METRICS
   TILEEXT -->|flood_extent_polygon| PG
   TILEEXT -->|.pbf tiles| MINIO
   PG -->|contract tables| BACKEND
@@ -106,15 +100,11 @@ flowchart TB
   classDef designed fill:#f1f3f5,stroke:#adb5bd,stroke-width:1px,stroke-dasharray: 4 3;
 ```
 
-The GeoJSON chain that used to write `flood_road_values` (`scripts/mapping/extract_geojson_full.py`
-through `scripts/database/geojson_to_pg.py`) left `dags/flood_mapping_dag.py` on 2026-09-24, and the
-scripts were deleted on 2026-09-29. On 2026-09-25 the DAG task `flood_on_roads` took over as the
-writer. It reads the run's tiles from `flood_depth_raster_tile` and the road pieces from
-`road_segment`. Since 2026-10-07 it runs in the DAG `routing_adapter`, after `load_road_segments`,
-on the asset event of `9b_load_depth_raster` (commit `77169c3` on the branch `modular`). `routing_adapter`
-runs on the server and is unpaused there (checked 2026-10-08). Each row's `depth` is the deepest 1 m sample along a road piece, as D-006
-in [[decision-log]] records. `floodmap-backend` reads `flood_road_values` for routing, as before. The
-plan is [[raster-first-flood-pipeline]].
+The per-piece sampler, the task `flood_on_roads` and its table `flood_road_values`, ran from 2026-09-25 until
+[[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted it on 2026-10-13 ([[decision-log|D-038]]).
+The task `9c_build_edge_depth_table` of the DAG `routing_adapter` now writes the edge depth file and the `edge_depth` rows,
+and it runs on the asset event of `9b_load_depth_raster`. `floodmap-backend` reads `edge_depth` and `graph_edge` for the
+map overlay and the route fallback, and the engine reads the files. The plan was [[raster-first-flood-pipeline]].
 
 The `graphhopper` service builds from `java/time-aware-routing` and reads the edge depth files from the
 volume `edge-depth-tables`. `floodmap-backend` mounts the same volume read-only and sends a
