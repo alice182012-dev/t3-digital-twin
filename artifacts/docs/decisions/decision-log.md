@@ -762,3 +762,15 @@ is the maximum.
 - **Affects:** [[US-128-run-the-test-suites-against-the-test-databases|US-128]], [[test-dataset]].
 - **Revisit if:** the suites move to a schema each, then the command can use the dataset databases.
 
+## D-049: The pipeline tables stay in schema `public`, and a move waits for a trigger
+
+- **Date:** 2026-10-13
+- **Status:** active. The owner has not read it.
+- **Decided by:** The development team, on 2026-10-13, as the answer of the spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]].
+- **Decision:** The pipeline tables stay in schema `public` of `minio_custom`. A move waits for one of these triggers: a Django migration or model needs a table whose name a pipeline table has, a Django model is put over a pipeline table (`managed = False` or `inspectdb`), or a consumer needs a grant on the pipeline tables that it cannot get from its table list.
+- **Why:** Nothing breaks while the tables stay. Django manages 14 tables of its own (9 models and their link tables), no model or migration names a pipeline table, and `python manage.py migrate --plan` plans no operation. One role, `minio_custom`, owns all 30 tables. A move changes about 7 files and needs a one-time migration, and it has three risks (the details of the story): Django and the pipeline writer share the role, so a role-level `search_path` would make `migrate` create Django tables in the new schema, `to_regclass('forecast_mode')` returns NULL when the schema is not on the path, and the readers need `USAGE` on the schema and the `ALTER TABLE ... SET SCHEMA` locks must not overlap a run.
+- **Alternatives:** (1) Move now with `ALTER TABLE ... SET SCHEMA` and a role-level `search_path`. Not chosen, because the gain is a cleaner namespace and the cost is the risks above. (2) Qualify every query. Not chosen, because it touches about 70 files. (3) Do the move after [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]]. This is the cheapest time for it, with 11 pipeline tables left instead of 15, and the trigger above decides when.
+- **Evidence:** the details of [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] and the scratch report `marie-curie/us110/code_scan.md`.
+- **Affects:** [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], [[core-output-contract]].
+- **Revisit if:** a trigger fires, or the number of Django models that touch the shared database grows.
+
