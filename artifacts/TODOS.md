@@ -10,7 +10,7 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 Sprint 14 runs from 2026-10-12 to 2026-10-25, and 11 points of work remain.
-1. Current task: the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] runs in the worker on the test dataset. It started at 04:07 UTC on 2026-10-13, takes about 6 minutes per run, and ends at about 09:10 UTC. The session job reads `data/mapping/testdata_rebuild/run50.log` every 20 minutes and records the result in the story. Then ask the owner to accept US-118.
+1. Current task: the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] runs in the worker on the test dataset. It started at 04:07 UTC on 2026-10-13, takes about 6 minutes per run, and ends at about 09:15 UTC. The session job reads `data/mapping/testdata_rebuild/run50.log` every 20 minutes and records the result in the story. Then ask the owner to accept US-118.
 2. Next: [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] on the server. The code is on `modular`, and the server steps wait for the end of the check, because the check reads `scripts/` from the server checkout. In this order:
    - Pull `modular` on the server with `git pull --ff-only alice modular`.
    - Rebuild `analysis` from the desktop, because its list of core outputs lost `road_values`, and rerun `create_routing_reader_role.py` for `routing_reader` and `analysis_reader`.
