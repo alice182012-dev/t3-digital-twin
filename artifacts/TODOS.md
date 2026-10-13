@@ -18,7 +18,8 @@ Sprint 14 runs from 2026-10-12 to 2026-10-25, and 7 points of work remain.
    - Unpause `flood_mapping_full` (approved by the owner). Only the run of 03:45 UTC, frozen at `3b_publish_depth_files`, carries on, because the other slots are dry and skip. Its depth folder exists. Its run name is `20261013T110000`. Then `9b` loads the tiles, `routing_adapter` runs only `9c`, and `flood_history` runs on the asset `edge_depth`. Measure the task durations of `3b`, `9b`, and `9c`: their sum is the time after `3_calculate_depth`, and it must be under 5 minutes. The waiting time of the pause does not count.
    - Run `sh marie-curie/us123/capture.sh after` on the Mac and `diff -r marie-curie/us123/before marie-curie/us123/after`, which checks that `/flood/areas`, `/route`, and `/flood/points` answer as before. The runs of `edge_depth` have changed since the capture, so compare the answers for run `20261011T001500` only (the pinned run).
    - Ask the owner to confirm the drop (irreversible, about 377 MB). Then drop `flood_road_values`, `flood_road_file`, `road_segment`, and `flood_road_values_shadow`, in this order, in one transaction, and record the freed storage.
-3. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
+3. After the server steps of US-123, merge the two branches that wait for it: `us-139-stale-run-guard` ([[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]]) and `us-140-delete-postgis-tile-input` ([[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]]), pull them on the server, and check the skip of a stale run with `airflow tasks test flood_mapping_full 3_calculate_depth <date 6 hours old>`. Close [[BL-029-postgis-tile-input-drops-every-polygon|BL-029]] and update [[minio-flood-extent-pipeline]] at that merge.
+4. Time-gated: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]. Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]). The growth over a week needs a week of real-mode runs, and `flood_mapping_full` is paused.
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 14, 2026-10-12 to 2026-10-25
@@ -66,7 +67,7 @@ The top 10 by priority:
   Show the recommended route and the through-water option in the app
 - [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], P2, M, Not started.
   Show the demo flood banner and the pinned frame
-- [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]], P2, S, Ready.
+- [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]], P2, S, Reviewed.
   Skip a flood_mapping_full run whose slot is hours old
 - [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], P2, S, Reviewed.
   Delete the postgis input of the flood tile build
