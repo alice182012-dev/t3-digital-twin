@@ -24,14 +24,14 @@ Index: [[Home]].
 **Status:** active.
 47 points picked, 3 done.
 
-### In progress - US-077 Match the depth chart columns and the route tab text to screen 2e
-
-**Story:** [[US-077-match-the-depth-chart-columns-and-the|US-077]].
-P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
 ### Reviewed - US-008 Switch the search geocoder's default locale to `vi`
 
 **Story:** [[US-008-switch-the-search-geocoder-s-default-locale|US-008]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-077 Match the depth chart columns and the route tab text to screen 2e
+
+**Story:** [[US-077-match-the-depth-chart-columns-and-the|US-077]].
 P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ### Ready - US-078 Show the place names on the start and destination pins

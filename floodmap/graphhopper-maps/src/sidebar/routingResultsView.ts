@@ -4,7 +4,7 @@ import { CurrentRequest, RequestState, SubRequest } from '@/stores/QueryStore'
 export interface RouteTab {
     /** Position in `paths`, and the React key. */
     readonly index: number
-    /** path.description when non-empty and unambiguous, otherwise `Route ${index + 1}`. */
+    /** `Via ${path.description}` when the description is non-empty and unambiguous, otherwise `Route ${index + 1}`. */
     readonly label: string
     readonly path: Path
 }
@@ -74,7 +74,7 @@ export function buildRouteTabs(paths: readonly Path[]): RouteTab[] {
     }
     return paths.map((path, index) => {
         const description = descriptionText(path)
-        const label = description && counts.get(description) === 1 ? description : `Route ${index + 1}`
+        const label = description && counts.get(description) === 1 ? `Via ${description}` : `Route ${index + 1}`
         return { index, label, path }
     })
 }

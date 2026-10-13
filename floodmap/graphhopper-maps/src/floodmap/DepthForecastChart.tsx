@@ -3,16 +3,15 @@ import styles from './DepthForecastChart.module.css'
 import { BACKEND_BASE } from '@/floodmap/FloodStore'
 import {
     DepthBar,
+    FORECAST_REQUEST_STEPS,
     ForecastColumn,
     forecastRequestPoints,
     forecastWindowStart,
     shapeDepthChart,
 } from '@/floodmap/depthForecast'
 
-const FORECAST_STEPS = 8
-
 /**
- * Mean flood depth along the route for each 15-minute step, the "Average water depth" chart of
+ * Mean flood depth along the route for five steps 30 minutes apart, the "Average water depth" chart of
  * mockup screen 2e. Renders nothing until the forecast arrives, or when the backend has no raster
  * for any step in the window.
  */
@@ -49,7 +48,7 @@ export default function DepthForecastChart({ coordinates }: { coordinates: reado
             <div className={styles.labels} aria-hidden="true">
                 {chart.bars.map(bar => (
                     <span className={bar.isNow ? styles.nowLabel : styles.label} key={bar.validTime}>
-                        {bar.isNow ? 'Now' : bar.timeLabel}
+                        {bar.label}
                     </span>
                 ))}
             </div>
@@ -68,7 +67,7 @@ function useDepthForecast(coordinates: readonly number[][]): ForecastColumn[] | 
             body: JSON.stringify({
                 points: forecastRequestPoints(coordinates),
                 from: forecastWindowStart(Date.now()),
-                steps: FORECAST_STEPS,
+                steps: FORECAST_REQUEST_STEPS,
             }),
             signal: controller.signal,
         })

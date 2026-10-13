@@ -16,12 +16,12 @@ function done(): SubRequest {
 
 describe('buildRouteTabs', () => {
     it('uses unique descriptions as labels', () => {
-        expect(buildRouteTabs([path('via A1'), path('via B2')]).map(t => t.label)).toEqual(['via A1', 'via B2'])
+        expect(buildRouteTabs([path('A1'), path('B2')]).map(t => t.label)).toEqual(['Via A1', 'Via B2'])
     })
 
     it('falls back to Route N for the whole colliding group', () => {
-        const tabs = buildRouteTabs([path('via A1'), path('via A1'), path('via B2')])
-        expect(tabs.map(t => t.label)).toEqual(['Route 1', 'Route 2', 'via B2'])
+        const tabs = buildRouteTabs([path('A1'), path('A1'), path('B2')])
+        expect(tabs.map(t => t.label)).toEqual(['Route 1', 'Route 2', 'Via B2'])
     })
 
     it('falls back to Route N for empty and whitespace-only descriptions', () => {
@@ -29,12 +29,12 @@ describe('buildRouteTabs', () => {
     })
 
     it('mixes unique, colliding and empty descriptions', () => {
-        const tabs = buildRouteTabs([path('via A1'), path(''), path('via B2'), path('via B2')])
-        expect(tabs.map(t => t.label)).toEqual(['via A1', 'Route 2', 'Route 3', 'Route 4'])
+        const tabs = buildRouteTabs([path('A1'), path(''), path('B2'), path('B2')])
+        expect(tabs.map(t => t.label)).toEqual(['Via A1', 'Route 2', 'Route 3', 'Route 4'])
     })
 
     it('keeps the index and the path on each tab', () => {
-        const paths = [path('via A1'), path('via B2')]
+        const paths = [path('A1'), path('B2')]
         const tabs = buildRouteTabs(paths)
         expect(tabs.map(t => t.index)).toEqual([0, 1])
         expect(tabs[1].path).toBe(paths[1])
@@ -47,11 +47,11 @@ describe('buildRouteTabs with a description the backend sends as a list', () => 
     const listPath = (description: unknown): Path => ({ description }) as Path
 
     it('labels the tab with the text of the list', () => {
-        expect(buildRouteTabs([listPath(['Đường Hoàng Tùng'])]).map(t => t.label)).toEqual(['Đường Hoàng Tùng'])
+        expect(buildRouteTabs([listPath(['Đường Hoàng Tùng'])]).map(t => t.label)).toEqual(['Via Đường Hoàng Tùng'])
     })
 
     it('joins a list of several names', () => {
-        expect(buildRouteTabs([listPath(['Phố A', 'Phố B'])]).map(t => t.label)).toEqual(['Phố A, Phố B'])
+        expect(buildRouteTabs([listPath(['Phố A', 'Phố B'])]).map(t => t.label)).toEqual(['Via Phố A, Phố B'])
     })
 
     it('falls back to Route N for an empty list and for a value that is not text', () => {
@@ -108,7 +108,7 @@ describe('selectRoutingResultsView', () => {
     })
 
     it('is routes, with the selected tab active', () => {
-        const paths = [path('via A1'), path('via B2')]
+        const paths = [path('A1'), path('B2')]
         const view = selectRoutingResultsView({
             paths,
             selectedPath: paths[1],
@@ -123,7 +123,7 @@ describe('selectRoutingResultsView', () => {
     })
 
     it('keeps showing routes while further alternatives are still pending', () => {
-        const paths = [path('via A1')]
+        const paths = [path('A1')]
         const view = selectRoutingResultsView({
             paths,
             selectedPath: paths[0],
