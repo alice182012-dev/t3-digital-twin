@@ -15,10 +15,16 @@ import {
  * mockup screen 2e. Renders nothing until the forecast arrives, or when the backend has no raster
  * for any step in the window.
  */
-export default function DepthForecastChart({ coordinates }: { coordinates: readonly number[][] }) {
+export default function DepthForecastChart({
+    coordinates,
+    limitCm,
+}: {
+    coordinates: readonly number[][]
+    limitCm?: number
+}) {
     const columns = useDepthForecast(coordinates)
     if (!columns || columns.length === 0) return null
-    const chart = shapeDepthChart(columns, Date.now())
+    const chart = shapeDepthChart(columns, Date.now(), limitCm)
     return (
         <figure className={styles.container} role="img" aria-label={describe(chart.bars)}>
             <figcaption className={styles.title} aria-hidden="true">
@@ -41,6 +47,11 @@ export default function DepthForecastChart({ coordinates }: { coordinates: reado
                     {chart.nowLinePercent !== null && (
                         <div className={styles.nowLine} style={{ bottom: `${chart.nowLinePercent}%` }}>
                             <span className={styles.nowLineLabel}>{chart.nowDepthCm} cm</span>
+                        </div>
+                    )}
+                    {chart.limitLinePercent !== null && (
+                        <div className={styles.limitLine} style={{ bottom: `${chart.limitLinePercent}%` }}>
+                            <span className={styles.limitLineLabel}>{chart.limitCm} cm</span>
                         </div>
                     )}
                 </div>

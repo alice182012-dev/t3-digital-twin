@@ -42,6 +42,8 @@ let persistedElevationMounted = false
 
 export interface RoutingResultsProps extends RoutingResultsViewInput {
     info: RoutingResultInfo
+    /** The depth limit in cm of the selected profile, from the route answer's `td.limit_cm` hint. */
+    limitCm?: number
     profile: string
     /** Flood mode is on. Gates the static reroute-context line. */
     floodActive?: boolean
@@ -75,7 +77,9 @@ export default function RoutingResults(props: RoutingResultsProps) {
                         onSelect={index => Dispatcher.dispatch(new SetSelectedPath(view.tabs[index].path))}
                     />
                     {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
-                    {props.floodActive && <DepthForecastChart coordinates={active.path.points.coordinates} />}
+                    {props.floodActive && (
+                        <DepthForecastChart coordinates={active.path.points.coordinates} limitCm={props.limitCm} />
+                    )}
                     <ul>
                         <RoutingResult
                             path={active.path}

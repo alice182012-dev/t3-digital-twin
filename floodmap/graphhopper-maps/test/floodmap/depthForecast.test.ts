@@ -103,6 +103,22 @@ describe('shapeDepthChart', () => {
         expect(chart.bars.map(b => b.heightPercent)).toEqual([10, 0])
         expect(chart.nowLinePercent).toEqual(10)
     })
+    it('places the limit line on the same scale as the bars', () => {
+        const chart = shapeDepthChart(quarterHours, at(14, 35), 30)
+        expect(chart.bars.map(b => b.heightPercent)).toEqual([(5 / 60) * 100, (20 / 60) * 100, (40 / 60) * 100, 100, 0])
+        expect([chart.limitCm, chart.limitLinePercent]).toEqual([30, 50])
+    })
+
+    it('scales the axis up to a limit above the tallest column', () => {
+        const chart = shapeDepthChart([column(14, 0, 0.05), column(14, 30, 0.1)], at(14, 35), 35)
+        expect(chart.bars.map(b => b.heightPercent)).toEqual([(5 / 35) * 100, (10 / 35) * 100])
+        expect([chart.nowLinePercent, chart.limitLinePercent]).toEqual([(10 / 35) * 100, 100])
+    })
+
+    it('draws no limit line when the limit is unknown', () => {
+        const chart = shapeDepthChart(quarterHours, at(14, 35))
+        expect([chart.limitCm, chart.limitLinePercent]).toEqual([null, null])
+    })
 })
 
 describe('forecastWindowStart', () => {

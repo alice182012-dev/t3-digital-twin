@@ -45,11 +45,14 @@ export interface RoutingResultInfo {
 
 export interface RoutingResult {
     readonly info: RoutingResultInfo
+    /** The routing backend's hints. `td.limit_cm` is the depth limit of the requested profile. */
+    readonly hints?: { readonly 'td.limit_cm'?: number }
     readonly paths: Path[]
 }
 
 export interface RawResult {
     readonly info: RoutingResultInfo
+    readonly hints?: { readonly 'td.limit_cm'?: number }
     readonly paths: RawPath[]
 }
 

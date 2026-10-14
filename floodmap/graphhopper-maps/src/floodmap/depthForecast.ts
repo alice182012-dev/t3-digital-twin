@@ -25,6 +25,9 @@ export interface DepthChart {
     /** Depth of the "now" bar, drawn as the dashed line. Null when no bar is now or it has no depth. */
     nowDepthCm: number | null
     nowLinePercent: number | null
+    /** The selected mode's depth limit, drawn as the second dashed line. Null when the route answer carries none. */
+    limitCm: number | null
+    limitLinePercent: number | null
 }
 
 /** The backend's cap on route vertices. */
@@ -45,8 +48,9 @@ const MIN_SCALE_CM = 10
  * `valid_time` because the backend omits steps that have no raster, and a missing slot gives no
  * bar. The "now" bar is the latest selected column at or before `now`. When every column is in the
  * future, no bar is now: labelling a forecast as the present would misstate what the route looks like.
+ * The scale includes `limitCm`, so a limit above the tallest column still fits on the chart.
  */
-export function shapeDepthChart(columns: readonly ForecastColumn[], now: number): DepthChart {
+export function shapeDepthChart(columns: readonly ForecastColumn[], now: number, limitCm?: number): DepthChart {
     const anchor = halfHourStart(now)
     const byTime = new Map(columns.map(column => [Date.parse(column.valid_time), column]))
     const parsed = Array.from({ length: COLUMN_COUNT }, (_, i) => {
@@ -60,7 +64,7 @@ export function shapeDepthChart(columns: readonly ForecastColumn[], now: number)
     const depths = parsed.map(({ column }) =>
         column.mean_depth_m === null ? null : Math.round(column.mean_depth_m * 100),
     )
-    const scaleCm = Math.max(MIN_SCALE_CM, ...depths.map(d => d ?? 0))
+    const scaleCm = Math.max(MIN_SCALE_CM, limitCm ?? 0, ...depths.map(d => d ?? 0))
     const bars = parsed.map(({ column, t }, i) => ({
         validTime: column.valid_time,
         timeLabel: formatClock(t),
@@ -74,6 +78,8 @@ export function shapeDepthChart(columns: readonly ForecastColumn[], now: number)
         bars,
         nowDepthCm,
         nowLinePercent: nowDepthCm === null ? null : (nowDepthCm / scaleCm) * 100,
+        limitCm: limitCm ?? null,
+        limitLinePercent: limitCm === undefined ? null : (limitCm / scaleCm) * 100,
     }
 }
 
