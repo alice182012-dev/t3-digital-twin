@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-098"
 story_label: "2"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Ready
+status: Reviewed
 priority: P2
 estimate: S
 sprint: 15
@@ -27,3 +27,16 @@ Evidence: None yet.
 - **2026-10-12, not picked.** The product owner asked to add every backend story to [[SPR-014-finish-the-remaining-backend|SPR-014]]. This story is left out: its backend, [[US-097-recommend-a-route-that-avoids-the-precaution|US-097]], is `Done`, so what remains is the route panel, which is frontend work, and its dependencies [[US-076-compare-the-live-app-with-the-mockup|US-076]] and the design of [[US-084-design-the-no-route-and-wait-until|US-084]] have not started.
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 - **2026-10-14, owner answer.** The design of [[US-084-design-the-no-route-and-wait-until|US-084]] is approved, so this story no longer waits for it.
+- **2026-10-14, In progress.** Started after the owner approved the design of [[US-084-design-the-no-route-and-wait-until|US-084]], within the limit of two.
+- **2026-10-14, Reviewed.** Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
+
+## Evidence and details
+
+![[two-options-through-water-1366.png|420]]
+
+1. What: with two route options the tabs read "Recommended" first and "Through water" second, each with its time and maximum depth from [[US-082-show-the-travel-time-and-the-maximum|US-082]] (for example "13 min · 22 cm"). With the through-water tab open, an amber line reads "Passes through water between 18 cm and 35 cm deep. Deepest road 22 cm." and replaces "Route avoids flooded areas". The second sentence shows once the depth is known. A single `recommended` answer shows one tab, "Route 1". A single `through_water` answer shows one tab, "Through water". The no-route message keeps the wording approved in US-084.
+2. How: the real `POST /route` answer carries the hint `td.kinds` (`recommended`, `recommended,through_water`, or `through_water`, one word per path), with `td.limit_cm` and `td.precaution_cm` (35 and 18 for the truck). The frontend read only `limit_cm` before. `routingResultsView.ts` now reads `td.kinds`, and falls back to the old labels when the hint is missing, has an unknown word, or its length differs from the number of paths. In 40 random pairs inside the border, about a quarter of truck pairs and a fifth of car pairs gave two options. jest (328 tests in 37 suites) and `tsc --noEmit` pass. `RoutingResults` renders from the real hint shape in a test.
+3. Evidence: `evidence/US-098/` holds `two-options-recommended-1366.png`, `two-options-through-water-1366.png`, `two-options-through-water-390.png`, `one-option-1366.png`, and `two-options-fake-depth-1366.png`. The pair `21.0002,105.7798` to `21.0002,105.7317` (truck) gives two options.
+4. Not checked: a flooded through-water route. The real pairs were dry at the selected step, so they read "Deepest road 0 cm", and `td.status` was `unknown` for every pair. Only `two-options-fake-depth-1366.png` is faked (depths of 3 cm and 22 cm from a faked `POST /flood/profile`). Fonts and the server rebuild are not checked. At 390x844 the legend sits beside the sheet, as set by [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]].
+5. Open: [[decision-log|D-021]] defines no separate no-route text, so the approved wording stays. "Via road" and more than one alternative are for the grilled story the owner asked for.
+6. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].

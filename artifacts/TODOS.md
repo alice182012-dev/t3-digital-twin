@@ -11,8 +11,8 @@ Index: [[Home]].
 <!-- next-action:start -->
 [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] runs from 2026-10-13 to 2026-10-25 with 35 points picked against a forecast of 45.
 
-1. Built on `modular` and `Reviewed` on 2026-10-14, waiting for one frontend rebuild on the server: [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]], [[US-147-remove-the-elevation-widget-from-the-route-view|US-147]], [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]], [[US-084-design-the-no-route-and-wait-until|US-084]], and [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], besides the six `Reviewed` before. A check of the merged layout is running.
-2. Next to build: [[US-098-show-the-recommended-route-and-the-through|US-098]], after the check. Then the one frontend rebuild on the server, as the owner confirmed.
+1. Built on `modular` and `Reviewed` on 2026-10-14, waiting for one frontend rebuild on the server: [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]], [[US-147-remove-the-elevation-widget-from-the-route-view|US-147]], [[US-149-match-the-autofill-rows-to-the-mockup|US-149]], [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]], [[US-084-design-the-no-route-and-wait-until|US-084]], [[US-098-show-the-recommended-route-and-the-through|US-098]], and [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], besides the six `Reviewed` before. A check of the merged layout found and fixed two breaks (a missing constant and the banner over the Flood tile).
+2. The last frontend story is built. Next is the one frontend rebuild on the server, as the owner confirmed.
 3. For the owner: run `/grill-with-docs` on the "Via road" text of the server tabs and on offering more than one route (the answer to the question on [[US-077-match-the-depth-chart-columns-and-the|US-077]]). No story exists until then.
 4. For the owner: recreate the stuck panel of [[BL-018-route-panel-stuck-on-loading-bars|BL-018]] before any fix. Cut the initial water out of the model in `marie-curie/` for [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]]. `flood_mapping_full` stays paused.
 5. Open questions from the builds: the 2 px input height of screen 2d ([[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]]), 24-hour or 12-hour chart labels, bundling the Inter font, a `DEMO` row on the server for the server screenshot of US-131, and the missing drag handle of the mobile no-route state ([[US-084-design-the-no-route-and-wait-until|US-084]]).
@@ -42,6 +42,11 @@ P2, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 **Story:** [[US-085-time-out-a-route-request-in-the|US-085]].
 P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-098 Show the recommended route and the through-water option in the app
+
+**Story:** [[US-098-show-the-recommended-route-and-the-through|US-098]].
+P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ### Reviewed - US-131 Show the demo flood banner and the pinned frame
 
@@ -102,11 +107,6 @@ P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 **Story:** [[US-149-match-the-autofill-rows-to-the-mockup|US-149]].
 P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-098 Show the recommended route and the through-water option in the app
-
-**Story:** [[US-098-show-the-recommended-route-and-the-through|US-098]].
-P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
 
 ### Ready - US-033 Write a project `DESIGN.md` with real design tokens
 
