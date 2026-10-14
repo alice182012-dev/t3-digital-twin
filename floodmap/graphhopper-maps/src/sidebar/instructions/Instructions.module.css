@@ -44,18 +44,27 @@
     border-bottom: 1px solid lightgray;
 }
 
+/* mockup screen 2e: rows of 20 px icon, step text, and the distance at the right, a 1 px rule between rows */
 .framedList {
-    margin: 0 15px 0 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .framedList .instruction {
     grid-template-rows: auto;
     grid-template-columns: 20px 1fr auto;
     column-gap: 14px;
-    height: 43px;
-    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 0;
+    border-top: 1px solid #e5e7eb;
     font-size: 13px;
     color: #111;
+}
+
+.framedList .instruction:first-child {
+    padding: 8px 0;
+    border-top: none;
 }
 
 .framedList .sign {
@@ -64,9 +73,14 @@
     height: 20px;
 }
 
-.framedList .mainText {
+.framedList .mainText,
+.framedList .placeText {
     grid-column: 2;
     margin: 0;
+}
+
+.placeText {
+    font-weight: 500;
 }
 
 .framedList .motorwayJunction {
@@ -80,4 +94,9 @@
     font-size: 13px;
     color: #6b7280;
     white-space: nowrap;
+}
+
+.deepestDepth {
+    color: #111;
+    font-weight: 500;
 }

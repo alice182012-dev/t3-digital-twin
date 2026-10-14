@@ -33,14 +33,48 @@
 }
 
 .inputContainer.framed {
+    /* 46 px like the unfocused boxes of the mockup. Its focused box is 44 px, which would move the second box on focus. */
     height: 46px;
     border-color: #111;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 0;
     align-items: center;
 }
 
+/* the focused box has a 2 px border in the mockup (screen 2d). The height is fixed, so the boxes below do not move. */
+.inputContainer.framed:focus-within {
+    border-width: 2px;
+}
+
+.inputContainer.framed:focus-within .input {
+    padding-left: 15px;
+}
+
 .framed .input {
+    padding: 0 16px;
+    height: 100%;
+    font-family: inherit;
+    font-size: 13px;
+    color: #111;
+    border-radius: 8px;
+}
+
+.framed .input::placeholder {
+    color: #6b7280;
+}
+
+/* mockup screens 2c to 2f: the clear cross shows whenever the box has text, and no location button */
+.framed .btnInputClear {
+    display: block;
+    color: #6b7280;
+    scale: 0.55;
+}
+
+.framed .btnCurrentLocation {
+    display: none;
+}
+
+.input {
     padding: 0 16px;
     height: 100%;
     font-size: 14px;

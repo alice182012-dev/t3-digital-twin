@@ -27,7 +27,8 @@ import { InstructionClicked, PathDetailsElevationSelected, SetBBox } from '@/act
 import { stepHighlight } from '@/sidebar/instructions/stepHighlight'
 import { useContext } from 'react'
 import { FloodTimestep } from '@/floodmap/FloodStore'
-import { stepDepthText } from '@/floodmap/placeDepth'
+import { deepestStepIndexes, stepDepthText } from '@/floodmap/placeDepth'
+import { FramedStepIcon } from '@/sidebar/instructions/FramedStepIcon'
 import { useStepDepths } from '@/floodmap/useStepDepths'
 import { SettingsContext } from '@/contexts/SettingsContext'
 
@@ -45,10 +46,19 @@ export default function (props: {
         props.instructions.map(instruction => ({ lng: instruction.points[0][0], lat: instruction.points[0][1] })),
         props.timestep,
     )
+    const deepest = deepestStepIndexes(depths)
     return (
         <ul className={props.framed ? styles.framedList : styles.instructionsList}>
             {props.instructions.map((instruction, i) => (
-                <Line key={i} instruction={instruction} index={i} us={props.us} depthText={stepDepthText(depths[i])} />
+                <Line
+                    key={i}
+                    instruction={instruction}
+                    index={i}
+                    us={props.us}
+                    depthText={stepDepthText(depths[i])}
+                    isDeepest={deepest.has(i)}
+                    framed={props.framed}
+                />
             ))}
         </ul>
     )
@@ -59,11 +69,15 @@ const Line = function ({
     index,
     us,
     depthText,
+    isDeepest,
+    framed,
 }: {
     instruction: Instruction
     index: number
     us: boolean
     depthText: string | null
+    isDeepest: boolean
+    framed?: boolean
 }) {
     const settings = useContext(SettingsContext)
     return (
@@ -81,8 +95,16 @@ const Line = function ({
                 if (bbox) Dispatcher.dispatch(new SetBBox(bbox))
             }}
         >
-            {getTurnSign(instruction.sign, index)}
-            <span className={styles.mainText}>{instruction.text}</span>
+            {framed ? (
+                <div className={styles.sign}>
+                    <FramedStepIcon sign={instruction.sign} isFirst={index === 0} />
+                </div>
+            ) : (
+                getTurnSign(instruction.sign, index)
+            )}
+            <span className={framed && (index === 0 || instruction.sign === 4) ? styles.placeText : styles.mainText}>
+                {instruction.text}
+            </span>
             {instruction.motorway_junction && (
                 <span style={{ background: us ? '#00674c' : '#003399' }} className={styles.motorwayJunction}>
                     {instruction.motorway_junction}
@@ -90,7 +112,8 @@ const Line = function ({
             )}
             <span className={styles.distance}>
                 {metersToText(instruction.distance, settings.showDistanceInMiles)}
-                {depthText && ` · depth ${depthText}`}
+                {depthText && ' · depth '}
+                {depthText && <span className={isDeepest ? styles.deepestDepth : undefined}>{depthText}</span>}
             </span>
         </li>
     )

@@ -1,23 +1,30 @@
 .container {
     margin: 0;
-    padding: 17px 24px 12px 27px;
+    padding: 16px 24px 16px 26px;
     background: #fff;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     font-size: 12px;
 }
 
 .titleRow {
     display: flex;
-    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
     font-size: 13px;
+    color: #111;
+}
+
+.summary {
+    margin-left: auto;
+    font-size: 12px;
     color: #6b7280;
 }
 
 .plot {
-    height: 120px;
-    border-bottom: 1px solid #e5e7eb;
+    height: 130px;
+    border-bottom: 1px solid #111;
 }
 
 .bars {
@@ -25,7 +32,8 @@
     height: 100%;
     display: flex;
     align-items: flex-end;
-    gap: 4px;
+    gap: 10px;
+    padding: 0 2px;
 }
 
 .column {
@@ -38,29 +46,31 @@
 .bar,
 .nowBar {
     width: 100%;
-    border-radius: 2px 2px 0 0;
 }
 
 .bar {
-    background: #343434;
+    background: #3b3b3b;
 }
 
 .nowBar {
-    background: #52c26e;
+    background: #5cc97a;
 }
 
 .nowLine {
     position: absolute;
     left: 0;
     right: 0;
-    border-top: 1px dashed #374151;
+    border-top: 1.5px dashed #111;
 }
 
 .nowLineLabel {
     position: absolute;
     right: 0;
-    bottom: 2px;
-    color: #374151;
+    bottom: 0;
+    transform: translateY(-6px);
+    padding: 0 4px;
+    background: #fff;
+    color: #111;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -83,18 +93,19 @@
 
 .labels {
     display: flex;
-    gap: 4px;
+    gap: 10px;
+    padding: 0 2px;
 }
 
 .label,
 .nowLabel {
     flex: 1;
     text-align: center;
-    color: #6b7280;
+    color: #374151;
     font-size: 12px;
 }
 
 .nowLabel {
-    color: #111827;
-    font-weight: 700;
+    color: #111;
+    font-weight: 600;
 }

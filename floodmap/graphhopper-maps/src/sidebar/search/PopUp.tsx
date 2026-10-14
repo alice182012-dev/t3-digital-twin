@@ -7,9 +7,11 @@ export interface PopUpProps {
     children: ReactNode
     keepClearAtBottom: number
     inputElement: HTMLElement
+    /** The desktop panel frame of mockup screen 2d: the list fills the panel width right under the input section. */
+    framed?: boolean
 }
 
-export default function PopUp({ children, inputElement, keepClearAtBottom }: PopUpProps) {
+export default function PopUp({ children, inputElement, keepClearAtBottom, framed = false }: PopUpProps) {
     const container = useRef<HTMLElement>(document.createElement('div'))
     const root = useRef<HTMLElement>(document.getElementById(POPUP_CONTAINER_ID))
     const rect = useRect(SIDEBAR_CONTENT_ID, inputElement)
@@ -34,8 +36,18 @@ export default function PopUp({ children, inputElement, keepClearAtBottom }: Pop
         element.style.width = rect.width + 'px'
     }
 
+    function applyStylePanel(rootRect: DOMRect, element: HTMLElement) {
+        const panelRect = document.getElementById(SIDEBAR_CONTENT_ID)!.getBoundingClientRect()
+        const searchRect = inputElement.closest('[data-search-box]')!.parentElement!.getBoundingClientRect()
+
+        element.style.top = searchRect.bottom - rootRect.top + 'px'
+        element.style.bottom = ''
+        element.style.left = panelRect.left - rootRect.left + 'px'
+        element.style.width = panelRect.width - 1 + 'px'
+    }
+
     useEffect(() => {
-        container.current.className = styles.popup
+        container.current.className = framed ? styles.panelList : styles.popup
         root.current!.appendChild(container.current)
 
         return () => {
@@ -47,9 +59,9 @@ export default function PopUp({ children, inputElement, keepClearAtBottom }: Pop
         const rootRect = root.current!.getBoundingClientRect()
         const emptySpace = rootRect.bottom - rect.bottom
 
-        emptySpace > keepClearAtBottom
-            ? applyStyleBelow(rect, rootRect, container.current)
-            : applyStyleAbove(rect, rootRect, container.current)
+        if (framed) applyStylePanel(rootRect, container.current)
+        else if (emptySpace > keepClearAtBottom) applyStyleBelow(rect, rootRect, container.current)
+        else applyStyleAbove(rect, rootRect, container.current)
     }, [rect])
 
     return createPortal(children, container.current)

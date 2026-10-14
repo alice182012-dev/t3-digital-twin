@@ -8,6 +8,7 @@ import Chevron from './chevron.svg'
 import { tr } from '@/translation/Translation'
 import CustomModelBoxSVG from '@/sidebar/open_custom_model.svg'
 import { icons } from '@/sidebar/search/routingProfiles/profileIcons'
+import { framedProfileIcons } from '@/sidebar/search/routingProfiles/framedProfileIcons'
 import * as config from 'config'
 import { ProfileGroupMap } from '@/utils'
 import { ProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
@@ -23,7 +24,7 @@ export default function ({
     customModelBoxEnabled,
     profileTimes,
 }: {
-    /** The desktop panel frame of mockup screen 2c: no custom model toggle, black pill on the selected mode. */
+    /** The desktop panel frame of mockup screen 2c: no custom model toggle, outline icons, black pill on the selected mode. */
     framed?: boolean
     routingProfiles: RoutingProfile[]
     selectedProfile: RoutingProfile
@@ -147,7 +148,9 @@ export default function ({
                                         {customModelBoxEnabled && profile.name === selectedProfile.name && (
                                             <CustomModelBoxSVG className={styles.asIndicator} />
                                         )}
-                                        {getIcon(iconName, customProfiles)}
+                                        {framed && framedProfileIcons[iconName]
+                                            ? React.createElement(framedProfileIcons[iconName])
+                                            : getIcon(iconName, customProfiles)}
                                     </PlainButton>
                                     {time !== undefined && (
                                         <span className={isProfileSelected ? styles.selectedTime : styles.time}>

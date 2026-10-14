@@ -30,12 +30,15 @@ import { SettingsContext } from '@/contexts/SettingsContext'
 
 export default function Search({
     framed = false,
+    compact = false,
     points,
     profile,
     map,
 }: {
     /** The desktop panel frame of mockup screen 2c: plain from and to boxes, no "Add location" and no settings. */
     framed?: boolean
+    /** A route is shown, so the mode icons carry their minutes and the boxes sit closer to them. */
+    compact?: boolean
     points: QueryPoint[]
     profile: RoutingProfile
     map: Map
@@ -46,7 +49,13 @@ export default function Search({
     const [dropPreviewIndex, onDropPreviewSelect] = useState(-1)
 
     return (
-        <div className={framed ? styles.searchBoxParentFramed : styles.searchBoxParent}>
+        <div
+            className={
+                framed
+                    ? [styles.searchBoxParentFramed, compact ? styles.compact : ''].join(' ')
+                    : styles.searchBoxParent
+            }
+        >
             <div className={framed ? styles.searchBoxFramed : styles.searchBox} data-search-box>
                 {points.map((point, index) => (
                     <SearchBox

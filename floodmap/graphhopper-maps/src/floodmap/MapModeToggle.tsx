@@ -13,9 +13,23 @@ import floodLayer from './flood_layer.png'
  * Presentational on purpose. The recency-derived default lives in FloodStore's reducer, so this
  * component never reads a clock and renders identically for a given `mode`.
  */
-export default function MapModeToggle({ mode, onChange }: { mode: MapMode; onChange: (mode: MapMode) => void }) {
+export default function MapModeToggle({
+    mode,
+    onChange,
+    offsetLeft = 0,
+}: {
+    mode: MapMode
+    onChange: (mode: MapMode) => void
+    /** Width in px of the panel at the left, so the buttons sit 30 px inside the map and not over the panel. */
+    offsetLeft?: number
+}) {
     return (
-        <div className={styles.container} role="group" aria-label="Map mode">
+        <div
+            className={styles.container}
+            style={offsetLeft ? { left: 30 + offsetLeft } : undefined}
+            role="group"
+            aria-label="Map mode"
+        >
             <PlainButton
                 className={mode === 'map' ? styles.thumbActive : styles.thumb}
                 aria-pressed={mode === 'map'}
