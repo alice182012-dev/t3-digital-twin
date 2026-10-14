@@ -274,6 +274,17 @@
     color: white;
 }
 
+.routeTabText {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.routeTabDetail {
+    font-size: 0.7rem;
+    opacity: 0.85;
+}
+
 .rerouteNote {
     margin: 0.5rem 0.75rem 0 0.75rem;
     font-size: 0.8rem;

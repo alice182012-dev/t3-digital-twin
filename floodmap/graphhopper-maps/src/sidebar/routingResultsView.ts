@@ -1,4 +1,5 @@
 import { Path } from '@/api/graphhopper'
+import { milliSecondsToText } from '@/Converters'
 import { CurrentRequest, RequestState, SubRequest } from '@/stores/QueryStore'
 
 export interface RouteTab {
@@ -6,6 +7,8 @@ export interface RouteTab {
     readonly index: number
     /** `Via ${path.description}` when the description is non-empty and unambiguous, otherwise `Route ${index + 1}`. */
     readonly label: string
+    /** The travel time, then the maximum depth along the route once known: "14 min · 22 cm". */
+    readonly detail: string
     readonly path: Path
 }
 
@@ -16,6 +19,8 @@ export interface RoutingResultsViewInput {
     currentRequest: CurrentRequest
     /** Every query point is initialized. */
     allPointsSet: boolean
+    /** The maximum depth in cm along each of `paths`, null while unknown. */
+    maxDepthsCm?: readonly (number | null)[]
 }
 
 /**
@@ -37,9 +42,13 @@ export type RoutingResultsView =
  * empty, so a pending alternative never flashes "no safe route".
  */
 export function selectRoutingResultsView(input: RoutingResultsViewInput): RoutingResultsView {
-    const { paths, selectedPath, currentRequest, allPointsSet } = input
+    const { paths, selectedPath, currentRequest, allPointsSet, maxDepthsCm } = input
     if (paths.length > 0)
-        return { kind: 'routes', tabs: buildRouteTabs(paths), activeIndex: activeTabIndex(paths, selectedPath) }
+        return {
+            kind: 'routes',
+            tabs: buildRouteTabs(paths, maxDepthsCm),
+            activeIndex: activeTabIndex(paths, selectedPath),
+        }
     // Sub requests outlive the route they belonged to, so an emptied point still leaves them behind.
     if (!allPointsSet) return { kind: 'idle' }
     if (hasPendingRequests(currentRequest.subRequests)) return { kind: 'loading' }
@@ -70,7 +79,8 @@ function descriptionText(path: Path): string {
     return typeof text === 'string' ? text.trim() : ''
 }
 
-export function buildRouteTabs(paths: readonly Path[]): RouteTab[] {
+/** `paths[i]`'s maximum depth in cm is `maxDepthsCm[i]`, null or absent while unknown. */
+export function buildRouteTabs(paths: readonly Path[], maxDepthsCm: readonly (number | null)[] = []): RouteTab[] {
     const counts = new Map<string, number>()
     for (const path of paths) {
         const description = descriptionText(path)
@@ -79,7 +89,10 @@ export function buildRouteTabs(paths: readonly Path[]): RouteTab[] {
     return paths.map((path, index) => {
         const description = descriptionText(path)
         const label = description && counts.get(description) === 1 ? `Via ${description}` : `Route ${index + 1}`
-        return { index, label, path }
+        const depthCm = maxDepthsCm[index]
+        const time = milliSecondsToText(path.time)
+        const detail = depthCm == null ? time : `${time} · ${depthCm} cm`
+        return { index, label, detail, path }
     })
 }
 

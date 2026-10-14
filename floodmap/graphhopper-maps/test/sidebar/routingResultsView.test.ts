@@ -41,6 +41,28 @@ describe('buildRouteTabs', () => {
     })
 })
 
+describe('buildRouteTabs detail', () => {
+    const timed = (description: string, time: number): Path => ({ description, time }) as Path
+
+    it('reads the travel time and the maximum depth in centimetres', () => {
+        const tabs = buildRouteTabs([timed('A1', 14 * 60000), timed('B2', 65 * 60000)], [22, 0])
+        expect(tabs.map(t => [t.label, t.detail])).toEqual([
+            ['Via A1', '14 min \u00b7 22 cm'],
+            ['Via B2', '1 h 5 min \u00b7 0 cm'],
+        ])
+    })
+
+    it('shows the time alone while the depth is unknown, for a missing or a failed answer', () => {
+        const tabs = buildRouteTabs([timed('A1', 14 * 60000), timed('B2', 14 * 60000), timed('C3', 14 * 60000)], [null])
+        expect(tabs.map(t => t.detail)).toEqual(['14 min', '14 min', '14 min'])
+    })
+
+    it('keeps Route N when the description is missing', () => {
+        const [tab] = buildRouteTabs([timed('', 5 * 60000)], [7])
+        expect([tab.label, tab.detail]).toEqual(['Route 1', '5 min \u00b7 7 cm'])
+    })
+})
+
 describe('buildRouteTabs with a description the backend sends as a list', () => {
     // GraphHopper answers `"description": ["Đường Hoàng Tùng"]`. Reading that as a string threw
     // "trim is not a function" and blanked the whole app.

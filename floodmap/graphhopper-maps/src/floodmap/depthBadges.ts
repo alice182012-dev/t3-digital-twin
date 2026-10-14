@@ -37,6 +37,12 @@ export function depthBadges(samples: readonly DepthSample[]): DepthBadge[] {
     return capBadges(runs).map(toBadge)
 }
 
+/** The deepest sample of a route in whole centimetres, or null when no sample is inside the raster. */
+export function maxDepthCm(samples: readonly DepthSample[]): number | null {
+    const depths = samples.flatMap(s => (s.depth_m === null ? [] : [s.depth_m]))
+    return depths.length === 0 ? null : Math.round(Math.max(...depths) * 100)
+}
+
 function levelOf(depthM: number): number {
     const band = bandForDepthCm(depthM * 100)
     return band ? DEPTH_BAND_INDEX[band.id] : UNDER_5_CM

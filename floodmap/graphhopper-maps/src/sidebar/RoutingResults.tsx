@@ -35,6 +35,7 @@ import { SettingsContext } from '@/contexts/SettingsContext'
 import { Settings } from '@/stores/SettingsStore'
 import DepthForecastChart from '@/floodmap/DepthForecastChart'
 import { FloodTimestep } from '@/floodmap/FloodStore'
+import { useMaxDepthsCm } from '@/floodmap/useDepthProfile'
 import NoSafeRouteMessage from '@/sidebar/NoSafeRouteMessage'
 import { noConnectionTarget } from '@/floodmap/departureAdvice'
 
@@ -53,7 +54,11 @@ export interface RoutingResultsProps extends RoutingResultsViewInput {
 
 export default function RoutingResults(props: RoutingResultsProps) {
     const [isExpanded, setExpanded] = useState(false)
-    const view = selectRoutingResultsView(props)
+    const maxDepthsCm = useMaxDepthsCm(
+        props.paths.map(path => path.points.coordinates),
+        props.floodActive ? props.timestep : undefined,
+    )
+    const view = selectRoutingResultsView({ ...props, maxDepthsCm })
     switch (view.kind) {
         case 'idle':
             return null

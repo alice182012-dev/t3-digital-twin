@@ -1,4 +1,4 @@
-import { depthBadges, DepthSample } from '@/floodmap/depthBadges'
+import { depthBadges, DepthSample, maxDepthCm } from '@/floodmap/depthBadges'
 
 /** One sample per depth, spaced along a west-east line so the order is the route order. */
 function line(...depths: (number | null)[]): DepthSample[] {
@@ -50,5 +50,15 @@ describe('depthBadges', () => {
         const badges = depthBadges(line(...depths, 0, 0))
 
         expect(badges.map(b => b.label)).toEqual(['0 cm', '35 cm', '45 cm', '55 cm', '65 cm', '0 cm'])
+    })
+})
+
+describe('maxDepthCm', () => {
+    it('is the deepest sample in whole centimetres', () => {
+        expect(maxDepthCm(line(0.08, 0.224, null, 0.1))).toBe(22)
+    })
+
+    it('is 0 for a dry route and null when no sample is inside the raster', () => {
+        expect([maxDepthCm(line(0, 0)), maxDepthCm(line(null, null)), maxDepthCm([])]).toEqual([0, null, null])
     })
 })

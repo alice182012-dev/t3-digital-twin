@@ -38,7 +38,10 @@ export default function RouteTabs({
                     onClick={() => onSelect(tab.index)}
                     onKeyDown={onKeyDown}
                 >
-                    {tab.label}
+                    <span className={styles.routeTabText}>
+                        <span>{tab.label}</span>
+                        <span className={styles.routeTabDetail}>{tab.detail}</span>
+                    </span>
                 </PlainButton>
             ))}
         </div>
