@@ -1,0 +1,36 @@
+/* The amber of the no-route box (RoutingResult.module.css), on the card shape of FloodLegend.
+   Bottom center of the map: the search box, the legend, and the map buttons keep their places, and
+   at 1366 px the banner stays between MapModeToggle (left 30 px, 186 px wide) and the sidebar's
+   26 rem column on one side and the right-hand legend on the other. */
+.container {
+    position: absolute;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    z-index: 1;
+    box-sizing: border-box;
+    width: max-content;
+    max-width: min(520px, calc(100vw - 2 * 30px - 2 * 200px));
+    background: #fdf0d5;
+    color: #8a5a00;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-align: center;
+}
+
+/* The search panel covers the top and its height varies, so the banner sits above the legend,
+   which FloodLegend.module.css moves to the bottom right here. The legend is about 220 px tall. */
+@media (max-width: 44rem) {
+    .container {
+        left: 12px;
+        right: 12px;
+        bottom: 264px;
+        transform: none;
+        width: auto;
+        max-width: none;
+    }
+}

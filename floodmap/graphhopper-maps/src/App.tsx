@@ -55,6 +55,8 @@ import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
+import FloodBanner from '@/floodmap/FloodBanner'
+import { floodView } from '@/floodmap/floodMode'
 import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
 import { namedDestination, namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
 import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
@@ -202,7 +204,11 @@ export default function App() {
     usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
     useCurrentLocationLayer(map, currentLocation)
-    useFloodExtentLayer(map, flood.mapMode === 'flood', flood.timesteps[flood.selectedIndex])
+    useFloodExtentLayer(
+        map,
+        flood.mapMode === 'flood' && floodView(flood.mode).drawFlood,
+        flood.timesteps[flood.selectedIndex],
+    )
 
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     return (
@@ -297,6 +303,7 @@ function LargeScreenLayout({
     setShowSidebar,
 }: LayoutProps & { showSidebar: boolean; setShowSidebar: (show: boolean) => void }) {
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
+    const { banner } = floodView(flood.mode)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
     const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
     const hasRoute = route.selectedPath.points.coordinates.length > 0
@@ -377,6 +384,7 @@ function LargeScreenLayout({
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+            {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
 
             {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
             {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
@@ -427,6 +435,7 @@ function SmallScreenLayout({
     profileTimes,
 }: LayoutProps) {
     const hasPath = route.selectedPath.points.coordinates.length > 0
+    const { banner } = floodView(flood.mode)
     const settings = useContext(SettingsContext)
 
     const [isFooterCollapsed, setIsFooterCollapsed] = useState(false)
@@ -468,6 +477,7 @@ function SmallScreenLayout({
             </div>
             <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+            {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (

@@ -3,6 +3,7 @@ import Dispatcher, { Action } from '@/stores/Dispatcher'
 import { getApi } from '@/api/Api'
 import { getQueryStore } from '@/stores/Stores'
 import * as config from 'config'
+import { FloodMode, parseFloodMode } from '@/floodmap/floodMode'
 
 export interface FloodTimestep {
     valid_time: string
@@ -29,6 +30,8 @@ export interface FloodStoreState {
     /** True once the user has operated MapModeToggle. Suppresses the recency-derived default
      *  on every later FloodTimestepsReceived. This is user intent, not a cached derivation. */
     userChoseMapMode: boolean
+    /** From GET /flood/mode. In DEMO with a pinned step, `timesteps` holds that step alone. */
+    mode: FloodMode
 }
 
 /** Data is fresh enough to default into Flood mode when the selected timestep's valid_time is
@@ -47,6 +50,10 @@ export class FloodTimestepsReceived implements Action {
         readonly timesteps: FloodTimestep[],
         readonly receivedAt: number,
     ) {}
+}
+
+export class FloodModeReceived implements Action {
+    constructor(readonly mode: FloodMode) {}
 }
 
 /** Explicit user toggle of the map/flood switch. Sets userChoseMapMode. */
@@ -113,11 +120,18 @@ class FloodStore extends Store<FloodStoreState> {
             // FloodTimestepsReceived doesn't immediately recompute it away.
             mapMode: 'flood',
             userChoseMapMode: true,
+            mode: { kind: 'LIVE' },
         })
     }
 
     reduce(state: FloodStoreState, action: Action): FloodStoreState {
-        if (action instanceof FloodTimestepsReceived) {
+        if (action instanceof FloodModeReceived) {
+            const pinned = action.mode.kind === 'DEMO' ? action.mode.pinned : null
+            return pinned
+                ? { ...state, mode: action.mode, timesteps: [pinned], selectedIndex: 0 }
+                : { ...state, mode: action.mode }
+        } else if (action instanceof FloodTimestepsReceived) {
+            if (state.mode.kind === 'DEMO' && state.mode.pinned) return state
             // Every refetch re-picks from the clock. Following the previous (valid_time, run) would
             // freeze the map: a run's first step stays the newest publisher of its valid_time, so
             // it stays listed long after it stops being now. No UI selects a step by hand.
@@ -148,6 +162,9 @@ export function getFloodStore() {
 }
 
 export async function loadFloodTimesteps() {
+    // The mode goes first so that a pinned step is already in place when the newest run's steps arrive.
+    const modeRes = await fetch(new URL(`${BACKEND_BASE}flood/mode`, window.location.href))
+    if (modeRes.ok) Dispatcher.dispatch(new FloodModeReceived(parseFloodMode(await modeRes.json())))
     const res = await fetch(new URL(`${BACKEND_BASE}flood/timesteps`, window.location.href))
     if (!res.ok) return
     const data = await res.json()
