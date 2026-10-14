@@ -298,6 +298,7 @@ function LargeScreenLayout({
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
     const { banner } = floodView(flood.mode)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
+    const hasRoute = route.selectedPath.points.coordinates.length > 0
     return (
         <>
             {showSidebar ? (
