@@ -61,8 +61,7 @@ RAIN_THRESHOLD_MM_HR = float(os.getenv("FLOOD_RAIN_THRESHOLD_MM_HR", "5"))
 # Read at parse time so a bad value fails the DAG import with the variable named.
 STALE_RUN_MINUTES = stale_run.limit_minutes(os.environ)
 # The rain threshold only starts a simulation from a dry state. Once runs exist, the simulation continues until the
-# newest standing_flood.DRY_RUNS_TO_STOP runs of the edge depth table are all under this depth (metres) and no rain is forecast.
-DRY_DEPTH_M = float(os.getenv("FLOOD_DRY_DEPTH_M", "0.05"))
+# newest standing_flood.STEADY_RUNS_TO_STOP runs of the edge depth table have stopped changing and no rain is forecast.
 # Stopping an Airflow run does not stop its 3Di simulation, which keeps writing its timed saved
 # states into the state file. After a stop and restart, choose_saved_state's 30-minute window can
 # still find one of them and hotstart from a storm that kept growing. With this flag on, a run
@@ -142,13 +141,13 @@ def task_check_forecast_rain(**kwargs):
 
     conn = psycopg2.connect(**DB_CONFIG)
     try:
-        standing = standing_flood.read_standing_flood(conn, decision["max_intensity_mm_hr"], DRY_DEPTH_M)
+        standing = standing_flood.read_standing_flood(conn, decision["max_intensity_mm_hr"])
     finally:
         conn.close()
     ti.xcom_push(key="standing_flood", value=standing)
     print(
-        f"🌊 Standing flood: {standing['reason']}, {standing['dry_runs_in_a_row']} of "
-        f"{standing['dry_runs_to_stop']} dry runs in a row, newest run {standing['newest_run_age_min']} min old"
+        f"🌊 Standing flood: {standing['reason']}, {standing['steady_runs_in_a_row']} of "
+        f"{standing['steady_runs_to_stop']} steady runs in a row, newest run {standing['newest_run_age_min']} min old"
     )
     record_forecast_mode(kwargs, decision, standing=standing["stands"], gate_open=standing["stands"])
     if standing["stands"]:

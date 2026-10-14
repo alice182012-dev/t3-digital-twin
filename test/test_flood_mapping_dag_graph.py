@@ -174,8 +174,8 @@ class FloodMappingDagGraphTests(unittest.TestCase):
         with patch("builtins.print"):
             return self.dag_module.task_check_forecast_rain(ti=MagicMock())
 
-    DRY = {"stands": False, "reason": "no_run", "dry_runs_in_a_row": 0, "dry_runs_to_stop": 5, "newest_run_age_min": None}
-    WET = {"stands": True, "reason": "standing_flood", "dry_runs_in_a_row": 0, "dry_runs_to_stop": 5, "newest_run_age_min": 11.0}
+    DRY = {"stands": False, "reason": "no_run", "steady_runs_in_a_row": 0, "steady_runs_to_stop": 5, "newest_run_age_min": None}
+    WET = {"stands": True, "reason": "depths_changing", "steady_runs_in_a_row": 0, "steady_runs_to_stop": 5, "newest_run_age_min": 11.0}
 
     def test_a_dry_state_with_a_dry_forecast_skips_every_downstream_task(self):
         self.assertIsNone(self.gate(False, 0.4, self.DRY))
@@ -187,7 +187,7 @@ class FloodMappingDagGraphTests(unittest.TestCase):
     def test_a_standing_flood_keeps_the_simulation_going_under_the_threshold(self):
         self.assertEqual(self.gate(False, 3.6, self.WET), "1_trigger_simulation")
         self.dag_module.standing_flood.read_standing_flood.assert_called_once_with(
-            self.dag_module.psycopg2.connect.return_value, 3.6, self.dag_module.DRY_DEPTH_M
+            self.dag_module.psycopg2.connect.return_value, 3.6
         )
 
     def test_the_gate_records_its_decision_for_the_backend(self):
