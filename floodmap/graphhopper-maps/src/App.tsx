@@ -19,7 +19,6 @@ import MapOptions from '@/map/MapOptions'
 import MobileSidebar from '@/sidebar/MobileSidebar'
 import { useMediaQuery } from 'react-responsive'
 import RoutingResults from '@/sidebar/RoutingResults'
-import PoweredBy from '@/sidebar/PoweredBy'
 import { milliSecondsToText, metersToText } from '@/Converters'
 import { Path } from '@/api/graphhopper'
 import { QueryStoreState, RequestState } from '@/stores/QueryStore'
@@ -354,9 +353,6 @@ function LargeScreenLayout({
                             floodActive={flood.mapMode === 'flood'}
                             timestep={flood.timesteps[flood.selectedIndex]}
                         />
-                        <div>
-                            <PoweredBy />
-                        </div>
                     </div>
                 </div>
             ) : (
@@ -496,7 +492,6 @@ function SmallScreenLayout({
                         floodActive={flood.mapMode === 'flood'}
                         timestep={flood.timesteps[flood.selectedIndex]}
                     />
-                    <PoweredBy />
                 </div>
             </div>
         </>

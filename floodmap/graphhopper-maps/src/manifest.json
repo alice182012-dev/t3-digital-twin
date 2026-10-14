@@ -1,6 +1,6 @@
 {
-  "name": "GraphHopper Maps",
-  "short_name": "GraphHopper",
+  "name": "Floodmap",
+  "short_name": "Floodmap",
   "start_url": "/maps/?source=pwa",
   "background_color": "white",
   "theme_color": "white",
