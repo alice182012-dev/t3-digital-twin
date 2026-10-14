@@ -30,6 +30,7 @@ Evidence: see below.
 - **2026-10-13, In progress.** Started after [[US-076-compare-the-live-app-with-the-mockup|US-076]] was accepted.
 - **2026-10-13, Reviewed.** Built and checked in a local build of the frontend against the server backend. It waits for a rebuild of the frontend on the server and the owner's acceptance.
 - **2026-10-14, Done.** The owner accepted it. The backend still sends no road description, so the live tabs read "Route N" until a story adds one (detail 5).
+- **2026-10-14, owner answer.** The owner wants "Via road" on the server tabs, and wants the backend to offer more than one route, because the commuter decides. The owner asked for a grill before the story is written, so no story exists yet.
 
 ## Evidence and details
 

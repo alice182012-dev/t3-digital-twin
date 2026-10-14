@@ -26,3 +26,4 @@ Evidence: None yet.
 
 - **2026-10-12, not picked.** The product owner asked to add every backend story to [[SPR-014-finish-the-remaining-backend|SPR-014]]. This story is left out: its backend, [[US-097-recommend-a-route-that-avoids-the-precaution|US-097]], is `Done`, so what remains is the route panel, which is frontend work, and its dependencies [[US-076-compare-the-live-app-with-the-mockup|US-076]] and the design of [[US-084-design-the-no-route-and-wait-until|US-084]] have not started.
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
+- **2026-10-14, owner answer.** The design of [[US-084-design-the-no-route-and-wait-until|US-084]] is approved, so this story no longer waits for it.

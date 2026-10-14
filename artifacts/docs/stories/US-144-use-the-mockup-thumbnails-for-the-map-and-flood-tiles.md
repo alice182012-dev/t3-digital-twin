@@ -33,6 +33,7 @@ Evidence: see below.
 
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
+- **2026-10-14, owner answer.** The unselected tile stays dimmed to 0.65, as in the mockup source. No change to the build.
 
 ## Evidence and details
 

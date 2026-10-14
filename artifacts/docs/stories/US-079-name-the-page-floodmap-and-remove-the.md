@@ -34,6 +34,7 @@ Evidence: see below.
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 - **2026-10-14, In progress.** Started after [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] was `Reviewed`, within the limit of two.
 - **2026-10-14, Reviewed.** Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
+- **2026-10-14, owner answer.** The `homepage` field in `package.json` and the `graphhopper.com` text in the GPX export metadata do not change.
 
 ## Evidence and details
 
