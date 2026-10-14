@@ -444,9 +444,11 @@ function SmallScreenLayout({
                     <LocationButton currentLocation={currentLocation} />
                 </div>
             </div>
-            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
-            {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
+            <div className={styles.smallScreenFloodOverlay}>
+                <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+                {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+                {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
+            </div>
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (
