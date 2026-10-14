@@ -4,7 +4,7 @@
     padding: 0;
     margin: 0;
     display: grid;
-    grid-template-columns: 26rem 1fr auto;
+    grid-template-columns: 460px 1fr auto;
     grid-template-rows: 100%;
     justify-content: space-between;
     overflow: auto;
@@ -43,14 +43,18 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    border-radius: 0.5rem;
     background-color: white;
-    max-height: calc(100% - 10.3rem);
-    margin: 0.5rem;
-
-    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    box-sizing: border-box;
+    border-right: 1px solid #e5e7eb;
     pointer-events: all;
-    overflow: auto;
+    overflow: hidden;
+}
+
+.sidebarHeader {
+    display: flex;
+    align-items: flex-start;
+    flex: none;
 }
 
 .onMapRightSide {
@@ -214,25 +218,25 @@
     }
 }
 
-.sidebarCloseButton {
-    position: absolute;
-
-    color: lightgray !important; /* unsure why !important is necessary here but not in ErrorMessage.module.css for same <Cross/> */
-
-    height: 15px;
-    width: 15px;
-
-    right: 7px;
-    top: 6px;
+.sidebarHeader .sidebarCloseButton {
+    flex: none;
+    width: 40px;
+    height: 44px;
+    margin: 17px 16px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #111 !important;
+    border-radius: 50%;
 }
 
-.sidebarCloseButton svg {
-    width: 100%;
-    height: 100%;
+.sidebarHeader .sidebarCloseButton svg {
+    width: 30px;
+    height: 30px;
 }
 
-.sidebarCloseButton:hover {
-    color: black !important;
+.sidebarCloseButton:focus-visible {
+    outline: 2px solid #368fe8;
 }
 
 /* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar).

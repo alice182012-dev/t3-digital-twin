@@ -41,7 +41,7 @@ import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
 import useMapBorderLayer from '@/layers/UseMapBorderLayer'
 import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
 import MapPopups from '@/map/MapPopups'
-import Cross from '@/sidebar/times-solid.svg'
+import Cross from '@/sidebar/times-solid-thin.svg'
 import PlainButton from '@/PlainButton'
 import useAreasLayer from '@/layers/UseAreasLayer'
 import useExternalMVTLayer from '@/layers/UseExternalMVTLayer'
@@ -327,18 +327,26 @@ function LargeScreenLayout({
             {showSidebar ? (
                 <div className={styles.sidebar}>
                     <div className={styles.sidebarContent} id={SIDEBAR_CONTENT_ID}>
-                        <PlainButton onClick={() => setShowSidebar(false)} className={styles.sidebarCloseButton}>
-                            <Cross />
-                        </PlainButton>
-                        <RoutingProfiles
-                            routingProfiles={query.profiles}
-                            selectedProfile={query.routingProfile}
-                            memorizedProfilePerGroup={query.memorizedProfilePerGroup}
-                            showCustomModelBox={showCustomModelBox}
-                            toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
-                            customModelBoxEnabled={query.customModelEnabled}
-                            profileTimes={profileTimes}
-                        />
+                        <div className={styles.sidebarHeader}>
+                            <RoutingProfiles
+                                framed
+                                routingProfiles={query.profiles}
+                                selectedProfile={query.routingProfile}
+                                memorizedProfilePerGroup={query.memorizedProfilePerGroup}
+                                showCustomModelBox={showCustomModelBox}
+                                toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
+                                customModelBoxEnabled={query.customModelEnabled}
+                                profileTimes={profileTimes}
+                            />
+                            <PlainButton
+                                onClick={() => setShowSidebar(false)}
+                                className={styles.sidebarCloseButton}
+                                aria-label="Close routing panel"
+                                title="Close"
+                            >
+                                <Cross />
+                            </PlainButton>
+                        </div>
                         {showCustomModelBox && (
                             <CustomModelBox
                                 customModelEnabled={query.customModelEnabled}
@@ -348,9 +356,10 @@ function LargeScreenLayout({
                                 drawAreas={drawAreas}
                             />
                         )}
-                        <Search points={query.queryPoints} profile={query.routingProfile} map={map} />
+                        <Search framed points={query.queryPoints} profile={query.routingProfile} map={map} />
                         <div>{!error.isDismissed && <ErrorMessage error={error} />}</div>
                         <RoutingResults
+                            framed
                             info={route.routingResult.info}
                             limitCm={route.routingResult.hints?.['td.limit_cm']}
                             paths={route.routingResult.paths}

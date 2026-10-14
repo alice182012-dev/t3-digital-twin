@@ -36,6 +36,8 @@ export interface AddressInputProps {
     dropPreviewIndex: number
     index: number
     map: Map
+    /** The desktop panel frame of mockup screen 2c: a tall rounded box with a black border. */
+    framed?: boolean
 }
 
 export default function AddressInput(props: AddressInputProps) {
@@ -202,6 +204,7 @@ export default function AddressInput(props: AddressInputProps) {
                 ref={searchInputContainer}
                 className={[
                     styles.inputContainer,
+                    props.framed ? styles.framed : '',
                     // show line (border) where input would be moved if dropped
                     props.dropPreviewIndex == props.index
                         ? props.dropPreviewIndex < props.moveStartIndex

@@ -10,6 +10,53 @@
     margin: 0.5rem 0.1rem 0.7rem 0;
 }
 
+.searchBoxParentFramed {
+    padding: 0 0 20px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.searchBoxFramed {
+    display: grid;
+    grid-template-columns: 55px 1fr;
+    align-items: center;
+    row-gap: 8px;
+    margin: 0 24px 0 0;
+}
+
+.markerContainerFramed {
+    grid-column: 1;
+    position: relative;
+    justify-self: start;
+    margin-left: 29px;
+    width: 10px;
+    display: flex;
+    justify-content: center;
+    outline: none;
+}
+
+.markerContainerFramed > svg {
+    display: block;
+}
+
+.startMarker {
+    top: -4px;
+}
+
+.endMarker {
+    top: 4px;
+}
+
+/* the dotted connector down to the next marker */
+.connected::after {
+    content: '';
+    position: absolute;
+    left: 3.5px;
+    top: 19.5px;
+    width: 3px;
+    height: 29px;
+    background: radial-gradient(circle at 1.5px 1.5px, #111 1.5px, transparent 2px) 0 0 / 3px 13px repeat-y;
+}
+
 .searchBoxScrollable {
     overflow-y: auto;
     overflow-x: hidden;

@@ -32,6 +32,21 @@
     padding: 1px;
 }
 
+.inputContainer.framed {
+    height: 46px;
+    border-color: #111;
+    border-radius: 6px;
+    padding: 0;
+    align-items: center;
+}
+
+.framed .input {
+    padding: 0 16px;
+    height: 100%;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
 .input {
     border: none;
     padding: 0.25rem 0.5rem;

@@ -50,9 +50,15 @@ export interface RoutingResultsProps extends RoutingResultsViewInput {
     floodActive?: boolean
     /** The selected flood timestep. The step list shows depths from it when `floodActive`. */
     timestep?: FloodTimestep
+    /**
+     * The desktop panel frame of mockup screen 2e: the steps are always listed under a "Steps" title,
+     * and the summary row with its GPX and Details buttons is left out.
+     */
+    framed?: boolean
 }
 
 export default function RoutingResults(props: RoutingResultsProps) {
+    const settings = useContext(SettingsContext)
     const [isExpanded, setExpanded] = useState(false)
     const maxDepthsCm = useMaxDepthsCm(
         props.paths.map(path => path.points.coordinates),
@@ -74,8 +80,9 @@ export default function RoutingResults(props: RoutingResultsProps) {
             return <div className={styles.noSafeRoute}>The route request took too long. Please try again.</div>
         case 'routes': {
             const active = view.tabs[view.activeIndex]
+            const showDistanceInMiles = settings.showDistanceInMiles
             return (
-                <>
+                <div className={props.framed ? styles.framedResults : undefined}>
                     <RouteTabs
                         tabs={view.tabs}
                         activeIndex={view.activeIndex}
@@ -83,10 +90,19 @@ export default function RoutingResults(props: RoutingResultsProps) {
                     />
                     {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
                     {props.floodActive && (
-                        <DepthForecastChart coordinates={active.path.points.coordinates} limitCm={props.limitCm} />
+                        <DepthForecastChart
+                            coordinates={active.path.points.coordinates}
+                            limitCm={props.limitCm}
+                            summary={
+                                props.framed
+                                    ? `${metersToText(active.path.distance, showDistanceInMiles)} · ${milliSecondsToText(active.path.time)}`
+                                    : undefined
+                            }
+                        />
                     )}
-                    <ul>
+                    {props.framed ? (
                         <RoutingResult
+                            framed
                             path={active.path}
                             allPaths={props.paths}
                             isSelected={true}
@@ -96,8 +112,21 @@ export default function RoutingResults(props: RoutingResultsProps) {
                             setExpanded={setExpanded}
                             timestep={props.floodActive ? props.timestep : undefined}
                         />
-                    </ul>
-                </>
+                    ) : (
+                        <ul>
+                            <RoutingResult
+                                path={active.path}
+                                allPaths={props.paths}
+                                isSelected={true}
+                                profile={props.profile}
+                                info={props.info}
+                                isExpanded={isExpanded}
+                                setExpanded={setExpanded}
+                                timestep={props.floodActive ? props.timestep : undefined}
+                            />
+                        </ul>
+                    )}
+                </div>
             )
         }
     }
@@ -112,7 +141,9 @@ function RoutingResult({
     isExpanded,
     setExpanded,
     timestep,
+    framed = false,
 }: {
+    framed?: boolean
     info: RoutingResultInfo
     path: Path
     allPaths: Path[]
@@ -217,54 +248,59 @@ function RoutingResult({
         steepInfo.distance > 0
 
     return (
-        <div className={styles.resultRow}>
-            <div className={styles.resultSelectableArea} onClick={() => Dispatcher.dispatch(new SetSelectedPath(path))}>
-                <div className={resultSummaryClass}>
-                    <div className={styles.resultValues}>
-                        <span className={styles.resultMainText}>{milliSecondsToText(path.time)}</span>
-                        <span className={styles.resultSecondaryText}>
-                            {metersToText(path.distance, showDistanceInMiles)}
-                        </span>
-                        {isSelected && !ApiImpl.isMotorVehicle(profile) && (
-                            <div className={styles.elevationHint}>
-                                <span title={tr('total_ascend', [Math.round(path.ascend) + 'm'])}>
-                                    {'\u2197\uFE0E'}
-                                    {metersToShortText(path.ascend, showDistanceInMiles)}{' '}
-                                </span>
-                                <span title={tr('total_descend', [Math.round(path.descend) + 'm'])}>
-                                    {'\u2198\uFE0E'}
-                                    {metersToShortText(path.descend, showDistanceInMiles)}
-                                </span>
-                            </div>
-                        )}
-                        {path.description && (
-                            <span className={styles.resultTertiaryText}>
-                                {tr('Via')} {path.description}
+        <div className={framed ? styles.stepsPane : styles.resultRow}>
+            {!framed && (
+                <div
+                    className={styles.resultSelectableArea}
+                    onClick={() => Dispatcher.dispatch(new SetSelectedPath(path))}
+                >
+                    <div className={resultSummaryClass}>
+                        <div className={styles.resultValues}>
+                            <span className={styles.resultMainText}>{milliSecondsToText(path.time)}</span>
+                            <span className={styles.resultSecondaryText}>
+                                {metersToText(path.distance, showDistanceInMiles)}
                             </span>
+                            {isSelected && !ApiImpl.isMotorVehicle(profile) && (
+                                <div className={styles.elevationHint}>
+                                    <span title={tr('total_ascend', [Math.round(path.ascend) + 'm'])}>
+                                        {'\u2197\uFE0E'}
+                                        {metersToShortText(path.ascend, showDistanceInMiles)}{' '}
+                                    </span>
+                                    <span title={tr('total_descend', [Math.round(path.descend) + 'm'])}>
+                                        {'\u2198\uFE0E'}
+                                        {metersToShortText(path.descend, showDistanceInMiles)}
+                                    </span>
+                                </div>
+                            )}
+                            {path.description && (
+                                <span className={styles.resultTertiaryText}>
+                                    {tr('Via')} {path.description}
+                                </span>
+                            )}
+                        </div>
+                        {isSelected && (
+                            <PlainButton className={styles.exportButton} onClick={() => downloadGPX(path, settings)}>
+                                <GPXDownload />
+                                <div>{tr('gpx_button')}</div>
+                            </PlainButton>
+                        )}
+                        {isSelected && (
+                            <PlainButton
+                                className={isExpanded ? styles.detailsButtonExpanded : styles.detailsButton}
+                                onTouchEnd={e => {
+                                    // reduce chance for synthetic mouse events that cause ghost clicks (#447)
+                                    e.preventDefault()
+                                    setExpanded(!isExpanded)
+                                }}
+                                onClick={() => setExpanded(!isExpanded)}
+                            >
+                                <Details />
+                                <div>{isExpanded ? tr('hide_button') : tr('details_button')}</div>
+                            </PlainButton>
                         )}
                     </div>
-                    {isSelected && (
-                        <PlainButton className={styles.exportButton} onClick={() => downloadGPX(path, settings)}>
-                            <GPXDownload />
-                            <div>{tr('gpx_button')}</div>
-                        </PlainButton>
-                    )}
-                    {isSelected && (
-                        <PlainButton
-                            className={isExpanded ? styles.detailsButtonExpanded : styles.detailsButton}
-                            onTouchEnd={e => {
-                                // reduce chance for synthetic mouse events that cause ghost clicks (#447)
-                                e.preventDefault()
-                                setExpanded(!isExpanded)
-                            }}
-                            onClick={() => setExpanded(!isExpanded)}
-                        >
-                            <Details />
-                            <div>{isExpanded ? tr('hide_button') : tr('details_button')}</div>
-                        </PlainButton>
-                    )}
                 </div>
-            </div>
+            )}
             {isSelected && showHints && (
                 <div className={styles.routeHints}>
                     <div className={styles.icons}>
@@ -507,15 +543,29 @@ function RoutingResult({
                     />
                 </div>
             )}
-            {isExpanded && <RouteStats path={path} profile={profile} />}
-            {isExpanded && (
+            {framed && (
+                <>
+                    <h2 className={styles.stepsTitle}>Steps</h2>
+                    <Instructions
+                        instructions={path.instructions}
+                        us={showDistanceInMiles}
+                        timestep={timestep}
+                        framed
+                    />
+                    <div className={styles.routingResultRoadData}>
+                        {tr('road_data_from')}: {info.road_data_timestamp}
+                    </div>
+                </>
+            )}
+            {!framed && isExpanded && <RouteStats path={path} profile={profile} />}
+            {!framed && isExpanded && (
                 <div className={styles.instructionsToggle} onClick={() => setShowInstructions(!showInstructions)}>
                     <span className={statsStyles.label}>{tr('route_stats_turn_instructions')}: </span>
                     {path.instructions.length}
                     <span className={statsStyles.statArrow}>{showInstructions ? '▴' : '▾'}</span>
                 </div>
             )}
-            {isExpanded && showInstructions && (
+            {!framed && isExpanded && showInstructions && (
                 <>
                     <Instructions instructions={path.instructions} us={showDistanceInMiles} timestep={timestep} />
                     <div className={styles.routingResultRoadData}>

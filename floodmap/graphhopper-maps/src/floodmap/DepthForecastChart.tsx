@@ -18,17 +18,21 @@ import {
 export default function DepthForecastChart({
     coordinates,
     limitCm,
+    summary,
 }: {
     coordinates: readonly number[][]
     limitCm?: number
+    /** Distance and time of the route, shown at the right of the title. */
+    summary?: string
 }) {
     const columns = useDepthForecast(coordinates)
     if (!columns || columns.length === 0) return null
     const chart = shapeDepthChart(columns, Date.now(), limitCm)
     return (
         <figure className={styles.container} role="img" aria-label={describe(chart.bars)}>
-            <figcaption className={styles.title} aria-hidden="true">
-                Average water depth
+            <figcaption className={styles.titleRow} aria-hidden="true">
+                <span className={styles.title}>Average water depth</span>
+                {summary && <span className={styles.summary}>{summary}</span>}
             </figcaption>
             <div className={styles.plot} aria-hidden="true">
                 <div className={styles.bars}>

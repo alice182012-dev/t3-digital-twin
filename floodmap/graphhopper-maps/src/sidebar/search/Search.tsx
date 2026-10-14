@@ -19,7 +19,7 @@ import PlainButton from '@/PlainButton'
 import { Map } from 'ol'
 
 import AddressInput from '@/sidebar/search/AddressInput'
-import { MarkerComponent } from '@/map/Marker'
+import { CircleComponent, MarkerComponent } from '@/map/Marker'
 import { tr } from '@/translation/Translation'
 import SettingsBox from '@/sidebar/SettingsBox'
 import { RoutingProfile } from '@/api/graphhopper'
@@ -28,15 +28,26 @@ import { saveRecentLocation } from '@/sidebar/search/RecentLocations'
 import { useContext } from 'react'
 import { SettingsContext } from '@/contexts/SettingsContext'
 
-export default function Search({ points, profile, map }: { points: QueryPoint[]; profile: RoutingProfile; map: Map }) {
+export default function Search({
+    framed = false,
+    points,
+    profile,
+    map,
+}: {
+    /** The desktop panel frame of mockup screen 2c: plain from and to boxes, no "Add location" and no settings. */
+    framed?: boolean
+    points: QueryPoint[]
+    profile: RoutingProfile
+    map: Map
+}) {
     const [showSettings, setShowSettings] = useState(false)
     const [showTargetIcons, setShowTargetIcons] = useState(true)
     const [moveStartIndex, onMoveStartSelect] = useState(-1)
     const [dropPreviewIndex, onDropPreviewSelect] = useState(-1)
 
     return (
-        <div className={styles.searchBoxParent}>
-            <div className={styles.searchBox} data-search-box>
+        <div className={framed ? styles.searchBoxParentFramed : styles.searchBoxParent}>
+            <div className={framed ? styles.searchBoxFramed : styles.searchBox} data-search-box>
                 {points.map((point, index) => (
                     <SearchBox
                         key={point.id}
@@ -57,27 +68,32 @@ export default function Search({ points, profile, map }: { points: QueryPoint[];
                         dropPreviewIndex={dropPreviewIndex}
                         onDropPreviewSelect={onDropPreviewSelect}
                         map={map}
+                        framed={framed}
                     />
                 ))}
             </div>
-            <div className={styles.lastSearchLine}>
-                <PlainButton
-                    style={
-                        showTargetIcons && moveStartIndex >= 0 && moveStartIndex + 1 < points.length
-                            ? { paddingTop: '2rem' }
-                            : {}
-                    }
-                    onClick={() => Dispatcher.dispatch(new AddPoint(points.length, { lat: 0, lng: 0 }, false, true))}
-                    className={styles.addSearchBox}
-                >
-                    <AddIcon />
-                    <div>{tr('add_to_route')}</div>
-                </PlainButton>
-                <PlainButton className={styles.settingsButton} onClick={() => setShowSettings(!showSettings)}>
-                    {showSettings ? tr('settings_close') : tr('settings')}
-                </PlainButton>
-            </div>
-            {showSettings && <SettingsBox profile={profile} />}
+            {!framed && (
+                <div className={styles.lastSearchLine}>
+                    <PlainButton
+                        style={
+                            showTargetIcons && moveStartIndex >= 0 && moveStartIndex + 1 < points.length
+                                ? { paddingTop: '2rem' }
+                                : {}
+                        }
+                        onClick={() =>
+                            Dispatcher.dispatch(new AddPoint(points.length, { lat: 0, lng: 0 }, false, true))
+                        }
+                        className={styles.addSearchBox}
+                    >
+                        <AddIcon />
+                        <div>{tr('add_to_route')}</div>
+                    </PlainButton>
+                    <PlainButton className={styles.settingsButton} onClick={() => setShowSettings(!showSettings)}>
+                        {showSettings ? tr('settings_close') : tr('settings')}
+                    </PlainButton>
+                </div>
+            )}
+            {!framed && showSettings && <SettingsBox profile={profile} />}
         </div>
     )
 }
@@ -93,7 +109,9 @@ const SearchBox = ({
     dropPreviewIndex,
     onDropPreviewSelect,
     map,
+    framed,
 }: {
+    framed: boolean
     index: number
     points: QueryPoint[]
     deletable: boolean
@@ -106,6 +124,7 @@ const SearchBox = ({
     map: Map
 }) => {
     const point = points[index]
+    const isVia = index > 0 && index + 1 < points.length
     const saveRecent = useContext(SettingsContext).saveRecentLocations
 
     function onClickOrDrop() {
@@ -123,7 +142,16 @@ const SearchBox = ({
             {(moveStartIndex < 0 || moveStartIndex == index) && (
                 <div
                     title={tr('drag_to_reorder')}
-                    className={styles.markerContainer}
+                    className={
+                        framed
+                            ? [
+                                  styles.markerContainerFramed,
+                                  index + 1 < points.length ? styles.connected : '',
+                                  index === 0 ? styles.startMarker : '',
+                                  index > 0 && index + 1 === points.length ? styles.endMarker : '',
+                              ].join(' ')
+                            : styles.markerContainer
+                    }
                     draggable
                     onDragStart={() => {
                         // do not set to dropPreview to -1 if we start dragging when already selected
@@ -143,11 +171,19 @@ const SearchBox = ({
                         } else onMoveStartSelect(index, true)
                     }}
                 >
-                    <MarkerComponent
-                        number={index > 0 && index + 1 < points.length ? '' + index : undefined}
-                        cursor="ns-resize"
-                        color={moveStartIndex >= 0 ? 'gray' : point.color}
-                    />
+                    {framed && !isVia ? (
+                        index === 0 ? (
+                            <CircleComponent color="#111" size={10} cursor="ns-resize" />
+                        ) : (
+                            <MarkerComponent color="#d01d23" size={14} cursor="ns-resize" />
+                        )
+                    ) : (
+                        <MarkerComponent
+                            number={isVia ? '' + index : undefined}
+                            cursor="ns-resize"
+                            color={moveStartIndex >= 0 ? 'gray' : point.color}
+                        />
+                    )}
                 </div>
             )}
             {moveStartIndex >= 0 && moveStartIndex != index && (
@@ -177,6 +213,7 @@ const SearchBox = ({
                     moveStartIndex={moveStartIndex}
                     dropPreviewIndex={dropPreviewIndex}
                     index={index}
+                    framed={framed}
                     point={point}
                     points={points}
                     onCancel={() => console.log('cancel')}

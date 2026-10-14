@@ -31,14 +31,22 @@ import { stepDepthText } from '@/floodmap/placeDepth'
 import { useStepDepths } from '@/floodmap/useStepDepths'
 import { SettingsContext } from '@/contexts/SettingsContext'
 
-/** `timestep` is set in Flood mode. Each step then shows the water depth at its start point. */
-export default function (props: { instructions: Instruction[]; us: boolean; timestep?: FloodTimestep }) {
+/**
+ * `timestep` is set in Flood mode. Each step then shows the water depth at its start point.
+ * `framed` is the desktop panel list of mockup screen 2e: one row per step, the distance at the right.
+ */
+export default function (props: {
+    instructions: Instruction[]
+    us: boolean
+    timestep?: FloodTimestep
+    framed?: boolean
+}) {
     const depths = useStepDepths(
         props.instructions.map(instruction => ({ lng: instruction.points[0][0], lat: instruction.points[0][1] })),
         props.timestep,
     )
     return (
-        <ul className={styles.instructionsList}>
+        <ul className={props.framed ? styles.framedList : styles.instructionsList}>
             {props.instructions.map((instruction, i) => (
                 <Line key={i} instruction={instruction} index={i} us={props.us} depthText={stepDepthText(depths[i])} />
             ))}
@@ -82,7 +90,7 @@ const Line = function ({
             )}
             <span className={styles.distance}>
                 {metersToText(instruction.distance, settings.showDistanceInMiles)}
-                {depthText && ` · ${depthText}`}
+                {depthText && ` · depth ${depthText}`}
             </span>
         </li>
     )
