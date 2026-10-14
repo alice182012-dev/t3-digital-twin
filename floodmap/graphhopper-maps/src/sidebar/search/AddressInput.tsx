@@ -304,8 +304,11 @@ export default function AddressInput(props: AddressInputProps) {
                         inputRef={searchInputContainer.current!}
                         index={props.index}
                         isSmallScreen={isSmallScreen}
+                        framed={!!props.framed}
                     >
                         <Autocomplete
+                            framed={!!props.framed && !isSmallScreen}
+                            query={origText}
                             items={autocompleteItems}
                             highlightedItem={autocompleteItems[highlightedResult]}
                             onSelect={item => {
@@ -364,18 +367,20 @@ function ResponsiveAutocomplete({
     children,
     index,
     isSmallScreen,
+    framed,
 }: {
     inputRef: HTMLElement
     children: ReactNode
     isSmallScreen: boolean
     index: number
+    framed: boolean
 }): JSX.Element {
     return (
         <>
             {isSmallScreen ? (
                 <div className={styles.smallList}>{children}</div>
             ) : (
-                <PopUp inputElement={inputRef} keepClearAtBottom={index > 5 ? 270 : 0}>
+                <PopUp inputElement={inputRef} keepClearAtBottom={index > 5 ? 270 : 0} framed={framed}>
                     {children}
                 </PopUp>
             )}

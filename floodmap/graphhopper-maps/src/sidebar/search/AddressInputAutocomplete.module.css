@@ -53,18 +53,43 @@
 
 .pinIcon {
     flex-shrink: 0;
-    color: #5b616a;
+    color: #6b7280;
 }
 
 .district {
     margin-left: auto;
     flex-shrink: 0;
     font-size: small;
-    color: #5b616a;
+    color: #6b7280;
+}
+
+.matchedText {
+    font-weight: 600;
 }
 
 .mainText {
     font-weight: bold;
+}
+
+/* mockup screen 2d: 13 px rows of 36 px, the district at the right edge, a 1 px rule under the list */
+.framedList {
+    padding: 8px 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.framedList .autocompleteItem:not(:last-child) {
+    border-bottom: none;
+}
+
+.framedList .geocodingEntry {
+    margin: 0;
+    gap: 14px;
+    padding: 10px 24px 10px 40px;
+    font-size: 13px;
+}
+
+.framedList .district {
+    font-size: inherit;
 }
 
 .secondaryText {
