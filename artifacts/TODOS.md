@@ -10,9 +10,23 @@ Index: [[Home]].
 
 <!-- next-action:start -->
 [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] runs from 2026-10-13 to 2026-10-25 with 35 points picked against a forecast of 45.
-1. Start with [[US-076-compare-the-live-app-with-the-mockup|US-076]], because six stories depend on its screenshots.
+1. [[US-076-compare-the-live-app-with-the-mockup|US-076]], [[US-077-match-the-depth-chart-columns-and-the|US-077]], and [[US-008-switch-the-search-geocoder-s-default-locale|US-008]] are `Done`. Six more are `Reviewed` and wait for one frontend rebuild on the server.
 2. `flood_mapping_full` is paused until [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] gives the chain a stop test, or real rain comes.
 3. Monitoring, on the owner's side: [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (backlog, `Ready`). Check the archive of sims 452776 and 452778 on or after 03:46 UTC on 2026-10-14 ([[decision-log|D-045]]).
+
+Questions for the owner, to answer together after the current batch:
+1. [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]]: do the stock map buttons (zoom, locate, layers) stay, or does the legend move to the bottom right as in the mockup?
+2. [[US-147-remove-the-elevation-widget-from-the-route-view|US-147]]: is any path detail (surface, road class) wanted before the Elevation widget is removed?
+3. [[US-084-design-the-no-route-and-wait-until|US-084]]: the design of the no-route and "wait until" states needs approval before the build. [[US-098-show-the-recommended-route-and-the-through|US-098]] waits for it.
+4. [[US-077-match-the-depth-chart-columns-and-the|US-077]]: the backend sends no road description, so the live tabs read "Route N". Do you want a story so that "Via road" shows on the server?
+5. [[US-079-name-the-page-floodmap-and-remove-the|US-079]]: do the `homepage` field in `package.json` and the `graphhopper.com` text in the GPX export metadata change too?
+6. [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]]: the unselected tile is dimmed to 0.65, as in the mockup source, but screen 2a looks brighter. Which one do you want?
+7. Rebuild: one frontend rebuild on the server after the last frontend story is `Reviewed`. Is that still the plan?
+8. [[BL-018-route-panel-stuck-on-loading-bars|BL-018]]: a likely cause was found in `routeWithDispatch` (an answer dropped by the stale-answer guard leaves its request `SENT`). Do you want a story to fix it and reproduce it first?
+9. [[US-149-match-the-autofill-rows-to-the-mockup|US-149]]: the story asks for two lines per row and no pin icon, but screen 2d shows one line, an outline pin icon, only the matched part of the name in bold, and the district at the right. The live app already has that structure. Do you want the story rewritten to the real gaps (bold only the matched part, smaller rows, regular weight for the rest), or dropped?
+10. [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]]: the story says "Sep 16, 2026", but the pinned step is 2026-10-10 19:00 UTC (2026-10-11 02:00 in Hanoi). The banner now reads "Oct 10, 2026" from the backend, and the legend beside it reads 11/10/2026 02:00. Which date wording do you want (UTC or local), and may a `DEMO` and a `PENDING` row be set on the server for the server screenshots?
+11. [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]]: "5 runs in a row" is built as 5 runs with 4 comparisons. Do you want 5 steady comparisons (6 runs) instead? Also, who deploys it to the server, and may `flood_mapping_full` be unpaused after that?
+12. [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]]: seven desktop controls were removed from the panel (custom model gear, "Add location", "Settings", GPX, "Details", the summary row, the old X). Which of them do you want back, and where? The list with what each did is in the story. Also, do you want the stock mode icons replaced by the mockup's outline icons in this story or a new one?
 <!-- next-action:end -->
 
 ## Current sprint: Sprint 15, 2026-10-13 to 2026-10-25
@@ -22,87 +36,87 @@ Index: [[Home]].
 **Sprint file:** [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]
 
 **Status:** active.
-47 points picked, 3 done.
+47 points picked, 7 done.
 
-### Reviewed - US-008 Switch the search geocoder's default locale to `vi`
+### Blocked - US-149 Match the autofill rows to the mockup
 
-**Story:** [[US-008-switch-the-search-geocoder-s-default-locale|US-008]].
-P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+**Story:** [[US-149-match-the-autofill-rows-to-the-mockup|US-149]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
-### Reviewed - US-077 Match the depth chart columns and the route tab text to screen 2e
-
-**Story:** [[US-077-match-the-depth-chart-columns-and-the|US-077]].
-P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-078 Show the place names on the start and destination pins
+### Reviewed - US-078 Show the place names on the start and destination pins
 
 **Story:** [[US-078-show-the-place-names-on-the-start|US-078]].
 P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-085 Time out a route request in the client
+
+**Story:** [[US-085-time-out-a-route-request-in-the|US-085]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-131 Show the demo flood banner and the pinned frame
+
+**Story:** [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]].
+P2, M (3 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Reviewed - US-142 Stop the standing-flood chain when the depths stop changing
+
+**Story:** [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]].
+P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
+
+### Reviewed - US-146 Match the routing panel frame to the mockup
+
+**Story:** [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]].
+P2, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-148 Show the place name in the destination field after Route to this place
+
+**Story:** [[US-148-show-the-place-name-in-the-destination-field|US-148]].
+P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-079 Name the page "Floodmap" and remove the "Powered by GraphHopper" line and its links
+
+**Story:** [[US-079-name-the-page-floodmap-and-remove-the|US-079]].
+P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-080 Keep "As of" and bring the `US-007` record in line
+
+**Story:** [[US-080-keep-as-of-and-bring-the-us|US-080]].
+P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-081 Draw a second dashed line for the selected mode's depth limit
+
+**Story:** [[US-081-draw-a-second-dashed-line-for-the|US-081]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-082 Show the travel time and the maximum depth on each route tab
+
+**Story:** [[US-082-show-the-travel-time-and-the-maximum|US-082]].
+P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
+
+### Reviewed - US-144 Use the mockup thumbnails for the Map and Flood tiles
+
+**Story:** [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]].
+P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ### Ready - US-084 Design the no-route and "wait until" states, then match the UI to the design
 
 **Story:** [[US-084-design-the-no-route-and-wait-until|US-084]].
 P2, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
-### Ready - US-085 Time out a route request in the client
-
-**Story:** [[US-085-time-out-a-route-request-in-the|US-085]].
-P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
 ### Ready - US-098 Show the recommended route and the through-water option in the app
 
 **Story:** [[US-098-show-the-recommended-route-and-the-through|US-098]].
 P2, S (2 points), [[EP-18-time-aware-routing-engine|EP-18]].
-
-### Ready - US-131 Show the demo flood banner and the pinned frame
-
-**Story:** [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]].
-P2, M (3 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
-
-### Ready - US-142 Stop the standing-flood chain when the depths stop changing
-
-**Story:** [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]].
-P2, S (2 points), [[EP-17-flood-data-pipeline-and-core-output|EP-17]].
 
 ### Ready - US-145 Stop the legend from covering the map controls
 
 **Story:** [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]].
 P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
-### Ready - US-146 Match the routing panel frame to the mockup
-
-**Story:** [[US-146-match-the-routing-panel-frame-to-the-mockup|US-146]].
-P2, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-148 Show the place name in the destination field after Route to this place
-
-**Story:** [[US-148-show-the-place-name-in-the-destination-field|US-148]].
-P2, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
 ### Ready - US-033 Write a project `DESIGN.md` with real design tokens
 
 **Story:** [[US-033-write-a-project-design-md-with-real|US-033]].
 P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-079 Name the page "Floodmap" and remove the "Powered by GraphHopper" line and its links
-
-**Story:** [[US-079-name-the-page-floodmap-and-remove-the|US-079]].
-P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-080 Keep "As of" and bring the `US-007` record in line
-
-**Story:** [[US-080-keep-as-of-and-bring-the-us|US-080]].
-P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-081 Draw a second dashed line for the selected mode's depth limit
-
-**Story:** [[US-081-draw-a-second-dashed-line-for-the|US-081]].
-P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-082 Show the travel time and the maximum depth on each route tab
-
-**Story:** [[US-082-show-the-travel-time-and-the-maximum|US-082]].
-P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ### Ready - US-083 Design a mobile layout of screen 2e
 
@@ -114,20 +128,10 @@ P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 **Story:** [[US-143-build-the-mobile-version-of-screen-2e|US-143]].
 P3, M (3 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
-### Ready - US-144 Use the mockup thumbnails for the Map and Flood tiles
-
-**Story:** [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]].
-P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
 ### Ready - US-147 Remove the Elevation widget from the route view
 
 **Story:** [[US-147-remove-the-elevation-widget-from-the-route-view|US-147]].
 P3, XS (1 points), [[EP-19-frontend-against-the-mockup|EP-19]].
-
-### Ready - US-149 Match the autofill rows to the mockup
-
-**Story:** [[US-149-match-the-autofill-rows-to-the-mockup|US-149]].
-P3, S (2 points), [[EP-19-frontend-against-the-mockup|EP-19]].
 
 ## Product backlog
 

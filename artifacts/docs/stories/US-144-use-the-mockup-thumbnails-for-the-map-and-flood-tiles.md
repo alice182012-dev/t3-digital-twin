@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-144"
 title: "Use the mockup thumbnails for the Map and Flood tiles"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Ready
+status: Reviewed
 kind: story
 priority: P3
 estimate: S
@@ -27,7 +27,7 @@ Given a viewport of 390x844, then the tiles keep their position and size without
 Given the built app, then the images are bundled with the frontend and the page makes no request to another origin for them.
 
 Dependencies: None. The images are read from `raw/`, and the story copies them into the frontend source. It never edits `raw/`.
-Evidence: None yet.
+Evidence: see below.
 
 ## Status history
 
@@ -37,3 +37,15 @@ Evidence: None yet.
 ## Evidence and details
 
 Fill this when the story reaches `Done`.
+- **2026-10-14, In progress.** Started in parallel with one other story, within the limit of two.
+- **2026-10-14, Reviewed.** Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
+
+## Evidence and details
+
+![[live-tiles.jpg|420]]
+
+1. What: the Map tile shows the mockup's map thumbnail and the Flood tile shows its flood thumbnail, each with the white border, the selected tile with the dark ring, and the label on a dark strip at the bottom.
+2. How: `MapModeToggle.tsx` renders an `<img>` in each tile, styled by `.thumbImage` in `MapModeToggle.module.css`. The images are copies of `raw/frontend-mockups/flood_layer.png` and `map_layer.png`, downscaled with `sips` to 2x of the 82 px tile and stored in `src/floodmap/`. The blue tint span is removed. Webpack's existing png rule bundles them, so the page makes no request to another origin. jest (195 tests) and `tsc --noEmit` pass in a throwaway Node container.
+3. Not checked: the 390x844 viewport, the page-load state with Map selected (screen 2a), and the emitted asset of a production build. The dev build shows Flood selected, which matches screen 2b.
+4. Open: the unselected tile is dimmed to 0.65, as in the mockup source, but in the mockup image of screen 2a the unselected Flood tile looks brighter. Compare it at the review.
+5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].

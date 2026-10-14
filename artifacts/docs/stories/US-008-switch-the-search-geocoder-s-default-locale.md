@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-008"
 story_label: "3"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 priority: P2
 estimate: S
 sprint: 15
@@ -33,3 +33,4 @@ Details:
 - **2026-10-10, body line removed.** The body line of Priority, Status, Estimate, and Sprint repeated the frontmatter and was removed.
   It also said: sprint "1 (completed outside formal sprint tracking, 2026-09-23)".
 - **2026-10-13, Reviewed.** Picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]]. Only the check through the browser UI at `100.67.84.55:8082` and the owner's acceptance are left.
+- **2026-10-14, Done.** The owner accepted it.

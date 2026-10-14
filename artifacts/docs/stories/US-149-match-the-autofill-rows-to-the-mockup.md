@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-149"
 title: "Match the autofill rows to the mockup"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Ready
+status: Blocked
 kind: story
 priority: P3
 estimate: S
@@ -37,3 +37,5 @@ Evidence: None yet.
 ## Evidence and details
 
 Fill this when the story reaches `Done`.
+- **2026-10-14, In progress.** Started after [[US-085-time-out-a-route-request-in-the|US-085]] was `Reviewed`, within the limit of two.
+- **2026-10-14, Blocked.** A worker built the story as written (two lines, no pin icon) and found that it contradicts the mockup. Screen 2d (`mock-2d.jpg`) shows one line per row, a small outline pin icon, the name with only the matched part in bold, and the district at the right edge. The live app already has that structure (`live-2d.jpg`). The change is kept unmerged on the branch `us-149-two-line-rows-unmerged`. The owner decides what the story asks for. See the questions in [[TODOS]].

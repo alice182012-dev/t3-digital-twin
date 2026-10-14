@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-077"
 story_label: "2"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 priority: P2
 estimate: S
 sprint: 15
@@ -29,6 +29,7 @@ Evidence: see below.
 - **2026-10-13, Ready.** Passes the INVEST check at refinement and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]].
 - **2026-10-13, In progress.** Started after [[US-076-compare-the-live-app-with-the-mockup|US-076]] was accepted.
 - **2026-10-13, Reviewed.** Built and checked in a local build of the frontend against the server backend. It waits for a rebuild of the frontend on the server and the owner's acceptance.
+- **2026-10-14, Done.** The owner accepted it. The backend still sends no road description, so the live tabs read "Route N" until a story adds one (detail 5).
 
 ## Evidence and details
 
