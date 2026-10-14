@@ -1,6 +1,7 @@
 import { act } from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import FloodLegend from '@/floodmap/FloodLegend'
+import { floodView, parseFloodMode } from '@/floodmap/floodMode'
 import { legendGradient, legendTicks } from '@/floodmap/depthScale'
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -50,9 +51,20 @@ describe('FloodLegend', () => {
         expect(container.querySelectorAll('.tick')).toHaveLength(8)
     })
 
-    it('adds the caption of the shown step under the scale', async () => {
+    it('adds the caption of the shown step under the scale, in Hanoi time', async () => {
         const timestep = { valid_time: '2026-10-10T19:00:00+00:00', run: '20261011T001500' }
         await act(async () => root.render(<FloodLegend timestep={timestep} />))
-        expect(container.querySelector('.updated')?.textContent).toMatch(/^As of \d\d\/\d\d\/2026 \d\d:\d\d$/)
+        expect(container.querySelector('.updated')?.textContent).toEqual('As of 11/10/2026 02:00')
+    })
+
+    it('names the same Hanoi day as the demo banner of the same step', async () => {
+        const mode = parseFloodMode({
+            mode: 'DEMO',
+            demo: { run: '20261011T001500', valid_time: '2026-10-10T19:00:00+00:00' },
+        })
+        const pinned = mode.kind === 'DEMO' ? mode.pinned : null
+        await act(async () => root.render(<FloodLegend timestep={pinned ?? undefined} />))
+        expect(floodView(mode).banner).toEqual('No flood forecasted, displaying the demo flood of Oct 11, 2026')
+        expect(container.querySelector('.updated')?.textContent).toEqual('As of 11/10/2026 02:00')
     })
 })

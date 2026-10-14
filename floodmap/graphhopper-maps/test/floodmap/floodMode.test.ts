@@ -42,9 +42,9 @@ describe('floodView', () => {
         })
     })
 
-    it('names the date of the pinned step in DEMO', () => {
+    it('names the Hanoi date of the pinned step in DEMO, one day after its UTC date', () => {
         expect(floodView(parseFloodMode(DEMO_ANSWER))).toEqual({
-            banner: 'No flood forecasted, displaying the demo flood of Oct 10, 2026',
+            banner: 'No flood forecasted, displaying the demo flood of Oct 11, 2026',
             drawFlood: true,
         })
     })

@@ -48,7 +48,7 @@ describe('coordinatesText', () => {
 })
 
 describe('depthLine', () => {
-    const step = new Date(2026, 8, 29, 15, 15)
+    const step = new Date('2026-09-29T15:15:00+07:00')
     const timestep = { valid_time: step.toISOString(), run: '20260929T150000' }
     const now = step.getTime() + 5 * 60 * 1000
 
