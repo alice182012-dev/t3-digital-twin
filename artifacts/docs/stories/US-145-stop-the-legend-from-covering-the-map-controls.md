@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-145"
 title: "Stop the legend from covering the map controls"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -34,6 +34,7 @@ Evidence: None yet.
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 - **2026-10-14, owner answer.** The legend moves to the bottom right, exactly like screen 2b (the gradient bar with ticks). The stock map buttons stay at the top right. A worker builds it.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -46,4 +47,4 @@ Fill this when the story reaches `Done`.
 2. How: `FloodLegend.tsx` and `FloodLegend.module.css`, with `legendTicks()` and `legendGradient()` in `depthScale.ts`, which derive the bar from `DISPLAY_DEPTH_BANDS`, so the legend and the map paint stay one scale. At 390x844 the legend sits above the Map and Flood tiles and the demo banner above it. With a route open, the tiles and the legend sit in a grid cell over the map, so the footer sheet does not cover them. jest (299 tests) and `tsc --noEmit` pass in a throwaway Node container.
 3. Evidence: `evidence/US-145/` holds `live-1366.jpg`, `live-390.jpg`, `live-390-route.jpg`, `crop-ours.jpg`, and `crop-mockup.jpg`.
 4. Not checked: a pixel-exact match, because the app font is its own stack and not the mockup's Inter. The caption says "As of", the owner's earlier choice, and not "Updated". Also not checked: 390x844 with the search panel expanded, and a phone shorter than 844 px.
-5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+5. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the legend at the bottom right above the OpenStreetMap line, clear of the zoom and layer buttons and of the Map and Flood tiles. The 390x844 layout was not rechecked on the server. Screenshot: `evidence/server-check-2026-10-14/server-route-panel.jpg`. The owner accepted the story on 2026-10-14.

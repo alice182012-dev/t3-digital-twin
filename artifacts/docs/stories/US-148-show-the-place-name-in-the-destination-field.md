@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-148"
 title: "Show the place name in the destination field after Route to this place"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: S
@@ -35,6 +35,7 @@ Evidence: see below.
 
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -51,4 +52,4 @@ Name arrived: ![[live-name-arrived.jpg|420]]
 2. How: `namedDestination` in `floodmap/graphhopper-maps/src/floodmap/routeToPlace.ts` shares a private helper with `namedStart`. The route button closed the popup and with it the place lookup, so `App.tsx` keeps a `namingCoordinate` and `PlaceDepthPopup.tsx` gets a `nameCoordinate` prop that keeps only the lookup alive. Five new tests in `test/floodmap/routeToPlace.test.ts` cover a rename, a rename with via points, a moved destination, a user-typed text, and an empty destination. The whole jest suite (318 tests) and `tsc --noEmit` pass in a throwaway Node container.
 3. Checked end to end in Aside against the server backend, with the page's `fetch` delayed 6 s for `places/reverse` to force the slow case. The pin label of [[US-078-show-the-place-names-on-the-start|US-078]] shows the same name.
 4. Not covered: a point with no name from the lookup, and a 390x844 viewport. Both are only covered by the unit tests.
-5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+5. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the destination field reading "Phố Tân Mỹ, 12600 Hanoi, Vietnam" and the same name on the pin label. Screenshot: `evidence/server-check-2026-10-14/server-named-destination.jpg`. The owner accepted the story on 2026-10-14.

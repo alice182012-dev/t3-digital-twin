@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-146"
 title: "Match the routing panel frame to the mockup"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P2
 estimate: M
@@ -37,6 +37,7 @@ Evidence: see below.
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 - **2026-10-14, owner answer.** Follow the screens. The seven removed controls stay removed unless a screen shows them, and the stock mode icons become the mockup's outline icons in this story. A worker builds it.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -64,7 +65,7 @@ Mobile, unchanged: ![[local-mobile.jpg|420]]
 5. Side effects: `Instructions` now reads "35 m · depth 8 cm" in every layout, including mobile, and `DepthForecastChart` is restyled in every layout.
 6. Keyboard: the Tab order follows the DOM (four mode buttons, the close X, two inputs, route tabs, step rows), and the X has `aria-label="Close routing panel"`. A real Tab key press was not tried.
 7. Not checked: 1366x768 (the Aside window was 1440x900), a route with a full five-bar chart and several tabs, and a real window narrower than 44rem.
-8. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+8. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the mode icons with their minutes, the two fields with the close button, the "Route 1" tab, and the steps list in the framed panel. Screenshot: `evidence/server-check-2026-10-14/server-route-panel.jpg`. The owner accepted the story on 2026-10-14.
 - **2026-10-14, Reviewed (again).** The mode icons and the frame follow the screens, on the owner's answer. Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
 
 8. Update 2026-10-14, screens 2c, 2e, and 2f (`evidence/US-146/follow-*.jpg` and `compare-*.jpg`, each at 1366x768, mock panel beside live panel):

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-144"
 title: "Use the mockup thumbnails for the Map and Flood tiles"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P3
 estimate: S
@@ -34,6 +34,7 @@ Evidence: see below.
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 - **2026-10-14, owner answer.** The unselected tile stays dimmed to 0.65, as in the mockup source. No change to the build.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -49,4 +50,4 @@ Fill this when the story reaches `Done`.
 2. How: `MapModeToggle.tsx` renders an `<img>` in each tile, styled by `.thumbImage` in `MapModeToggle.module.css`. The images are copies of `raw/frontend-mockups/flood_layer.png` and `map_layer.png`, downscaled with `sips` to 2x of the 82 px tile and stored in `src/floodmap/`. The blue tint span is removed. Webpack's existing png rule bundles them, so the page makes no request to another origin. jest (195 tests) and `tsc --noEmit` pass in a throwaway Node container.
 3. Not checked: the 390x844 viewport, the page-load state with Map selected (screen 2a), and the emitted asset of a production build. The dev build shows Flood selected, which matches screen 2b.
 4. Open: the unselected tile is dimmed to 0.65, as in the mockup source, but in the mockup image of screen 2a the unselected Flood tile looks brighter. Compare it at the review.
-5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+5. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the Map and Flood tiles with the mockup thumbnails, Flood selected. Screenshot: `evidence/server-check-2026-10-14/server-route-collapsed.jpg`. The owner accepted the story on 2026-10-14.

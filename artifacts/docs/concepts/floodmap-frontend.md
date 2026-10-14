@@ -4,7 +4,7 @@ type: concept
 status: active
 tags: [frontend, floodmap, mockup]
 related: ["[[EP-19-frontend-against-the-mockup|EP-19]]", "[[US-076-compare-the-live-app-with-the-mockup|US-076]]", "[[graphhopper-backend]]"]
-last_updated: 2026-10-13
+last_updated: 2026-10-14
 ---
 
 # Floodmap frontend
@@ -40,3 +40,13 @@ Test points stay inside the model border (`.claude/CLAUDE.md`). A route that wor
 To see the chart and depth badges when the server has no current raster, set the page clock inside the stored storm. Override `Date` with `Page.addScriptToEvaluateOnNewDocument`, for example to 2026-10-10 18:20 UTC.
 To see the no-route and "wait until" boxes, answer `POST route` with a 400 that has the `ConnectionNotFoundException` hint, and optionally answer `route/departures` with an `ok` body. The screenshots then show the real UI code with a forced state.
 Evidence from the first pass is in `artifacts/docs/stories/evidence/US-076/`.
+
+## Check the build on the server
+
+The image `airflow_new-flood-routing-frontend` is built from `floodmap/graphhopper-maps/Dockerfile` and serves the bundle through nginx on port 8082.
+The build starts from the server's desktop session, because `docker build` over SSH fails on the Docker credential helper.
+After a rebuild, the served HTML names the new bundle: `curl -s http://100.67.84.55:8082/` shows `bundle.<hash>.js`, and the title is "Floodmap".
+`nginx.conf` sends `index.html` with `Last-Modified` and no `Cache-Control`, so a browser that opened the same URL before can show the old bundle.
+Add a new query parameter, for example `&nocache=20261014a`, to every URL in a server check.
+The Aside window is 1440x900 and `page.screenshot()` returns a `Buffer`. Write it with `fs.writeFile('./artifacts/name.png', ...)` inside the REPL and copy it out of the session folder under `~/.aside/u/0/sessions/`. Keep each REPL call self-contained, because the bindings do not persist between calls.
+The server check of 2026-10-14 is in `artifacts/docs/stories/evidence/server-check-2026-10-14/`.

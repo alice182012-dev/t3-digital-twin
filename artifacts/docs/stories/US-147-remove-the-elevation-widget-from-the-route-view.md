@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-147"
 title: "Remove the Elevation widget from the route view"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P3
 estimate: XS
@@ -33,6 +33,7 @@ Evidence: None yet.
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 - **2026-10-14, owner answer.** No path detail (surface, road class) is wanted, so the Elevation widget goes with no replacement. A worker builds it.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -46,4 +47,4 @@ Fill this when the story reaches `Done`.
 3. Evidence: `evidence/US-147/` holds before and after screenshots of the route panel and of the map. The console shows no page error. The only errors are 404s from the unreachable `/flood-extent` proxy, which were there before.
 4. Not checked: a route at 390 px with the old Details panel open.
 5. Left over: the directory name `elevationWidget/` is misleading and a rename is a separate refactor. The unused `elevation` and `path_details` keys stay in `tr.json`.
-6. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+6. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows a route result with no Elevation widget, selector, or play button at the bottom left. Screenshot: `evidence/server-check-2026-10-14/server-route-panel.jpg`. The owner accepted the story on 2026-10-14.

@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-149"
 title: "Match the autofill rows to the mockup"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 kind: story
 priority: P3
 estimate: S
@@ -34,6 +34,7 @@ Evidence: None yet.
 - **2026-10-13, draft.** Drafted from the comparison of [[US-076-compare-the-live-app-with-the-mockup|US-076]]. It is in the backlog and has no `sprint`.
 - **2026-10-13, Ready.** Passes the INVEST check and is picked for [[SPR-015-match-the-frontend-to-the-mockup|SPR-015]] at the product owner's request.
 - **2026-10-14, owner answer.** Follow screen 2d. The story is rewritten to the real gaps (bold only the matched part of the name, the row size, regular weight for the rest). The branch `us-149-two-line-rows-unmerged` is not used. A worker builds it from `modular`.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -51,4 +52,4 @@ Fill this when the story reaches `Done`.
 2. How: `matchedPrefix.ts` finds the matched prefix and ignores case and diacritics, so "hoan kiem" bolds "Hoan Kiem" in "Hoan Kiem Ward". The name keeps the backend's characters, the order, the keyboard use, and the click selection. Each row has an `aria-label` of "name, district", and the pin is `aria-hidden`. Tests: `matchedPrefix.test.ts` (6) and `AddressInputAutocomplete.test.tsx` (3).
 3. Evidence: `evidence/US-149/` holds `follow-2d-autofill.jpg`, `compare-2d-autofill.jpg` (mock panel beside live panel), and `local-autofill-hoan-kiem.jpg`.
 4. Not checked: the mobile layout and a real Tab-key pass. The mock's names ("C5 Giảng Võ") differ from the backend's ("C5" with a district), so the text cannot match.
-5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+5. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the autofill rows for "Giang Vo" with the matched prefix in bold, a pin icon on each row, and the district on the right. Screenshot: `evidence/server-check-2026-10-14/server-autofill.jpg`. The owner accepted the story on 2026-10-14.

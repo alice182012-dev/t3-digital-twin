@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-098"
 story_label: "2"
 epic: "[[EP-18-time-aware-routing-engine]]"
-status: Reviewed
+status: Done
 priority: P2
 estimate: S
 sprint: 15
@@ -29,6 +29,7 @@ Evidence: None yet.
 - **2026-10-14, owner answer.** The design of [[US-084-design-the-no-route-and-wait-until|US-084]] is approved, so this story no longer waits for it.
 - **2026-10-14, In progress.** Started after the owner approved the design of [[US-084-design-the-no-route-and-wait-until|US-084]], within the limit of two.
 - **2026-10-14, Reviewed.** Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -39,4 +40,4 @@ Evidence: None yet.
 3. Evidence: `evidence/US-098/` holds `two-options-recommended-1366.png`, `two-options-through-water-1366.png`, `two-options-through-water-390.png`, `one-option-1366.png`, and `two-options-fake-depth-1366.png`. The pair `21.0002,105.7798` to `21.0002,105.7317` (truck) gives two options.
 4. Not checked: a flooded through-water route. The real pairs were dry at the selected step, so they read "Deepest road 0 cm", and `td.status` was `unknown` for every pair. Only `two-options-fake-depth-1366.png` is faked (depths of 3 cm and 22 cm from a faked `POST /flood/profile`). Fonts and the server rebuild are not checked. At 390x844 the legend sits beside the sheet, as set by [[US-145-stop-the-legend-from-covering-the-map-controls|US-145]].
 5. Open: [[decision-log|D-021]] defines no separate no-route text, so the approved wording stays. "Via road" and more than one alternative are for the grilled story the owner asked for.
-6. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+6. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows one route option, "Route 1 3 min · 0 cm", with "Route avoids flooded areas". The pair was dry, so the two-option state stays the evidence in `evidence/US-098/`. Screenshot: `evidence/server-check-2026-10-14/server-route-panel.jpg`. The owner accepted the story on 2026-10-14.

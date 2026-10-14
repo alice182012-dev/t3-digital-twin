@@ -4,7 +4,7 @@ type: user-story
 us_id: "US-079"
 story_label: "4"
 epic: "[[EP-19-frontend-against-the-mockup]]"
-status: Reviewed
+status: Done
 priority: P3
 estimate: XS
 sprint: 15
@@ -35,6 +35,7 @@ Evidence: see below.
 - **2026-10-14, In progress.** Started after [[US-144-use-the-mockup-thumbnails-for-the-map-and-flood-tiles|US-144]] was `Reviewed`, within the limit of two.
 - **2026-10-14, Reviewed.** Built and checked in a local dev build against the server backend. It waits for the one frontend rebuild on the server and the owner's acceptance.
 - **2026-10-14, owner answer.** The `homepage` field in `package.json` and the `graphhopper.com` text in the GPX export metadata do not change.
+- **2026-10-14, Done.** The owner accepted it after the frontend rebuild on the server and the server check in the last details item.
 
 ## Evidence and details
 
@@ -44,4 +45,4 @@ Evidence: see below.
 2. How: `src/index.html`, `src/manifest.json` (name and short name), `src/App.tsx`, and `src/sidebar/SettingsBox.tsx` changed, and `PoweredBy.tsx`, its CSS, and `header.svg` are deleted because nothing else used them. `test/IndexHtml.test.ts` reads `index.html` and asserts the literal title and `og:title` and that the file has no `graphhopper.com`. The whole jest suite (320 tests) and `tsc --noEmit` pass on the merged tree.
 3. Left in place: the translation keys for the removed UI in `tr.json` (a large generated diff), the `homepage` field in `package.json`, and the GPX export metadata in `RoutingResults.tsx`, which writes `graphhopper.com` into exported files. The owner decides whether either of the last two goes.
 4. Not checked: the small-screen layout and the PWA manifest in a browser.
-5. Left for `Done`: the server rebuild, a server screenshot, and the update of [[floodmap-frontend]].
+5. Server check on 2026-10-14: the `flood-routing-frontend` container was recreated at 14:40 +07 and serves `bundle.59973ebe0d06b74d3b7c.js`. Aside at `100.67.84.55:8082` (window 1440x900) shows the tab title "Floodmap" and an empty routing panel with no "Powered by GraphHopper" line. The served HTML holds `<title>Floodmap</title>` and `og:title` "Floodmap". Screenshot: `evidence/server-check-2026-10-14/server-empty-panel.jpg`. The owner accepted the story on 2026-10-14.
