@@ -355,7 +355,7 @@ function LargeScreenLayout({
                         <RoutingResults
                             framed
                             info={route.routingResult.info}
-                            limitCm={route.routingResult.hints?.['td.limit_cm']}
+                            hints={route.routingResult.hints}
                             paths={route.routingResult.paths}
                             selectedPath={route.selectedPath}
                             currentRequest={query.currentRequest}
@@ -491,7 +491,7 @@ function SmallScreenLayout({
                     )}
                     <RoutingResults
                         info={route.routingResult.info}
-                        limitCm={route.routingResult.hints?.['td.limit_cm']}
+                        hints={route.routingResult.hints}
                         paths={route.routingResult.paths}
                         selectedPath={route.selectedPath}
                         currentRequest={query.currentRequest}

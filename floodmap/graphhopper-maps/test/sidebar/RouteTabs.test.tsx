@@ -11,6 +11,8 @@ const tabs: RouteTab[] = ['Route 1', 'Route 2', 'Route 3'].map((label, index) =>
     index,
     label,
     detail: '',
+    kind: null,
+    note: null,
     path: {} as Path,
 }))
 

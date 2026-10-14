@@ -285,6 +285,18 @@
     color: #14507f;
 }
 
+/* The label of a through-water route (US-098). Same amber as the no-route box. */
+.throughWaterNote {
+    margin: 0.5rem 0.75rem 0 0.75rem;
+    font-size: 0.8rem;
+    color: #8a5a00;
+}
+
+.framedResults .throughWaterNote {
+    margin: 8px 24px 0 26px;
+    font-size: 12px;
+}
+
 .noSafeRoute {
     margin: 0.75rem;
     padding: 0.75rem;

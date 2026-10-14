@@ -39,8 +39,6 @@ import { noConnectionTarget } from '@/floodmap/departureAdvice'
 
 export interface RoutingResultsProps extends RoutingResultsViewInput {
     info: RoutingResultInfo
-    /** The depth limit in cm of the selected profile, from the route answer's `td.limit_cm` hint. */
-    limitCm?: number
     profile: string
     /** Flood mode is on. Gates the static reroute-context line. */
     floodActive?: boolean
@@ -61,6 +59,7 @@ export default function RoutingResults(props: RoutingResultsProps) {
         props.floodActive ? props.timestep : undefined,
     )
     const view = selectRoutingResultsView({ ...props, maxDepthsCm })
+    const limitCm = props.hints?.['td.limit_cm']
     switch (view.kind) {
         case 'idle':
             return null
@@ -84,11 +83,14 @@ export default function RoutingResults(props: RoutingResultsProps) {
                         activeIndex={view.activeIndex}
                         onSelect={index => Dispatcher.dispatch(new SetSelectedPath(view.tabs[index].path))}
                     />
-                    {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
+                    {active.note && <p className={styles.throughWaterNote}>{active.note}</p>}
+                    {props.floodActive && active.kind !== 'through_water' && (
+                        <p className={styles.rerouteNote}>Route avoids flooded areas</p>
+                    )}
                     {props.floodActive && (
                         <DepthForecastChart
                             coordinates={active.path.points.coordinates}
-                            limitCm={props.limitCm}
+                            limitCm={limitCm}
                             summary={
                                 props.framed
                                     ? `${metersToText(active.path.distance, showDistanceInMiles)} · ${milliSecondsToText(active.path.time)}`

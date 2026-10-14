@@ -1,6 +1,6 @@
 import { Path } from '@/api/graphhopper'
 import { RequestState, SubRequest } from '@/stores/QueryStore'
-import { activeTabIndex, buildRouteTabs, selectRoutingResultsView } from '@/sidebar/routingResultsView'
+import { activeTabIndex, buildRouteTabs, parseRouteKinds, selectRoutingResultsView } from '@/sidebar/routingResultsView'
 
 function path(description: string = ''): Path {
     return { description } as Path
@@ -207,5 +207,63 @@ describe('selectRoutingResultsView', () => {
             currentRequest: { subRequests: [done()] },
         })
         expect(view.kind).toEqual('idle')
+    })
+})
+
+describe('parseRouteKinds', () => {
+    it('reads one kind per path in path order', () => {
+        expect(parseRouteKinds('recommended,through_water', 2)).toEqual(['recommended', 'through_water'])
+        expect(parseRouteKinds('through_water', 1)).toEqual(['through_water'])
+    })
+
+    it('reads nothing when the hint is missing, unknown, or does not match the number of paths', () => {
+        expect(parseRouteKinds(undefined, 1)).toBeNull()
+        expect(parseRouteKinds('recommended', 2)).toBeNull()
+        expect(parseRouteKinds('recommended,fastest', 2)).toBeNull()
+        expect(parseRouteKinds('', 1)).toBeNull()
+    })
+})
+
+describe('buildRouteTabs with the kinds of the backend answer', () => {
+    const timed = (minutes: number): Path =>
+        ({ description: ['Phố Nguyễn Văn Giáp'], time: minutes * 60000 }) as unknown as Path
+    const hints = { 'td.limit_cm': 35, 'td.precaution_cm': 18, 'td.kinds': 'recommended,through_water' }
+
+    it('puts the recommended route first and the through-water route second, with its label and its deepest road', () => {
+        const tabs = buildRouteTabs([timed(14), timed(9)], [3, 22], hints)
+        expect(tabs.map(t => [t.label, t.detail, t.kind])).toEqual([
+            ['Recommended', '14 min \u00b7 3 cm', 'recommended'],
+            ['Through water', '9 min \u00b7 22 cm', 'through_water'],
+        ])
+        expect(tabs.map(t => t.note)).toEqual([
+            null,
+            'Passes through water between 18 cm and 35 cm deep. Deepest road 22 cm.',
+        ])
+    })
+
+    it('leaves out the deepest road while the depth is unknown', () => {
+        const tabs = buildRouteTabs([timed(14), timed(9)], [], hints)
+        expect(tabs[1].note).toBe('Passes through water between 18 cm and 35 cm deep.')
+    })
+
+    it('keeps the old labels for one recommended route', () => {
+        const [tab] = buildRouteTabs([timed(14)], [], { ...hints, 'td.kinds': 'recommended' })
+        expect([tab.label, tab.note]).toEqual(['Via Phố Nguyễn Văn Giáp', null])
+    })
+
+    it('labels a single limit route as through water', () => {
+        const [tab] = buildRouteTabs([timed(14)], [20], { ...hints, 'td.kinds': 'through_water' })
+        expect([tab.label, tab.note]).toEqual([
+            'Through water',
+            'Passes through water between 18 cm and 35 cm deep. Deepest road 20 cm.',
+        ])
+    })
+
+    it('keeps the old labels when the answer has no kinds', () => {
+        const tabs = buildRouteTabs([timed(14), timed(9)], [], { 'td.limit_cm': 35 })
+        expect(tabs.map(t => [t.label, t.kind, t.note])).toEqual([
+            ['Route 1', null, null],
+            ['Route 2', null, null],
+        ])
     })
 })
