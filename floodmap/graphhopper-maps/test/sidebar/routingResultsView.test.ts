@@ -97,6 +97,40 @@ describe('selectRoutingResultsView', () => {
         expect(view.kind).toEqual('loading')
     })
 
+    it('is timedOut once every request settled and one of them timed out', () => {
+        const timedOut: SubRequest = { args: {} as any, state: RequestState.FAILED, timedOut: true }
+        const view = selectRoutingResultsView({
+            paths: [],
+            selectedPath: path(),
+            allPointsSet: true,
+            currentRequest: { subRequests: [timedOut, timedOut] },
+        })
+        expect(view.kind).toEqual('timedOut')
+    })
+
+    it('stays loading while the other request of a pair is still pending', () => {
+        const timedOut: SubRequest = { args: {} as any, state: RequestState.FAILED, timedOut: true }
+        const view = selectRoutingResultsView({
+            paths: [],
+            selectedPath: path(),
+            allPointsSet: true,
+            currentRequest: { subRequests: [timedOut, sent()] },
+        })
+        expect(view.kind).toEqual('loading')
+    })
+
+    it('prefers the no-connection answer over a timeout of the other request', () => {
+        const noConnection: SubRequest = { args: {} as any, state: RequestState.FAILED, noConnection: true }
+        const timedOut: SubRequest = { args: {} as any, state: RequestState.FAILED, timedOut: true }
+        const view = selectRoutingResultsView({
+            paths: [],
+            selectedPath: path(),
+            allPointsSet: true,
+            currentRequest: { subRequests: [noConnection, timedOut] },
+        })
+        expect(view.kind).toEqual('empty')
+    })
+
     it('is empty once a request settled with zero paths', () => {
         const view = selectRoutingResultsView({
             paths: [],

@@ -138,11 +138,14 @@ export class RouteRequestFailed extends ErrorAction {
     /** GraphHopper answered that no connection exists between the points. The panel's "No safe route
      *  available" box already says so, so the error bar stays hidden for this failure. */
     readonly noConnection: boolean
+    /** The request got no answer within `ROUTE_TIMEOUT_MS` and was cancelled. The panel carries the message. */
+    readonly timedOut: boolean
 
-    constructor(request: RoutingArgs, message: string, noConnection = false) {
+    constructor(request: RoutingArgs, message: string, noConnection = false, timedOut = false) {
         super(message)
         this.request = request
         this.noConnection = noConnection
+        this.timedOut = timedOut
     }
 }
 

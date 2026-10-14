@@ -20,8 +20,8 @@ export default class ErrorStore extends Store<ErrorStoreState> {
     }
 
     reduce(state: ErrorStoreState, action: Action): ErrorStoreState {
-        if (action instanceof RouteRequestFailed && action.noConnection) {
-            // The "No safe route available" box carries this case, and an earlier error is out of date.
+        if (action instanceof RouteRequestFailed && (action.noConnection || action.timedOut)) {
+            // The panel's box carries these cases, and an earlier error is out of date.
             return state.isDismissed ? state : { ...state, isDismissed: true }
         } else if (action instanceof ErrorAction) {
             return {

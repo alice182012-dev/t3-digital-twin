@@ -63,6 +63,8 @@ export default function RoutingResults(props: RoutingResultsProps) {
             )
         case 'empty':
             return <NoSafeRouteMessage target={noConnectionTarget(props.currentRequest.subRequests)} />
+        case 'timedOut':
+            return <div className={styles.noSafeRoute}>The route request took too long. Please try again.</div>
         case 'routes': {
             const active = view.tabs[view.activeIndex]
             return (

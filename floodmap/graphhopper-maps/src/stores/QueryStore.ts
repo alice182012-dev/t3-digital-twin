@@ -68,6 +68,8 @@ export interface SubRequest {
     readonly state: RequestState
     /** The request failed because GraphHopper found no connection. The "wait until" advice is asked for only then. */
     readonly noConnection?: boolean
+    /** The request was cancelled for want of an answer. The panel then asks the user to try again. */
+    readonly timedOut?: boolean
 }
 
 export default class QueryStore extends Store<QueryStoreState> {
@@ -330,12 +332,13 @@ export default class QueryStore extends Store<QueryStoreState> {
         action: RouteRequestSuccess | RouteRequestFailed,
     ): QueryStoreState {
         const newState = action instanceof RouteRequestSuccess ? RequestState.SUCCESS : RequestState.FAILED
-        const noConnection = action instanceof RouteRequestFailed ? action.noConnection : undefined
+        const failure =
+            action instanceof RouteRequestFailed ? { noConnection: action.noConnection, timedOut: action.timedOut } : {}
         const newSubrequests = QueryStore.replaceSubRequest(
             state.currentRequest.subRequests,
             action.request,
             newState,
-            noConnection,
+            failure,
         )
 
         return {
@@ -455,14 +458,12 @@ export default class QueryStore extends Store<QueryStoreState> {
         subRequests: SubRequest[],
         args: RoutingArgs,
         state: RequestState,
-        noConnection?: boolean,
+        failure: Pick<SubRequest, 'noConnection' | 'timedOut'>,
     ) {
         return replace(
             subRequests,
             r => r.args === args,
-            r => {
-                return noConnection === undefined ? { ...r, state } : { ...r, state, noConnection }
-            },
+            r => ({ ...r, state, ...failure }),
         )
     }
 

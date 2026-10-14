@@ -27,6 +27,7 @@ export type RoutingResultsView =
     | { kind: 'idle' }
     | { kind: 'loading' }
     | { kind: 'empty' }
+    | { kind: 'timedOut' }
     | { kind: 'routes'; tabs: RouteTab[]; activeIndex: number }
 
 /**
@@ -43,6 +44,9 @@ export function selectRoutingResultsView(input: RoutingResultsViewInput): Routin
     if (!allPointsSet) return { kind: 'idle' }
     if (hasPendingRequests(currentRequest.subRequests)) return { kind: 'loading' }
     if (currentRequest.subRequests.length === 0) return { kind: 'idle' }
+    const { subRequests } = currentRequest
+    // A definite "no connection" answer beats a timeout of the other request.
+    if (subRequests.some(req => req.timedOut) && !subRequests.some(req => req.noConnection)) return { kind: 'timedOut' }
     return { kind: 'empty' }
 }
 
