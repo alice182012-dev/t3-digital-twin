@@ -1,4 +1,4 @@
-import { destinationForPlace, namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
+import { destinationForPlace, namedDestination, namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
 import { QueryPoint, QueryPointType } from '@/stores/QueryStore'
 
 const from: QueryPoint = {
@@ -76,6 +76,31 @@ describe('namedStart', () => {
 
     it('changes nothing when the start is empty', () => {
         expect(namedStart([from, autoFilled[1]], a, 'Cầu Giấy')).toBeNull()
+    })
+})
+
+describe('namedDestination', () => {
+    const routed = [from, filled(to, a, '21.025,105.755')]
+
+    it('renames a destination that still holds the tapped coordinates', () => {
+        expect(namedDestination(routed, a, 'Cầu Giấy')).toEqual(filled(to, a, 'Cầu Giấy'))
+    })
+
+    it('renames the last point when there are via points', () => {
+        const via = { ...from, id: 2, type: QueryPointType.Via }
+        expect(namedDestination([from, via, routed[1]], a, 'Cầu Giấy')).toEqual(filled(to, a, 'Cầu Giấy'))
+    })
+
+    it('changes nothing when the destination moved to another coordinate', () => {
+        expect(namedDestination([from, filled(to, b, '21.0255,105.762')], a, 'Cầu Giấy')).toBeNull()
+    })
+
+    it('changes nothing when the user already typed another text', () => {
+        expect(namedDestination([from, filled(to, a, 'My home')], a, 'Cầu Giấy')).toBeNull()
+    })
+
+    it('changes nothing when the destination is empty', () => {
+        expect(namedDestination([from, to], a, 'Cầu Giấy')).toBeNull()
     })
 })
 

@@ -57,7 +57,7 @@ import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
 import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
-import { namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
+import { namedDestination, namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
 import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
 import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
@@ -87,6 +87,8 @@ export default function App() {
     const flood = useFloodState()
     useFloodBootstrap()
     const [placeCoordinate, setPlaceCoordinate] = useState<Coordinate | null>(null)
+    // Set when the route button closes the popup before the lookup has a name, so the name can still reach the box.
+    const [namingCoordinate, setNamingCoordinate] = useState<Coordinate | null>(null)
     const floodMode = flood.mapMode === 'flood'
     // the popup reads the flood layer's depth, so it goes away with the layer
     useEffect(() => {
@@ -103,12 +105,14 @@ export default function App() {
             )
             setShowSidebar(true)
             setPlaceCoordinate(null)
+            setNamingCoordinate(placeName ? null : placeCoordinate)
         },
         [placeCoordinate, query.queryPoints],
     )
     const tapPlace = useCallback(
         (coordinate: Coordinate) => {
             setPlaceCoordinate(coordinate)
+            setNamingCoordinate(null)
             const start = startForTap(query.queryPoints, coordinate)
             if (!start) return
             Dispatcher.dispatch(new SetPoint(start, false))
@@ -118,11 +122,16 @@ export default function App() {
     )
     const namePlace = useCallback(
         (placeName: string) => {
-            if (!placeCoordinate) return
-            const start = namedStart(query.queryPoints, placeCoordinate, placeName)
-            if (start) Dispatcher.dispatch(new SetPoint(start, false))
+            const coordinate = placeCoordinate ?? namingCoordinate
+            if (!coordinate) return
+            const named = [
+                namedStart(query.queryPoints, coordinate, placeName),
+                namedDestination(query.queryPoints, coordinate, placeName),
+            ]
+            named.forEach(point => point && Dispatcher.dispatch(new SetPoint(point, false)))
+            setNamingCoordinate(null)
         },
-        [placeCoordinate, query.queryPoints],
+        [placeCoordinate, namingCoordinate, query.queryPoints],
     )
     const profileTimes = useProfileTimes(query, flood, route.routingResult.paths.length > 0)
 
@@ -210,6 +219,7 @@ export default function App() {
                 <PlaceDepthPopup
                     map={map}
                     coordinate={placeCoordinate}
+                    nameCoordinate={namingCoordinate}
                     timestep={flood.timesteps[flood.selectedIndex]}
                     onClose={closePlacePopup}
                     onRoute={routeToPlace}

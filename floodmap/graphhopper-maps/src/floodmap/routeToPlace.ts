@@ -33,16 +33,20 @@ export function startForTap(queryPoints: readonly QueryPoint[], coordinate: Coor
     return { ...start, coordinate, queryText: coordinateToText(coordinate), isInitialized: true }
 }
 
+function renamed(point: QueryPoint, coordinate: Coordinate, placeName: string): QueryPoint | null {
+    if (!point.isInitialized || !sameCoordinate(point.coordinate, coordinate)) return null
+    if (point.queryText !== coordinateToText(coordinate)) return null
+    return { ...point, queryText: placeName }
+}
+
 /** The start renamed to the place name once the lookup arrives, if the tap's coordinates are still all it holds. */
-export function namedStart(
-    queryPoints: readonly QueryPoint[],
-    coordinate: Coordinate,
-    placeName: string,
-): QueryPoint | null {
-    const start = queryPoints[0]
-    if (!start.isInitialized || !sameCoordinate(start.coordinate, coordinate)) return null
-    if (start.queryText !== coordinateToText(coordinate)) return null
-    return { ...start, queryText: placeName }
+export function namedStart(queryPoints: readonly QueryPoint[], coordinate: Coordinate, placeName: string) {
+    return renamed(queryPoints[0], coordinate, placeName)
+}
+
+/** The destination renamed to the place name once the lookup arrives, if the coordinates are still all it holds. */
+export function namedDestination(queryPoints: readonly QueryPoint[], coordinate: Coordinate, placeName: string) {
+    return renamed(queryPoints[queryPoints.length - 1], coordinate, placeName)
 }
 
 /**

@@ -9,6 +9,8 @@ import styles from './PlaceDepthPopup.module.css'
 interface PlaceDepthPopupProps {
     map: Map
     coordinate: Coordinate | null
+    /** A point whose place lookup keeps running after the card is closed, to name the route's destination. */
+    nameCoordinate: Coordinate | null
     timestep: FloodTimestep | undefined
     onClose: () => void
     /** Starts a route to the tapped point. `placeName` is undefined while the place lookup has no name. */
@@ -24,12 +26,14 @@ interface PlaceDepthPopupProps {
 export default function PlaceDepthPopup({
     map,
     coordinate,
+    nameCoordinate,
     timestep,
     onClose,
     onRoute,
     onPlaceName,
 }: PlaceDepthPopupProps) {
-    const point = coordinate && { lat: String(coordinate.lat), lon: String(coordinate.lng) }
+    const lookup = coordinate ?? nameCoordinate
+    const point = lookup && { lat: String(lookup.lat), lon: String(lookup.lng) }
     const depthParams = coordinate && timestep && depthQuery(coordinate, timestep)
     const depthBody = useJson('flood/points', depthParams)
     const placeBody = useJson('places/reverse', point && new URLSearchParams(point))
