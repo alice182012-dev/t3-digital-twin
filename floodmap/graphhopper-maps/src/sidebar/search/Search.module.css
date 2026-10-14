@@ -11,24 +11,29 @@
 }
 
 .searchBoxParentFramed {
-    padding: 0 0 20px 0;
+    padding: 18px 0 20px 0;
     border-bottom: 1px solid #e5e7eb;
+}
+
+/* with a route the mode icons carry their minutes, so the boxes sit closer to them (mockup screen 2e) */
+.searchBoxParentFramed.compact {
+    padding: 12px 0 18px 0;
 }
 
 .searchBoxFramed {
     display: grid;
-    grid-template-columns: 55px 1fr;
+    grid-template-columns: 14px 1fr;
     align-items: center;
+    column-gap: 14px;
     row-gap: 8px;
-    margin: 0 24px 0 0;
+    margin: 0 24px 0 26px;
 }
 
 .markerContainerFramed {
     grid-column: 1;
     position: relative;
-    justify-self: start;
-    margin-left: 29px;
-    width: 10px;
+    justify-self: center;
+    width: 14px;
     display: flex;
     justify-content: center;
     outline: none;
@@ -46,15 +51,15 @@
     top: 4px;
 }
 
-/* the dotted connector down to the next marker */
+/* the dotted connector down to the next marker: three 3 px dots spread between the circle and the pin */
 .connected::after {
     content: '';
     position: absolute;
-    left: 3.5px;
-    top: 19.5px;
+    left: 5.5px;
+    top: 19.75px;
     width: 3px;
-    height: 29px;
-    background: radial-gradient(circle at 1.5px 1.5px, #111 1.5px, transparent 2px) 0 0 / 3px 13px repeat-y;
+    height: 28.5px;
+    background: radial-gradient(circle at 1.5px 1.5px, #111 1.5px, transparent 2px) 0 0 / 3px 12.75px repeat-y;
 }
 
 .searchBoxScrollable {

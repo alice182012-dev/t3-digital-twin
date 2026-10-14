@@ -71,6 +71,16 @@ export function stepDepthText(reading: DepthReading | undefined): string | null 
     return depthValue(reading)
 }
 
+/**
+ * The steps whose depth is the deepest of the list, for the bold value of mockup screen 2e. A dry route
+ * has no deepest step, so a list with no wet reading marks nothing.
+ */
+export function deepestStepIndexes(readings: readonly (DepthReading | undefined)[]): Set<number> {
+    const wet = readings.map(reading => (reading?.kind === 'wet' ? reading.depthCm : 0))
+    const deepest = Math.max(0, ...wet)
+    return new Set(deepest > 0 ? wet.flatMap((cm, i) => (cm === deepest ? [i] : [])) : [])
+}
+
 function depthValue(reading: { kind: 'wet'; depthCm: number } | { kind: 'dry' }): string {
     return reading.kind === 'dry' ? '0 cm' : reading.depthCm < 1 ? '< 1 cm' : `${reading.depthCm} cm`
 }

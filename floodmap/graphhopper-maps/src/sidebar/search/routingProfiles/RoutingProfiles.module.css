@@ -7,28 +7,30 @@
 .profilesParentFramed {
     flex: 1;
     min-width: 0;
-    padding: 17px 0 0 0;
+    padding: 16px 0 0 0;
 }
 
 .profilesParentFramed .carousel {
     margin-left: 0;
-    padding: 0 0 0 34px;
+    padding: 0 0 0 40px;
+    gap: 0;
 }
 
 .profilesParentFramed .profiles {
-    gap: 0;
+    gap: 14px;
     justify-content: flex-start;
-    padding-bottom: 12px;
 }
 
 .profilesParentFramed .profileItem {
-    min-width: 90px;
-    min-height: 50px;
+    width: 76px;
+    min-width: 76px;
     gap: 4px;
 }
 
 .profilesParentFramed .profileBtn {
-    padding: 8px 24px;
+    width: 76px;
+    height: 44px;
+    padding: 0;
     border-radius: 22px;
     color: #111;
 }
@@ -40,13 +42,8 @@
 }
 
 .profilesParentFramed .profileBtn svg {
-    width: 28px;
-    height: 28px;
-}
-
-.profilesParentFramed .time,
-.profilesParentFramed .selectedTime {
-    line-height: 14px;
+    width: 30px;
+    height: 30px;
 }
 
 .profilesParentFramed .selectedTime {

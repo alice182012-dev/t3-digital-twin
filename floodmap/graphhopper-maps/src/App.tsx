@@ -41,7 +41,6 @@ import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
 import useMapBorderLayer from '@/layers/UseMapBorderLayer'
 import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
 import MapPopups from '@/map/MapPopups'
-import Cross from '@/sidebar/times-solid-thin.svg'
 import PlainButton from '@/PlainButton'
 import useAreasLayer from '@/layers/UseAreasLayer'
 import useExternalMVTLayer from '@/layers/UseExternalMVTLayer'
@@ -72,6 +71,8 @@ function isMaptoolkitStyle(styleOption: StyleOption) {
 }
 
 export const POPUP_CONTAINER_ID = 'popup-container'
+/** Width in px of the desktop routing panel, the first column of the layout grid in App.module.css. */
+export const PANEL_WIDTH = 460
 export const SIDEBAR_CONTENT_ID = 'sidebar-content'
 
 export default function App() {
@@ -344,7 +345,18 @@ function LargeScreenLayout({
                                 aria-label="Close routing panel"
                                 title="Close"
                             >
-                                <Cross />
+                                <svg
+                                    width="26"
+                                    height="26"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M5 5l14 14M19 5L5 19" />
+                                </svg>
                             </PlainButton>
                         </div>
                         {showCustomModelBox && (
@@ -356,7 +368,13 @@ function LargeScreenLayout({
                                 drawAreas={drawAreas}
                             />
                         )}
-                        <Search framed points={query.queryPoints} profile={query.routingProfile} map={map} />
+                        <Search
+                            framed
+                            compact={hasRoute}
+                            points={query.queryPoints}
+                            profile={query.routingProfile}
+                            map={map}
+                        />
                         <div>{!error.isDismissed && <ErrorMessage error={error} />}</div>
                         <RoutingResults
                             framed
@@ -391,7 +409,11 @@ function LargeScreenLayout({
             <div className={styles.map}>
                 <MapComponent map={map} />
             </div>
-            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+            <MapModeToggle
+                mode={flood.mapMode}
+                onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))}
+                offsetLeft={showSidebar ? PANEL_WIDTH : 0}
+            />
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
             {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
 

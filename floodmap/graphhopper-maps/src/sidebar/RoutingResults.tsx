@@ -552,9 +552,6 @@ function RoutingResult({
                         timestep={timestep}
                         framed
                     />
-                    <div className={styles.routingResultRoadData}>
-                        {tr('road_data_from')}: {info.road_data_timestamp}
-                    </div>
                 </>
             )}
             {!framed && isExpanded && <RouteStats path={path} profile={profile} />}
