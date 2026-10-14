@@ -9,8 +9,9 @@ import { Modify } from 'ol/interaction'
 import Dispatcher from '@/stores/Dispatcher'
 import { SetPoint } from '@/actions/Actions'
 import { coordinateToText, pinLabel } from '@/Converters'
-import { Fill, Icon, Stroke, Style, Text } from 'ol/style'
+import { Icon, Stroke, Style } from 'ol/style'
 import { createSvg } from '@/layers/createMarkerSVG'
+import { createLabelCanvas } from '@/layers/createLabelCanvas'
 
 const MARKER_SIZE = 35
 export const VIA_MARKER_SIZE = 23
@@ -78,7 +79,7 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
     })
     queryPointsLayer.set('gh:query_points', true)
     queryPointsLayer.setZIndex(3)
-    const cachedStyles: { [id: string]: Style } = {}
+    const cachedStyles: { [id: string]: Style | Style[] } = {}
     queryPointsLayer.setStyle(feature => {
         // hidden while it is dragged along the route, the dragged (numbered) circle replaces it, see UsePathsLayer
         if (feature.get('gh:hidden')) return []
@@ -89,32 +90,33 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
         const key = props.number + '-' + props.color + '-' + props.size + '-' + dragging + '-' + props.label
         let style = cachedStyles[key]
         if (style) return style
-        style = new Style({
+        const markerStyle = new Style({
             image: new Icon({
                 src: 'data:image/svg+xml;utf8,' + createSvg(props),
                 // the via circle is centered on the coordinate, the marker points to it with its tip
                 displacement: isVia ? [0, 0] : [0, MARKER_SIZE / 2],
                 opacity: dragging ? 0.5 : 1,
             }),
-            text: props.label
-                ? new Text({
-                      text: props.label,
-                      font: '14px sans-serif',
-                      textAlign: 'left',
-                      offsetX: 16,
-                      offsetY: -MARKER_SIZE / 2,
-                      fill: new Fill({ color: '#222' }),
-                      backgroundFill: new Fill({ color: '#fff' }),
-                      backgroundStroke: new Stroke({ color: 'rgba(0,0,0,0.25)', width: 1 }),
-                      padding: [3, 6, 3, 6],
-                  })
-                : undefined,
         })
+        style = props.label ? [markerStyle, createLabelStyle(props.label)] : markerStyle
         cachedStyles[key] = style
         return style
     })
     map.addLayer(queryPointsLayer)
     return queryPointsLayer
+}
+
+// the label sits to the right of the pin head, vertically centered on it
+function createLabelStyle(label: string) {
+    const pixelRatio = window.devicePixelRatio || 1
+    const { canvas, size } = createLabelCanvas(label, pixelRatio)
+    return new Style({
+        image: new Icon({
+            img: canvas,
+            scale: 1 / pixelRatio,
+            displacement: [MARKER_SIZE / 2 + size[0] / 2, MARKER_SIZE * 0.7],
+        }),
+    })
 }
 
 function removeDragInteractions(map: Map) {
