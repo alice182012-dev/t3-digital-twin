@@ -1,16 +1,17 @@
 /* The amber of the no-route box (RoutingResult.module.css), on the card shape of FloodLegend.
-   Bottom center of the map: the search box, the legend, and the map buttons keep their places, and
-   at 1366 px the banner stays between MapModeToggle (left 30 px, 186 px wide) and the sidebar's
-   26 rem column on one side and the right-hand legend on the other. */
+   Bottom of the map, centered between MapModeToggle (left 30 px, 186 px wide, 20 px gap) and the
+   right-hand legend (right 30 px, about 142 px wide, 20 px gap). The panel at the left moves the
+   toggle by its own width, so App passes that offset in --banner-offset and the banner moves with it. */
 .container {
     position: absolute;
-    left: 50%;
+    left: calc(236px + var(--banner-offset, 0px));
+    right: 192px;
     bottom: 30px;
-    transform: translateX(-50%);
+    margin: 0 auto;
     z-index: 1;
     box-sizing: border-box;
     width: max-content;
-    max-width: min(520px, calc(100vw - 2 * 30px - 2 * 200px));
+    max-width: 520px;
     background: #fdf0d5;
     color: #8a5a00;
     border-radius: 10px;
@@ -24,13 +25,14 @@
 
 /* The search panel covers the top and its height varies, so the banner sits above the legend,
    which FloodLegend.module.css puts 124 px from the bottom here. The legend is about 253 px tall,
-   so its top is at 377 px and the banner leaves 15 px. */
+   so its top is at 377 px and the banner leaves 15 px. The right inset keeps the banner clear of the
+   map buttons (layers and location) in the top right corner of the map. */
 @media (max-width: 44rem) {
     .container {
         left: 12px;
-        right: 12px;
+        right: 64px;
         bottom: 392px;
-        transform: none;
+        margin: 0;
         width: auto;
         max-width: none;
     }

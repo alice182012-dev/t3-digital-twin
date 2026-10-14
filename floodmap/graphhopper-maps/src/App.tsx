@@ -403,7 +403,9 @@ function LargeScreenLayout({
                 offsetLeft={showSidebar ? PANEL_WIDTH : 0}
             />
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
-            {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
+            {flood.mapMode === 'flood' && banner && (
+                <FloodBanner text={banner} offsetLeft={showSidebar ? PANEL_WIDTH : 0} />
+            )}
 
             {showMaptoolkitLogo && (
                 <div className={styles.pathDetails + ' ' + styles.bottomLeftBar}>
