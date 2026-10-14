@@ -69,3 +69,4 @@ The edge `601448364:0` and the other deep edges should be checked on a map befor
 - **2026-10-13, open.** Found when the chain started by the unpause of 09:39 UTC did not stop. Four real simulations ran with a forecast of 0 mm/h by 10:30 UTC, and the depth data of the runs is static.
 - **2026-10-13, open.** The owner chose to pause `flood_mapping_full` and decide the fix later. Paused at about 10:36 UTC to stop the cost. Real-rain monitoring for US-114 waits until the DAG is unpaused.
 - **2026-10-13, closed.** The owner ruled that this is not a blocker: the flood model is not verified, so deep water at some edges is no problem to fix. The chain's cost is the backlog story US-142.
+- **2026-10-14, reopened as a known cost.** The owner chose the 5 cm rule again ([[decision-log|D-053]]). The chain runs every slot after a storm until the model drains, and `flood_mapping_full` stays paused.

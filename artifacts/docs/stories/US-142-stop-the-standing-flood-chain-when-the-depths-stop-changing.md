@@ -37,6 +37,7 @@ Dependencies: None. `flood_mapping_full` stays paused until this is deployed or 
 - **2026-10-14, In progress.** Started with no other story in progress, within the limit of two.
 - **2026-10-14, Reviewed.** Built and tested in throwaway containers. It waits for the owner's deploy and the owner's acceptance. The server was not touched.
 - **2026-10-14, owner answer.** The rule is kept as built (5 runs with 4 comparisons). Code cannot end the standing flood, because the cause is the initial water of the model. The owner cuts that water out in an experiment in `marie-curie/`, and the work continues later. `flood_mapping_full` stays paused.
+- **2026-10-14, superseded.** The owner chose the 5 cm depth test again ([[decision-log|D-053]]) and the steady-state commit was reverted. Items 1 to 4 and 6 below describe code that no longer exists.
 
 ## Evidence and details
 

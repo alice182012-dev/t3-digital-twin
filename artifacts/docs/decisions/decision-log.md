@@ -809,3 +809,15 @@ is the maximum.
 - **Evidence:** the "Grill first" rule in `.claude/CLAUDE.md`, changed in the same work block.
 - **Affects:** the "Grill first" rule in `.claude/CLAUDE.md`, which no longer names `CONTEXT.md`.
 - **Revisit if:** a term is shared by two subsystems and no single concept page is its natural home.
+
+## D-053: Stop the standing-flood chain on a 5 cm depth test, as the first design did
+
+- **Date:** 2026-10-14
+- **Status:** active.
+- **Decided by:** The product owner, on 2026-10-14, who has no time to verify the model.
+- **Decision:** The chain stops when the newest 5 runs of `edge_depth` have a deepest depth under 5 cm on every road edge and no rain is forecast. It stays off until the forecast reaches `FLOOD_RAIN_THRESHOLD_MM_HR` again. This replaces the steady-state test of [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]], and `FLOOD_DRY_DEPTH_M` is back.
+- **Why:** The owner wants "roads dry and no rain" as the meaning of a finished flood. The road edges that the unverified model never drains are a model problem that code cannot fix.
+- **Alternatives:** (1) Keep the steady-state test. Not chosen. (2) Subtract a dry baseline or mask the edges ([[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]], options A and C). Not chosen, because the owner will not verify the model now.
+- **Evidence:** [[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]: about 157 edges read 5 cm or more in every run, so after a storm the chain runs every slot, up to 96 simulations a day, until the model drains.
+- **Affects:** `scripts/standing_flood.py`, `dags/flood_mapping_dag.py`, [[3di-simulation-orchestration]], [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]]. `flood_mapping_full` stays paused.
+- **Revisit if:** the model is verified and drains, or the cost of the nonstop chain after a storm is not acceptable.
