@@ -118,3 +118,10 @@ export function textToCoordinate(text: string): Coordinate | null {
 
     return isNaN(result.lng) || isNaN(result.lat) ? null : result
 }
+
+// the place name shown next to a pin, none when the text is empty or only coordinates
+export function pinLabel(point: { coordinate: Coordinate; queryText: string }): string | undefined {
+    const text = point.queryText.trim()
+    if (!text || text === coordinateToText(point.coordinate) || textToCoordinate(text)) return undefined
+    return text
+}

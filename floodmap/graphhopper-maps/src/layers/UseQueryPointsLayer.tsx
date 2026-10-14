@@ -8,8 +8,8 @@ import { fromLonLat, toLonLat } from 'ol/proj'
 import { Modify } from 'ol/interaction'
 import Dispatcher from '@/stores/Dispatcher'
 import { SetPoint } from '@/actions/Actions'
-import { coordinateToText } from '@/Converters'
-import { Icon, Stroke, Style } from 'ol/style'
+import { coordinateToText, pinLabel } from '@/Converters'
+import { Fill, Icon, Stroke, Style, Text } from 'ol/style'
 import { createSvg } from '@/layers/createMarkerSVG'
 
 const MARKER_SIZE = 35
@@ -67,6 +67,7 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
                 // a number is only displayed for via points and turns the marker into a circle
                 number: isVia ? i : undefined,
                 size: isVia ? VIA_MARKER_SIZE : MARKER_SIZE,
+                label: isVia ? undefined : pinLabel(point),
             })
             return feature
         })
@@ -85,7 +86,7 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
         const isVia = props.number !== undefined
         // transparent when dragging
         const dragging = isVia && feature.get('gh:dragging') === true
-        const key = props.number + '-' + props.color + '-' + props.size + '-' + dragging
+        const key = props.number + '-' + props.color + '-' + props.size + '-' + dragging + '-' + props.label
         let style = cachedStyles[key]
         if (style) return style
         style = new Style({
@@ -95,6 +96,19 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
                 displacement: isVia ? [0, 0] : [0, MARKER_SIZE / 2],
                 opacity: dragging ? 0.5 : 1,
             }),
+            text: props.label
+                ? new Text({
+                      text: props.label,
+                      font: '14px sans-serif',
+                      textAlign: 'left',
+                      offsetX: 16,
+                      offsetY: -MARKER_SIZE / 2,
+                      fill: new Fill({ color: '#222' }),
+                      backgroundFill: new Fill({ color: '#fff' }),
+                      backgroundStroke: new Stroke({ color: 'rgba(0,0,0,0.25)', width: 1 }),
+                      padding: [3, 6, 3, 6],
+                  })
+                : undefined,
         })
         cachedStyles[key] = style
         return style

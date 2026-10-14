@@ -1,6 +1,22 @@
-import { textToCoordinate, nominatimHitToItem, hitToItem, milliSecondsToText, suggestionLine } from '@/Converters'
+import { pinLabel, textToCoordinate, nominatimHitToItem, hitToItem, milliSecondsToText, suggestionLine } from '@/Converters'
 
 describe('Converters', function () {
+    describe('pinLabel', function () {
+        const coordinate = { lat: 21.0123456, lng: 105.7234567 }
+        it('should return the place name', function () {
+            expect(pinLabel({ coordinate, queryText: 'GO Thang Long' })).toEqual('GO Thang Long')
+        })
+        it('should return undefined for empty text', function () {
+            expect(pinLabel({ coordinate, queryText: '' })).toBeUndefined()
+        })
+        it('should return undefined for the text of the coordinate', function () {
+            expect(pinLabel({ coordinate, queryText: '21.012346,105.723457' })).toBeUndefined()
+        })
+        it('should return undefined for other coordinate text', function () {
+            expect(pinLabel({ coordinate, queryText: '21.0, 105.7' })).toBeUndefined()
+        })
+    })
+
     describe('milliSecondsToText', function () {
         it('should convert ms to text', function () {
             expect(milliSecondsToText(59 * 1000)).toEqual('1 min')
