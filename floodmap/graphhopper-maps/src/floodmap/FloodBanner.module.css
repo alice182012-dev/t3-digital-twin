@@ -23,12 +23,13 @@
 }
 
 /* The search panel covers the top and its height varies, so the banner sits above the legend,
-   which FloodLegend.module.css moves to the bottom right here. The legend is about 220 px tall. */
+   which FloodLegend.module.css puts 124 px from the bottom here. The legend is about 253 px tall,
+   so its top is at 377 px and the banner leaves 15 px. */
 @media (max-width: 44rem) {
     .container {
         left: 12px;
         right: 12px;
-        bottom: 264px;
+        bottom: 392px;
         transform: none;
         width: auto;
         max-width: none;

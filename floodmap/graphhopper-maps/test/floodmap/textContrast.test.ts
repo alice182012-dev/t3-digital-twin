@@ -39,7 +39,7 @@ describe('text contrast', () => {
 
     const pairs: [string, string, string][] = [
         ['legend title', declaration(LEGEND, '.title', 'color'), LEGEND_BACKGROUND],
-        ['legend band label', declaration(LEGEND, '.band', 'color'), LEGEND_BACKGROUND],
+        ['legend tick label', declaration(LEGEND, '.ticks', 'color'), LEGEND_BACKGROUND],
         ['legend updated line', declaration(LEGEND, '.updated', 'color'), LEGEND_BACKGROUND],
         [
             'inactive route tab',
