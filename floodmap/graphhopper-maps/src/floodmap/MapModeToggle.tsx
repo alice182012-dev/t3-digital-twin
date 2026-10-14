@@ -1,6 +1,8 @@
 import styles from './MapModeToggle.module.css'
 import PlainButton from '@/PlainButton'
 import { MapMode } from '@/floodmap/FloodStore'
+import mapLayer from './map_layer.png'
+import floodLayer from './flood_layer.png'
 
 /**
  * Two square thumbnail buttons, bottom-left, per the approved mockup
@@ -20,6 +22,7 @@ export default function MapModeToggle({ mode, onChange }: { mode: MapMode; onCha
                 onClick={() => onChange('map')}
                 title="Show the plain map"
             >
+                <img className={styles.thumbImage} src={mapLayer} alt="" />
                 <span className={styles.thumbLabel}>Map</span>
             </PlainButton>
             <PlainButton
@@ -28,7 +31,7 @@ export default function MapModeToggle({ mode, onChange }: { mode: MapMode; onCha
                 onClick={() => onChange('flood')}
                 title="Show the flood overlay"
             >
-                <span className={styles.floodTint} />
+                <img className={styles.thumbImage} src={floodLayer} alt="" />
                 <span className={styles.thumbLabel}>Flood</span>
             </PlainButton>
         </div>
