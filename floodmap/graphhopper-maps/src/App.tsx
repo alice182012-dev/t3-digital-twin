@@ -1,5 +1,4 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
 import styles from './App.module.css'
 import {
     getApiInfoStore,
@@ -14,7 +13,6 @@ import {
     getCurrentLocationStore,
 } from '@/stores/Stores'
 import MapComponent from '@/map/MapComponent'
-import mapStyles from '@/map/Map.module.css'
 import MapOptions from '@/map/MapOptions'
 import MobileSidebar from '@/sidebar/MobileSidebar'
 import { useMediaQuery } from 'react-responsive'
@@ -214,13 +212,7 @@ export default function App() {
     return (
         <SettingsContext.Provider value={settings}>
             <div className={styles.appWrapper}>
-                <MapPopups
-                    map={map}
-                    pathDetails={pathDetails}
-                    mapFeatures={mapFeatures}
-                    poiState={pois}
-                    query={query}
-                />
+                <MapPopups map={map} mapFeatures={mapFeatures} poiState={pois} query={query} />
                 <PlaceDepthPopup
                     map={map}
                     coordinate={placeCoordinate}
@@ -305,23 +297,6 @@ function LargeScreenLayout({
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
     const { banner } = floodView(flood.mode)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
-    const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
-    const hasRoute = route.selectedPath.points.coordinates.length > 0
-    const routeRequestPending = query.currentRequest.subRequests.some(r => r.state === RequestState.SENT)
-    // Show elevation widget when a route arrives, hide when route is gone
-    // (but not during transient empty states like via point addition where a new request is already pending)
-    useEffect(() => {
-        if (hasRoute) {
-            setElevationState(s => (s === 'closed' ? 'compact' : s))
-        } else if (!routeRequestPending) {
-            setElevationState('closed')
-        }
-    }, [hasRoute, routeRequestPending])
-    // Hide map attribution when elevation widget is expanded (it would be covered)
-    useEffect(() => {
-        const el = map.getTargetElement()?.querySelector('.' + mapStyles.customAttribution) as HTMLElement | null
-        if (el) el.style.display = elevationState === 'expanded' ? 'none' : ''
-    }, [elevationState, map])
     return (
         <>
             {showSidebar ? (
@@ -377,8 +352,20 @@ function LargeScreenLayout({
                     <span className={styles.sidebarOpenLabel}>Search Floodmap</span>
                     <PlainButton className={styles.sidebarOpenButton}>
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 20V10a4 4 0 0 1 4-4h8" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M15 3l3 3-3 3" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path
+                                d="M6 20V10a4 4 0 0 1 4-4h8"
+                                stroke="#111"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M15 3l3 3-3 3"
+                                stroke="#111"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
                         </svg>
                     </PlainButton>
                 </div>
@@ -395,38 +382,11 @@ function LargeScreenLayout({
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
             {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
 
-            {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
-            {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
+            {showMaptoolkitLogo && (
                 <div className={styles.pathDetails + ' ' + styles.bottomLeftBar}>
-                    {hasRoute && (
-                        <button
-                            className={styles.elevationReopenButton}
-                            onClick={() => setElevationState('compact')}
-                            title="Show elevation"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 1792 1792" fill="#666">
-                                <path d="M1920 1536v128h-2048v-1536h128v1408h1920zm-384-1024l256 896h-1664v-576l448-576 576 576z" />
-                            </svg>
-                        </button>
-                    )}
-                    {showMaptoolkitLogo && (
-                        <img className={styles.maptoolkitLogo} src={maptoolkitImg} alt="Maptoolkit" />
-                    )}
+                    <img className={styles.maptoolkitLogo} src={maptoolkitImg} alt="Maptoolkit" />
                 </div>
             )}
-            <div
-                className={elevationState === 'expanded' ? styles.pathDetailsExpanded : styles.pathDetails}
-                style={{ display: elevationState === 'closed' ? 'none' : undefined }}
-            >
-                <ElevationInfoBar
-                    selectedPath={route.selectedPath}
-                    alternativePaths={route.routingResult.paths}
-                    profile={query.routingProfile.name}
-                    isExpanded={elevationState === 'expanded'}
-                    onToggleExpanded={() => setElevationState(s => (s === 'expanded' ? 'compact' : 'expanded'))}
-                    onClose={() => setElevationState('closed')}
-                />
-            </div>
         </>
     )
 }

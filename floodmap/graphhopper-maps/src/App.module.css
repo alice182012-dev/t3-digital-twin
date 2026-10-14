@@ -86,17 +86,7 @@
     pointer-events: none;
 }
 
-.pathDetailsExpanded {
-    grid-column: 1 / span 3;
-    grid-row: 1 / span 1;
-    z-index: 2;
-    align-self: end;
-    overflow: hidden;
-    margin: 0 0.5rem 0.5rem 0.5rem;
-    pointer-events: none;
-}
-
-/* used together with .pathDetails: the elevation reopen button and the Maptoolkit logo share the bottom left corner */
+/* used together with .pathDetails: the Maptoolkit logo sits in the bottom left corner */
 .bottomLeftBar {
     display: flex;
     align-items: flex-end;
@@ -106,27 +96,6 @@
 .maptoolkitLogo {
     height: 1.6rem;
     pointer-events: none;
-}
-
-.elevationReopenButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    cursor: pointer;
-    font-size: 9px;
-    color: #666;
-    pointer-events: auto;
-    padding: 0;
-}
-
-.elevationReopenButton:hover {
-    background: #e8e8e8;
-    color: #333;
 }
 
 .smallScreenMap {

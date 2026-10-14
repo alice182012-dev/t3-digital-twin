@@ -1,7 +1,6 @@
 import { Action } from '@/stores/Dispatcher'
 import { QueryPoint } from '@/stores/QueryStore'
 import { ApiInfo, Bbox, Path, RoutingArgs, RoutingProfile, RoutingResult } from '@/api/graphhopper'
-import { PathDetailsPoint } from '@/stores/PathDetailsStore'
 import { POI } from '@/stores/POIsStore'
 import { Settings } from '@/stores/SettingsStore'
 import { Coordinate } from '@/utils'
@@ -199,22 +198,6 @@ export class SetBBox implements Action {
     readonly bbox: Bbox
 
     constructor(bbox: Bbox) {
-        this.bbox = bbox
-    }
-}
-
-export class PathDetailsHover implements Action {
-    readonly pathDetailsPoint: PathDetailsPoint | null
-
-    constructor(pathDetailsPoint: PathDetailsPoint | null) {
-        this.pathDetailsPoint = pathDetailsPoint
-    }
-}
-
-export class PathDetailsRangeSelected implements Action {
-    readonly bbox: Bbox | null
-
-    constructor(bbox: Bbox | null) {
         this.bbox = bbox
     }
 }

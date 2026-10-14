@@ -139,13 +139,6 @@ export function getSpeedThresholds(profile: string): number[] {
     return [5, 10, 15, 20] // bike-like default
 }
 
-export function getSpeedColor(speed: number, thresholds: number[]): string {
-    for (let i = 0; i < thresholds.length; i++) {
-        if (speed < thresholds[i]) return SPEED_COLORS[i]
-    }
-    return SPEED_COLORS[Math.min(thresholds.length, SPEED_COLORS.length - 1)]
-}
-
 export function getSpeedLabels(thresholds: number[]): string[] {
     return [
         `< ${thresholds[0]}`,
@@ -284,28 +277,6 @@ export function computeLTSDistances(
     return distances
 }
 
-// Colorblind-friendly palette from SRON (https://personal.sron.nl/~pault/#sec:qualitative)
-export const DISCRETE_PALETTE = [
-    '#332288',
-    '#88ccee',
-    '#44aa99',
-    '#117733',
-    '#999933',
-    '#ddcc77',
-    '#cc6677',
-    '#882255',
-    '#aa4499',
-]
-
-const MISSING_COLOR = '#dddddd'
-
-export function getSlopeColor(percent: number): string {
-    for (const cat of INCLINE_CATEGORIES) {
-        if (percent >= cat.minSlope) return cat.color
-    }
-    return INCLINE_CATEGORIES[INCLINE_CATEGORIES.length - 1].color
-}
-
 /**
  * Equirectangular plane projection distance, consistent with GraphHopper's DistancePlaneProjection.
  * See graphhopper#3296.
@@ -336,36 +307,6 @@ export function computeInclineCategoryDistances(coords: number[][]): number[] {
     return distances
 }
 
-export function getNumericGradientColor(factor: number): string {
-    // blue [0,153,247] to red [241,23,18]
-    const clamped = Math.max(0, Math.min(1, factor))
-    const r = Math.round(0 + clamped * (241 - 0))
-    const g = Math.round(153 + clamped * (23 - 153))
-    const b = Math.round(247 + clamped * (18 - 247))
-    return `rgb(${r}, ${g}, ${b})`
-}
-
 export function isMissingValue(value: string | number | boolean): boolean {
     return value === 'missing'
-}
-
-export function assignDiscreteColors(detailKey: string, values: (string | number | boolean)[]): Map<string, string> {
-    const colorMap = new Map<string, string>()
-    const namedMap = NAMED_COLOR_MAPS[detailKey]
-
-    let paletteIndex = 0
-    for (const val of values) {
-        const key = String(val)
-        if (colorMap.has(key)) continue
-
-        if (isMissingValue(val)) {
-            colorMap.set(key, MISSING_COLOR)
-        } else if (namedMap && namedMap[key]) {
-            colorMap.set(key, namedMap[key])
-        } else {
-            colorMap.set(key, DISCRETE_PALETTE[paletteIndex % DISCRETE_PALETTE.length])
-            paletteIndex++
-        }
-    }
-    return colorMap
 }

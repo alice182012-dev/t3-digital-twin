@@ -12,10 +12,8 @@ import Details from '@/sidebar/list.svg'
 import GPXDownload from '@/sidebar/file_download.svg'
 import Instructions from '@/sidebar/instructions/Instructions'
 import RouteStats from '@/sidebar/RouteStats'
-import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
 import { LineString, Position } from 'geojson'
 import { calcDist, Coordinate, getBBoxFromCoord } from '@/utils'
-import { useMediaQuery } from 'react-responsive'
 import { tr } from '@/translation/Translation'
 import { ApiImpl } from '@/api/Api'
 import FordIcon from '@/sidebar/routeHints/water.svg'
@@ -38,8 +36,6 @@ import { FloodTimestep } from '@/floodmap/FloodStore'
 import { useMaxDepthsCm } from '@/floodmap/useDepthProfile'
 import NoSafeRouteMessage from '@/sidebar/NoSafeRouteMessage'
 import { noConnectionTarget } from '@/floodmap/departureAdvice'
-
-let persistedElevationMounted = false
 
 export interface RoutingResultsProps extends RoutingResultsViewInput {
     info: RoutingResultInfo
@@ -104,7 +100,6 @@ export default function RoutingResults(props: RoutingResultsProps) {
                         <RoutingResult
                             framed
                             path={active.path}
-                            allPaths={props.paths}
                             isSelected={true}
                             profile={props.profile}
                             info={props.info}
@@ -116,7 +111,6 @@ export default function RoutingResults(props: RoutingResultsProps) {
                         <ul>
                             <RoutingResult
                                 path={active.path}
-                                allPaths={props.paths}
                                 isSelected={true}
                                 profile={props.profile}
                                 info={props.info}
@@ -135,7 +129,6 @@ export default function RoutingResults(props: RoutingResultsProps) {
 function RoutingResult({
     info,
     path,
-    allPaths,
     isSelected,
     profile,
     isExpanded,
@@ -146,17 +139,12 @@ function RoutingResult({
     framed?: boolean
     info: RoutingResultInfo
     path: Path
-    allPaths: Path[]
     isSelected: boolean
     profile: string
     isExpanded: boolean
     setExpanded: (v: boolean) => void
     timestep?: FloodTimestep
 }) {
-    const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
-    const [elevationMounted, setElevationMounted] = useState(persistedElevationMounted)
-    if (isExpanded && !elevationMounted) setElevationMounted(true)
-    if (elevationMounted && !persistedElevationMounted) persistedElevationMounted = true
     const [showInstructions, setShowInstructions] = useState(false)
     const [selectedRH, setSelectedRH] = useState('')
     const [descriptionRH, setDescriptionRH] = useState('')
@@ -529,18 +517,6 @@ function RoutingResult({
                         />
                     </div>
                     {descriptionRH && <div>{descriptionRH}</div>}
-                </div>
-            )}
-            {isSmallScreen && elevationMounted && (
-                <div style={{ display: isExpanded ? undefined : 'none' }}>
-                    <hr className={styles.elevationSeparator} />
-                    <ElevationInfoBar
-                        selectedPath={path}
-                        alternativePaths={allPaths}
-                        profile={profile}
-                        isExpanded={false}
-                        onToggleExpanded={() => {}}
-                    />
                 </div>
             )}
             {framed && (
