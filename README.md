@@ -23,6 +23,24 @@ One Airflow DAG, `flood_mapping_full`, produces the flood data. Its tasks emit A
 | Frontend         | `flood-routing-frontend`                           | A fork of graphhopper-maps with the flood layer, legend, flood mode, and depth forecast chart. nginx proxies `/api/gh/` to the backend and `/flood-extent/` to MinIO.                                                                                                                     |                                                                                                                                                        |
 | Depth history    | `flood_history`, TimescaleDB                       | Copies each run from `edge_depth` into the `depth_history` and `history_moment` hypertables.                                                                                                                                                                                            | [TimescaleDB schema](artifacts/docs/concepts/timescaledb-schema.md)                                                                                     |
 
+## Routing results
+
+The edge depth table closes each road by its flood depth. Blue edges in the map are open for every vehicle, orange edges are closed for some vehicles, and red edges are closed for every vehicle.
+
+![Map of the model area with flooded road edges colored by depth. Blue edges, 1 to 19 cm, are open for every vehicle. Orange edges, 20 to 39 cm, are closed for some vehicles. Red edges, 40 cm or more, are closed for every vehicle. The densest closures follow the main east-west road and the north-east of the area.](fig_flood_map.png)
+
+A route can use the depth at the time the traveler enters an edge, or the deepest depth in a window after entry. In the following trip, the exact route reads 19 cm at the entry step and keeps the edge open. The depth reaches 22 cm inside the window, which is over the motorbike limit of 20 cm, so the sticky route avoids the edge.
+
+![Two panels for one trip. The map shows a shared route in gray, an exact-only detour in orange, a sticky-only detour in blue, and the edge that closes marked with a red circle. The chart shows the edge depth in 15-minute steps rising from 6 cm to 25 cm, with the motorbike limit at 20 cm and the sticky window, which is the entry time plus 600 seconds, shaded.](fig_pair_sticky_vs_exact.png)
+
+A longer lookahead margin makes the sticky route longer than the exact route, and it removes the routes that violate the worse-of-two rule. The deployed margin is 600 seconds.
+
+![Two panels against the lookahead margin from 0 to 900 seconds, for offsets of 0, 300, and 600 seconds. The left panel shows the share of sticky routes that are longer than the exact route, rising from under 1% at 0 seconds to about 6% at 900 seconds. The right panel shows the share of routes that violate the worse-of-two rule, falling from about 6% at 0 seconds to 0% at 900 seconds.](fig_margin_tradeoff.png)
+
+Closed edges reopen as the storm passes. The share of edges that reopen within one table is larger at the late tables than at the cold start. Most reopening events happen soon after the closure.
+
+![Two panels for motorbike, car, truck, and pedestrian. The left panel shows the share of edges that reopen within a table by storm stage, from about 1.4% to 5%, with the lowest values at the cold start. The right panel shows the share of reopening events by time to reopen, falling from 20 to 25% at 15 minutes to about 9 to 10% at 105 minutes.](fig_reopening_by_stage.png)
+
 ## Documentation
 
 - [Run and test the system](artifacts/docs/concepts/run-and-test-the-system.md) - Docker host rules, environment, health checks, and tests.
