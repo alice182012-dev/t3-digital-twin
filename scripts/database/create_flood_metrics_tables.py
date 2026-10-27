@@ -2,11 +2,12 @@ import psycopg2
 
 from db_config import DB_CONFIG
 
-# Lives in storage-postgres, next to flood_road_values, so the extractor does not depend on the
+# Lives in storage-postgres, next to the edge depth table, so the extractor does not depend on the
 # TimescaleDB service. Story 4 of timescaledb-and-flood-metrics copies from this table.
 #
-# segment_key is md5(ST_AsEWKB(geom_4326)) of the flood_road_values rows the metrics came from:
-# that table has no segment ID, and road_name repeats across a road's segments.
+# A row from the piece-based extraction has segment_key, md5(ST_AsEWKB(geom_4326)) of its road piece rows, and
+# no edge_key. A row from the edge-based extraction (US-121, D-038) has graph_edge.edge_key and no segment_key or
+# road_name. Old rows are kept, so the rule for a key after a graph re-import is the one in graph-reimport-procedure.
 #
 # The CHECKs mirror metrics.Passability, so a row cannot claim a closure without its times, or a
 # restoration without being closed first.
@@ -62,6 +63,16 @@ ON flood_segment_metrics(pre_closure_time);
 
 CREATE INDEX IF NOT EXISTS idx_flood_segment_metrics_geom_4326
 ON flood_segment_metrics USING GIST(geom_4326);
+
+ALTER TABLE flood_segment_metrics ADD COLUMN IF NOT EXISTS edge_key TEXT;
+ALTER TABLE flood_segment_metrics ALTER COLUMN segment_key DROP NOT NULL;
+
+ALTER TABLE flood_segment_metrics DROP CONSTRAINT IF EXISTS flood_segment_metrics_one_key;
+ALTER TABLE flood_segment_metrics ADD CONSTRAINT flood_segment_metrics_one_key
+CHECK ((segment_key IS NULL) <> (edge_key IS NULL));
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_flood_segment_metrics_edge_key
+ON flood_segment_metrics(run_ts, edge_key, vehicle_type) WHERE edge_key IS NOT NULL;
 """
 
 

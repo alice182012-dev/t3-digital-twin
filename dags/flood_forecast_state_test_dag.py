@@ -7,9 +7,9 @@ exactly event 2's slot and event 2 hotstarts from it. Fixed synthetic rain repla
 flood_mapping_full's rain gate, so the DAG runs on a dry day. Trigger it by hand.
 
 After each event's depth calculation, the DAG runs the same steps as flood_mapping_full: flood
-tiles (task 9), the depth raster load (task 9b), and flood on roads. Only the first
+tiles (task 9) and the depth raster load (task 9b). Only the first
 FLOOD_EXTENT_TILE_STEPS (default 2) timesteps of each event get tiles, as in production; the
-raster load and flood on roads cover every timestep. Both events publish under
+raster load covers every timestep. Both events publish under
 ONE run name, event 1's earliest depth file stamp (decision D-007 in
 artifacts/docs/decisions/decision-log.md), so event 1's tiled timesteps stay visible after event
 2 publishes. The netcdf upload (task 3b of flood_mapping_full)
@@ -20,15 +20,11 @@ logged by every publishing task and returned in its XCom):
 
 - MinIO: the flood-extent tiles under runs/RUN_TS/ in the flood-extent bucket.
 - flood_extent_polygon, flood_extent_step, and flood_depth_raster_tile: rows with run_ts = RUN_TS.
-- flood_road_values: rows with timestamp = RUN_TS, written in place on purpose so routing shows
-  the test event, plus one flood_road_file row named flood_on_roads_RUN_TS.
-- road_segment: made to match the roads file, the same idempotent load production runs.
 
-The run name is newer than the production runs, so the map, point depth, and routing show it
+The DAG does not build the edge depth table (task 9c of routing_adapter), so routing does not show the test event.
+The run name is newer than the production runs, so the map and point depth show it
 as the latest run until a newer production run replaces it. To remove a test run afterwards:
 
-    DELETE FROM flood_road_values WHERE timestamp = to_timestamp('RUN_TS', 'YYYYMMDD"T"HH24MISS')::timestamp;
-    DELETE FROM flood_road_file WHERE source_file = 'flood_on_roads_RUN_TS';
     DELETE FROM flood_extent_polygon WHERE run_ts = 'RUN_TS';
     DELETE FROM flood_extent_step WHERE run_ts = 'RUN_TS';
     DELETE FROM flood_depth_raster_tile WHERE run_ts = 'RUN_TS';
@@ -58,17 +54,13 @@ try:
     import create_simulation
     import download_result
     import calculate_depth
-    import database.create_netcdf_tables
-    import database.create_flood_road_tables
     import database.create_flood_extent_tables
     import database.create_flood_depth_raster_tables
-    import database.create_road_segment_table
+    import database.create_flood_run_output_table
     import flood_extent
     import publish
     import raster_load
     from db_config import DB_CONFIG
-    from roads import load_road_segments
-    from flood_roads import flood_on_roads
 except ImportError as e:
     print(f"❌ Lỗi Import: {e}")
 
@@ -215,11 +207,9 @@ def task_calculate_depth_event2(**kwargs):
 
 def task_ensure_schema(**kwargs):
     print("🛠️ 0. Ensuring PostGIS schema (extension, geom_4326, indexes, backfill)...")
-    database.create_flood_road_tables.main()
     database.create_flood_extent_tables.main()
     database.create_flood_depth_raster_tables.main()
-    database.create_road_segment_table.main()
-    database.create_netcdf_tables.create_tables()
+    database.create_flood_run_output_table.main()
 
 
 def depth_stamps(depth_dir):
@@ -292,50 +282,6 @@ def task_load_depth_raster(depth_task_id, **kwargs):
     return {"run_ts": run_ts, "timesteps": len(loaded)}
 
 
-def task_load_road_segments(**kwargs):
-    """Makes road_segment match the roads file. A file that has not changed reports zero changes;
-    a bad file raises before anything is written."""
-    roads_path = os.getenv("ROADS_GEOJSON_PATH", load_road_segments.DEFAULT_ROADS_PATH)
-    print(f"🛣️ Loading road pieces into road_segment: {roads_path}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = load_road_segments.load(conn, roads_path)
-    finally:
-        conn.close()
-    print(
-        f"✅ road_segment: {result.inserted} inserted, {result.updated} updated, "
-        f"{result.deleted} deleted, {result.total} rows total"
-    )
-    if result.updated or result.deleted:
-        # See artifacts/docs/concepts/road-segment-table.md, "Limits of the id".
-        print("⚠️ Existing segment_id values now describe different road; older per-piece results no longer line up")
-    return {
-        "inserted": result.inserted,
-        "updated": result.updated,
-        "deleted": result.deleted,
-        "total": result.total,
-    }
-
-
-def task_flood_on_roads(depth_task_id, **kwargs):
-    """Writes the shared run's per-piece flood depth into flood_road_values, the table routing
-    reads. compute() covers every timestep loaded for the run so far, so event 2's task also
-    rewrites event 1's timesteps, which gives the same rows plus zeros for pieces only event 2
-    wets."""
-    _, run_ts = depth_run(kwargs["ti"], depth_task_id)
-
-    print(f"🌊 Computing flood on roads for run {run_ts}")
-    conn = psycopg2.connect(**DB_CONFIG)
-    try:
-        result = flood_on_roads.compute(conn, run_ts)
-    finally:
-        conn.close()
-    for step in result.timesteps:
-        print(f"   {step.forecast_time:%Y-%m-%d %H:%M:%S}: {step.rows} rows, {step.wet_pieces} wet pieces")
-    print(f"✅ {result.rows} rows written to {result.target_table} in {result.seconds:.1f} s")
-    return {"run_ts": run_ts, "timesteps": len(result.timesteps), "rows": result.rows}
-
-
 default_args = {
     "owner": "flood_team",
     "depends_on_past": False,
@@ -356,33 +302,27 @@ with DAG(
 ) as dag:
 
     t0 = PythonOperator(task_id="0_ensure_schema", python_callable=task_ensure_schema)
-    t_roads = PythonOperator(task_id="load_road_segments", python_callable=task_load_road_segments)
     t1 = PythonOperator(task_id="1_trigger_event1", python_callable=task_trigger_event1)
     t2 = PythonOperator(task_id="2_download_event1", python_callable=task_download_event1)
     t3 = PythonOperator(task_id=EVENT1_DEPTH_TASK, python_callable=task_calculate_depth_event1)
     event1 = {"depth_task_id": EVENT1_DEPTH_TASK}
     t3b = PythonOperator(task_id="3b_build_tiles_event1", python_callable=task_build_flood_tiles, op_kwargs=event1)
     t3c = PythonOperator(task_id="3c_load_depth_raster_event1", python_callable=task_load_depth_raster, op_kwargs=event1)
-    t3d = PythonOperator(task_id="3d_flood_on_roads_event1", python_callable=task_flood_on_roads, op_kwargs=event1)
     t4 = PythonOperator(task_id="4_trigger_event2", python_callable=task_trigger_event2)
     t5 = PythonOperator(task_id="5_download_event2", python_callable=task_download_event2)
     t6 = PythonOperator(task_id=EVENT2_DEPTH_TASK, python_callable=task_calculate_depth_event2)
     event2 = {"depth_task_id": EVENT2_DEPTH_TASK}
     t6b = PythonOperator(task_id="6b_build_tiles_event2", python_callable=task_build_flood_tiles, op_kwargs=event2)
     t6c = PythonOperator(task_id="6c_load_depth_raster_event2", python_callable=task_load_depth_raster, op_kwargs=event2)
-    t6d = PythonOperator(task_id="6d_flood_on_roads_event2", python_callable=task_flood_on_roads, op_kwargs=event2)
 
-    t0 >> [t_roads, t3b, t3c, t3d, t6b, t6c, t6d]
-    t_roads >> [t3d, t6d]
+    t0 >> [t3b, t3c, t6b, t6c]
 
     # Event 2 is triggered as soon as Event 1's result is downloaded (it only
     # needs Event 1's saved state, not its depth calc).
     t1 >> t2 >> t3
     t2 >> t4 >> t5
     t3 >> [t3b, t3c]
-    t3c >> t3d
     # Event 2's depth calc (heavy multiprocessing) waits for event 1's tile build and raster load
     # too, so it never overlaps either of them.
     [t3b, t3c, t5] >> t6
     t6 >> [t6b, t6c]
-    t6c >> t6d

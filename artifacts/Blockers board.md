@@ -4,7 +4,6 @@ status: active
 tags: [blocker, dataview]
 related: ["[[Home]]", "[[User stories board]]"]
 ---
-
 # Blockers board
 
 Every blocker, one row each, read from the frontmatter of the pages in `docs/blockers/`. Each blocker

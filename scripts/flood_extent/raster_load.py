@@ -1,7 +1,7 @@
 """Loads calculate_depth.py's per-timestep depth.tif files into PostGIS as queryable raster tiles.
 
-GET /flood/points needs the exact depth at an arbitrary lat/lon, which flood_road_values (depth at
-road segments only) and flood_extent_polygon (banded ranges only) can't answer. depth.tif is
+GET /flood/points needs the exact depth at an arbitrary lat/lon, which the edge depth rows (depth along
+road edges only) and flood_extent_polygon (banded ranges only) can't answer. depth.tif is
 always the source of truth for depth values, so this loads it into `flood_depth_raster_tile`,
 cut into TILE_SIZE x TILE_SIZE tiles. A whole timestep is about 10000 x 5500 pixels (209 MB
 decoded), and ST_Value on a one-row raster unpacks all of it per lookup; a lookup that selects
@@ -17,6 +17,7 @@ query never needs its own transform.
 from __future__ import annotations
 
 import os
+from collections.abc import Collection
 from pathlib import Path
 
 import psycopg2
@@ -24,6 +25,8 @@ from osgeo import gdal
 
 import flood_extent
 import publish
+import run_output
+import demo_pin  # noqa: E402  (publish puts scripts/database on sys.path)
 
 gdal.UseExceptions()
 
@@ -59,9 +62,9 @@ def reproject_to_4326(src_path: Path, dst_path: Path) -> None:
     ds = None  # noqa: F841 (closes/flushes the GDAL dataset)
 
 
-def load_raster(conn, run_ts: str, valid_time_utc, raster_path: Path) -> None:
-    """Replaces every tile of (run_ts, valid_time_utc) in one transaction, so a retried load
-    converges on the same rows instead of mixing tiles from two attempts."""
+def write_tiles(cur, run_ts: str, valid_time_utc, raster_path: Path) -> None:
+    """Replaces every tile of (run_ts, valid_time_utc). The caller owns the transaction, so a retried
+    load converges on the same rows instead of mixing tiles from two attempts."""
     data = Path(raster_path).read_bytes()
     params = {
         "run_ts": run_ts,
@@ -70,32 +73,32 @@ def load_raster(conn, run_ts: str, valid_time_utc, raster_path: Path) -> None:
         "srid": TARGET_SRID,
         "size": TILE_SIZE,
     }
-    with conn, conn.cursor() as cur:
-        # postgis.gdal_enabled_drivers defaults to DISABLE_ALL (PostGIS disables every out-db
-        # GDAL driver unless a session opts in), so ST_FromGDALRaster otherwise fails with
-        # "Could not open bytea with GDAL" on a perfectly valid GeoTIFF. Session-scoped, no
-        # superuser or server restart needed.
-        cur.execute("SET postgis.gdal_enabled_drivers = 'GTiff';")
-        cur.execute(_DELETE_TIMESTEP_SQL, params)
-        cur.execute(_INSERT_TILES_SQL, params)
+    # postgis.gdal_enabled_drivers defaults to DISABLE_ALL (PostGIS disables every out-db
+    # GDAL driver unless a session opts in), so ST_FromGDALRaster otherwise fails with
+    # "Could not open bytea with GDAL" on a perfectly valid GeoTIFF. Session-scoped, no
+    # superuser or server restart needed.
+    cur.execute("SET postgis.gdal_enabled_drivers = 'GTiff';")
+    cur.execute(_DELETE_TIMESTEP_SQL, params)
+    cur.execute(_INSERT_TILES_SQL, params)
 
 
-def prune_raster_runs(conn, keep_runs: int, always_keep: str) -> list[str]:
-    """Deletes every tile of runs outside the newest `keep_runs` by run_ts, never `always_keep`.
+def prune_raster_runs(cur, keep_runs: int, always_keep: Collection[str]) -> list[str]:
+    """Deletes every tile of runs outside the newest `keep_runs` by run_ts, never a run of `always_keep`.
     Returns the pruned runs. Same posture as publish.prune_bucket_runs: run_ts is a fixed-width
     YYYYMMDDTHHMMSS string, so its lexical order is its time order."""
-    with conn, conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT run_ts FROM flood_depth_raster_tile ORDER BY run_ts DESC;")
-        runs = [row[0] for row in cur.fetchall()]
-        old_runs = [run for run in runs[keep_runs:] if run != always_keep]
-        if old_runs:
-            cur.execute("DELETE FROM flood_depth_raster_tile WHERE run_ts = ANY(%s);", (old_runs,))
+    cur.execute("SELECT DISTINCT run_ts FROM flood_depth_raster_tile ORDER BY run_ts DESC;")
+    runs = [row[0] for row in cur.fetchall()]
+    old_runs = [run for run in runs[keep_runs:] if run not in always_keep]
+    if old_runs:
+        cur.execute("DELETE FROM flood_depth_raster_tile WHERE run_ts = ANY(%s);", (old_runs,))
     return old_runs
 
 
 def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = None) -> list:
-    """Reprojects and loads every depth_*.tif in depth_dir, then prunes runs older than the newest
-    `keep_runs`, or FLOOD_RASTER_KEEP_RUNS (default 8) when it is None. Returns the list of
+    """Reprojects and loads every depth_*.tif in depth_dir, one transaction per timestep. The last
+    timestep's transaction also prunes runs older than the newest `keep_runs`, or
+    FLOOD_RASTER_KEEP_RUNS (default 8) when it is None, and records the run's `depth_raster` row in
+    flood_run_output, so the row commits only with every tile of the run. Returns the list of
     valid_time_utc values loaded. Fails loudly (raises) on the first bad file, matching
     publish.publish_run's posture: a partial load is safer to investigate than to hide behind a
     best-effort continue."""
@@ -118,9 +121,12 @@ def load_run(conn, depth_dir, run_ts: str, work_dir, keep_runs: int | None = Non
         reprojected = work_dir / f"{run_ts}_{depth_file.stem}_4326.tif"
         try:
             reproject_to_4326(depth_file, reprojected)
-            load_raster(conn, run_ts, valid_time, reprojected)
+            with conn, conn.cursor() as cur:
+                write_tiles(cur, run_ts, valid_time, reprojected)
+                if depth_file == depth_files[-1]:
+                    prune_raster_runs(cur, keep_runs, always_keep=demo_pin.kept_runs(cur, run_ts))
+                    run_output.record(cur, run_ts, run_output.Output.DEPTH_RASTER)
             loaded.append(valid_time)
         finally:
             reprojected.unlink(missing_ok=True)
-    prune_raster_runs(conn, keep_runs, always_keep=run_ts)
     return loaded

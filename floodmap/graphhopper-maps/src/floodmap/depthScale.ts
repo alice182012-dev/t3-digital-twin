@@ -37,10 +37,51 @@ export const DISPLAY_DEPTH_BANDS: readonly DepthBand[] = [
     { id: 'd7', minCm: 60, maxCm: null, label: '> 60 cm', color: '#08306b' },
 ]
 
+/** Rank of each band, so two depths compare by band. */
+export const DEPTH_BAND_INDEX: Readonly<Record<DepthBandId, number>> = {
+    d1: 0,
+    d2: 1,
+    d3: 2,
+    d4: 3,
+    d5: 4,
+    d6: 5,
+    d7: 6,
+}
+
 /** Maps a `DN` code from scripts/flood_extent/flood_extent.py's `BAND_TABLE` to its display
  *  band. Codes 10 to 60 are the band's upper limit in cm, and `TOP_CODE` (600) is the open-ended
  *  band. Returns undefined for 0 (dry) and for any code the notebook doesn't emit. */
 export function bandForExtentCode(code: number): DepthBand | undefined {
     if (code === 600) return DISPLAY_DEPTH_BANDS.find(band => band.maxCm === null)
     return DISPLAY_DEPTH_BANDS.find(band => band.maxCm === code)
+}
+
+/** The display band of a depth in centimetres. Undefined under 5 cm, which the map does not paint. */
+export function bandForDepthCm(depthCm: number): DepthBand | undefined {
+    return DISPLAY_DEPTH_BANDS.find(band => depthCm >= band.minCm && (band.maxCm === null || depthCm < band.maxCm))
+}
+
+/** One tick of the legend's vertical scale: the label and its offset from the top of the bar. */
+export interface LegendTick {
+    readonly label: string
+    readonly topPx: number
+}
+
+/** Distance between two ticks in the legend, as in the mockup (168 px for 7 bands). */
+export const LEGEND_TICK_STEP_PX = 24
+
+/** The ticks of the legend, top to bottom: the lower limit of every band, then the open-ended
+ *  band's own label. Each band is one step tall, so a band's colour is centred between its
+ *  two ticks. */
+export function legendTicks(bands: readonly DepthBand[] = DISPLAY_DEPTH_BANDS): LegendTick[] {
+    const lowerLimits = bands.map(band => `${band.minCm} cm`)
+    const top = bands[bands.length - 1].label
+    return [...lowerLimits, top].map((label, i) => ({ label, topPx: i * LEGEND_TICK_STEP_PX }))
+}
+
+/** The CSS gradient of the legend bar, top to bottom. Each band's colour sits at the middle of
+ *  its step, so the colour of a depth reads against the tick on either side of it. */
+export function legendGradient(bands: readonly DepthBand[] = DISPLAY_DEPTH_BANDS): string {
+    const stops = bands.map((band, i) => `${band.color} ${Math.round(((i + 0.5) / bands.length) * 100)}%`)
+    return `linear-gradient(to bottom, ${stops.join(', ')})`
 }

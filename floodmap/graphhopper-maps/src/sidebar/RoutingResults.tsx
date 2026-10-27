@@ -1,5 +1,6 @@
 import { Instruction, Path, RoutingResultInfo } from '@/api/graphhopper'
-import { RouteTab, RoutingResultsViewInput, selectRoutingResultsView } from '@/sidebar/routingResultsView'
+import { RoutingResultsViewInput, selectRoutingResultsView } from '@/sidebar/routingResultsView'
+import RouteTabs from '@/sidebar/RouteTabs'
 import styles from './RoutingResult.module.css'
 import statsStyles from './RouteStats.module.css'
 import { ReactNode, useContext, useEffect, useState } from 'react'
@@ -11,10 +12,8 @@ import Details from '@/sidebar/list.svg'
 import GPXDownload from '@/sidebar/file_download.svg'
 import Instructions from '@/sidebar/instructions/Instructions'
 import RouteStats from '@/sidebar/RouteStats'
-import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
 import { LineString, Position } from 'geojson'
 import { calcDist, Coordinate, getBBoxFromCoord } from '@/utils'
-import { useMediaQuery } from 'react-responsive'
 import { tr } from '@/translation/Translation'
 import { ApiImpl } from '@/api/Api'
 import FordIcon from '@/sidebar/routeHints/water.svg'
@@ -33,19 +32,34 @@ import { Bbox } from '@/api/graphhopper'
 import { SettingsContext } from '@/contexts/SettingsContext'
 import { Settings } from '@/stores/SettingsStore'
 import DepthForecastChart from '@/floodmap/DepthForecastChart'
-
-let persistedElevationMounted = false
+import { FloodTimestep } from '@/floodmap/FloodStore'
+import { useMaxDepthsCm } from '@/floodmap/useDepthProfile'
+import NoSafeRouteMessage from '@/sidebar/NoSafeRouteMessage'
+import { noConnectionTarget } from '@/floodmap/departureAdvice'
 
 export interface RoutingResultsProps extends RoutingResultsViewInput {
     info: RoutingResultInfo
     profile: string
     /** Flood mode is on. Gates the static reroute-context line. */
     floodActive?: boolean
+    /** The selected flood timestep. The step list shows depths from it when `floodActive`. */
+    timestep?: FloodTimestep
+    /**
+     * The desktop panel frame of mockup screen 2e: the steps are always listed under a "Steps" title,
+     * and the summary row with its GPX and Details buttons is left out.
+     */
+    framed?: boolean
 }
 
 export default function RoutingResults(props: RoutingResultsProps) {
+    const settings = useContext(SettingsContext)
     const [isExpanded, setExpanded] = useState(false)
-    const view = selectRoutingResultsView(props)
+    const maxDepthsCm = useMaxDepthsCm(
+        props.paths.map(path => path.points.coordinates),
+        props.floodActive ? props.timestep : undefined,
+    )
+    const view = selectRoutingResultsView({ ...props, maxDepthsCm })
+    const limitCm = props.hints?.['td.limit_cm']
     switch (view.kind) {
         case 'idle':
             return null
@@ -56,92 +70,83 @@ export default function RoutingResults(props: RoutingResultsProps) {
                 </ul>
             )
         case 'empty':
-            return <NoSafeRouteMessage />
+            return <NoSafeRouteMessage target={noConnectionTarget(props.currentRequest.subRequests)} />
+        case 'timedOut':
+            return <div className={styles.noSafeRoute}>The route request took too long. Please try again.</div>
         case 'routes': {
             const active = view.tabs[view.activeIndex]
+            const showDistanceInMiles = settings.showDistanceInMiles
             return (
-                <>
+                <div className={props.framed ? styles.framedResults : undefined}>
                     <RouteTabs
                         tabs={view.tabs}
                         activeIndex={view.activeIndex}
                         onSelect={index => Dispatcher.dispatch(new SetSelectedPath(view.tabs[index].path))}
                     />
-                    {props.floodActive && <p className={styles.rerouteNote}>Route avoids flooded areas</p>}
-                    {props.floodActive && <DepthForecastChart coordinates={active.path.points.coordinates} />}
-                    <ul>
+                    {active.note && <p className={styles.throughWaterNote}>{active.note}</p>}
+                    {props.floodActive && active.kind !== 'through_water' && (
+                        <p className={styles.rerouteNote}>Route avoids flooded areas</p>
+                    )}
+                    {props.floodActive && (
+                        <DepthForecastChart
+                            coordinates={active.path.points.coordinates}
+                            limitCm={limitCm}
+                            summary={
+                                props.framed
+                                    ? `${metersToText(active.path.distance, showDistanceInMiles)} · ${milliSecondsToText(active.path.time)}`
+                                    : undefined
+                            }
+                        />
+                    )}
+                    {props.framed ? (
                         <RoutingResult
+                            framed
                             path={active.path}
-                            allPaths={props.paths}
                             isSelected={true}
                             profile={props.profile}
                             info={props.info}
                             isExpanded={isExpanded}
                             setExpanded={setExpanded}
+                            timestep={props.floodActive ? props.timestep : undefined}
                         />
-                    </ul>
-                </>
+                    ) : (
+                        <ul>
+                            <RoutingResult
+                                path={active.path}
+                                isSelected={true}
+                                profile={props.profile}
+                                info={props.info}
+                                isExpanded={isExpanded}
+                                setExpanded={setExpanded}
+                                timestep={props.floodActive ? props.timestep : undefined}
+                            />
+                        </ul>
+                    )}
+                </div>
             )
         }
     }
 }
 
-/** Tab strip over the returned alternatives. Presentational; index-keyed. */
-function RouteTabs({
-    tabs,
-    activeIndex,
-    onSelect,
-}: {
-    tabs: readonly RouteTab[]
-    activeIndex: number
-    onSelect: (index: number) => void
-}) {
-    return (
-        <div className={styles.routeTabs} role="tablist">
-            {tabs.map(tab => (
-                <PlainButton
-                    key={tab.index}
-                    role="tab"
-                    aria-selected={tab.index === activeIndex}
-                    className={tab.index === activeIndex ? styles.routeTabActive : styles.routeTab}
-                    onClick={() => onSelect(tab.index)}
-                >
-                    {tab.label}
-                </PlainButton>
-            ))}
-        </div>
-    )
-}
-
-/** Terminal state, deliberately not an ErrorMessage: nothing failed, there is just no safe way. */
-function NoSafeRouteMessage() {
-    return (
-        <div className={styles.noSafeRoute}>
-            No safe route available. Please consider getting to the safest location or stay where you are.
-        </div>
-    )
-}
-
 function RoutingResult({
     info,
     path,
-    allPaths,
     isSelected,
     profile,
     isExpanded,
     setExpanded,
+    timestep,
+    framed = false,
 }: {
+    framed?: boolean
     info: RoutingResultInfo
     path: Path
-    allPaths: Path[]
     isSelected: boolean
     profile: string
     isExpanded: boolean
     setExpanded: (v: boolean) => void
+    timestep?: FloodTimestep
 }) {
-    const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
-    const [elevationMounted, setElevationMounted] = useState(persistedElevationMounted)
-    if (isExpanded && !elevationMounted) setElevationMounted(true)
-    if (elevationMounted && !persistedElevationMounted) persistedElevationMounted = true
     const [showInstructions, setShowInstructions] = useState(false)
     const [selectedRH, setSelectedRH] = useState('')
     const [descriptionRH, setDescriptionRH] = useState('')
@@ -233,54 +238,59 @@ function RoutingResult({
         steepInfo.distance > 0
 
     return (
-        <div className={styles.resultRow}>
-            <div className={styles.resultSelectableArea} onClick={() => Dispatcher.dispatch(new SetSelectedPath(path))}>
-                <div className={resultSummaryClass}>
-                    <div className={styles.resultValues}>
-                        <span className={styles.resultMainText}>{milliSecondsToText(path.time)}</span>
-                        <span className={styles.resultSecondaryText}>
-                            {metersToText(path.distance, showDistanceInMiles)}
-                        </span>
-                        {isSelected && !ApiImpl.isMotorVehicle(profile) && (
-                            <div className={styles.elevationHint}>
-                                <span title={tr('total_ascend', [Math.round(path.ascend) + 'm'])}>
-                                    {'\u2197\uFE0E'}
-                                    {metersToShortText(path.ascend, showDistanceInMiles)}{' '}
-                                </span>
-                                <span title={tr('total_descend', [Math.round(path.descend) + 'm'])}>
-                                    {'\u2198\uFE0E'}
-                                    {metersToShortText(path.descend, showDistanceInMiles)}
-                                </span>
-                            </div>
-                        )}
-                        {path.description && (
-                            <span className={styles.resultTertiaryText}>
-                                {tr('Via')} {path.description}
+        <div className={framed ? styles.stepsPane : styles.resultRow}>
+            {!framed && (
+                <div
+                    className={styles.resultSelectableArea}
+                    onClick={() => Dispatcher.dispatch(new SetSelectedPath(path))}
+                >
+                    <div className={resultSummaryClass}>
+                        <div className={styles.resultValues}>
+                            <span className={styles.resultMainText}>{milliSecondsToText(path.time)}</span>
+                            <span className={styles.resultSecondaryText}>
+                                {metersToText(path.distance, showDistanceInMiles)}
                             </span>
+                            {isSelected && !ApiImpl.isMotorVehicle(profile) && (
+                                <div className={styles.elevationHint}>
+                                    <span title={tr('total_ascend', [Math.round(path.ascend) + 'm'])}>
+                                        {'\u2197\uFE0E'}
+                                        {metersToShortText(path.ascend, showDistanceInMiles)}{' '}
+                                    </span>
+                                    <span title={tr('total_descend', [Math.round(path.descend) + 'm'])}>
+                                        {'\u2198\uFE0E'}
+                                        {metersToShortText(path.descend, showDistanceInMiles)}
+                                    </span>
+                                </div>
+                            )}
+                            {path.description && (
+                                <span className={styles.resultTertiaryText}>
+                                    {tr('Via')} {path.description}
+                                </span>
+                            )}
+                        </div>
+                        {isSelected && (
+                            <PlainButton className={styles.exportButton} onClick={() => downloadGPX(path, settings)}>
+                                <GPXDownload />
+                                <div>{tr('gpx_button')}</div>
+                            </PlainButton>
+                        )}
+                        {isSelected && (
+                            <PlainButton
+                                className={isExpanded ? styles.detailsButtonExpanded : styles.detailsButton}
+                                onTouchEnd={e => {
+                                    // reduce chance for synthetic mouse events that cause ghost clicks (#447)
+                                    e.preventDefault()
+                                    setExpanded(!isExpanded)
+                                }}
+                                onClick={() => setExpanded(!isExpanded)}
+                            >
+                                <Details />
+                                <div>{isExpanded ? tr('hide_button') : tr('details_button')}</div>
+                            </PlainButton>
                         )}
                     </div>
-                    {isSelected && (
-                        <PlainButton className={styles.exportButton} onClick={() => downloadGPX(path, settings)}>
-                            <GPXDownload />
-                            <div>{tr('gpx_button')}</div>
-                        </PlainButton>
-                    )}
-                    {isSelected && (
-                        <PlainButton
-                            className={isExpanded ? styles.detailsButtonExpanded : styles.detailsButton}
-                            onTouchEnd={e => {
-                                // reduce chance for synthetic mouse events that cause ghost clicks (#447)
-                                e.preventDefault()
-                                setExpanded(!isExpanded)
-                            }}
-                            onClick={() => setExpanded(!isExpanded)}
-                        >
-                            <Details />
-                            <div>{isExpanded ? tr('hide_button') : tr('details_button')}</div>
-                        </PlainButton>
-                    )}
                 </div>
-            </div>
+            )}
             {isSelected && showHints && (
                 <div className={styles.routeHints}>
                     <div className={styles.icons}>
@@ -511,29 +521,28 @@ function RoutingResult({
                     {descriptionRH && <div>{descriptionRH}</div>}
                 </div>
             )}
-            {isSmallScreen && elevationMounted && (
-                <div style={{ display: isExpanded ? undefined : 'none' }}>
-                    <hr className={styles.elevationSeparator} />
-                    <ElevationInfoBar
-                        selectedPath={path}
-                        alternativePaths={allPaths}
-                        profile={profile}
-                        isExpanded={false}
-                        onToggleExpanded={() => {}}
+            {framed && (
+                <>
+                    <h2 className={styles.stepsTitle}>Steps</h2>
+                    <Instructions
+                        instructions={path.instructions}
+                        us={showDistanceInMiles}
+                        timestep={timestep}
+                        framed
                     />
-                </div>
+                </>
             )}
-            {isExpanded && <RouteStats path={path} profile={profile} />}
-            {isExpanded && (
+            {!framed && isExpanded && <RouteStats path={path} profile={profile} />}
+            {!framed && isExpanded && (
                 <div className={styles.instructionsToggle} onClick={() => setShowInstructions(!showInstructions)}>
                     <span className={statsStyles.label}>{tr('route_stats_turn_instructions')}: </span>
                     {path.instructions.length}
                     <span className={statsStyles.statArrow}>{showInstructions ? '▴' : '▾'}</span>
                 </div>
             )}
-            {isExpanded && showInstructions && (
+            {!framed && isExpanded && showInstructions && (
                 <>
-                    <Instructions instructions={path.instructions} us={showDistanceInMiles} />
+                    <Instructions instructions={path.instructions} us={showDistanceInMiles} timestep={timestep} />
                     <div className={styles.routingResultRoadData}>
                         {tr('road_data_from')}: {info.road_data_timestamp}
                     </div>

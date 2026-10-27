@@ -1,0 +1,56 @@
+name: flood-areas-test
+
+on:
+  push:
+    paths:
+      - "floodmap/graphhopper-flood-road/backend/flood_areas.py"
+      - "floodmap/graphhopper-flood-road/backend/test_flood_areas.py"
+      - "floodmap/graphhopper-flood-road/scripts/flood_utils.py"
+      - "scripts/database/create_edge_depth_tables.py"
+      - "scripts/database/create_graph_edge_table.py"
+      - "scripts/database/db_config.py"
+      - ".github/workflows/flood-areas-test.yml"
+  pull_request:
+    paths:
+      - "floodmap/graphhopper-flood-road/backend/flood_areas.py"
+      - "floodmap/graphhopper-flood-road/backend/test_flood_areas.py"
+      - "floodmap/graphhopper-flood-road/scripts/flood_utils.py"
+      - "scripts/database/create_edge_depth_tables.py"
+      - "scripts/database/create_graph_edge_table.py"
+      - "scripts/database/db_config.py"
+      - ".github/workflows/flood-areas-test.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:15-3.4
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: floodtest
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install psycopg2-binary
+
+      # The test exits 0 when FLOOD_TEST_DSN is unset, so a skip would pass; fail on its message.
+      - name: Run the test
+        env:
+          FLOOD_TEST_DSN: postgresql://postgres:test@127.0.0.1:5432/floodtest
+        run: |
+          python3 floodmap/graphhopper-flood-road/backend/test_flood_areas.py 2>&1 | tee "$RUNNER_TEMP/out.txt"
+          if grep -q "skipping" "$RUNNER_TEMP/out.txt"; then echo "test skipped" >&2; exit 1; fi
+          grep -qx "ok" "$RUNNER_TEMP/out.txt"

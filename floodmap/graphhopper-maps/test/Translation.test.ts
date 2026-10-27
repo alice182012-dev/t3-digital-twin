@@ -38,3 +38,18 @@ describe('translate', () => {
         expect(trFI.get('car')).toEqual('Auto')
     })
 })
+
+describe('empty routing panel placeholders', () => {
+    it('reads the mockup text in English', () => {
+        const tr = setTranslation('en_US', true)
+        expect(tr.get('from_hint')).toEqual('Choose starting point, or click on the map')
+        expect(tr.get('to_hint')).toEqual('Choose destination')
+        expect(tr.get('via_hint')).toEqual('Via')
+    })
+
+    it('keeps other languages unchanged', () => {
+        const tr = setTranslation('de', true)
+        expect(tr.get('from_hint')).toEqual('Von')
+        expect(tr.get('to_hint')).toEqual('Nach')
+    })
+})

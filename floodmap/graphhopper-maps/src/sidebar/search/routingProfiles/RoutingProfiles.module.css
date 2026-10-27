@@ -4,6 +4,52 @@
     padding: 0.7em 0 0.1em 0;
 }
 
+.profilesParentFramed {
+    flex: 1;
+    min-width: 0;
+    padding: 16px 0 0 0;
+}
+
+.profilesParentFramed .carousel {
+    margin-left: 0;
+    padding: 0 0 0 40px;
+    gap: 0;
+}
+
+.profilesParentFramed .profiles {
+    gap: 14px;
+    justify-content: flex-start;
+}
+
+.profilesParentFramed .profileItem {
+    width: 76px;
+    min-width: 76px;
+    gap: 4px;
+}
+
+.profilesParentFramed .profileBtn {
+    width: 76px;
+    height: 44px;
+    padding: 0;
+    border-radius: 22px;
+    color: #111;
+}
+
+.profilesParentFramed .selectedProfile,
+.profilesParentFramed .selectedProfile:hover {
+    background-color: #111;
+    color: #fff;
+}
+
+.profilesParentFramed .profileBtn svg {
+    width: 30px;
+    height: 30px;
+}
+
+.profilesParentFramed .selectedTime {
+    color: #111;
+}
+
 .carousel {
     width: 100%;
     display: flex;

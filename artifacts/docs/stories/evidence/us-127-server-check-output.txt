@@ -1,0 +1,23 @@
+US-127 server check, 2026-10-12, worker airflow_new-airflow-worker-1, script scripts/testdata/build_history_and_metrics.py
+Databases: minio_custom_test (restored by US-125) and flood_metrics_test.
+
+First run, 10:21:20 to 10:23:32 UTC (2 min 12 s), 58 runs oldest first, each line like
+  [58/58] Run 20261010T183000: 8 moments written, 0 skipped for a later run, 25640 rows. 12820 metric rows.
+  depth_history: 219174 rows, history_moment: 65 moments
+  flood_segment_metrics: 786956 rows over 58 runs
+  compression of depth_history: 47333376 bytes before, 3932160 bytes after, ratio 12.0
+
+Second run, 10:23:56 to 10:25:42 UTC (1 min 46 s), the chunk decompressed first:
+  depth_history: 219174 rows, history_moment: 65 moments
+  flood_segment_metrics: 786956 rows over 58 runs
+  compression of depth_history: 38027264 bytes before, 3932160 bytes after, ratio 9.7
+
+The counts are the same in both runs. The bytes before compression differ: the first run measured the chunk after 58
+cycles of delete and insert, which left dead space. After the decompress the chunk is 36 MB (23 MB table, 13 MB indexes),
+so 9.7 is the clean ratio. The compressed size is the same, 3,932,160 bytes (3840 kB).
+
+chunk_compression_stats('depth_history'): one chunk, _hyper_3_1_chunk, 36 MB before and 3840 kB after.
+
+Production after both runs (separate databases): flood_metrics.depth_history 19792 rows, minio_custom.flood_segment_metrics 23324 rows.
+The production read of load_run.read_run for run 20261011T001500 after the change: 8 moments, 19792 rows, as before.
+docker system df, Local Volumes: 12.46 GB (11.64 GB after the US-125 restore).

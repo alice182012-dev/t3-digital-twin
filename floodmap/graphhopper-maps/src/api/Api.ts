@@ -53,6 +53,12 @@ export function getApi() {
  * Exporting this so that it can be tested directly. Don't know how to properly set this up in typescript, so that the
  * class could be tested but is not available for usage in the app. In Java one would make this package private I guess.
  */
+/**
+ * US-035 measured the slowest route answer at 1.54 s, and BL-018 saw one wait of 9 to 20 s on a slow
+ * connection. 30 s is above both, so a request that is merely slow still answers.
+ */
+export const ROUTE_TIMEOUT_MS = 30_000
+
 export class ApiImpl implements Api {
     private readonly apiKey: string
     private readonly routingApi: string
@@ -192,12 +198,26 @@ export class ApiImpl implements Api {
     }
 
     async route(args: RoutingArgs): Promise<RoutingResult> {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS)
+        try {
+            return await this.routeUnlimited(args, controller.signal)
+        } catch (error) {
+            if (controller.signal.aborted) throw Object.assign(new Error('Route request timed out'), { timedOut: true })
+            throw error
+        } finally {
+            clearTimeout(timer)
+        }
+    }
+
+    private async routeUnlimited(args: RoutingArgs, signal: AbortSignal): Promise<RoutingResult> {
         const completeRequest = ApiImpl.createRequest(args)
 
         const response = await fetch(this.getRoutingURLWithKey('route').toString(), {
             method: 'POST',
             mode: 'cors',
             body: JSON.stringify(completeRequest),
+            signal,
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
@@ -229,7 +249,11 @@ export class ApiImpl implements Api {
                 })
                 if (messagesFromHints) message += (message ? ' and ' : '') + messagesFromHints
             }
-            throw new Error(message)
+            // Read the exception type, not the English text, so another locale still matches.
+            const noConnection = (errorResult.hints ?? []).some(hint =>
+                String(hint?.details).endsWith('ConnectionNotFoundException'),
+            )
+            throw Object.assign(new Error(message), { noConnection })
         } else {
             throw new Error(tr('route_request_failed'))
         }
@@ -251,7 +275,14 @@ export class ApiImpl implements Api {
                 if (routeNumber > this.lastRouteNumber) {
                     console.warn('error when performing /route request ' + routeNumber + ': ', error)
                     this.lastRouteNumber = routeNumber
-                    Dispatcher.dispatch(new RouteRequestFailed(args, error.message))
+                    Dispatcher.dispatch(
+                        new RouteRequestFailed(
+                            args,
+                            error.message,
+                            error.noConnection === true,
+                            error.timedOut === true,
+                        ),
+                    )
                 } else {
                     const tmp = JSON.stringify(args) + ' ' + routeNumber + ' <= ' + this.lastRouteNumber
                     console.log('Ignore error ' + error.message + ' of earlier started route ' + tmp)

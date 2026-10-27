@@ -34,12 +34,19 @@ x-airflow-common: &airflow-common
     KEEP_LOCAL_GEOJSON: ${KEEP_LOCAL_GEOJSON:-false}
     FLOOD_EXTENT_WORKERS: ${FLOOD_EXTENT_WORKERS:-2}
     FLOOD_EXTENT_KEEP_RUNS: ${FLOOD_EXTENT_KEEP_RUNS:-8}
+    ARCHIVE_MIN_FREE_GB: ${ARCHIVE_MIN_FREE_GB:-50}
+    EDGE_TABLE_KEEP_RUNS: ${EDGE_TABLE_KEEP_RUNS:-8}
+    EDGE_DEPTH_KEEP_HOURS: ${EDGE_DEPTH_KEEP_HOURS:-24}
     FLOOD_EXTENT_TILE_STEPS: ${FLOOD_EXTENT_TILE_STEPS:-2}
+    FLOOD_COLD_START_AFTER_BREAK: ${FLOOD_COLD_START_AFTER_BREAK:-1}
     FLOOD_EXTENT_BUCKET: ${FLOOD_EXTENT_BUCKET:-flood-extent}
     SIMULATION_DURATION: ${SIMULATION_DURATION:-7200}
     UPDATE_INTERVAL: ${UPDATE_INTERVAL:-900}
     FLOOD_TEST_RAIN_MM_HR: ${FLOOD_TEST_RAIN_MM_HR:-}
+    FLOOD_TEST_RAIN_CSV: ${FLOOD_TEST_RAIN_CSV:-}
+    FLOOD_TEST_RAIN_START: ${FLOOD_TEST_RAIN_START:-}
     FLOOD_RAIN_THRESHOLD_MM_HR: ${FLOOD_RAIN_THRESHOLD_MM_HR:-5}
+    FLOOD_STALE_RUN_MINUTES: ${FLOOD_STALE_RUN_MINUTES:-120}
     FLOOD_RAIN_LOOKAHEAD_HOURS: ${FLOOD_RAIN_LOOKAHEAD_HOURS:-2}
     FLOOD_RAIN_TIMESTEP_MINUTES: ${FLOOD_RAIN_TIMESTEP_MINUTES:-15}
     TOMORROW_API_KEY: ${TOMORROW_API_KEY:?Set TOMORROW_API_KEY in .env}
@@ -54,11 +61,22 @@ x-airflow-common: &airflow-common
     - ./config:/opt/airflow/config
     - ./plugins:/opt/airflow/plugins
     - ./scripts:/opt/airflow/scripts
-    - ./data:/opt/airflow/data
+    - ${DATA_HOST_PATH:-./data}:/opt/airflow/data
+    # US-094: results_3di.nc and a run record of every real-rain run. On the server this is D:\airflow_new_data\archive.
+    - ${ARCHIVE_HOST_PATH:-./archive}:/opt/airflow/archive
+    # The edge depth tables (US-041, US-042). The worker writes, and the routing readers mount this volume read-only.
+    # A named volume, not a folder under DATA_HOST_PATH: replacing the `latest` pointer is a rename, and the rename
+    # semantics of the Docker VM's own disk are the ones the readers can count on. See
+    # artifacts/docs/claude-plan/edge-depth-table-publish.md, decision 1.
+    - edge-depth-tables:/opt/airflow/edge_depth_tables
     # scripts/flood_metrics/extract_run.py imports flood_utils.py for per-vehicle impassable
     # depths (FLOOD_UTILS_DIR). Mount only this folder, read-only, not all of ./floodmap: it has
     # no import dependency on the rest of that tree (checked: stdlib only).
     - ./floodmap/graphhopper-flood-road/scripts:/opt/airflow/floodmap/graphhopper-flood-road/scripts:ro
+    # scripts/database/create_routing_reader_role.py imports the parser core_contract.py (stdlib only) and reads the
+    # contract page, both found from its REPO folder, which is /opt/airflow here. Mount just those two files.
+    - ./floodmap/graphhopper-flood-road/backend/core_contract.py:/opt/airflow/floodmap/graphhopper-flood-road/backend/core_contract.py:ro
+    - ./artifacts/docs/concepts/core-output-contract.md:/opt/airflow/artifacts/docs/concepts/core-output-contract.md:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     airflow-redis:
@@ -87,8 +105,14 @@ services:
     restart: unless-stopped
 
   minio-init:
-    # See the minio service's image comment: pulled from quay.io for the same reason.
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    # Both quay.io/minio/mc and docker.io/minio/mc now deny anonymous pulls (checked
+    # 2026-10-02: quay.io's anonymous token grants no pull action, Docker Hub says the repo
+    # "does not exist"), and dl.min.io returns 410 Gone for the mc binary: MinIO archived the
+    # open-source mc/server/KES projects and stopped serving them from every official
+    # channel. The GitHub release for this same version still hosts the binary as an asset
+    # (GitHub doesn't retroactively delete release assets), so we fetch from there instead
+    # and verify against MinIO's own published sha256sum for that asset.
+    image: alpine:latest
     depends_on:
       minio:
         condition: service_started
@@ -102,6 +126,9 @@ services:
       - /bin/sh
       - -c
       - |
+        wget -qO /usr/local/bin/mc https://github.com/minio/mc/releases/download/RELEASE.2025-08-13T08-35-41Z/mc.linux-amd64.RELEASE.2025-08-13T08-35-41Z
+        echo "01f866e9c5f9b87c2b09116fa5d7c06695b106242d829a8bb32990c00312e891  /usr/local/bin/mc" | sha256sum -c -
+        chmod +x /usr/local/bin/mc
         until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
           echo "Waiting for MinIO..."
           sleep 2
@@ -312,8 +339,8 @@ services:
         fi
         mkdir -v -p /opt/airflow/{logs,dags,scripts,plugins,config}
         /entrypoint airflow version
-        mkdir -v -p /opt/airflow/{data,state}
-        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,scripts,plugins,config,data,state}
+        mkdir -v -p /opt/airflow/{data,state,edge_depth_tables}
+        chown -v -R "${AIRFLOW_UID}:0" /opt/airflow/{logs,dags,scripts,plugins,config,data,state,edge_depth_tables}
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
@@ -341,14 +368,23 @@ services:
     restart: "no"
 
   graphhopper:
-    # Pinned by digest, not :latest — this is a 12.0-SNAPSHOT build and the
-    # `ch.disable`-in-body behaviour Workstream B depends on is undocumented
-    # and could silently change. Re-pull the digest deliberately if upstream
-    # publishes a fix, and re-run the ch.disable smoke test before trusting it.
-    image: israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32
+    # The time-aware image (java/time-aware-routing, US-049 and US-052): the stock image below, pinned by digest in that
+    # folder's Dockerfile (ARG STOCK_IMAGE, keep the digest the same), with the module's jar first on the classpath. This
+    # is a 12.0-SNAPSHOT build and the `ch.disable`-in-body behaviour Workstream B depends on is undocumented and
+    # could silently change. Re-pull the digest deliberately if upstream publishes a fix, and re-run the ch.disable
+    # smoke test before trusting it. Build it on the host that runs it: `docker compose build graphhopper` from the
+    # repo folder on the server (bind mounts and build contexts resolve on the client).
+    # Roll back to the stock image by replacing `build` and `image` with
+    #   image: israelhikingmap/graphhopper@sha256:3e79eb33862028cfc58f9d6c162630b68638d6aad790b5a698c854dbbaa7fe32
+    # and restoring the entrypoint line below, and set TIME_AWARE_ROUTING=false.
+    build:
+      context: ./java/time-aware-routing
+    image: graphhopper-time-aware:local
     volumes:
       - ../grasshopper-routing/osm/hanoi-model-area.osm.pbf:/data/hanoi-model-area.osm.pbf:ro
       - graphhopper-graph-cache:/data/graph-cache
+      # The edge depth tables, read-only. The engine follows `latest` here (time_aware.table_dir in config.yml).
+      - edge-depth-tables:/tables:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/config.yml:/graphhopper/config.yml:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/motorbike.json:/graphhopper/motorbike.json:ro
       - ./floodmap/graphhopper-flood-road/graphhopper/car_custom.json:/graphhopper/car_custom.json:ro
@@ -361,7 +397,8 @@ services:
     # whatever graph is baked into the image instead of importing the mounted
     # OSM extract into the graphhopper-graph-cache volume. See
     # artifacts/docs/blockers/graphhopper-vehicle-profile-rejection.md.
-    entrypoint: ["./graphhopper.sh", "-c", "config.yml", "-o", "/data/graph-cache"]
+    # The image's entrypoint (run-time-aware.sh) takes the same -c and -o options as graphhopper.sh.
+    command: ["-c", "config.yml", "-o", "/data/graph-cache"]
     ports:
       - "${GRAPHHOPPER_PORT:-8989}:8989"
     healthcheck:
@@ -383,16 +420,56 @@ services:
       POSTGRES_HOST: storage-postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
-      POSTGRES_USER: ${POSTGRES_USER:-minio_custom}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      # US-072. The backend connects as the read-only role that scripts/database/create_routing_reader_role.py makes,
+      # never as the writer. Compose refuses to start without the reader's password instead of falling back.
+      POSTGRES_USER: ${ROUTING_READER_USER:-routing_reader}
+      POSTGRES_PASSWORD: ${ROUTING_READER_PASSWORD:?Set ROUTING_READER_PASSWORD in .env}
       PHOTON_BASE_URL: ${PHOTON_BASE_URL:-https://photon.komoot.io}
+      # US-052. On: POST /route goes to the time-aware engine first and falls back to today's request when the engine
+      # cannot run (missing, stale, or mismatched table), and the response says so. Off: today's behavior exactly.
+      TIME_AWARE_ROUTING: ${TIME_AWARE_ROUTING:-false}
+      # US-053. POST /route/departures reads the newest depth table from this folder, the volume below, read-only.
+      EDGE_TABLE_DIR: /tables
     depends_on:
       graphhopper:
         condition: service_healthy
       storage-postgres:
         condition: service_healthy
+    volumes:
+      - edge-depth-tables:/tables:ro
     ports:
       - "${FLOODMAP_BACKEND_PORT:-8010}:8010"
+    restart: unless-stopped
+
+  analysis:
+    # US-109. Its own image and requirements file. No env_file and no x-airflow-common: the environment holds only
+    # the service's own credentials, so the 3Di, Tomorrow.io, and MinIO keys never reach it.
+    # test/test_analysis_service_compose.py checks the variable list.
+    build:
+      context: ./analysis-service
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8020
+      POSTGRES_HOST: storage-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-minio_custom}
+      # Reads flood results (US-107). scripts/database/create_routing_reader_role.py analysis_reader makes the role.
+      ANALYSIS_READER_USER: ${ANALYSIS_READER_USER:-analysis_reader}
+      ANALYSIS_READER_PASSWORD: ${ANALYSIS_READER_PASSWORD:?Set ANALYSIS_READER_PASSWORD in .env}
+      # Owns schema analysis, the only place the service writes. scripts/database/create_analysis_schema.py.
+      ANALYSIS_OWNER_USER: ${ANALYSIS_OWNER_USER:-analysis_owner}
+      ANALYSIS_OWNER_PASSWORD: ${ANALYSIS_OWNER_PASSWORD:?Set ANALYSIS_OWNER_PASSWORD in .env}
+      TIMESCALE_HOST: timescaledb
+      TIMESCALE_PORT: 5432
+      TIMESCALE_DB: ${TIMESCALE_DB:-flood_metrics}
+      # Reads depth_history and history_moment. scripts/database/create_timescale_reader_role.py.
+      ANALYSIS_TIMESCALE_READER_USER: ${ANALYSIS_TIMESCALE_READER_USER:-analysis_timescale_reader}
+      ANALYSIS_TIMESCALE_READER_PASSWORD: ${ANALYSIS_TIMESCALE_READER_PASSWORD:?Set ANALYSIS_TIMESCALE_READER_PASSWORD in .env}
+    depends_on:
+      storage-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${ANALYSIS_PORT:-8020}:8020"
     restart: unless-stopped
 
   # floodmap-frontend (Valhalla-era static test UI, floodmap/valhalla-flood-road-test/frontend)
@@ -418,8 +495,16 @@ services:
 
 volumes:
   graphhopper-graph-cache:
+  edge-depth-tables:
   airflow-postgres-data:
+  # Backed by a host path instead of Docker's default storage location so task logs land on
+  # AIRFLOW_LOGS_HOST_PATH (see .env.example) instead of the SSD-backed Docker data disk.
   airflow-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${AIRFLOW_LOGS_HOST_PATH:-./.docker-volumes/airflow-logs}
   minio-data:
   storage-postgres-data:
   timescaledb-data:

@@ -1,5 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react'
-import ElevationInfoBar from '@/pathDetails/ElevationInfoBar'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import styles from './App.module.css'
 import {
     getApiInfoStore,
@@ -14,12 +13,10 @@ import {
     getCurrentLocationStore,
 } from '@/stores/Stores'
 import MapComponent from '@/map/MapComponent'
-import mapStyles from '@/map/Map.module.css'
 import MapOptions from '@/map/MapOptions'
 import MobileSidebar from '@/sidebar/MobileSidebar'
 import { useMediaQuery } from 'react-responsive'
 import RoutingResults from '@/sidebar/RoutingResults'
-import PoweredBy from '@/sidebar/PoweredBy'
 import { milliSecondsToText, metersToText } from '@/Converters'
 import { Path } from '@/api/graphhopper'
 import { QueryStoreState, RequestState } from '@/stores/QueryStore'
@@ -42,7 +39,6 @@ import useUrbanDensityLayer from '@/layers/UseUrbanDensityLayer'
 import useMapBorderLayer from '@/layers/UseMapBorderLayer'
 import RoutingProfiles from '@/sidebar/search/routingProfiles/RoutingProfiles'
 import MapPopups from '@/map/MapPopups'
-import Cross from '@/sidebar/times-solid.svg'
 import PlainButton from '@/PlainButton'
 import useAreasLayer from '@/layers/UseAreasLayer'
 import useExternalMVTLayer from '@/layers/UseExternalMVTLayer'
@@ -56,8 +52,15 @@ import { useFloodBootstrap, useFloodState } from '@/floodmap/useFloodState'
 import { FloodStoreState, SetMapMode } from '@/floodmap/FloodStore'
 import MapModeToggle from '@/floodmap/MapModeToggle'
 import FloodLegend from '@/floodmap/FloodLegend'
+import FloodBanner from '@/floodmap/FloodBanner'
+import { floodView } from '@/floodmap/floodMode'
+import RouteDepthBadges from '@/floodmap/RouteDepthBadges'
+import { namedDestination, namedStart, pointsForRoute, startForTap } from '@/floodmap/routeToPlace'
+import PlaceDepthPopup from '@/floodmap/PlaceDepthPopup'
+import { Coordinate } from '@/utils'
 import { ProfileTimes, useProfileTimes } from '@/sidebar/search/routingProfiles/profileTimes'
 import Dispatcher from '@/stores/Dispatcher'
+import { SetPoint } from '@/actions/Actions'
 
 // the Maptoolkit logo is only shown for their map styles
 function isMaptoolkitStyle(styleOption: StyleOption) {
@@ -66,6 +69,8 @@ function isMaptoolkitStyle(styleOption: StyleOption) {
 }
 
 export const POPUP_CONTAINER_ID = 'popup-container'
+/** Width in px of the desktop routing panel, the first column of the layout grid in App.module.css. */
+export const PANEL_WIDTH = 460
 export const SIDEBAR_CONTENT_ID = 'sidebar-content'
 
 export default function App() {
@@ -81,6 +86,53 @@ export default function App() {
     const [currentLocation, setCurrentLocation] = useState(getCurrentLocationStore().state)
     const flood = useFloodState()
     useFloodBootstrap()
+    const [placeCoordinate, setPlaceCoordinate] = useState<Coordinate | null>(null)
+    // Set when the route button closes the popup before the lookup has a name, so the name can still reach the box.
+    const [namingCoordinate, setNamingCoordinate] = useState<Coordinate | null>(null)
+    const floodMode = flood.mapMode === 'flood'
+    // the popup reads the flood layer's depth, so it goes away with the layer
+    useEffect(() => {
+        if (!floodMode) setPlaceCoordinate(null)
+    }, [floodMode])
+    const closePlacePopup = useCallback(() => setPlaceCoordinate(null), [])
+    // Lifted from LargeScreenLayout so the place popup's route button can open the panel.
+    const [showSidebar, setShowSidebar] = useState(false)
+    const routeToPlace = useCallback(
+        (placeName: string | undefined) => {
+            if (!placeCoordinate) return
+            pointsForRoute(query.queryPoints, placeCoordinate, placeName).forEach(point =>
+                Dispatcher.dispatch(new SetPoint(point, false)),
+            )
+            setShowSidebar(true)
+            setPlaceCoordinate(null)
+            setNamingCoordinate(placeName ? null : placeCoordinate)
+        },
+        [placeCoordinate, query.queryPoints],
+    )
+    const tapPlace = useCallback(
+        (coordinate: Coordinate) => {
+            setPlaceCoordinate(coordinate)
+            setNamingCoordinate(null)
+            const start = startForTap(query.queryPoints, coordinate)
+            if (!start) return
+            Dispatcher.dispatch(new SetPoint(start, false))
+            setShowSidebar(true)
+        },
+        [query.queryPoints],
+    )
+    const namePlace = useCallback(
+        (placeName: string) => {
+            const coordinate = placeCoordinate ?? namingCoordinate
+            if (!coordinate) return
+            const named = [
+                namedStart(query.queryPoints, coordinate, placeName),
+                namedDestination(query.queryPoints, coordinate, placeName),
+            ]
+            named.forEach(point => point && Dispatcher.dispatch(new SetPoint(point, false)))
+            setNamingCoordinate(null)
+        },
+        [placeCoordinate, namingCoordinate, query.queryPoints],
+    )
     const profileTimes = useProfileTimes(query, flood, route.routingResult.paths.length > 0)
 
     const map = getMap()
@@ -151,20 +203,37 @@ export default function App() {
     usePathDetailsLayer(map, pathDetails)
     usePOIsLayer(map, pois)
     useCurrentLocationLayer(map, currentLocation)
-    useFloodExtentLayer(map, flood.mapMode === 'flood', flood.timesteps[flood.selectedIndex])
+    useFloodExtentLayer(
+        map,
+        flood.mapMode === 'flood' && floodView(flood.mode).drawFlood,
+        flood.timesteps[flood.selectedIndex],
+    )
 
     const isSmallScreen = useMediaQuery({ query: '(max-width: 44rem)' })
     return (
         <SettingsContext.Provider value={settings}>
             <div className={styles.appWrapper}>
-                <MapPopups
+                <MapPopups map={map} mapFeatures={mapFeatures} poiState={pois} query={query} />
+                <PlaceDepthPopup
                     map={map}
-                    pathDetails={pathDetails}
-                    mapFeatures={mapFeatures}
-                    poiState={pois}
-                    query={query}
+                    coordinate={placeCoordinate}
+                    nameCoordinate={namingCoordinate}
+                    timestep={flood.timesteps[flood.selectedIndex]}
+                    onClose={closePlacePopup}
+                    onRoute={routeToPlace}
+                    onPlaceName={namePlace}
                 />
-                <ContextMenu map={map} route={route} queryPoints={query.queryPoints} />
+                <RouteDepthBadges
+                    map={map}
+                    coordinates={route.selectedPath.points.coordinates}
+                    timestep={floodMode ? flood.timesteps[flood.selectedIndex] : undefined}
+                />
+                <ContextMenu
+                    map={map}
+                    route={route}
+                    queryPoints={query.queryPoints}
+                    onPlaceClick={floodMode ? tapPlace : undefined}
+                />
                 {isSmallScreen ? (
                     <SmallScreenLayout
                         query={query}
@@ -180,6 +249,8 @@ export default function App() {
                     />
                 ) : (
                     <LargeScreenLayout
+                        showSidebar={showSidebar}
+                        setShowSidebar={setShowSidebar}
                         query={query}
                         route={route}
                         map={map}
@@ -221,44 +292,49 @@ function LargeScreenLayout({
     currentLocation,
     flood,
     profileTimes,
-}: LayoutProps) {
+    showSidebar,
+    setShowSidebar,
+}: LayoutProps & { showSidebar: boolean; setShowSidebar: (show: boolean) => void }) {
     const showMaptoolkitLogo = isMaptoolkitStyle(mapOptions.selectedStyle)
-    const [showSidebar, setShowSidebar] = useState(false)
+    const { banner } = floodView(flood.mode)
     const [showCustomModelBox, setShowCustomModelBox] = useState(false)
-    const [elevationState, setElevationState] = useState<'compact' | 'expanded' | 'closed'>('closed')
     const hasRoute = route.selectedPath.points.coordinates.length > 0
-    const routeRequestPending = query.currentRequest.subRequests.some(r => r.state === RequestState.SENT)
-    // Show elevation widget when a route arrives, hide when route is gone
-    // (but not during transient empty states like via point addition where a new request is already pending)
-    useEffect(() => {
-        if (hasRoute) {
-            setElevationState(s => (s === 'closed' ? 'compact' : s))
-        } else if (!routeRequestPending) {
-            setElevationState('closed')
-        }
-    }, [hasRoute, routeRequestPending])
-    // Hide map attribution when elevation widget is expanded (it would be covered)
-    useEffect(() => {
-        const el = map.getTargetElement()?.querySelector('.' + mapStyles.customAttribution) as HTMLElement | null
-        if (el) el.style.display = elevationState === 'expanded' ? 'none' : ''
-    }, [elevationState, map])
     return (
         <>
             {showSidebar ? (
                 <div className={styles.sidebar}>
                     <div className={styles.sidebarContent} id={SIDEBAR_CONTENT_ID}>
-                        <PlainButton onClick={() => setShowSidebar(false)} className={styles.sidebarCloseButton}>
-                            <Cross />
-                        </PlainButton>
-                        <RoutingProfiles
-                            routingProfiles={query.profiles}
-                            selectedProfile={query.routingProfile}
-                            memorizedProfilePerGroup={query.memorizedProfilePerGroup}
-                            showCustomModelBox={showCustomModelBox}
-                            toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
-                            customModelBoxEnabled={query.customModelEnabled}
-                            profileTimes={profileTimes}
-                        />
+                        <div className={styles.sidebarHeader}>
+                            <RoutingProfiles
+                                framed
+                                routingProfiles={query.profiles}
+                                selectedProfile={query.routingProfile}
+                                memorizedProfilePerGroup={query.memorizedProfilePerGroup}
+                                showCustomModelBox={showCustomModelBox}
+                                toggleCustomModelBox={() => setShowCustomModelBox(!showCustomModelBox)}
+                                customModelBoxEnabled={query.customModelEnabled}
+                                profileTimes={profileTimes}
+                            />
+                            <PlainButton
+                                onClick={() => setShowSidebar(false)}
+                                className={styles.sidebarCloseButton}
+                                aria-label="Close routing panel"
+                                title="Close"
+                            >
+                                <svg
+                                    width="26"
+                                    height="26"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.2"
+                                    strokeLinecap="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M5 5l14 14M19 5L5 19" />
+                                </svg>
+                            </PlainButton>
+                        </div>
                         {showCustomModelBox && (
                             <CustomModelBox
                                 customModelEnabled={query.customModelEnabled}
@@ -268,19 +344,26 @@ function LargeScreenLayout({
                                 drawAreas={drawAreas}
                             />
                         )}
-                        <Search points={query.queryPoints} profile={query.routingProfile} map={map} />
+                        <Search
+                            framed
+                            compact={hasRoute}
+                            points={query.queryPoints}
+                            profile={query.routingProfile}
+                            map={map}
+                        />
                         <div>{!error.isDismissed && <ErrorMessage error={error} />}</div>
                         <RoutingResults
+                            framed
                             info={route.routingResult.info}
+                            hints={route.routingResult.hints}
                             paths={route.routingResult.paths}
                             selectedPath={route.selectedPath}
                             currentRequest={query.currentRequest}
+                            allPointsSet={query.queryPoints.every(point => point.isInitialized)}
                             profile={query.routingProfile.name}
                             floodActive={flood.mapMode === 'flood'}
+                            timestep={flood.timesteps[flood.selectedIndex]}
                         />
-                        <div>
-                            <PoweredBy />
-                        </div>
                     </div>
                 </div>
             ) : (
@@ -288,8 +371,20 @@ function LargeScreenLayout({
                     <span className={styles.sidebarOpenLabel}>Search Floodmap</span>
                     <PlainButton className={styles.sidebarOpenButton}>
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 20V10a4 4 0 0 1 4-4h8" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M15 3l3 3-3 3" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path
+                                d="M6 20V10a4 4 0 0 1 4-4h8"
+                                stroke="#111"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M15 3l3 3-3 3"
+                                stroke="#111"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
                         </svg>
                     </PlainButton>
                 </div>
@@ -302,41 +397,21 @@ function LargeScreenLayout({
             <div className={styles.map}>
                 <MapComponent map={map} />
             </div>
-            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+            <MapModeToggle
+                mode={flood.mapMode}
+                onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))}
+                offsetLeft={showSidebar ? PANEL_WIDTH : 0}
+            />
             {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+            {flood.mapMode === 'flood' && banner && (
+                <FloodBanner text={banner} offsetLeft={showSidebar ? PANEL_WIDTH : 0} />
+            )}
 
-            {/* the logo is only shown when the elevation widget is closed, because it would cover it otherwise */}
-            {elevationState === 'closed' && (hasRoute || showMaptoolkitLogo) && (
+            {showMaptoolkitLogo && (
                 <div className={styles.pathDetails + ' ' + styles.bottomLeftBar}>
-                    {hasRoute && (
-                        <button
-                            className={styles.elevationReopenButton}
-                            onClick={() => setElevationState('compact')}
-                            title="Show elevation"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 1792 1792" fill="#666">
-                                <path d="M1920 1536v128h-2048v-1536h128v1408h1920zm-384-1024l256 896h-1664v-576l448-576 576 576z" />
-                            </svg>
-                        </button>
-                    )}
-                    {showMaptoolkitLogo && (
-                        <img className={styles.maptoolkitLogo} src={maptoolkitImg} alt="Maptoolkit" />
-                    )}
+                    <img className={styles.maptoolkitLogo} src={maptoolkitImg} alt="Maptoolkit" />
                 </div>
             )}
-            <div
-                className={elevationState === 'expanded' ? styles.pathDetailsExpanded : styles.pathDetails}
-                style={{ display: elevationState === 'closed' ? 'none' : undefined }}
-            >
-                <ElevationInfoBar
-                    selectedPath={route.selectedPath}
-                    alternativePaths={route.routingResult.paths}
-                    profile={query.routingProfile.name}
-                    isExpanded={elevationState === 'expanded'}
-                    onToggleExpanded={() => setElevationState(s => (s === 'expanded' ? 'compact' : 'expanded'))}
-                    onClose={() => setElevationState('closed')}
-                />
-            </div>
         </>
     )
 }
@@ -354,6 +429,7 @@ function SmallScreenLayout({
     profileTimes,
 }: LayoutProps) {
     const hasPath = route.selectedPath.points.coordinates.length > 0
+    const { banner } = floodView(flood.mode)
     const settings = useContext(SettingsContext)
 
     const [isFooterCollapsed, setIsFooterCollapsed] = useState(false)
@@ -393,8 +469,11 @@ function SmallScreenLayout({
                     <LocationButton currentLocation={currentLocation} />
                 </div>
             </div>
-            <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
-            {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+            <div className={styles.smallScreenFloodOverlay}>
+                <MapModeToggle mode={flood.mapMode} onChange={mode => Dispatcher.dispatch(new SetMapMode(mode))} />
+                {flood.mapMode === 'flood' && <FloodLegend timestep={flood.timesteps[flood.selectedIndex]} />}
+                {flood.mapMode === 'flood' && banner && <FloodBanner text={banner} />}
+            </div>
 
             <div className={styles.smallScreenFooter} ref={footerRef}>
                 {hasPath && isFooterCollapsed && (
@@ -412,13 +491,15 @@ function SmallScreenLayout({
                     )}
                     <RoutingResults
                         info={route.routingResult.info}
+                        hints={route.routingResult.hints}
                         paths={route.routingResult.paths}
                         selectedPath={route.selectedPath}
                         currentRequest={query.currentRequest}
+                        allPointsSet={query.queryPoints.every(point => point.isInitialized)}
                         profile={query.routingProfile.name}
                         floodActive={flood.mapMode === 'flood'}
+                        timestep={flood.timesteps[flood.selectedIndex]}
                     />
-                    <PoweredBy />
                 </div>
             </div>
         </>

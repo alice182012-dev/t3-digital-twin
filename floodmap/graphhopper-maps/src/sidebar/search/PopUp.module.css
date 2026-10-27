@@ -7,3 +7,11 @@
     position: absolute;
     pointer-events: all;
 }
+
+/* mockup screen 2d: the list continues the white panel and has no card of its own */
+.panelList {
+    box-sizing: border-box;
+    background-color: white;
+    position: absolute;
+    pointer-events: all;
+}

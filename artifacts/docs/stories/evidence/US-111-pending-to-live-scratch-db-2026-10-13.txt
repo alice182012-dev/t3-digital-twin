@@ -1,0 +1,10 @@
+# US-111, 2026-10-13: the move of forecast_mode from PENDING to LIVE, run in the worker against a scratch database (us111_scratch_test, dropped afterwards)
+# The script called forecast_mode.record_decision, run_output.record, and forecast_mode.mark_live, the functions that tasks 0_check_forecast_rain and 9b_load_depth_raster call.
+database: us111_scratch_test
+Table flood_run_output ready.
+Table forecast_mode ready.
+1. decision, gate open, no raster published: PENDING -> PENDING
+2. depth_raster row recorded by run_output.record
+3. mark_live changed a row: True -> LIVE
+4. mark_live again changed a row: False -> LIVE
+5. next decision, gate open, raster published: LIVE

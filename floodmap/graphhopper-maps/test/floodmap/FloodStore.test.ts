@@ -1,6 +1,7 @@
 import {
     defaultMapMode,
     findNowTimestepIndex,
+    FloodModeReceived,
     FloodStoreState,
     FloodTimestep,
     FloodTimestepsReceived,
@@ -101,5 +102,26 @@ describe('FloodTimestepsReceived', () => {
         expect(first.timesteps[first.selectedIndex]).toEqual(step('2026-05-22T10:15:00Z', '2026-05-22T10:00:00Z'))
         const next = store.reduce(first, new FloodTimestepsReceived(CROSS_RUN, at('2026-05-22T10:31:00Z')))
         expect(next.timesteps[next.selectedIndex]).toEqual(step('2026-05-22T10:30:00Z', '2026-05-22T10:15:00Z'))
+    })
+})
+
+describe('FloodModeReceived', () => {
+    const pinned = step('2026-10-11T02:00:00+07:00', '20261011T001500')
+
+    it('shows the pinned step alone in DEMO and ignores the steps of the newest run', () => {
+        const store = getFloodStore()
+        const demo = store.reduce(store.state, new FloodModeReceived({ kind: 'DEMO', pinned }))
+        const refetched = store.reduce(demo, new FloodTimestepsReceived(HOURLY, at('2026-05-22T11:05:00Z')))
+        expect(refetched.timesteps).toEqual([pinned])
+        expect(refetched.selectedIndex).toEqual(0)
+    })
+
+    it('follows the steps of the newest run again in LIVE', () => {
+        const store = getFloodStore()
+        const demo = store.reduce(store.state, new FloodModeReceived({ kind: 'DEMO', pinned }))
+        const live = store.reduce(demo, new FloodModeReceived({ kind: 'LIVE' }))
+        const refetched = store.reduce(live, new FloodTimestepsReceived(HOURLY, at('2026-05-22T11:05:00Z')))
+        expect(refetched.timesteps).toEqual(HOURLY)
+        expect(refetched.selectedIndex).toEqual(1)
     })
 })

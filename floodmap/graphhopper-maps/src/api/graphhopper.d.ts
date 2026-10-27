@@ -43,13 +43,25 @@ export interface RoutingResultInfo {
     readonly took: number
 }
 
+/**
+ * The routing backend's hints. `td.limit_cm` is the depth limit of the requested profile and `td.precaution_cm` its
+ * precaution depth. `td.kinds` lists one kind per path in path order, `recommended` or `through_water`, comma separated.
+ */
+export interface RoutingHints {
+    readonly 'td.limit_cm'?: number
+    readonly 'td.precaution_cm'?: number
+    readonly 'td.kinds'?: string
+}
+
 export interface RoutingResult {
     readonly info: RoutingResultInfo
+    readonly hints?: RoutingHints
     readonly paths: Path[]
 }
 
 export interface RawResult {
     readonly info: RoutingResultInfo
+    readonly hints?: RoutingHints
     readonly paths: RawPath[]
 }
 
@@ -149,6 +161,9 @@ export interface GeocodingHit {
     readonly name: string
     readonly country: string
     readonly city: string
+    readonly district?: string
+    readonly city_district?: string
+    readonly suburb?: string
     readonly state: string
     readonly street: string
     readonly housenumber: string

@@ -1,0 +1,31 @@
+== US-117 server check, 2026-10-12 15:57 +07
+-- server checkout
+9cf8d25 Fill edge_key when the same graph hash is re-exported with keys, and enable osm_way_id
+-- the live graph has the way id
+profiles: motorbike,car,truck,foot | osm_way_id in encoded_values: True
+-- the export of the graph
+{
+  "format_version" : 3,
+  "graph_hash" : "8c13d8841f8335a39207a38bb833bfc70d8e7d0709d46953076e4e5142c716ce",
+  "edge_count" : 67833,
+  "node_count" : 51328,
+  "graphhopper_commit" : "d7dc1b069d2d091c7cfdc007d99d1765c82e618d"
+}
+edge_id,wkt,base_node,adj_node,edge_key
+0,"LINESTRING (105.9011624 20.88727, 105.9008601 20.8870186, 105.9004579 20.8866622, 105.9
+1,"LINESTRING (105.7367062 20.9629003, 105.7377206 20.9614937, 105.7384661 20.9603628, 105
+-- graph_edge holds one key per edge
+ edges | keys  | distinct_keys | ways  
+-------+-------+---------------+-------
+ 67833 | 67833 |         67833 | 30185
+(1 row)
+
+ edge_id |   edge_key   
+---------+--------------
+       0 | 1112808616:0
+       1 | 1112808615:0
+       2 | 1162823724:0
+(3 rows)
+
+-- the edge depth tables still match the graph
+FRESH: the export, the tables, and the graph agree on one hash

@@ -8,14 +8,21 @@ graphhopper:
   # _custom suffix (motorbike.json isn't reserved since there's no built-in
   # "motorbike" profile, only "motorcycle").
   profiles:
+    # td_limit_cm is the depth, in cm, at which the vehicle cannot pass. The time-aware engine (java/time-aware-routing,
+    # US-052) reads it from the profile. Keep it equal to threshold_cm in scripts/flood_utils.py (a test checks it). A
+    # profile without it is not time-aware, and a time-aware request for it falls back to today's model.
     - name: motorbike
       custom_model_files: [motorbike.json]
+      td_limit_cm: 20
     - name: car
       custom_model_files: [car_custom.json]
+      td_limit_cm: 30
     - name: truck
       custom_model_files: [truck_custom.json]
+      td_limit_cm: 35
     - name: foot
       custom_model_files: [foot_custom.json]
+      td_limit_cm: 40
 
   # Every flood request supplies its own custom_model with ch.disable in the
   # body, so every query runs in flexible mode anyway — landmarks (LM) keep
@@ -28,12 +35,18 @@ graphhopper:
     - profile: foot
 
   # Union of what motorbike.json (upstream motorcycle.json), car.json, truck.json
-  # and foot_custom.json need.
+  # and foot_custom.json need, plus osm_way_id, which ExportEdges reads for the stable edge_key (US-117).
+  # osm_way_id is a 31-bit int: the import fails for an OSM way id above 2,147,483,647.
   graph.encoded_values: car_access, car_average_speed, road_access, road_class, track_type, surface,
     max_speed, ferry_speed, hgv, max_width, max_height, max_weight, max_weight_except, road_environment,
-    foot_access, foot_average_speed, foot_road_access
+    foot_access, foot_average_speed, foot_road_access, osm_way_id
 
   prepare.min_network_size: 200
+
+  # The folder of edge depth tables (US-052), the Docker volume edge-depth-tables mounted read-only. The engine hashes the
+  # loaded graph and follows this folder's `latest` pointer. A request is time-aware only when the backend sends a
+  # departure, which it does only with TIME_AWARE_ROUTING on.
+  time_aware.table_dir: /tables
 
 server:
   application_connectors:

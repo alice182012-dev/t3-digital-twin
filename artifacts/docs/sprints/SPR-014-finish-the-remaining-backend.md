@@ -1,0 +1,110 @@
+---
+date: 2026-10-12
+type: sprint
+sprint_id: "SPR-014"
+sprint: 14
+start_date: 2026-10-12
+end_date: 2026-10-13
+status: done
+tags: [sprint]
+related: ["[[scrum-framework]]", "[[Velocity]]", "[[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]]", "[[decision-log|D-038]]", "[[decision-log|D-040]]", "[[decision-log|D-051]]"]
+---
+
+# SPR-014 Sprint 14: Finish the remaining backend
+
+## Sprint goal
+
+Finish the remaining backend: every backend story in the backlog is `Done`, starting with [[decision-log|D-038]] (every reader of flood depth reads the edge depth table, and the old sampler and `flood_road_values` are deleted).
+
+Set by the product owner on 2026-10-12, who widened the first goal "Finish D-038" after the sprint had started ([[decision-log|D-041]]). The frontend stories of [[EP-19-frontend-against-the-mockup|EP-19]] are not part of it.
+
+## Planning
+
+- **Dates.** The sprint runs two weeks, from Monday 2026-10-12 to Sunday 2026-10-25. It started on the day [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] ended early, at the product owner's request ([[decision-log|D-040]]).
+- **Velocity.** The last sprints gave 15, 25, and 10 points ([[Velocity]]), and the last one lasted one day. The forecast stays at 16 points, as the product owner set it for Sprint 13.
+- **Picks.** Fourteen stories made 34 points, which is 18 over the forecast, and four stories added on 2026-10-13 make it 18 stories and 41 points, which is 25 over. The product owner chose this on 2026-10-12 ("finish all of the backend, add them all"), so the sprint is a stretch. A story that is not `Done` on 2026-10-25 leaves the sprint at the review, and the product owner decides what moves. Each pick is `Ready`. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] is picked against the framework rule for a story that waits on an external event.
+
+| Order | Story | Title | Estimate | Points | Depends on |
+| ----- | ----- | ----- | -------- | ------ | ---------- |
+| 1 | [[US-118-write-the-edge-depth-to-a-queryable-table\|US-118]] | Write the edge depth to a queryable table | M | 3 | none, in progress |
+| 2 | [[US-106-keep-per-segment-depth-history-in-timescaledb\|US-106]] | Write per-segment depth history to TimescaleDB (part a) | M | 3 | `Done` |
+| 3 | [[US-113-backfill-per-segment-depth-history\|US-113]] | Backfill per-segment depth history | S | 2 | US-106 |
+| 4 | [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table\|US-120]] | Read the rain gate and the soak checks from the edge table | S | 2 | US-118 |
+| 5 | [[US-121-read-the-flood-metrics-from-the-edge-table\|US-121]] | Read the flood metrics from the edge table | M | 3 | US-118 |
+| 6 | [[US-122-point-depth-history-at-the-edge-table\|US-122]] | Point depth_history at the edge table | S | 2 | US-118, US-106, US-113 |
+| 7 | [[US-123-delete-flood-on-roads-and-flood-road-values\|US-123]] | Delete flood_on_roads, road_segment, and flood_road_values | S | 2 | US-120, US-121, US-122 |
+| 8 | [[US-128-run-the-test-suites-against-the-test-databases\|US-128]] | Run the test suites against the test databases | S | 2 | US-125 (`Done`) |
+| 9 | [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf\|US-126]] | Rebuild the raster tiles and road values from the NetCDF | M | 3 | US-125 (`Done`) |
+| 10 | [[US-110-decide-whether-pipeline-tables-leave-the-public-schema\|US-110]] | Decide whether pipeline tables leave the public schema (spike) | S | 2 | none |
+| 11 | [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast\|US-111]] | Write the forecast mode status row (part one of the pinned demo flood) | S | 2 | none |
+| 12 | [[US-129-pin-the-peak-step-of-the-demo-flood\|US-129]] | Pin the peak step of the demo flood | M | 3 | US-126 |
+| 13 | [[US-130-serve-the-forecast-mode-and-read-the-pinned-step\|US-130]] | Serve the forecast mode and read the pinned step | M | 3 | US-111, US-129 |
+| 14 | [[US-114-prove-the-real-rain-archive-and-measure-growth\|US-114]] | Prove the real-rain archive and measure growth | S | 2 | a real forecast above 5 mm/h |
+| | | Total | | 34 | |
+
+- **Why these.** They are every story of the backlog whose work is backend, after the split of [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] (an L) into four parts. The frontend part, [[US-131-show-the-demo-flood-banner-and-the-pinned-frame|US-131]], and the stories of [[EP-19-frontend-against-the-mockup|EP-19]] stay in the backlog. [[US-098-show-the-recommended-route-and-the-through|US-098]] is left out too, because its backend ([[US-097-recommend-a-route-that-avoids-the-precaution|US-097]]) is `Done` and what remains is the route panel.
+- **Risk.** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] needs real rain above 5 mm/h, which is not expected, so it will probably leave the sprint at the review. The sprint holds 34 points against a forecast of 16, so more than one story may leave.
+- **Work in progress.** At most two stories are `In progress` at once. Only [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is, on 2026-10-12.
+- **Done outside the plan.** [[US-117-export-a-stable-key-with-each-graph-edge|US-117]], [[US-119-read-the-map-overlay-and-route-fallback-from-the-edge-table|US-119]], [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], [[US-125-restore-the-snapshot-into-test-databases|US-125]], and [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]] were done on 2026-10-12 before the picks widened. They have no `sprint`, and their points are not in [[Velocity]].
+- **Open decisions.** None.
+
+## Sprint backlog
+
+```dataview
+TABLE title AS "Story", kind AS "Kind", priority AS "Priority", estimate AS "Estimate", status AS "Status", epic AS "Epic"
+FROM "docs/stories"
+WHERE sprint = 14
+SORT priority ASC, file.name ASC
+```
+
+## Review
+
+Ended early on 2026-10-13 at the product owner's request ([[decision-log|D-051]]).
+Every `Done` story was accepted by the owner on the day it closed, so this review adds no new acceptance.
+
+- **Goal met:** yes, for every backend story except the time-gated one. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted the old sampler and `flood_road_values`, and every reader of flood depth reads the edge depth table ([[decision-log|D-038]]).
+- **Points delivered:** 45 of 47 picked, against a forecast of 16. The sprint lasted two days, so the points do not measure a two-week sprint.
+- **Not done:** [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2 points) left the sprint and is back in the backlog with `sprint` cleared. It stays `Ready` and in monitoring until real rain above 5 mm/h comes.
+- **Estimate misses:** none recorded. The owner and the team check the `Done` stories against the reference stories at refinement.
+
+## Retrospective
+
+The team drafted this on 2026-10-13. The product owner has not read it.
+The action of the last retrospective does not apply, because the retrospective of [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] was not held.
+
+- **Worked:** the staged replacement of `flood_road_values` ([[decision-log|D-038]]) with a 50-run check before the drop, and acceptance by the owner on the day each story closed.
+- **Did not work:** unpausing `flood_mapping_full` resumed a run left over from 2026-10-10, and the standing-flood rule then started two real simulations with no rain ([[BL-030-the-standing-flood-rule-never-ends-with-permanent-water|BL-030]]). A story that waits on real rain ([[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]]) was picked anyway and could not close.
+- **Action:** a story. [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] gives the chain a stop test, and the owner picks it before `flood_mapping_full` is unpaused for good.
+
+## Refinement for the next sprint
+
+Open at the planning of Sprint 15. The backlog holds 17 stories, and only [[US-142-stop-the-standing-flood-chain-when-the-depths-stop-changing|US-142]] is `Ready`. The rest are frontend stories of [[EP-19-frontend-against-the-mockup|EP-19]] that need refinement first.
+
+## Status history
+
+- **2026-10-12, planning.** Created at the product owner's request, with the goal "Finish D-038". The product owner confirmed the goal the same day.
+- **2026-10-12, active.** The product owner ended [[SPR-013-prove-the-storm-replay-and-finish-the-replay-stories|SPR-013]] early and started this sprint the same day, from 2026-10-12 to 2026-10-25 ([[decision-log|D-040]]). Seven stories are picked, with `sprint: 14`, and they make 17 points.
+- **2026-10-12, active.** The product owner accepted [[US-106-keep-per-segment-depth-history-in-timescaledb|US-106]], so it is `Done` (3 of 17 points). [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-122-point-depth-history-at-the-edge-table|US-122]] no longer wait for it. The owner also accepted [[US-124-save-the-storm-replay-results-and-derived-data|US-124]], [[US-125-restore-the-snapshot-into-test-databases|US-125]], and [[US-127-build-the-history-and-metrics-from-the-restored-road-values|US-127]], which are outside the sprint and have no `sprint`.
+- **2026-10-12, active.** The product owner widened the goal to "Finish the remaining backend" and asked to add every backend story ([[decision-log|D-041]]). Seven stories joined: [[US-128-run-the-test-suites-against-the-test-databases|US-128]], [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]], [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]], [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]], and three parts of the split [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]] ([[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]]). The sprint has 14 picks and 34 points, 3 of them `Done`. The forecast stays at 16.
+- **2026-10-13, active.** The server was reachable and the batch was deployed. The product owner accepted [[US-111-show-a-pinned-demo-flood-when-no-rain-is-forecast|US-111]], [[US-120-read-the-rain-gate-and-soak-checks-from-the-edge-table|US-120]], [[US-121-read-the-flood-metrics-from-the-edge-table|US-121]], and [[US-122-point-depth-history-at-the-edge-table|US-122]], so they are `Done` and the sprint has 12 of 34 points done. [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]] and [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] stay `Reviewed`, and [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] is `In progress`. Later that day the owner unpaused `flood_mapping_full`, and a run left over from 2026-10-10 resumed and published a new run, which closed the prune check of [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]].
+- **2026-10-13, active.** The product owner accepted [[US-129-pin-the-peak-step-of-the-demo-flood|US-129]], so it is `Done`, and the sprint has 15 of 34 points done.
+- **2026-10-13, active.** The product owner asked to bring [[US-132-let-the-worker-run-the-reader-role-script|US-132]], [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]], [[US-134-set-the-same-rain-gate-in-every-airflow-container|US-134]], and [[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]] (7 points) into the sprint, which now holds 18 stories and 41 points. The sprint is a stretch, and a story that is not `Done` on 2026-10-25 leaves it.
+- **2026-10-13, active.** [[US-132-let-the-worker-run-the-reader-role-script|US-132]], [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]], [[US-134-set-the-same-rain-gate-in-every-airflow-container|US-134]], and [[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]] are `Reviewed` and wait for the owner. The check of US-133 found three failures, so [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]] joined the backlog with no `sprint`. The owner paused `flood_mapping_full` after a run left over from 2026-10-10 made the standing-flood rule start two real simulations with no rain.
+- **2026-10-13, active.** The product owner accepted [[US-132-let-the-worker-run-the-reader-role-script|US-132]], [[US-133-pick-soak-pairs-that-can-prove-a-blocked-edge|US-133]], [[US-134-set-the-same-rain-gate-in-every-airflow-container|US-134]], and [[US-135-find-why-live-routes-find-no-connection-between-wet-edges|US-135]], so they are `Done` and the sprint has 22 of 41 points done.
+- **2026-10-13, active.** The product owner accepted [[US-130-serve-the-forecast-mode-and-read-the-pinned-step|US-130]] on written results, so it is `Done`, and the sprint has 25 of 41 points done.
+- **2026-10-13, active.** The product owner dropped the road-values part of [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]] ([[decision-log|D-046]]) and rescoped [[US-113-backfill-per-segment-depth-history|US-113]] to the runs of `edge_depth` ([[decision-log|D-047]]). Both are `Reviewed` and wait for the owner's acceptance, and only [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] is `In progress`.
+- **2026-10-13, active.** The product owner accepted [[US-113-backfill-per-segment-depth-history|US-113]] and [[US-126-rebuild-the-raster-tiles-and-road-values-from-the-netcdf|US-126]], so they are `Done`, and the sprint has 30 of 41 points done.
+- **2026-10-13, active.** The code of [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] is on `modular`, and the server steps wait for the end of the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]].
+- **2026-10-13, active.** The product owner asked to fix the failing tests first, and [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]] (2 points) joined the sprint, so it holds 19 stories and 43 points.
+- **2026-10-13, active.** The product owner accepted [[US-128-run-the-test-suites-against-the-test-databases|US-128]] and [[US-137-make-the-tests-of-test-pass-without-the-pinned-client|US-137]], so they are `Done`, and the sprint has 34 of 43 points done. The owner also approved the unpause of `flood_mapping_full` after the 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] ends.
+- **2026-10-13, active.** The spike [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] is answered ([[decision-log|D-049]]) and `Reviewed`.
+- **2026-10-13, active.** The product owner asked for the spike [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]] first, so it joined the sprint (20 stories, 45 points) and is `Reviewed` ([[decision-log|D-050]]). Its fix, [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]], is in the backlog with no `sprint`.
+- **2026-10-13, active.** The product owner accepted [[US-110-decide-whether-pipeline-tables-leave-the-public-schema|US-110]] and [[US-136-explain-the-soak-failures-next-to-flooded-edges|US-136]], so they are `Done`, and brought [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]] into the sprint, which holds 21 stories and 47 points. 38 points are done.
+- **2026-10-13, active.** [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]] is built and run on the server, and it is `Reviewed`: the check gives 0 failures and 7 blocked pairs judged.
+- **2026-10-13, active.** The product owner accepted [[US-138-skip-soak-pairs-whose-dry-route-crosses-other-blocked-roads|US-138]], so it is `Done`, and the sprint has 40 of 47 points done.
+- **2026-10-13, active.** The 50-run check of [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]] ended with no failure (longest `9c` build 79.5 s), and the server steps of [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] ran. What is left of the sprint is the acceptance of US-118, the rebuild of `analysis`, the drop of the old tables, and the time-gated [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]].
+- **2026-10-13, active.** The product owner accepted [[US-118-write-the-edge-depth-to-a-queryable-table|US-118]], so it is `Done`, and confirmed the drop of the old tables. [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] is `Reviewed`: the tables are dropped (377.1 MB freed) and a run took 148 s from `3_calculate_depth` to the end of `9c`. 43 of 47 points are done.
+- **2026-10-13, active.** The owner rebuilt `analysis` and accepted [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]], so it is `Done`, and 45 of 47 points are done. [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] (2 points) is the only story of the sprint that is open, and its cleanup check is time-gated.
+- **2026-10-13, active.** The branches of [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] are merged into `modular` and pulled on the server, and both are `Reviewed`. They are in the backlog and have no `sprint`.
+- **2026-10-13, active.** The product owner accepted [[US-139-skip-a-flood-run-whose-slot-is-hours-old|US-139]] and [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]], so they are `Done` (outside the sprint, no `sprint`), and put [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] in monitoring until real rain comes. 45 of 47 points are done, and US-114 (2 points) is the only story open.
+- **2026-10-13, done.** The product owner ended the sprint early at 45 of 47 points ([[decision-log|D-051]]). [[US-114-prove-the-real-rain-archive-and-measure-growth|US-114]] left the sprint. The review and the retrospective are above.

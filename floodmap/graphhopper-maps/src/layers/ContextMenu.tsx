@@ -13,19 +13,25 @@ interface ContextMenuProps {
     map: Map
     route: RouteStoreState
     queryPoints: QueryPoint[]
+    // when set, a plain click on empty map hands the location to this callback instead of opening the menu, which
+    // then stays reachable through a right click and a long touch
+    onPlaceClick?: (coordinate: Coordinate) => void
 }
 
 const overlay = new Overlay({
     autoPan: true,
 })
 
-export default function ContextMenu({ map, route, queryPoints }: ContextMenuProps) {
+export default function ContextMenu({ map, route, queryPoints, onPlaceClick }: ContextMenuProps) {
     const [menuCoordinate, setMenuCoordinate] = useState<Coordinate | null>(null)
     // set when the menu was opened on a query point marker, adds a 'delete' entry to the menu
     const [markedQueryPoint, setMarkedQueryPoint] = useState<QueryPoint | null>(null)
     const container = useRef<HTMLDivElement | null>(null)
     // mirror of menuCoordinate for use in the map listeners which are registered only once
     const isOpen = useRef(false)
+    // mirror of onPlaceClick for the same reason: the singleclick listener is registered only once
+    const onPlaceClickRef = useRef(onPlaceClick)
+    onPlaceClickRef.current = onPlaceClick
     // set when the menu was opened via long touch: OpenLayers fires a 'singleclick' when the finger is lifted
     // afterwards (unlike the native 'click' event this is not suppressed by the browser) and it must not close the menu
     const openedByLongTouch = useRef(false)
@@ -70,6 +76,11 @@ export default function ContextMenu({ map, route, queryPoints }: ContextMenuProp
         if (!queryPointAtPixel(e.pixel)) {
             const atFeature = map.getFeaturesAtPixel(e.pixel, { hitTolerance: 5 }).some(f => f instanceof Feature)
             if (atFeature) return
+            if (onPlaceClickRef.current) {
+                const lonLat = toLonLat(e.coordinate)
+                onPlaceClickRef.current({ lng: lonLat[0], lat: lonLat[1] })
+                return
+            }
         }
         openContextMenu(e.originalEvent)
     }

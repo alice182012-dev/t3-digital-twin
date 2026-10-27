@@ -174,9 +174,59 @@ def geocode_gh_shape(
                 "street": str(properties.get("street") or ""),
                 "housenumber": str(properties.get("housenumber") or ""),
                 "postcode": str(properties.get("postcode") or ""),
+                "district": str(properties.get("district") or ""),
             }
         )
     return {"hits": hits[:limit], "took": 0}
+
+
+def _photon_features(path: str, params: list[tuple[str, str]], label: str) -> list:
+    """Calls one Photon endpoint and returns its GeoJSON features. `label` names the operation in
+    the error messages, for example "place search"."""
+    request = Request(
+        f"{PHOTON_BASE_URL}/{path}?{urlencode(params)}",
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "FloodRouteVietnam/1.0",
+        },
+    )
+    try:
+        with urlopen(request, timeout=PHOTON_TIMEOUT_SECONDS) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (socket.timeout, TimeoutError) as exc:
+        raise PlaceSearchTimeout(f"{label} timed out") from exc
+    except HTTPError as exc:
+        raise PlaceSearchUnavailable(f"{label} provider returned HTTP {exc.code}") from exc
+    except URLError as exc:
+        if isinstance(exc.reason, (socket.timeout, TimeoutError)):
+            raise PlaceSearchTimeout(f"{label} timed out") from exc
+        raise PlaceSearchUnavailable(f"{label} provider is unavailable") from exc
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PlaceSearchUnavailable(f"{label} provider returned invalid data") from exc
+
+    if not isinstance(payload, dict) or not isinstance(payload.get("features"), list):
+        raise PlaceSearchUnavailable(f"{label} provider returned invalid data")
+    return payload["features"]
+
+
+def reverse_place(lat_value: str | None, lon_value: str | None) -> dict | None:
+    """The nearest named Vietnamese place to a point, in search_places's result shape, or None
+    when Photon finds nothing usable. Photon returns the nearest OSM object, so the name can be a
+    street or a building near the point, not the point itself."""
+    lat = _optional_number(lat_value, "lat", -90, 90)
+    lon = _optional_number(lon_value, "lon", -180, 180)
+    if lat is None or lon is None:
+        raise PlaceSearchValidationError("lat and lon are required")
+    features = _photon_features(
+        "reverse",
+        [("lat", str(lat)), ("lon", str(lon)), ("lang", "default"), ("limit", "1")],
+        "place lookup",
+    )
+    for index, feature in enumerate(features):
+        normalized = _normalize_feature(feature, index)
+        if normalized:
+            return normalized
+    return None
 
 
 def search_places(
@@ -211,31 +261,9 @@ def search_places(
     if zoom is not None:
         params.append(("zoom", str(zoom)))
 
-    request = Request(
-        f"{PHOTON_BASE_URL}/api?{urlencode(params)}",
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "FloodRouteVietnam/1.0",
-        },
-    )
-    try:
-        with urlopen(request, timeout=PHOTON_TIMEOUT_SECONDS) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except (socket.timeout, TimeoutError) as exc:
-        raise PlaceSearchTimeout("place search timed out") from exc
-    except HTTPError as exc:
-        raise PlaceSearchUnavailable(f"place search provider returned HTTP {exc.code}") from exc
-    except URLError as exc:
-        if isinstance(exc.reason, (socket.timeout, TimeoutError)):
-            raise PlaceSearchTimeout("place search timed out") from exc
-        raise PlaceSearchUnavailable("place search provider is unavailable") from exc
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise PlaceSearchUnavailable("place search provider returned invalid data") from exc
-
-    if not isinstance(payload, dict) or not isinstance(payload.get("features"), list):
-        raise PlaceSearchUnavailable("place search provider returned invalid data")
+    features = _photon_features("api", params, "place search")
     results = []
-    for index, feature in enumerate(payload["features"]):
+    for index, feature in enumerate(features):
         normalized = _normalize_feature(feature, index)
         if normalized:
             results.append(normalized)

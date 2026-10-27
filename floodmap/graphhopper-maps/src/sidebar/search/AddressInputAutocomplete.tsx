@@ -3,6 +3,7 @@ import { Bbox } from '@/api/graphhopper'
 import { AddressParseResult } from '@/pois/AddressParseResult'
 import { tr } from '@/translation/Translation'
 import Cross from '@/sidebar/times-solid-thin.svg'
+import { splitMatchedPrefix } from '@/sidebar/search/matchedPrefix'
 
 export interface AutocompleteItem {}
 
@@ -11,12 +12,20 @@ export class GeocodingItem implements AutocompleteItem {
     secondText: string
     point: { lat: number; lng: number }
     bbox: Bbox
+    district: string
 
-    constructor(mainText: string, secondText: string, point: { lat: number; lng: number }, bbox: Bbox) {
+    constructor(
+        mainText: string,
+        secondText: string,
+        point: { lat: number; lng: number },
+        bbox: Bbox,
+        district: string = '',
+    ) {
         this.mainText = mainText
         this.secondText = secondText
         this.point = point
         this.bbox = bbox
+        this.district = district
     }
 
     toText() {
@@ -53,14 +62,25 @@ export interface AutocompleteProps {
     highlightedItem: AutocompleteItem
     onSelect: (hit: AutocompleteItem) => void
     onRemove?: (hit: RecentLocationItem) => void
+    /** The text the items answer, so a suggestion can show the matched part of its name in bold. */
+    query?: string
+    /** The desktop panel frame of mockup screen 2d: rows the width of the panel, inside a bordered list. */
+    framed?: boolean
 }
 
-export default function Autocomplete({ items, highlightedItem, onSelect, onRemove }: AutocompleteProps) {
+export default function Autocomplete({
+    items,
+    highlightedItem,
+    onSelect,
+    onRemove,
+    query = '',
+    framed = false,
+}: AutocompleteProps) {
     return (
-        <ul>
+        <ul className={framed ? styles.framedList : undefined}>
             {items.map((item, i) => (
                 <li key={i} className={styles.autocompleteItem}>
-                    {mapToComponent(item, highlightedItem === item, onSelect, onRemove)}
+                    {mapToComponent(item, highlightedItem === item, onSelect, query, onRemove)}
                 </li>
             ))}
         </ul>
@@ -71,10 +91,11 @@ function mapToComponent(
     item: AutocompleteItem,
     isHighlighted: boolean,
     onSelect: (hit: AutocompleteItem) => void,
+    query: string,
     onRemove?: (hit: RecentLocationItem) => void,
 ) {
     if (item instanceof GeocodingItem)
-        return <GeocodingEntry item={item} isHighlighted={isHighlighted} onSelect={onSelect} />
+        return <GeocodingEntry item={item} isHighlighted={isHighlighted} onSelect={onSelect} query={query} />
     else if (item instanceof RecentLocationItem)
         return <RecentLocationEntry item={item} isHighlighted={isHighlighted} onSelect={onSelect} onRemove={onRemove} />
     else if (item instanceof POIQueryItem)
@@ -106,16 +127,40 @@ function GeocodingEntry({
     item,
     isHighlighted,
     onSelect,
+    query,
 }: {
     item: GeocodingItem
     isHighlighted: boolean
     onSelect: (item: GeocodingItem) => void
+    query: string
 }) {
+    const { matched, rest } = splitMatchedPrefix(item.mainText, query)
     return (
-        <AutocompleteEntry isHighlighted={isHighlighted} onSelect={() => onSelect(item)}>
+        <AutocompleteEntry
+            isHighlighted={isHighlighted}
+            onSelect={() => onSelect(item)}
+            label={item.district ? item.mainText + ', ' + item.district : item.mainText}
+        >
             <div className={styles.geocodingEntry} title={item.toText()}>
-                <span className={styles.mainText}>{item.mainText}</span>
-                <span className={styles.secondaryText}>{item.secondText}</span>
+                <svg
+                    className={styles.pinIcon}
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                >
+                    <path d="M12 22s7-7.2 7-12a7 7 0 1 0-14 0c0 4.8 7 12 7 12z" />
+                    <circle cx="12" cy="10" r="2.6" />
+                </svg>
+                <span>
+                    {matched && <span className={styles.matchedText}>{matched}</span>}
+                    {rest}
+                </span>
+                <span className={styles.district}>{item.district}</span>
             </div>
         </AutocompleteEntry>
     )
@@ -181,15 +226,18 @@ function AutocompleteEntry({
     isHighlighted,
     children,
     onSelect,
+    label,
 }: {
     isHighlighted: boolean
     children: React.ReactNode
     onSelect: () => void
+    label?: string
 }) {
     const className = isHighlighted ? styles.selectableItem + ' ' + styles.highlightedItem : styles.selectableItem
     return (
         <button
             className={className}
+            aria-label={label}
             // using click events for mouse interaction and touch end to select an entry.
             onClick={() => onSelect()}
             // minor workaround to improve success rate for click even if start and end location on screen are slightly different

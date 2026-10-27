@@ -10,8 +10,10 @@ import psycopg2
 from shapely.geometry import box
 
 import create_flood_extent_tables
+import create_flood_run_output_table
 import publish
 import flood_extent
+from test_run_output import FakeConnection, published
 
 RUN = "20260925T171500"
 # Vietnam-local depth file names; 17:15, 17:30, 17:45 local are 10:15, 10:30, 10:45 UTC.
@@ -88,6 +90,46 @@ class PublishRunTileStepsTests(PublishRunTestCase):
             self.publish(tile_steps=0)
 
 
+class ExtentRunOutputTests(PublishRunTestCase):
+    """The extent row of flood_run_output commits after every tile step of the run, and only then."""
+
+    def committed_steps(self, conn):
+        return sorted(
+            (params[1].strftime("%H:%M"), params[2]) for sql, params in conn.committed if "INTO flood_extent_step" in sql
+        )
+
+    def test_a_published_run_records_its_extent_row_after_its_wet_and_dry_steps(self):
+        conn = FakeConnection()
+
+        self.publish(build=fake_build(dry={STEP_2}), db_conn=conn)
+
+        self.assertEqual(self.committed_steps(conn), [("10:15", False), ("10:30", True)])
+        self.assertEqual(published(conn), {(RUN, "extent")})
+
+    def test_a_failed_tile_step_leaves_no_extent_row(self):
+        conn = FakeConnection()
+
+        with self.assertRaises(flood_extent.FloodExtentError):
+            self.publish(build=fake_build(failing={STEP_2}), db_conn=conn)
+
+        self.assertEqual(self.committed_steps(conn), [("10:15", False)])
+        self.assertEqual(published(conn), set())
+
+    def test_a_failed_prune_leaves_no_extent_row(self):
+        def rows(sql):
+            if "DELETE FROM flood_extent_polygon" in sql:
+                raise psycopg2.OperationalError("connection lost")
+            return ()
+
+        conn = FakeConnection(rows)
+
+        with self.assertRaises(psycopg2.OperationalError):
+            self.publish(db_conn=conn)
+
+        self.assertEqual(self.committed_steps(conn), [("10:15", False), ("10:30", False)])
+        self.assertEqual(published(conn), set())
+
+
 @unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
 class PublishRunStepRowTests(PublishRunTestCase):
     """Runs against a real PostGIS: the polygon rows go through ST_GeomFromWKB."""
@@ -103,6 +145,8 @@ class PublishRunStepRowTests(PublishRunTestCase):
             cur.execute("DROP TABLE IF EXISTS flood_extent_polygon, flood_extent_step;")
             cur.execute(create_flood_extent_tables.SQL)
             cur.execute(create_flood_extent_tables.SQL)
+            cur.execute(create_flood_run_output_table.SQL)
+            cur.execute("TRUNCATE flood_run_output;")
 
     def fetch(self, sql):
         with self.conn, self.conn.cursor() as cur:
@@ -160,6 +204,24 @@ class PublishRunStepRowTests(PublishRunTestCase):
             [("20260925T171500",), ("20260925T173000",)],
         )
 
+    def test_keeps_the_extent_rows_of_only_the_newest_keep_runs_and_one_row_per_run(self):
+        for run in ("20260925T170000", "20260925T171500", "20260925T173000", "20260925T173000"):
+            self.publish(run=run, db_conn=self.conn, keep_runs=2)
+
+        self.assertEqual(
+            self.fetch("SELECT run_ts, output FROM flood_run_output ORDER BY run_ts;"),
+            [("20260925T171500", "extent"), ("20260925T173000", "extent")],
+        )
+
+    def test_keeps_the_polygon_rows_of_only_the_newest_keep_runs(self):
+        for run in ("20260925T170000", "20260925T171500", "20260925T173000"):
+            self.publish(run=run, db_conn=self.conn, keep_runs=2)
+
+        self.assertEqual(
+            self.fetch("SELECT DISTINCT run_ts FROM flood_extent_polygon ORDER BY run_ts;"),
+            [("20260925T171500",), ("20260925T173000",)],
+        )
+
 
 @unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
 class StepBackfillTests(unittest.TestCase):
@@ -211,6 +273,58 @@ class StepBackfillTests(unittest.TestCase):
             self.steps(),
             [(run, time, False) for run in self.RUNS[2:] for time in (UTC_1, UTC_2)],
         )
+
+
+class PrunePolygonRowsNoDbTests(unittest.TestCase):
+    def test_does_nothing_when_db_conn_is_none(self):
+        # Matches prune_step_rows's own no-op: publish_run can call this unconditionally even
+        # when no db_conn was passed in (db_conn is an optional kwarg, default None).
+        publish.prune_polygon_rows(None, keep_runs=3, always_keep={"20260925T171500"})
+
+
+@unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
+class PrunePolygonRowsTests(unittest.TestCase):
+    """Calls prune_polygon_rows directly against rows inserted by raw SQL, rather than through
+    publish_run, so always_keep can be an older run than the newest keep_runs — a case
+    publish_run itself never actually produces (the run it is publishing is always the newest
+    insert) but the function's own contract promises regardless, the same way prune_step_rows
+    does."""
+
+    RUNS = ("20260925T160000", "20260925T170000", "20260925T173000", "20260925T180000")
+
+    def setUp(self):
+        self.conn = psycopg2.connect(os.environ["FLOOD_TEST_DSN"])
+        self.addCleanup(self.conn.close)
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SET TIME ZONE 'UTC';")
+            cur.execute("DROP TABLE IF EXISTS flood_extent_polygon, flood_extent_step;")
+            cur.execute(create_flood_extent_tables.SQL)
+            for run in self.RUNS:
+                cur.execute(
+                    "INSERT INTO flood_extent_polygon (run_ts, valid_time_utc, dn_code, area_m2, geom)"
+                    " VALUES (%s, %s, 1, 1.0, ST_GeomFromText('POINT(105.8 21.0)', 4326));",
+                    (run, UTC_1),
+                )
+
+    def runs(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT run_ts FROM flood_extent_polygon ORDER BY run_ts;")
+            return [row[0] for row in cur.fetchall()]
+
+    def test_keeps_only_the_newest_keep_runs(self):
+        publish.prune_polygon_rows(self.conn, keep_runs=2, always_keep={"20260925T173000"})
+
+        self.assertEqual(self.runs(), ["20260925T173000", "20260925T180000"])
+
+    def test_every_run_of_always_keep_survives_even_outside_the_window(self):
+        publish.prune_polygon_rows(self.conn, keep_runs=1, always_keep={"20260925T160000", "20260925T173000"})
+
+        self.assertEqual(self.runs(), ["20260925T160000", "20260925T173000", "20260925T180000"])
+
+    def test_always_keep_survives_even_outside_the_window(self):
+        publish.prune_polygon_rows(self.conn, keep_runs=1, always_keep={"20260925T160000"})
+
+        self.assertEqual(self.runs(), ["20260925T160000", "20260925T180000"])
 
 
 class ValidTimeUtcTests(unittest.TestCase):

@@ -36,6 +36,7 @@ declare module 'config' {
     }
     const profile_group_mapping: Record<string, ProfileGroup>
     const profiles: object
+    const default_profile: string | undefined
 }
 
 declare module 'react-responsive' {

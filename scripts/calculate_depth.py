@@ -2,12 +2,15 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import uuid
 import numpy as np
 import billiard as multiprocessing
 from datetime import datetime, timedelta
 from osgeo import gdal
 from threedigrid.admin.gridresultadmin import GridH5ResultAdmin
+
+from depth_inputs import localize_input
 
 import fiona
 import fiona.vfs
@@ -26,6 +29,13 @@ CLEAN_DATA = True
 # production.
 MIN_DEPTH_TIF_SIZE_BYTES = int(os.getenv("DEPTH_TIF_MIN_SIZE_BYTES", "1024"))
 MAX_DEPTH_TIF_NODATA_RATIO = float(os.getenv("DEPTH_TIF_MAX_NODATA_RATIO", "0.999"))
+
+# Every threedidepth step reads the DEM, gridadmin.h5 and results_3di.nc.
+# With those on the Windows bind mount under /opt/airflow/data, 8 parallel
+# steps took 368.6 s. With copies on the container's local disk they took
+# 148.6 s, and copying took 0.7 s (measured 2026-10-01). The grid and DEM
+# change only with the model, so their copies persist across runs.
+DEPTH_LOCAL_INPUT_DIR = os.getenv("DEPTH_LOCAL_INPUT_DIR", "/tmp/depth_inputs")
 
 
 def validate_depth_raster(tif_path):
@@ -209,42 +219,50 @@ def run_calculate_depth(grid_path, nc_path, dem_path, output_dir):
     os.makedirs(current_output_dir)
     print(f"📂 Created Output Dir: {current_output_dir}")
 
+    run_input_dir = tempfile.mkdtemp(prefix="depth_run_", dir="/tmp")
     try:
-        ga = GridH5ResultAdmin(grid_path, nc_path)
-        total_steps = len(ga.nodes.timestamps)
-        ga = None
-        print(f"🔄 Total Steps: {total_steps}")
-    except Exception as e:
-        print(f"❌ Error reading inputs: {e}")
-        raise e
+        grid_path = localize_input(grid_path, DEPTH_LOCAL_INPUT_DIR)
+        dem_path = localize_input(dem_path, DEPTH_LOCAL_INPUT_DIR)
+        nc_path = localize_input(nc_path, run_input_dir)
 
-    # Step 0 is 3Di's placeholder t=0 record (Mesh2D_s1 is nodata for most/all
-    # nodes regardless of cold-start or hotstart) and never yields a usable
-    # depth raster, so skip it in favor of the first real integration step.
-    step_indices = range(1, total_steps) if total_steps > 1 else range(total_steps)
+        try:
+            ga = GridH5ResultAdmin(grid_path, nc_path)
+            total_steps = len(ga.nodes.timestamps)
+            ga = None
+            print(f"🔄 Total Steps: {total_steps}")
+        except Exception as e:
+            print(f"❌ Error reading inputs: {e}")
+            raise e
 
-    # Đóng gói tham số cho từng process
-    tasks = [(i, grid_path, nc_path, dem_path, current_output_dir) for i in step_indices]
+        # Step 0 is 3Di's placeholder t=0 record (Mesh2D_s1 is nodata for most/all
+        # nodes regardless of cold-start or hotstart) and never yields a usable
+        # depth raster, so skip it in favor of the first real integration step.
+        step_indices = range(1, total_steps) if total_steps > 1 else range(total_steps)
+
+        # Đóng gói tham số cho từng process
+        tasks = [(i, grid_path, nc_path, dem_path, current_output_dir) for i in step_indices]
     
-    # Sử dụng tối đa CPU core có sẵn thay vì giới hạn 8
-    try:
-        # Lấy số CPU được phép sử dụng (trong container)
-        default_workers = len(os.sched_getaffinity(0))
-    except AttributeError:
-        default_workers = multiprocessing.cpu_count()
-    max_workers = int(os.getenv("MAX_WORKERS", str(default_workers)))
+        # Sử dụng tối đa CPU core có sẵn thay vì giới hạn 8
+        try:
+            # Lấy số CPU được phép sử dụng (trong container)
+            default_workers = len(os.sched_getaffinity(0))
+        except AttributeError:
+            default_workers = multiprocessing.cpu_count()
+        max_workers = int(os.getenv("MAX_WORKERS", str(default_workers)))
 
-    print(f"🚀 Calculating on {max_workers} processes (Multiprocessing)...")
-    # Sử dụng billiard.Pool, một nhánh của multiprocessing.Pool, an toàn để sử dụng
-    # trong các tiến trình daemon (như Celery workers) mà không cần các giải pháp tạm thời.
-    pool = multiprocessing.Pool(processes=max_workers)
-    try:
-        results = pool.map(process_single_step, tasks)
-        for res in results:
-            print(res)
+        print(f"🚀 Calculating on {max_workers} processes (Multiprocessing)...")
+        # Sử dụng billiard.Pool, một nhánh của multiprocessing.Pool, an toàn để sử dụng
+        # trong các tiến trình daemon (như Celery workers) mà không cần các giải pháp tạm thời.
+        pool = multiprocessing.Pool(processes=max_workers)
+        try:
+            results = pool.map(process_single_step, tasks)
+            for res in results:
+                print(res)
+        finally:
+            pool.close()
+            pool.join()
     finally:
-        pool.close()
-        pool.join()
+        shutil.rmtree(run_input_dir, ignore_errors=True)
 
     # Orchestration-only failure surfacing (T13): process_single_step never
     # raises out of the pool, it returns a "❌ ..." string per failed

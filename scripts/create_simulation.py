@@ -21,6 +21,7 @@ from threedi_api_client.openapi import (
 
 import requests
 
+import rain_replay
 from threedi_client import get_client
 
 TOMORROW_API_KEY = os.getenv("TOMORROW_API_KEY")
@@ -126,7 +127,19 @@ def get_rain_forecast(start=None):
     start = start or clock_slot(datetime.now(timezone.utc))
     end_time = start + timedelta(hours=RAIN_LOOKAHEAD_HOURS)
 
+    replay_file = os.getenv("FLOOD_TEST_RAIN_CSV", "").strip()
+    replay_start = os.getenv("FLOOD_TEST_RAIN_START", "").strip()
     test_rain = os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip()
+    if bool(replay_file) != bool(replay_start) or (replay_file and test_rain):
+        raise ValueError(
+            "Set FLOOD_TEST_RAIN_CSV together with FLOOD_TEST_RAIN_START and without FLOOD_TEST_RAIN_MM_HR, "
+            "or set none of them"
+        )
+    if replay_file:
+        print(f"🧪 Replaying {replay_file} from {replay_start}")
+        return rain_replay.replay_intervals(
+            rain_replay.load_event(replay_file), parse_iso(replay_start), start, RAIN_LOOKAHEAD_HOURS, RAIN_TIMESTEP_MINUTES
+        )
     if test_rain:
         rain_mm_hr = float(test_rain)
         print(f"🧪 Using FLOOD_TEST_RAIN_MM_HR={rain_mm_hr:g} mm/h")
@@ -199,6 +212,37 @@ def build_rain_values(intervals, start=None):
     return values
 
 
+def rain_source():
+    """Name the branch of get_rain_forecast that supplies the rain: a replay file, a fixed test rain, or Tomorrow.io."""
+    replay_file = os.getenv("FLOOD_TEST_RAIN_CSV", "").strip()
+    if replay_file:
+        return f"replay:{os.path.basename(replay_file)}"
+    if os.getenv("FLOOD_TEST_RAIN_MM_HR", "").strip():
+        return "fixed_test_rain"
+    return "tomorrow.io"
+
+
+def summarize_rain_values(rain_values, slot, source):
+    """Summarize the [offset_seconds, m/s] series that is sent to 3Di as the run's rain input.
+
+    The total integrates the series with the trapezoid rule, because it is sent with interpolate=True.
+    """
+    mm_hr = [m_s * 1000 * 3600 for _, m_s in rain_values]
+    total_mm = sum(
+        (m_s_a + m_s_b) / 2 * (t_b - t_a) * 1000
+        for (t_a, m_s_a), (t_b, m_s_b) in zip(rain_values, rain_values[1:])
+    )
+    return {
+        "slot": iso_utc(slot),
+        "source": source,
+        "interval_count": len(rain_values),
+        "first_offset_s": rain_values[0][0] if rain_values else None,
+        "last_offset_s": rain_values[-1][0] if rain_values else None,
+        "max_mm_hr": round(max(mm_hr, default=0.0), 3),
+        "total_mm": round(total_mm, 3),
+    }
+
+
 def _log_if_auth_expired(e, context):
     """Fire a distinct, non-self-resolving alert for a 401/403 from the 3Di API.
 
@@ -250,13 +294,20 @@ def monitor_simulation(api, sim_id):
 
 
 def run_forecast_process(
-    state_file_path, rain_intervals=None, use_saved_state=True, slot_start=None, state_save_seconds=None
+    state_file_path,
+    rain_intervals=None,
+    use_saved_state=True,
+    slot_start=None,
+    state_save_seconds=None,
+    hotstart=True,
 ):
     """Run one 3Di forecast that starts at its clock slot and hotstarts from the state saved for that slot.
 
     The slot is `slot_start` if given, else the slot of the first rain interval, else the current slot.
     With use_saved_state, it registers one timed saved state per `state_save_seconds` (default one and
     two cycles) and records them in the state file once the run finishes. Returns (sim_id, saved states).
+    With hotstart False, the run cold-starts but still registers and records its saved states, so the
+    next run can hotstart from it.
     """
     print(f"🚀 Bắt đầu quy trình Simulation (State: {state_file_path})")
 
@@ -278,7 +329,10 @@ def run_forecast_process(
 
     api = get_client()
 
-    hotstart_state = choose_saved_state(load_saved_states(state_file_path), slot) if use_saved_state else None
+    if use_saved_state and hotstart:
+        hotstart_state = choose_saved_state(load_saved_states(state_file_path), slot)
+    else:
+        hotstart_state = None
 
     print("🚀 3. Tạo Simulation...")
     from_template_kwargs = dict(

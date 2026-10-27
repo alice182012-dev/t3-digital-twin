@@ -396,6 +396,49 @@ describe('QueryStore', () => {
 
             expect(newState.currentRequest.subRequests[0].state).toEqual(RequestState.FAILED)
         })
+
+        it('remembers that the failure was a missing connection', () => {
+            const store = new QueryStore(new ApiMock(() => {}))
+            const routingArgs: RoutingArgs = {
+                maxAlternativeRoutes: 1,
+                points: [],
+                profile: 'some-profile',
+                customModel: null,
+            }
+            const state: QueryStoreState = {
+                ...store.state,
+                currentRequest: { subRequests: [{ state: RequestState.SENT, args: routingArgs }] },
+            }
+
+            const noConnection = store.reduce(state, new RouteRequestFailed(routingArgs, 'message', true))
+            const other = store.reduce(state, new RouteRequestFailed(routingArgs, 'message', false))
+
+            expect(noConnection.currentRequest.subRequests[0].noConnection).toBe(true)
+            expect(other.currentRequest.subRequests[0].noConnection).toBe(false)
+        })
+
+        it('marks a request that timed out', () => {
+            const store = new QueryStore(new ApiMock(() => {}))
+            const routingArgs: RoutingArgs = {
+                maxAlternativeRoutes: 1,
+                points: [],
+                profile: 'some-profile',
+                customModel: null,
+            }
+            const state: QueryStoreState = {
+                ...store.state,
+                currentRequest: { subRequests: [{ state: RequestState.SENT, args: routingArgs }] },
+            }
+
+            const next = store.reduce(state, new RouteRequestFailed(routingArgs, 'message', false, true))
+
+            expect(next.currentRequest.subRequests[0]).toEqual({
+                args: routingArgs,
+                state: RequestState.FAILED,
+                noConnection: false,
+                timedOut: true,
+            })
+        })
     })
 })
 

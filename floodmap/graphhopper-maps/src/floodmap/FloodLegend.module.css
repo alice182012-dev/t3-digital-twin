@@ -1,9 +1,10 @@
 /* Exact values from the approved mockup
-   (artifacts/designs/mockups/Flood Routing Mockups v2.dc.html, screens 2b/2e). */
+   (artifacts/raw/frontend-mockups/Flood Routing Mockups v2.html, screen 2b). Bottom right, so the
+   stock map buttons at the top right stay free. The 30 px offset also clears the map attribution. */
 .container {
     position: absolute;
     right: 30px;
-    top: 30px;
+    bottom: 30px;
     z-index: 1;
     background: #fff;
     border-radius: 10px;
@@ -23,19 +24,40 @@
     text-transform: uppercase;
 }
 
-.bands {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.scale {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    padding: 8px 0;
 }
 
-.band {
+.bar {
+    width: 14px;
+    height: 168px;
+    border-radius: 3px;
+}
+
+.ticks {
+    position: relative;
+    width: 62px;
+    height: 168px;
+    font-size: 12px;
+    color: #111;
+}
+
+.tick {
+    position: absolute;
+    left: 0;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.tickMark {
+    width: 5px;
+    height: 1px;
+    background: #9ca3af;
 }
 
 .updated {
@@ -45,20 +67,13 @@
     border-top: 1px solid #e5e7eb;
 }
 
-.swatch {
-    width: 18px;
-    height: 12px;
-    border-radius: 2px;
-}
-
-/* On mobile, the search panel (App.module.css's .smallScreenSidebar) sits at the top of the
-   screen with a height that varies by state (collapsed pill vs. expanded inputs), and covers
-   this card's top-right position from the mockup. Move it to the bottom right instead, mirroring
-   MapModeToggle's existing bottom-left placement on this breakpoint, rather than tracking the
-   panel's runtime height. */
+/* On mobile the Map and Flood tiles take the bottom left (MapModeToggle: left 30 px, two 82 px
+   tiles and a 22 px gap, so up to x = 216 px) and the legend is about 160 px wide, so the two
+   would overlap on a 390 px screen. The legend sits above the tiles instead, and the search panel
+   at the top keeps its room. */
 @media (max-width: 44rem) {
     .container {
-        top: auto;
-        bottom: 30px;
+        right: 12px;
+        bottom: 124px;
     }
 }

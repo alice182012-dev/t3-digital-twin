@@ -5,34 +5,47 @@ validation for the GraphHopper flood-road backend" item asks for: derive_areas()
 place both GET /flood/areas (the map overlay) and POST /route (the routing gate) read flood
 geometry from, so a regression here would silently break both at once.
 
-Run it against a throwaway PostGIS (needs the postgis extension, not plain Postgres):
+Run it from the repository root against a throwaway PostGIS (needs the postgis extension,
+not plain Postgres):
 
     docker run -d --rm --name flood-verify-pg -e POSTGRES_PASSWORD=test \
         -e POSTGRES_DB=floodtest -p 55432:5432 postgis/postgis:15-3.4
-    PYTHONPATH=../scripts:../../../scripts/database \
-        FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
-        python test_flood_areas.py
+    FLOOD_TEST_DSN='postgresql://postgres:test@127.0.0.1:55432/floodtest' \
+        python3 floodmap/graphhopper-flood-road/backend/test_flood_areas.py
+
+Without FLOOD_TEST_DSN it prints "FLOOD_TEST_DSN unset; skipping" and exits 0. CI treats
+that line as a failure (.github/workflows/flood-areas-test.yml).
 
 flood_areas imports flood_utils, which the Dockerfile supplies by copying ../scripts
-alongside ../backend; PYTHONPATH stands in for that outside the image. The table comes from
-scripts/database/create_flood_road_tables.py, the same DDL the server runs, so a column the query
-needs but the deploy step lacks fails here first.
+alongside ../backend; the sys.path inserts below stand in for that outside the image. The table
+tables come from scripts/database/create_edge_depth_tables.py and create_graph_edge_table.py, the same
+DDL the server runs, so a column the query needs but the deploy step lacks fails here first.
 """
 
 from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 import psycopg2
 
-import create_flood_road_tables
-from flood_areas import build_custom_model, derive_areas
+_HERE = Path(__file__).resolve().parent
+sys.path[:0] = [
+    str(_HERE),
+    str(_HERE.parent / "scripts"),
+    str(_HERE.parents[2] / "scripts" / "database"),
+]
+
+import create_edge_depth_tables
+import create_graph_edge_table
+from flood_areas import _utc_naive, build_custom_model, derive_areas
 from flood_utils import vehicle_threshold_cm, vehicle_types
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
-RUN_OLD = "2026-05-22T06:00:00+00:00"
-RUN_NEW = "2026-05-22T12:00:00+00:00"
+EARLIER_TIME = "2026-05-22T08:45:00+00:00"
+RUN_OLD = "20260522T060000"
+RUN_NEW = "20260522T120000"
 
 # Motorbike threshold is 20cm (flood_utils.VEHICLE_PROFILES), so its bands are:
 #   b2 [0.10, 0.15), b3 [0.15, 0.20), b4 [0.20, inf). Car's threshold is 30cm, so the
@@ -50,21 +63,54 @@ SEGMENT_B = "LINESTRING(105.7620 21.0218, 105.7625 21.0220)"
 SEGMENT_FAR = "LINESTRING(105.7710 21.0314, 105.7715 21.0316)"
 
 
+_edge_keys: dict[str, str] = {}
+
+
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
-        cur.execute(create_flood_road_tables.SQL)
-        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN_OLD,))
+        cur.execute("DROP TABLE IF EXISTS edge_depth, edge_depth_run, graph_edge_export, graph_edge;")
+        cur.execute(create_graph_edge_table.SQL)
+        cur.execute(create_edge_depth_tables.SQL)
+    conn.commit()
+    _edge_keys.clear()
+
+
+def register(conn, run: str, forecast_time: str) -> None:
+    """Records that `run` covers `forecast_time` in edge_depth_run, as 9c does for every run, wet or dry."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times)"
+            " VALUES (%(run)s, 'test', ARRAY[%(t)s::timestamp])"
+            " ON CONFLICT (run_ts) DO UPDATE SET valid_times = ("
+            "   SELECT array_agg(DISTINCT t ORDER BY t)"
+            "   FROM unnest(edge_depth_run.valid_times || EXCLUDED.valid_times) t);",
+            {"run": run, "t": _utc_naive(forecast_time)},
+        )
     conn.commit()
 
 
-def insert(conn, run: str, forecast_time: str, depth: float, wkt: str, segment_id: str | None = None) -> None:
-    """segment_id=None is a row from the old GeoJSON chain; a value is a flood_on_roads.py row."""
+def graph_edge(conn, wkt: str) -> str:
+    """The edge_key of the graph edge with this geometry, which the table gets on first use."""
+    if wkt not in _edge_keys:
+        key = f"{1000 + len(_edge_keys)}:0"
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO graph_edge (edge_id, length_m, geom, edge_key)"
+                " VALUES (%s, 1, ST_GeomFromText(%s, 4326), %s);",
+                (len(_edge_keys), wkt, key),
+            )
+        _edge_keys[wkt] = key
+    return _edge_keys[wkt]
+
+
+def insert(conn, run: str, forecast_time: str, depth: float, wkt: str) -> None:
+    """One wet edge of `run` at `forecast_time`, `depth` metres deep, as 9c writes it."""
+    register(conn, run, forecast_time)
+    key = graph_edge(conn, wkt)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, segment_id, geom_4326)"
-            " VALUES (1, %s, %s, %s, %s, ST_GeomFromText(%s, 4326));",
-            (run, forecast_time, depth, segment_id, wkt),
+            "INSERT INTO edge_depth (run_ts, valid_time_utc, edge_key, depth_cm) VALUES (%s, %s, %s, %s);",
+            (run, _utc_naive(forecast_time), key, round(depth * 100)),
         )
     conn.commit()
 
@@ -119,7 +165,7 @@ def main() -> int:
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b2"]
     assert derive_areas(conn, VALID_TIME, "car", RUN_OLD)["features"] == []
 
-    # run="latest" follows the newest timestamp per forecast_time; a pinned run reads only
+    # run="latest" follows the newest run per forecast_time; a pinned run reads only
     # that run's own rows. Same forecast_time, different depths per run, so the two answers
     # would silently agree if pinning were broken.
     reset(conn)
@@ -129,7 +175,10 @@ def main() -> int:
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b2"]
     assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_NEW)) == ["b4"]
 
+    check_dry_newest_run_wins(conn)
     check_depth_decides_impassable(conn)
+    check_depth_edges_are_exact_centimetres(conn)
+    check_valid_time_is_read_with_its_offset(conn)
 
     conn.close()
 
@@ -154,6 +203,19 @@ def main() -> int:
     return 0
 
 
+def check_dry_newest_run_wins(conn) -> None:
+    """A run with no wet edge writes no edge_depth rows, only its edge_depth_run row with
+    the forecast times it covers (US-118). It still wins those times, so the older run's water
+    stops showing there, and the older run still answers a time only it covers."""
+    reset(conn)
+    insert(conn, RUN_OLD, EARLIER_TIME, DEPTH_B4_MOTORBIKE, SEGMENT_A)
+    insert(conn, RUN_OLD, VALID_TIME, DEPTH_B4_MOTORBIKE, SEGMENT_A)
+    register(conn, RUN_NEW, VALID_TIME)
+    assert derive_areas(conn, VALID_TIME, "motorbike", "latest")["features"] == []
+    assert band_ids(derive_areas(conn, EARLIER_TIME, "motorbike", "latest")) == ["b4"]
+    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4"]
+
+
 def check_depth_decides_impassable(conn) -> None:
     """b4 (impassable) starts at each vehicle's limit in flood_utils, and depth is the deepest
     sample along a piece (D-006). The fixtures are fractions of the limit, so a changed limit
@@ -162,21 +224,34 @@ def check_depth_decides_impassable(conn) -> None:
         limit_m = vehicle_threshold_cm(vehicle) / 100.0
 
         reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, 1.1 * limit_m, SEGMENT_A, segment_id="way/1#0")
+        insert(conn, RUN_OLD, VALID_TIME, 1.1 * limit_m, SEGMENT_A)
         assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b4"], (vehicle, "1.1 x limit")
         assert band_ids(derive_areas(conn, VALID_TIME, vehicle, "latest")) == ["b4"], (vehicle, "latest")
 
         reset(conn)
-        insert(conn, RUN_OLD, VALID_TIME, 0.9 * limit_m, SEGMENT_A, segment_id="way/1#0")
+        insert(conn, RUN_OLD, VALID_TIME, 0.9 * limit_m, SEGMENT_A)
         assert band_ids(derive_areas(conn, VALID_TIME, vehicle, RUN_OLD)) == ["b3"], (vehicle, "0.9 x limit")
 
-    # A run holding old-pipeline rows (segment_id NULL) and flood_on_roads rows for one
-    # forecast_time grades both on depth.
-    limit_m = vehicle_threshold_cm("motorbike") / 100.0
+
+
+def check_depth_edges_are_exact_centimetres(conn) -> None:
+    """The table holds whole centimetres, and a band starts on its own limit: motorbike b3 starts
+    at 15 cm, so 14 cm is b2 and 15 cm is b3 (D-006 grades the deepest sample on the edge)."""
+    for depth_cm, expected in ((14, ["b2"]), (15, ["b3"]), (19, ["b3"]), (20, ["b4"])):
+        reset(conn)
+        insert(conn, RUN_OLD, VALID_TIME, depth_cm / 100.0, SEGMENT_A)
+        assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == expected, depth_cm
+
+
+def check_valid_time_is_read_with_its_offset(conn) -> None:
+    """The frontend sends +07:00 times and edge_depth holds UTC, so 16:00+07:00 is the row at 09:00 UTC.
+    A time with no offset is Vietnam local time."""
     reset(conn)
-    insert(conn, RUN_OLD, VALID_TIME, 1.1 * limit_m, SEGMENT_A)
-    insert(conn, RUN_OLD, VALID_TIME, 0.9 * limit_m, SEGMENT_FAR, segment_id="way/1#0")
-    assert band_ids(derive_areas(conn, VALID_TIME, "motorbike", RUN_OLD)) == ["b4", "b3"]
+    insert(conn, RUN_OLD, VALID_TIME, DEPTH_B4_MOTORBIKE, SEGMENT_A)
+    for text in ("2026-05-22T16:00:00+07:00", "2026-05-22T16:00:00", "2026-05-22T09:00:00Z"):
+        assert band_ids(derive_areas(conn, text, "motorbike", "latest")) == ["b4"], text
+    assert derive_areas(conn, "2026-05-22T09:00:00+07:00", "motorbike", "latest")["features"] == []
+    assert _utc_naive("2026-05-22T16:00:00").tzinfo is None
 
 
 if __name__ == "__main__":

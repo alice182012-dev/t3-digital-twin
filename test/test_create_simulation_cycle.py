@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))  # create_simulation.py imports rain_replay as a top-level module
 
 
 class Model:
@@ -285,6 +286,9 @@ class FakeTi:
     def xcom_pull(self, task_ids, key=None):
         return self.xcom.get((task_ids, key))
 
+    def get_dr_count(self, **kwargs):
+        return 1  # the previous slot has a success or running run, so the cold-start check allows a hotstart
+
 
 def load_test_module(name):
     spec = importlib.util.spec_from_file_location(name, ROOT / f"test/{name}.py")
@@ -300,6 +304,7 @@ class FloodMappingDagSlotTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         api = FakeApi()
         dag_module.create_simulation = load_create_simulation(api)
+        dag_module.hotstart_policy = importlib.import_module("hotstart_policy")
         dag_module.STATE_FILE = os.path.join(tmp.name, "flood_system_state.json")
         ti = FakeTi()
         logical_date = utc(2026, 9, 26, 10, 29, 10)
@@ -308,11 +313,115 @@ class FloodMappingDagSlotTests(unittest.TestCase):
             ti.task_id = "0_check_forecast_rain"
             self.assertEqual(dag_module.task_check_forecast_rain(ti=ti, logical_date=logical_date), "1_trigger_simulation")
             ti.task_id = "1_trigger_simulation"
-            dag_module.task_run_simulation(ti=ti, logical_date=logical_date)
+            dag_module.task_run_simulation(ti=ti, logical_date=logical_date, dag=types.SimpleNamespace(dag_id="flood_mapping_full"))
 
         self.assertEqual(ti.xcom[("0_check_forecast_rain", "rain_intervals")][0]["startTime"], "2026-09-26T10:15:00Z")
         self.assertEqual(api.of("from_template")[0].start_datetime, "2026-09-26T10:15:00Z")
         self.assertEqual(api.of("rain")[0].values[0][0], 0)
+
+
+class SummarizeRainValuesTests(unittest.TestCase):
+    """summarize_rain_values reads the [offset_seconds, m/s] list that is sent to 3Di."""
+
+    SLOT = utc(2026, 9, 26, 10, 15)
+
+    def setUp(self):
+        self.module = load_create_simulation()
+
+    def test_reports_count_offsets_peak_and_total(self):
+        # 0 mm/h rising to 3.6 mm/h over one hour is a triangle of 1.8 mm.
+        summary = self.module.summarize_rain_values([[0, 0.0], [3600, 1e-6]], self.SLOT, "tomorrow.io")
+
+        self.assertEqual(
+            summary,
+            {
+                "slot": "2026-09-26T10:15:00Z",
+                "source": "tomorrow.io",
+                "interval_count": 2,
+                "first_offset_s": 0,
+                "last_offset_s": 3600,
+                "max_mm_hr": 3.6,
+                "total_mm": 1.8,
+            },
+        )
+
+    def test_constant_rain_totals_intensity_times_duration(self):
+        values = [[offset, 6 / 3_600_000] for offset in range(0, 7201, 900)]
+
+        summary = self.module.summarize_rain_values(values, self.SLOT, "fixed_test_rain")
+
+        self.assertEqual((summary["interval_count"], summary["max_mm_hr"], summary["total_mm"]), (9, 6.0, 12.0))
+
+    def test_an_empty_list_reports_no_rain(self):
+        summary = self.module.summarize_rain_values([], self.SLOT, "tomorrow.io")
+
+        self.assertEqual(
+            (summary["interval_count"], summary["first_offset_s"], summary["last_offset_s"], summary["total_mm"]),
+            (0, None, None, 0.0),
+        )
+
+    def test_source_names_the_branch_get_rain_forecast_takes(self):
+        env = {"FLOOD_TEST_RAIN_CSV": "", "FLOOD_TEST_RAIN_START": "", "FLOOD_TEST_RAIN_MM_HR": ""}
+        with patch.dict(os.environ, env):
+            self.assertEqual(self.module.rain_source(), "tomorrow.io")
+        with patch.dict(os.environ, {**env, "FLOOD_TEST_RAIN_MM_HR": "6"}):
+            self.assertEqual(self.module.rain_source(), "fixed_test_rain")
+        with patch.dict(
+            os.environ,
+            {**env, "FLOOD_TEST_RAIN_CSV": "/data/rain/hanoi-2025-10-05.csv", "FLOOD_TEST_RAIN_START": "2026-10-02T09:00:00Z"},
+        ):
+            self.assertEqual(self.module.rain_source(), "replay:hanoi-2025-10-05.csv")
+
+
+class RainIngestedXcomTests(unittest.TestCase):
+    """1_trigger_simulation pushes rain_ingested next to sim_id, built from the series sent to 3Di."""
+
+    LOGICAL_DATE = utc(2026, 9, 26, 10, 29, 10)
+
+    def run_dag(self, api, rain_mm_hr="6"):
+        dag_module = load_test_module("test_flood_mapping_dag_graph").load_dag_module()
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        dag_module.create_simulation = load_create_simulation(api)
+        dag_module.hotstart_policy = importlib.import_module("hotstart_policy")
+        dag_module.STATE_FILE = os.path.join(tmp.name, "flood_system_state.json")
+        ti = self.ti = FakeTi()
+        env = {"FLOOD_TEST_RAIN_MM_HR": rain_mm_hr, "FLOOD_TEST_RAIN_CSV": "", "FLOOD_TEST_RAIN_START": ""}
+        with patch.dict(os.environ, env), patch("builtins.print"):
+            ti.task_id = "0_check_forecast_rain"
+            dag_module.task_check_forecast_rain(ti=ti, logical_date=self.LOGICAL_DATE)
+            ti.task_id = "1_trigger_simulation"
+            dag_module.task_run_simulation(
+                ti=ti, logical_date=self.LOGICAL_DATE, dag=types.SimpleNamespace(dag_id="flood_mapping_full")
+            )
+        return ti
+
+    def test_pushes_the_summary_of_the_series_sent_to_3di(self):
+        api = FakeApi()
+
+        self.run_dag(api)
+
+        ti = self.ti
+        sent = api.of("rain")[0].values
+        summary = ti.xcom[("1_trigger_simulation", "rain_ingested")]
+        self.assertEqual(ti.xcom[("1_trigger_simulation", "sim_id")], 42)
+        self.assertEqual(summary["interval_count"], len(sent))
+        self.assertEqual((summary["first_offset_s"], summary["last_offset_s"]), (sent[0][0], sent[-1][0]))
+        self.assertEqual(
+            (summary["slot"], summary["source"], summary["max_mm_hr"], summary["total_mm"]),
+            ("2026-09-26T10:15:00Z", "fixed_test_rain", 6.0, 12.0),
+        )
+
+    def test_a_failed_trigger_pushes_no_summary(self):
+        class FailingApi(FakeApi):
+            def simulations_from_template(self, from_template):
+                raise RuntimeError("3Di refused the simulation")
+
+        with self.assertRaises(Exception):
+            self.run_dag(FailingApi())
+
+        self.assertIn(("0_check_forecast_rain", "rain_intervals"), self.ti.xcom)
+        self.assertNotIn(("1_trigger_simulation", "rain_ingested"), self.ti.xcom)
 
 
 class StateTestDagChainTests(unittest.TestCase):

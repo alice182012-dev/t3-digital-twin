@@ -8,8 +8,11 @@ import numpy as np
 import psycopg2
 from osgeo import gdal, osr
 
+import create_demo_pin_table
 import create_flood_depth_raster_tables
+import create_flood_run_output_table
 import raster_load
+from test_run_output import FakeConnection, published
 
 gdal.UseExceptions()
 
@@ -85,32 +88,97 @@ def write_depth_grid_tif(path: Path, size: int) -> None:
     ds = None
 
 
+def fake_reproject(src, dst):
+    Path(dst).write_bytes(b"warped")
+
+
+def depth_files(root: Path, run: str, names=("depth_20260925_173000.tif",)) -> Path:
+    (root / run).mkdir()
+    for name in names:
+        (root / run / name).write_bytes(b"")
+    return root / run
+
+
 class OverlappingRunsTests(unittest.TestCase):
     def test_a_run_loading_the_same_valid_time_keeps_the_other_runs_work_file(self):
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         root = Path(tmp.name)
-        for run in ("run_k", "run_k1"):
-            (root / run).mkdir()
-            (root / run / "depth_20260925_173000.tif").write_bytes(b"")
+        run_k, run_k1 = depth_files(root, "run_k"), depth_files(root, "run_k1")
         work_dir = root / "work"
         read_back = {}
 
-        def reproject(src, dst):
-            Path(dst).write_bytes(b"warped")
-
-        def load_raster(conn, run_ts, valid_time, raster_path):
+        def write_tiles(cur, run_ts, valid_time, raster_path):
             if run_ts == "20260925T171500":
-                raster_load.load_run(None, root / "run_k1", "20260925T173000", work_dir, keep_runs=8)
+                raster_load.load_run(FakeConnection(), run_k1, "20260925T173000", work_dir, keep_runs=8)
             read_back[run_ts] = Path(raster_path).exists()
 
-        with mock.patch.object(raster_load, "reproject_to_4326", reproject), \
-                mock.patch.object(raster_load, "load_raster", load_raster), \
-                mock.patch.object(raster_load, "prune_raster_runs"):
-            raster_load.load_run(None, root / "run_k", "20260925T171500", work_dir, keep_runs=8)
+        with mock.patch.object(raster_load, "reproject_to_4326", fake_reproject), \
+                mock.patch.object(raster_load, "write_tiles", write_tiles):
+            raster_load.load_run(FakeConnection(), run_k, "20260925T171500", work_dir, keep_runs=8)
 
         self.assertEqual(read_back, {"20260925T173000": True, "20260925T171500": True})
         self.assertEqual(list(work_dir.iterdir()), [])
+
+
+class DepthRasterRunOutputTests(unittest.TestCase):
+    """The depth_raster row of flood_run_output commits with the run's last tiles, and only then."""
+
+    STEPS = ("depth_20260925_173000.tif", "depth_20260925_174500.tif")
+
+    def setUp(self):
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.depth_dir = depth_files(self.root, "run", self.STEPS)
+
+    def load(self, conn, reproject=fake_reproject):
+        with mock.patch.object(raster_load, "reproject_to_4326", reproject):
+            return raster_load.load_run(conn, self.depth_dir, "20260925T173000", self.root / "work", keep_runs=8)
+
+    def committed_tile_steps(self, conn):
+        return [params["valid_time_utc"].strftime("%H:%M") for sql, params in conn.committed
+                if sql is raster_load._INSERT_TILES_SQL]
+
+    def test_a_loaded_run_records_its_depth_raster_row(self):
+        conn = FakeConnection()
+
+        self.load(conn)
+
+        self.assertEqual(self.committed_tile_steps(conn), ["10:30", "10:45"])
+        self.assertEqual(published(conn), {("20260925T173000", "depth_raster")})
+
+    def test_a_timestep_that_fails_to_reproject_leaves_no_row(self):
+        def reproject(src, dst):
+            if src.name == self.STEPS[1]:
+                raise RuntimeError("gdal.Warp failed")
+            fake_reproject(src, dst)
+
+        conn = FakeConnection()
+
+        with self.assertRaises(RuntimeError):
+            self.load(conn, reproject)
+
+        self.assertEqual(self.committed_tile_steps(conn), ["10:30"])
+        self.assertEqual(published(conn), set())
+
+    def test_a_last_timestep_whose_tiles_fail_to_insert_leaves_no_row(self):
+        inserts = []
+
+        def rows(sql):
+            if sql is raster_load._INSERT_TILES_SQL:
+                inserts.append(sql)
+                if len(inserts) == 2:
+                    raise psycopg2.DataError("Could not open bytea with GDAL")
+            return ()
+
+        conn = FakeConnection(rows)
+
+        with self.assertRaises(psycopg2.DataError):
+            self.load(conn)
+
+        self.assertEqual(self.committed_tile_steps(conn), ["10:30"])
+        self.assertEqual(published(conn), set())
 
 
 @unittest.skipUnless(os.environ.get("FLOOD_TEST_DSN"), "FLOOD_TEST_DSN unset")
@@ -126,7 +194,8 @@ class LoadRunTests(unittest.TestCase):
         with self.conn, self.conn.cursor() as cur:
             cur.execute("SET TIME ZONE 'UTC';")
             cur.execute(create_flood_depth_raster_tables.SQL)
-            cur.execute("TRUNCATE flood_depth_raster_tile;")
+            cur.execute(create_flood_run_output_table.SQL)
+            cur.execute("TRUNCATE flood_depth_raster_tile, flood_run_output;")
 
     def depth_dir(self, run: str, size: int) -> Path:
         path = self.root / run
@@ -179,6 +248,16 @@ class LoadRunTests(unittest.TestCase):
                 err_msg=f"tile ({x}, {y})",
             )
 
+    def test_a_loaded_run_has_one_depth_raster_row_after_two_loads(self):
+        depth_dir = self.depth_dir("20260704T100000", 4)
+
+        raster_load.load_run(self.conn, depth_dir, "20260704T100000", self.root / "work")
+        raster_load.load_run(self.conn, depth_dir, "20260704T100000", self.root / "work")
+
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("SELECT run_ts, output FROM flood_run_output;")
+            self.assertEqual(cur.fetchall(), [("20260704T100000", "depth_raster")])
+
     def test_loading_a_timestep_twice_gives_the_same_rows(self):
         depth_dir = self.depth_dir("20260704T100000", 600)
         raster_load.load_run(self.conn, depth_dir, "20260704T100000", self.root / "work")
@@ -208,6 +287,19 @@ class LoadRunTests(unittest.TestCase):
         self.assertEqual(
             self.runs(), ["20260601T000000", "20260703T000000", "20260704T000000", "20260705T000000"]
         )
+
+    def test_prune_never_deletes_the_pinned_run(self):
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute(create_demo_pin_table.SQL)
+            cur.execute("TRUNCATE demo_pin")
+        for run in ["20260701T000000", "20260703T000000", "20260704T000000"]:
+            raster_load.load_run(self.conn, self.depth_dir(run, 4), run, self.root / "work", keep_runs=10)
+        with self.conn, self.conn.cursor() as cur:
+            cur.execute("INSERT INTO demo_pin (run_ts, valid_time_utc, wet_edges) VALUES ('20260701T000000', '2026-07-01', 1)")
+
+        raster_load.load_run(self.conn, self.depth_dir("20260705T000000", 4), "20260705T000000", self.root / "work", keep_runs=2)
+
+        self.assertEqual(self.runs(), ["20260701T000000", "20260704T000000", "20260705T000000"])
 
     def test_keep_runs_argument_overrides_the_environment(self):
         for run in ["20260701T000000", "20260702T000000", "20260703T000000", "20260704T000000"]:

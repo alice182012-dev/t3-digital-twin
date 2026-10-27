@@ -3,8 +3,8 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [minio, airflow, flood-tile]
-related: ["[[SW Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[flood-on-roads]]", "[[decision-log]]"]
-last_updated: 2026-09-26
+related: ["[[T3-Digital-Twin_Architecture]]", "[[flood-extent-polygon-tiles-airflow-minio]]", "[[2026-09-18]]", "[[graphhopper-backend]]", "[[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]", "[[raster-first-flood-pipeline]]", "[[decision-log]]", "[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]", "[[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]"]
+last_updated: 2026-10-13
 ---
 
 # MinIO flood-extent tile pipeline
@@ -23,9 +23,8 @@ public only through nginx's proxy, never directly.
 
 A fourth bucket, `flood-results-full`, held the GeoJSON of the retired road-mapping chain.
 `compose.yml` stopped creating it on 2026-09-24. The bucket and its objects on the server go at
-the Stage B deploy of [[raster-first-flood-pipeline]]. `scripts/mapping/upload_minio.py`,
-`scripts/mapping/merge_geojson.py`, and `scripts/database/geojson_to_pg.py` still default to that
-bucket name until they are deleted after the flood-on-roads comparison.
+the Stage B deploy of [[raster-first-flood-pipeline]]. The scripts that defaulted to that
+bucket name (`upload_minio.py`, `merge_geojson.py`, and `geojson_to_pg.py`) are deleted.
 
 Inside `flood-extent`, tiles land at `runs/<run_ts>/<timestep_key>/{z}/{x}/{y}.pbf`. `run_ts` is a
 fixed-width `YYYYMMDDTHHMMSS` string, chosen so lexical sort order matches chronological order.
@@ -36,22 +35,46 @@ empty one rather than an error.
 
 ## The Airflow task
 
-`dags/flood_mapping_dag.py`'s `task_build_flood_tiles` (task 9 in the DAG, named
-`9_build_flood_tiles`) runs after `3_calculate_depth` and `0b_ensure_schema`. It reads the run's
-depth directory from task 3's XCom, takes `run_ts` from `flood_extent.run_ts_for_depth_dir` (the
-`stamp_key` of the earliest `depth_*.tif`), and calls `scripts/flood_extent/publish.py`'s
-`publish_run` once for the whole run.
+`dags/flood_tiles_dag.py`'s `task_build_flood_tiles` (named `9_build_flood_tiles`) is the only task of
+the `flood_tiles` DAG ([[US-103-move-the-flood-tile-build-into-its-own-dag|US-103]]). The DAG runs on
+the asset `FLOOD_DEPTH_FILES` (`dags/core_assets.py`). Task `3b_publish_depth_files` of
+`flood_mapping_full` emits it after `3_calculate_depth`, `2c_archive_done`, and `0b_ensure_schema`, with
+`run_ts` and `depth_dir` in the event's `extra`. `run_ts` is the `stamp_key` of the earliest
+`depth_*.tif` (`flood_extent.run_ts_for_depth_dir`). The task calls `scripts/flood_extent/publish.py`'s
+`publish_run` once for each run in the triggering events, oldest first. A failure in `flood_tiles` does
+not fail the core run.
+
+The tile build reads the announced `depth_*.tif` folder and starts when `3b_publish_depth_files` ends. The task returns `build_seconds` for each run.
+Until 2026-10-13 a second input, `postgis`, exported the steps from `flood_depth_raster_tile` in EPSG:4326. It built no tiles as shipped, because the engine needs the source CRS ([[BL-029-postgis-tile-input-drops-every-polygon|BL-029]]), and with a warp it was 32 to 35 s slower per run and its band areas differed by 1.0 to 1.7 percent ([[US-104-compare-the-two-inputs-of-the-flood-tile-build|US-104]], [[decision-log|D-027]]). [[US-140-delete-the-postgis-input-of-the-flood-tile-build|US-140]] deleted the input, the variable `FLOOD_TILES_INPUT`, and `raster_export.py`.
+
+The 24-hour cleanup of `RESULT_DIR` and `DEPTH_ROOT_DIR` is part of `publish_run`, so `flood_tiles` owns
+it. It deletes by file age, so it cannot take the files of a run that another consumer still reads. A
+later consumer of `FLOOD_DEPTH_FILES` must not delete the depth folder. The shared folder paths are in
+`dags/core_paths.py`.
 
 The road-mapping chain (extract GeoJSON, merge, map roads, upload, write to Postgres) left the DAG
-on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`,
-which routing reads. Since 2026-09-25 the `flood_on_roads` task writes that table instead, from the
-tiles that `9b_load_depth_raster` loads. See [[flood-on-roads]].
+on 2026-09-24, per the plan [[raster-first-flood-pipeline]]. That chain wrote `flood_road_values`.
+The `flood_on_roads` task replaced it from 2026-09-25, and [[US-123-delete-flood-on-roads-and-flood-road-values|US-123]] deleted the task and the table on 2026-10-13. Routing reads `edge_depth` now.
 
 `publish_run` builds and uploads one timestep at a time, `FLOOD_EXTENT_WORKERS` (default 2) of them
 in parallel. If any timestep fails, `publish_run` raises without deleting tiles or rows already
 published for timesteps that succeeded: a missing tile 404s and the map treats it as empty, so
 partial per-run state is safe to leave in place. Bucket pruning and local cleanup only run after
 every timestep in the run has succeeded.
+
+## Where the tile build spends its time
+
+Stage times of one timestep on a grown storm (2026-10-01, step 1 of the 20:15 run): reclassify 4.5 s,
+close bands 30.8 s, polygonize 67.1 s, dissolve 440.7 s, clean 4.8 s, cut tiles 70.2 s. The dissolve was a
+single-threaded `ST_Union` per band group. It now runs one `ogr2ogr` per band code in parallel
+(`Pipeline.dissolve_band`, `1607484`) and merges the parts. It stays `ST_Union` because
+`gdal_polygonize -8` leaves overlapping polygons within a band: `ST_Collect` gave 2 to 7 percent larger
+areas, and `ST_UnaryUnion` was not faster. On the same file the area per band and the tile count (190)
+are identical to the old query. A timestep has about 192 tiles at zoom 10 to 16, and only the first
+`FLOOD_EXTENT_TILE_STEPS` timesteps (2) of a run get tiles. The tile build grows with the flooded area:
+under a sustained 50 mm/h test storm it grew from 4.4 to 6.1 minutes over the first hour after a cold
+start. That storm is not a real event, so the user stopped it on 2026-10-02. The margin of `US-037` is
+retested under a replay of a recorded 48-hour rain (`US-063`, see [[3di-simulation-orchestration]]). The 50 runs of that storm from 2026-10-02 00:45 to 13:00 +07 show the effect in numbers: the tile task grew from 5.8 minutes in the 01:00 hour to 11.5 minutes by 09:00 and then stayed there, and the margin to the end of the tile task fell from +2.3 minutes to -3.3 minutes (`scripts/pipeline_margins/report.py`, `US-065`). The 07:00 run, with a tile task of 15.8 minutes, is not explained.
 
 ## Filename to UTC conversion
 
@@ -68,22 +91,21 @@ match any tile the frontend can actually fetch, off by exactly 7 hours.
 Each dissolved band polygon for each timestep gets one row in `flood_extent_polygon`
 (`run_ts, valid_time_utc, dn_code, area_m2, geom`), upserted on
 `(run_ts, valid_time_utc, dn_code)` so a retried publish replaces its own row instead of
-duplicating it. `flood_extent_runs.py` reads only this table; it never touches the tile files
-directly.
+duplicating it. `flood_extent_runs.list_runs` reads this table, and `list_timesteps` reads `flood_extent_step`. Neither touches the tile files directly.
 
 ## PostGIS depth raster
 
 `flood_depth_raster_tile` (`run_ts, valid_time_utc, tile_x, tile_y, rast`) holds each timestep's
 `depth.tif` as 256 x 256 pixel PostGIS raster tiles. Its primary key is
 `(run_ts, valid_time_utc, tile_y, tile_x)`, and a GIST index covers `ST_ConvexHull(rast)`. The table
-exists so `GET /flood/points` ([[point-depth-lookup-backend]]) can answer the exact depth at an
-arbitrary point, which `flood_road_values` (per segment) and `flood_extent_polygon` (banded ranges)
+exists so `GET /flood/points` ([[EP-03-point-depth-lookup-backend|point-depth-lookup-backend]]) can answer the exact depth at an
+arbitrary point, which `edge_depth` (per edge) and `flood_extent_polygon` (banded ranges)
 cannot. `scripts/database/create_flood_depth_raster_tables.py` creates it, and running that script
 twice is safe.
 
-The `9b_load_depth_raster` task runs beside `9_build_flood_tiles` and takes the same `run_ts` from
+The `9b_load_depth_raster` task runs beside `3b_publish_depth_files` (which starts `9_build_flood_tiles`) and takes the same `run_ts` from
 `flood_extent.run_ts_for_depth_dir`, so both tables share one (run, valid time) key. The
-`flood_on_roads` task runs after `9b_load_depth_raster` and samples these tiles under the same
+`9c_build_edge_depth_table` task runs after `9b_load_depth_raster` and samples these tiles under the same
 `run_ts`. `raster_load.load_run` reprojects
 each `depth_*.tif` from EPSG:3405 to EPSG:4326 with `gdal.Warp`. Then it uploads the GeoTIFF once,
 and PostGIS cuts it with `ST_Tile` inside the same `INSERT`. For each timestep the loader deletes
@@ -129,46 +151,80 @@ loaded before the switch, until the deploy runbook in [[raster-first-flood-pipel
 
 ## Retention
 
-`publish_run`'s `prune_bucket_runs` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 3) in
-the bucket, always preserving the run currently being published, and deletes every object under
-older `runs/<run>/` prefixes in batches of 1,000 keys (the `DeleteObjects` API's per-call cap).
-Local scratch space (`FLOOD_EXTENT_WORK_DIR`, plus the depth directory itself) is separately swept
-by `cleanup_old_files`, which deletes any top-level child older than
+`publish_run`'s `prune_bucket_runs` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 8,
+`dags/flood_mapping_dag.py`'s `FLOOD_EXTENT_KEEP_RUNS`) in the bucket, always preserving the run
+currently being published, and deletes every object under older `runs/<run>/` prefixes in batches
+of 1,000 keys (the `DeleteObjects` API's per-call cap). Local scratch space
+(`FLOOD_EXTENT_WORK_DIR`, plus the depth directory itself) is separately swept by
+`cleanup_old_files`, which deletes any top-level child older than
 `FLOOD_EXTENT_CLEANUP_MAX_AGE_HOURS` (default 24), using each child's newest file's mtime as its
 age so a folder still being written is never mistaken for a stale one.
 
+`publish_run` also calls `prune_step_rows` and `prune_polygon_rows` (`US-067`,
+[[US-067-prune-flood-extent-polygon-rows|prune-flood-extent-polygon-rows]]) right after `prune_bucket_runs`, both with the same
+`keep_runs` and `always_keep`. Each deletes its own table's rows for every `run_ts` outside the
+newest `keep_runs`, computed from that table's own distinct `run_ts` values: `prune_step_rows` on
+`flood_extent_step`, `prune_polygon_rows` on `flood_extent_polygon`. Before `US-067`,
+`flood_extent_polygon` had no prune at all, unlike the bucket and `flood_extent_step`, and grew
+unbounded from 2026-09-24 to 13 GB by 2026-10-04
+([[BL-022-docker-data-vhdx-fills-c-drive-again|docker-data-vhdx-fills-c-drive-again]]), almost all dead TOAST bloat behind a few thousand
+live rows. A one-off `DELETE` plus `VACUUM (FULL)` took it to 5 GB that day; `prune_polygon_rows`
+is the automated policy that stops it from happening again, deleting roughly one run's worth of
+rows on every publish instead of letting runs accumulate forever. No `VACUUM FULL` runs as part of
+this: checked against the live `storage-postgres` container on 2026-10-05, the table has no
+per-table autovacuum override (`scale_factor 0.2`, `threshold 50`, the cluster defaults), and a
+delete this size on every 15-minute cycle is expected to stay under that trigger between runs,
+unlike the unbounded growth it replaces. `last_autovacuum` was still null at that check because
+`flood_mapping_full` was paused then, so nothing had exercised the new prune. `flood_mapping_full` was
+unpaused on the server on 2026-10-08, and whether autovacuum has run since is unverified.
+
 `raster_load.load_run` prunes `flood_depth_raster_tile` the same way after it loads a run. It keeps
 the newest `keep_runs` runs by `run_ts` and deletes every tile of older runs. A caller that passes
-no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 3), which is what `flood_mapping_full` does.
-The manual two-event test DAG passes 1,000, so a test run never prunes production tiles. The load
-never deletes the run it just loaded, even when an older run is loaded again later. A value below
-1 fails the load.
+no `keep_runs` gets `FLOOD_RASTER_KEEP_RUNS` (default 8, `raster_load.py`'s `DEFAULT_KEEP_RUNS`),
+which is what `flood_mapping_full` does. The manual two-event test DAG passes 1,000, so a test run
+never prunes production tiles. The load never deletes the run it just loaded, even when an older
+run is loaded again later. A value below 1 fails the load.
 
 ## How the frontend picks a timestep
 
-**Branch `fifteen-minute-cycle` (not deployed) changes the rest of this section.** `publish_run` builds
-tiles and polygons for the first `tile_steps` steps of a run only (`FLOOD_EXTENT_TILE_STEPS`, default 2).
-After a step's tiles and polygon rows are written, it records the step in `flood_extent_step`
-(`run_ts`, `valid_time_utc`, `is_empty`, `published_at`), which is the published flag. `GET /flood/timesteps`
-reads that table and returns, for each time, the newest run that published it, so entries can carry
-different runs and dry steps stay in the list. `FloodStore.ts` selects the latest step at or before now
-(`findNowTimestepIndex`) and re-picks on every refetch. Retention rises to 8 runs. Runs published before
-the table existed are backfilled only when the table is empty, from the newest 3 runs. The raster load
-still covers every step, and `POST /flood/forecast` reads it for the route depth chart.
-The text below describes the code on the deployed branch.
+**Publishing.** `publish.publish_run` builds tiles and polygons for the first `tile_steps` depth rasters of
+a run only (`FLOOD_EXTENT_TILE_STEPS`, default 2, read in `dags/flood_mapping_dag.py`). For each step,
+`write_step_rows` upserts the `flood_extent_polygon` rows and then the step's `flood_extent_step` row
+(`run_ts`, `valid_time_utc`, `is_empty`, `published_at`) in one transaction, after the tiles are uploaded.
+The `flood_extent_step` row is the published flag. A dry step gets a step row with `is_empty` true and no
+polygon rows. The raster load still covers every step of the run in `flood_depth_raster_tile`.
 
-`GET /flood/timesteps` lists the timesteps of one run only, the newest `run_ts` in
-`flood_extent_polygon`. A timestep with no flooding has no polygon row, so it is not in the list.
-On load, `floodmap/graphhopper-maps/src/floodmap/FloodStore.ts` selects the timestep closest to
-now (`reanchorTimestepIndex`). The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`,
-a demo default, so the page opens in flood mode whatever the timestamps say. `defaultMapMode`, which
-would open in flood mode only when the newest timestep is within `FRESH_DATA_WINDOW_MS` (45 minutes)
-of now, exists but is not used at load while that demo default stays. `useFloodBootstrap`
-re-fetches the timestep list well inside that window so the map picks up a new run promptly.
+**Listing.** `GET /flood/timesteps` (`server.py`) takes an optional `run` query parameter, default
+`latest`. `flood_extent_runs.list_timesteps` then reads `flood_extent_step` and returns each valid time
+with the newest `run_ts` that published it (`max(run_ts)` grouped by `valid_time_utc`), so consecutive
+entries can carry different runs. Dry steps stay in the list. An explicit `run` lists only that run's steps.
+Each `valid_time` is converted to UTC+7 so it matches the tile folder name.
+
+**Choosing the step.** `useFloodBootstrap` (`useFloodState.ts`) calls `loadFloodTimesteps` on mount and
+every `TIMESTEP_REFRESH_INTERVAL_MS` (5 minutes). Each response dispatches `FloodTimestepsReceived` with
+the clock read after the fetch. The reducer in `FloodStore.ts` re-picks `selectedIndex` with
+`findNowTimestepIndex` on every response: the latest `valid_time` at or before now, never a later one. When
+every step is later than now, it falls back to the earliest step. An empty list gives -1. No control selects
+a step by hand.
+
+**Map mode.** The store starts with `mapMode: 'flood'` and `userChoseMapMode: true`, a demo default, so the
+page opens in flood mode. `defaultMapMode` opens in flood mode only when the selected step is within
+`FRESH_DATA_WINDOW_MS` (45 minutes) of now. It runs only when `userChoseMapMode` is false, which does not
+happen at load while the demo default stays.
+
+**Route depth chart.** `DepthForecastChart.tsx` sends `POST /flood/forecast` with the route's points,
+`from` (`forecastWindowStart(Date.now())`), and `steps` (`FORECAST_STEPS`, 8). `flood_forecast.lookup_forecast`
+reads `flood_depth_raster_tile`, not the step table. Each valid time in the window takes the newest run
+that has a raster for it. `from` defaults to now floored to 15 minutes, and `steps` runs from 1 to 96
+(`MAX_STEPS`).
+
+**Retention and backfill.** `publish_run` keeps the newest `FLOOD_EXTENT_KEEP_RUNS` runs (default 8).
+`scripts/database/create_flood_extent_tables.py` backfills `flood_extent_step` from the newest 3 runs in
+`flood_extent_polygon`, only when the step table is empty.
 
 ## Open items
 
-- `artifacts/docs/claude-plan/flood-extent-polygon-tiles-airflow-minio.md` is the plan this
+- `artifacts/archive/plans/flood-extent-polygon-tiles-airflow-minio.md` is the plan this
   pipeline was built from; the parts already shipped (per-timestep tiles, MinIO storage, the
   45-minute freshness window, the timezone conversion) are described above as built. Check that
   plan file's own status before assuming anything past what this page states is still open.

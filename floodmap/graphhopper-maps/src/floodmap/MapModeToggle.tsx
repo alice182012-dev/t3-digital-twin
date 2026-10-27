@@ -1,6 +1,8 @@
 import styles from './MapModeToggle.module.css'
 import PlainButton from '@/PlainButton'
 import { MapMode } from '@/floodmap/FloodStore'
+import mapLayer from './map_layer.png'
+import floodLayer from './flood_layer.png'
 
 /**
  * Two square thumbnail buttons, bottom-left, per the approved mockup
@@ -11,15 +13,30 @@ import { MapMode } from '@/floodmap/FloodStore'
  * Presentational on purpose. The recency-derived default lives in FloodStore's reducer, so this
  * component never reads a clock and renders identically for a given `mode`.
  */
-export default function MapModeToggle({ mode, onChange }: { mode: MapMode; onChange: (mode: MapMode) => void }) {
+export default function MapModeToggle({
+    mode,
+    onChange,
+    offsetLeft = 0,
+}: {
+    mode: MapMode
+    onChange: (mode: MapMode) => void
+    /** Width in px of the panel at the left, so the buttons sit 30 px inside the map and not over the panel. */
+    offsetLeft?: number
+}) {
     return (
-        <div className={styles.container} role="group" aria-label="Map mode">
+        <div
+            className={styles.container}
+            style={offsetLeft ? { left: 30 + offsetLeft } : undefined}
+            role="group"
+            aria-label="Map mode"
+        >
             <PlainButton
                 className={mode === 'map' ? styles.thumbActive : styles.thumb}
                 aria-pressed={mode === 'map'}
                 onClick={() => onChange('map')}
                 title="Show the plain map"
             >
+                <img className={styles.thumbImage} src={mapLayer} alt="" />
                 <span className={styles.thumbLabel}>Map</span>
             </PlainButton>
             <PlainButton
@@ -28,7 +45,7 @@ export default function MapModeToggle({ mode, onChange }: { mode: MapMode; onCha
                 onClick={() => onChange('flood')}
                 title="Show the flood overlay"
             >
-                <span className={styles.floodTint} />
+                <img className={styles.thumbImage} src={floodLayer} alt="" />
                 <span className={styles.thumbLabel}>Flood</span>
             </PlainButton>
         </div>

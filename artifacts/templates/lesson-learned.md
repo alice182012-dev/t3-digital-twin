@@ -10,6 +10,8 @@ related: []
 
 # <% tp.file.title %>
 
+Name this file L-nnn-<slug>.md. Take nnn from the next free number in the Conventions of Home.md.
+
 ## Rule
 
 One or two sentences, stated as a check to run or a thing to do, not a description of what

@@ -1,33 +1,30 @@
-/* Card, title, and text colors follow FloodLegend.module.css. */
 .container {
-    margin: 0.5rem 0.75rem 0 0.75rem;
-    padding: 12px 14px;
+    margin: 0;
+    padding: 16px 24px 16px 26px;
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     font-size: 12px;
 }
 
-.title {
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+.titleRow {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    color: #111;
 }
 
-/* The mean-line label sits in this right-hand gutter, beside the bars instead of over them. */
-.plot,
-.labels {
-    padding-right: 48px;
+.summary {
+    margin-left: auto;
+    font-size: 12px;
+    color: #6b7280;
 }
 
 .plot {
-    height: 72px;
-    border-bottom: 1px solid #e5e7eb;
+    height: 130px;
+    border-bottom: 1px solid #111;
 }
 
 .bars {
@@ -35,7 +32,8 @@
     height: 100%;
     display: flex;
     align-items: flex-end;
-    gap: 4px;
+    gap: 10px;
+    padding: 0 2px;
 }
 
 .column {
@@ -48,49 +46,66 @@
 .bar,
 .nowBar {
     width: 100%;
-    border-radius: 2px 2px 0 0;
 }
 
 .bar {
-    background: #9ecae1;
+    background: #3b3b3b;
 }
 
 .nowBar {
-    background: #16a34a;
+    background: #5cc97a;
 }
 
 .nowLine {
     position: absolute;
     left: 0;
     right: 0;
-    border-top: 1px dashed #374151;
+    border-top: 1.5px dashed #111;
 }
 
 .nowLineLabel {
     position: absolute;
-    left: 100%;
-    top: 0;
-    transform: translateY(-50%);
-    padding-left: 4px;
-    color: #374151;
+    right: 0;
+    bottom: 0;
+    transform: translateY(-6px);
+    padding: 0 4px;
+    background: #fff;
+    color: #111;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.limitLine {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed #dc2626;
+}
+
+.limitLineLabel {
+    position: absolute;
+    right: 0;
+    top: 2px;
+    color: #dc2626;
     font-weight: 600;
     white-space: nowrap;
 }
 
 .labels {
     display: flex;
-    gap: 4px;
+    gap: 10px;
+    padding: 0 2px;
 }
 
 .label,
 .nowLabel {
     flex: 1;
     text-align: center;
-    color: #6b7280;
-    font-size: 10px;
+    color: #374151;
+    font-size: 12px;
 }
 
 .nowLabel {
-    color: #111827;
-    font-weight: 700;
+    color: #111;
+    font-weight: 600;
 }

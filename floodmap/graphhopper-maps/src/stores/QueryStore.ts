@@ -66,6 +66,10 @@ export enum RequestState {
 export interface SubRequest {
     readonly args: RoutingArgs
     readonly state: RequestState
+    /** The request failed because GraphHopper found no connection. The "wait until" advice is asked for only then. */
+    readonly noConnection?: boolean
+    /** The request was cancelled for want of an answer. The panel then asks the user to try again. */
+    readonly timedOut?: boolean
 }
 
 export default class QueryStore extends Store<QueryStoreState> {
@@ -246,8 +250,10 @@ export default class QueryStore extends Store<QueryStoreState> {
                 ? Object.keys(config.profiles).map(profile => ({ name: profile }))
                 : action.result.profiles
 
-            // if a routing profile was in the url keep it, otherwise select the first entry as default profile
-            const profile = state.routingProfile.name ? state.routingProfile : profiles[0]
+            // if a routing profile was in the url keep it, otherwise select default_profile from the config, or the first entry
+            const profile = state.routingProfile.name
+                ? state.routingProfile
+                : (profiles.find(p => p.name === config.default_profile) ?? profiles[0])
             return this.routeIfReady(
                 {
                     ...state,
@@ -326,7 +332,14 @@ export default class QueryStore extends Store<QueryStoreState> {
         action: RouteRequestSuccess | RouteRequestFailed,
     ): QueryStoreState {
         const newState = action instanceof RouteRequestSuccess ? RequestState.SUCCESS : RequestState.FAILED
-        const newSubrequests = QueryStore.replaceSubRequest(state.currentRequest.subRequests, action.request, newState)
+        const failure =
+            action instanceof RouteRequestFailed ? { noConnection: action.noConnection, timedOut: action.timedOut } : {}
+        const newSubrequests = QueryStore.replaceSubRequest(
+            state.currentRequest.subRequests,
+            action.request,
+            newState,
+            failure,
+        )
 
         return {
             ...state,
@@ -441,13 +454,16 @@ export default class QueryStore extends Store<QueryStoreState> {
         )
     }
 
-    private static replaceSubRequest(subRequests: SubRequest[], args: RoutingArgs, state: RequestState) {
+    private static replaceSubRequest(
+        subRequests: SubRequest[],
+        args: RoutingArgs,
+        state: RequestState,
+        failure: Pick<SubRequest, 'noConnection' | 'timedOut'>,
+    ) {
         return replace(
             subRequests,
             r => r.args === args,
-            r => {
-                return { ...r, state }
-            },
+            r => ({ ...r, state, ...failure }),
         )
     }
 

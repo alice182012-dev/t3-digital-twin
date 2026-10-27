@@ -286,6 +286,139 @@ describe('route', () => {
         expect(mockedDispatcher).toHaveBeenCalledWith(new RouteRequestFailed(args, error.message))
     })
 
+    it('flags a connection-not-found answer, so the no-safe-route box is the only message', async () => {
+        const args: RoutingArgs = {
+            points: [
+                [0, 0],
+                [1, 1],
+            ],
+            maxAlternativeRoutes: 1,
+            profile: 'car',
+            customModel: null,
+        }
+        const noConnection = {
+            message: 'Connection between locations not found',
+            hints: [
+                {
+                    message: 'Connection between locations not found',
+                    details: 'com.graphhopper.util.exceptions.ConnectionNotFoundException',
+                },
+            ],
+        }
+        fetchMock.mockResponseOnce(JSON.stringify(noConnection), { status: 400 })
+        const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+
+        new ApiImpl('https://some.api/', 'https://some.api/', 'key').routeWithDispatch(args, true)
+        await flushPromises()
+
+        expect(mockedDispatcher).toHaveBeenCalledTimes(1)
+        expect(mockedDispatcher).toHaveBeenCalledWith(
+            new RouteRequestFailed(args, 'Connection between locations not found', true),
+        )
+    })
+
+    it('does not flag a point that is off the road network, which still needs its message', async () => {
+        const args: RoutingArgs = {
+            points: [
+                [0, 0],
+                [1, 1],
+            ],
+            maxAlternativeRoutes: 1,
+            profile: 'car',
+            customModel: null,
+        }
+        const offRoad = {
+            message: 'Cannot find point 0: 21.0,105.7',
+            hints: [
+                {
+                    message: 'Cannot find point 0: 21.0,105.7',
+                    details: 'com.graphhopper.util.exceptions.PointNotFoundException',
+                    point_index: 0,
+                },
+            ],
+        }
+        fetchMock.mockResponseOnce(JSON.stringify(offRoad), { status: 400 })
+        const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+
+        new ApiImpl('https://some.api/', 'https://some.api/', 'key').routeWithDispatch(args, true)
+        await flushPromises()
+
+        expect(mockedDispatcher).toHaveBeenCalledWith(
+            new RouteRequestFailed(args, 'Cannot find point 0: 21.0,105.7', false),
+        )
+    })
+
+    describe('with no answer from the server', () => {
+        const args: RoutingArgs = { points: [], maxAlternativeRoutes: 1, profile: 'car', customModel: null }
+        const altArgs: RoutingArgs = { ...args, maxAlternativeRoutes: 3 }
+        const signals: AbortSignal[] = []
+
+        beforeEach(() => {
+            jest.useFakeTimers()
+            signals.length = 0
+            fetchMock.mockImplementation(
+                (_url, init) =>
+                    new Promise((_resolve, reject) => {
+                        const signal = init!.signal as AbortSignal
+                        signals.push(signal)
+                        signal.addEventListener('abort', () =>
+                            reject(new DOMException('The operation was aborted.', 'AbortError')),
+                        )
+                    }),
+            )
+        })
+
+        afterEach(() => jest.useRealTimers())
+
+        it('cancels both requests and reports a timeout after 30 seconds', async () => {
+            const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+            const api = new ApiImpl('https://some.api/', 'https://some.api/', 'key')
+            api.routeWithDispatch(args, true)
+            api.routeWithDispatch(altArgs, false)
+
+            await jest.advanceTimersByTimeAsync(29_999)
+            expect(mockedDispatcher).not.toHaveBeenCalled()
+            expect(signals.map(s => s.aborted)).toEqual([false, false])
+
+            await jest.advanceTimersByTimeAsync(1)
+            expect(signals.map(s => s.aborted)).toEqual([true, true])
+            expect(mockedDispatcher).toHaveBeenCalledTimes(2)
+            expect(mockedDispatcher).toHaveBeenNthCalledWith(
+                1,
+                new RouteRequestFailed(args, 'Route request timed out', false, true),
+            )
+            expect(mockedDispatcher).toHaveBeenNthCalledWith(
+                2,
+                new RouteRequestFailed(altArgs, 'Route request timed out', false, true),
+            )
+        })
+
+        it('sends a fresh request after a timeout', async () => {
+            const api = new ApiImpl('https://some.api/', 'https://some.api/', 'key')
+            api.routeWithDispatch(args, true)
+            await jest.advanceTimersByTimeAsync(30_000)
+
+            api.routeWithDispatch(args, true)
+
+            expect(fetchMock).toHaveBeenCalledTimes(2)
+            expect(signals.map(s => s.aborted)).toEqual([true, false])
+        })
+    })
+
+    it('does not cancel a request that answers in time', async () => {
+        jest.useFakeTimers()
+        const mockedDispatcher = jest.spyOn(Dispatcher, 'dispatch')
+        const args: RoutingArgs = { points: [], maxAlternativeRoutes: 1, profile: 'car', customModel: null }
+        fetchMock.mockResponse(JSON.stringify(getEmptyResult()))
+
+        new ApiImpl('https://some.api/', 'https://some.api/', 'key').routeWithDispatch(args, true)
+        await jest.advanceTimersByTimeAsync(40_000)
+        jest.useRealTimers()
+
+        expect(mockedDispatcher).toHaveBeenCalledTimes(1)
+        expect(mockedDispatcher).toHaveBeenCalledWith(new RouteRequestSuccess(args, true, getEmptyResult()))
+    })
+
     it('should handle 500 error', async () => {
         const args: RoutingArgs = {
             profile: 'car',

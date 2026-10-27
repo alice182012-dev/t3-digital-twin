@@ -4,7 +4,7 @@
     padding: 0;
     margin: 0;
     display: grid;
-    grid-template-columns: 26rem 1fr auto;
+    grid-template-columns: 460px 1fr auto;
     grid-template-rows: 100%;
     justify-content: space-between;
     overflow: auto;
@@ -34,23 +34,29 @@
     z-index: 2;
     align-self: stretch;
 
-    margin: 0 0.5rem 0 0.5rem;
+    margin: 0;
     overflow: hidden;
     position: relative;
+    font-family: Inter, system-ui, sans-serif;
 }
 
 .sidebarContent {
     position: relative;
     display: flex;
     flex-direction: column;
-    border-radius: 0.5rem;
     background-color: white;
-    max-height: calc(100% - 10.3rem);
-    margin: 0.5rem;
-
-    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    box-sizing: border-box;
+    border-right: 1px solid #e5e7eb;
     pointer-events: all;
-    overflow: auto;
+    overflow: hidden;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+.sidebarHeader {
+    display: flex;
+    align-items: flex-start;
+    flex: none;
 }
 
 .onMapRightSide {
@@ -82,17 +88,7 @@
     pointer-events: none;
 }
 
-.pathDetailsExpanded {
-    grid-column: 1 / span 3;
-    grid-row: 1 / span 1;
-    z-index: 2;
-    align-self: end;
-    overflow: hidden;
-    margin: 0 0.5rem 0.5rem 0.5rem;
-    pointer-events: none;
-}
-
-/* used together with .pathDetails: the elevation reopen button and the Maptoolkit logo share the bottom left corner */
+/* used together with .pathDetails: the Maptoolkit logo sits in the bottom left corner */
 .bottomLeftBar {
     display: flex;
     align-items: flex-end;
@@ -102,27 +98,6 @@
 .maptoolkitLogo {
     height: 1.6rem;
     pointer-events: none;
-}
-
-.elevationReopenButton {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    cursor: pointer;
-    font-size: 9px;
-    color: #666;
-    pointer-events: auto;
-    padding: 0;
-}
-
-.elevationReopenButton:hover {
-    background: #e8e8e8;
-    color: #333;
 }
 
 .smallScreenMap {
@@ -136,6 +111,20 @@
     margin: 0;
     border-radius: 0;
     z-index: 3;
+}
+
+/* The map's own area, above the footer sheet. The Map and Flood tiles, the legend, and the banner are
+   positioned inside it, so the footer sheet does not cover them whatever its height. */
+.smallScreenFloodOverlay {
+    grid-row: 1 / span 3;
+    grid-column: 1 / span 1;
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.smallScreenFloodOverlay > * {
+    pointer-events: auto;
 }
 
 .smallScreenMapOptions {
@@ -214,25 +203,19 @@
     }
 }
 
-.sidebarCloseButton {
-    position: absolute;
-
-    color: lightgray !important; /* unsure why !important is necessary here but not in ErrorMessage.module.css for same <Cross/> */
-
-    height: 15px;
-    width: 15px;
-
-    right: 7px;
-    top: 6px;
+.sidebarHeader .sidebarCloseButton {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    margin: 25px 24px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #111 !important;
 }
 
-.sidebarCloseButton svg {
-    width: 100%;
-    height: 100%;
-}
-
-.sidebarCloseButton:hover {
-    color: black !important;
+.sidebarCloseButton:focus-visible {
+    outline: 2px solid #368fe8;
 }
 
 /* Collapsed search pill. Same collapsed/expanded state as the expanded sidebar (showSidebar).

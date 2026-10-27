@@ -1,0 +1,177 @@
+"""Reads the export of the GraphHopper graph's edges and keeps it in PostGIS.
+
+The export is two files, written by ExportEdges in java/time-aware-routing/ (US-039):
+
+- graph.json holds graph_hash, edge_count, node_count, and the GraphHopper commit.
+- edges.csv has the header edge_id,wkt (format 1), edge_id,wkt,base_node,adj_node (format 2), or
+  edge_id,wkt,base_node,adj_node,edge_key (format 3, US-117) and one row per edge, in edge id order. wkt is a
+  LINESTRING in EPSG:4326, longitude first. Only the first two columns are read. edge_key is
+  <osm_way_id>:<position along the way>, and a later story loads it into graph_edge.
+
+Airflow cannot run the export, because it runs in the GraphHopper image. An operator writes the two
+files into a folder that Airflow reads. load_graph_edges copies them, with the edge_key, into graph_edge when the hash
+differs from the one graph_edge already holds, so a graph re-import needs no database step.
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterator, NamedTuple
+
+from psycopg2.extras import execute_values
+
+SUPPORTED_FORMAT_VERSIONS = (1, 2, 3)
+_REQUIRED_KEYS = ("format_version", "graph_hash", "edge_count", "node_count")
+_PAGE_SIZE = 2000
+EDGE_KEY_FORMAT_VERSION = 3
+_EDGE_KEY = re.compile(r"[1-9][0-9]*:[0-9]+")
+
+
+class GraphExportError(ValueError):
+    """The export folder is missing, incomplete, or inconsistent."""
+
+
+class GraphEdge(NamedTuple):
+    edge_id: int
+    wkt: str
+    edge_key: str | None  # None for an export before format 3
+
+
+@dataclass(frozen=True)
+class GraphExport:
+    format_version: int
+    graph_hash: str
+    edge_count: int
+    node_count: int
+    edges_csv: Path
+
+
+def read_export(export_dir) -> GraphExport:
+    """Checks graph.json and the presence of edges.csv. The rows are checked by iter_edges."""
+    export_dir = Path(export_dir)
+    meta_path = export_dir / "graph.json"
+    edges_path = export_dir / "edges.csv"
+    if not meta_path.is_file() or not edges_path.is_file():
+        raise GraphExportError(
+            f"No graph export in {export_dir} (needs graph.json and edges.csv). "
+            "Write one with java/time-aware-routing/export-edges.sh, and see the re-import page of US-044."
+        )
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise GraphExportError(f"{meta_path} is not valid JSON: {e}") from e
+    for key in _REQUIRED_KEYS:
+        if key not in meta:
+            raise GraphExportError(f"{meta_path} has no {key}")
+    if meta["format_version"] not in SUPPORTED_FORMAT_VERSIONS:
+        raise GraphExportError(
+            f"{meta_path} has format_version {meta['format_version']}, "
+            f"this code reads {', '.join(map(str, SUPPORTED_FORMAT_VERSIONS))}"
+        )
+    return GraphExport(
+        format_version=int(meta["format_version"]),
+        graph_hash=str(meta["graph_hash"]),
+        edge_count=int(meta["edge_count"]),
+        node_count=int(meta["node_count"]),
+        edges_csv=edges_path,
+    )
+
+
+def iter_edges(export: GraphExport) -> Iterator[GraphEdge]:
+    """Yields each edge in file order. Raises when the ids are not 0, 1, 2, ..., when the row count
+    differs from edge_count in graph.json, or (format 3) when an edge_key is malformed or repeated,
+    so a cut-off or damaged file cannot be loaded."""
+    expected_id = 0
+    has_keys = export.format_version >= EDGE_KEY_FORMAT_VERSION
+    seen_keys: set[str] = set()
+    with open(export.edges_csv, newline="", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
+        if header is None or header[:2] != ["edge_id", "wkt"]:
+            raise GraphExportError(f"{export.edges_csv} has the header {header}, expected it to start with ['edge_id', 'wkt']")
+        if has_keys and header[-1] != "edge_key":
+            raise GraphExportError(f"{export.edges_csv} has the header {header}, format {export.format_version} ends with 'edge_key'")
+        for row in reader:
+            if len(row) != len(header):
+                raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} has {len(row)} columns")
+            edge_id = int(row[0])
+            if edge_id != expected_id:
+                raise GraphExportError(f"{export.edges_csv} has edge_id {edge_id} where {expected_id} was expected")
+            edge_key = row[-1] if has_keys else None
+            if has_keys:
+                if not _EDGE_KEY.fullmatch(edge_key):
+                    raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} has the edge_key {edge_key!r}, expected <osm_way_id>:<position>")
+                if edge_key in seen_keys:
+                    raise GraphExportError(f"{export.edges_csv} line {expected_id + 2} repeats the edge_key {edge_key}")
+                seen_keys.add(edge_key)
+            yield GraphEdge(edge_id, row[1], edge_key)
+            expected_id += 1
+    if expected_id != export.edge_count:
+        raise GraphExportError(
+            f"{export.edges_csv} has {expected_id} rows but graph.json says edge_count {export.edge_count}"
+        )
+
+
+def loaded_hash(conn) -> str | None:
+    """The hash of the export graph_edge holds, or None before the first load."""
+    with conn, conn.cursor() as cur:
+        cur.execute("SELECT graph_hash FROM graph_edge_export")
+        row = cur.fetchone()
+    return row[0] if row else None
+
+
+_INSERT_SQL = """
+INSERT INTO graph_edge (edge_id, edge_key, length_m, geom)
+SELECT v.edge_id, v.edge_key, ST_Length(g.geom::geography), g.geom
+FROM (VALUES %s) AS v(edge_id, wkt, edge_key)
+CROSS JOIN LATERAL (SELECT ST_GeomFromText(v.wkt, 4326) AS geom) g
+"""
+
+_RECORD_SQL = """
+INSERT INTO graph_edge_export (singleton, graph_hash, edge_count, loaded_at)
+VALUES (TRUE, %(graph_hash)s, %(edge_count)s, NOW())
+ON CONFLICT (singleton) DO UPDATE SET
+    graph_hash = EXCLUDED.graph_hash,
+    edge_count = EXCLUDED.edge_count,
+    loaded_at = EXCLUDED.loaded_at
+"""
+
+
+def _is_loaded(cur, export: GraphExport) -> bool:
+    """True when graph_edge holds this export: the same hash, and every edge has its key when the
+    export carries keys. A graph imported again from the same OSM file has the same hash, so the
+    first format 3 export of it still has to fill the keys."""
+    cur.execute("SELECT graph_hash FROM graph_edge_export")
+    row = cur.fetchone()
+    if not row or row[0] != export.graph_hash:
+        return False
+    if export.format_version < EDGE_KEY_FORMAT_VERSION:
+        return True
+    cur.execute("SELECT EXISTS (SELECT 1 FROM graph_edge WHERE edge_key IS NULL)")
+    return not cur.fetchone()[0]
+
+
+def load_graph_edges(conn, export: GraphExport) -> bool:
+    """Replaces graph_edge with the export unless graph_edge already holds it (see _is_loaded).
+    Returns True when it loaded and False when graph_edge already held this export.
+
+    The rows are read and checked before the database is touched, and the replacement is one
+    transaction, so a broken file or a bad geometry leaves the previous graph in place."""
+    with conn, conn.cursor() as cur:
+        if _is_loaded(cur, export):
+            return False
+    rows = list(iter_edges(export))
+    with conn, conn.cursor() as cur:
+        # Two tasks of overlapping runs can both see a new hash. The second one waits, then finds
+        # the hash already loaded and replaces nothing.
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('graph_edge'))")
+        if _is_loaded(cur, export):
+            return False
+        cur.execute("TRUNCATE graph_edge")
+        execute_values(cur, _INSERT_SQL, rows, page_size=_PAGE_SIZE)
+        cur.execute(_RECORD_SQL, {"graph_hash": export.graph_hash, "edge_count": export.edge_count})
+    return True

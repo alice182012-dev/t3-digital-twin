@@ -20,7 +20,7 @@ import sys
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
-from place_search import PlaceSearchValidationError, _parse_point, geocode_gh_shape
+from place_search import PlaceSearchValidationError, _parse_point, geocode_gh_shape, reverse_place
 
 HANOI = (21.028511, 105.852402)
 
@@ -85,6 +85,18 @@ def test_non_vietnam_features_are_dropped() -> None:
     ], result
 
 
+def test_hit_carries_the_district() -> None:
+    hanoi = feature("C5 Định Công", "VN", 105.8, 20.98)
+    hanoi["properties"]["district"] = "Định Công"
+    result, _ = photon_request({"features": [hanoi]}, "C5")
+    assert result["hits"][0]["district"] == "Định Công", result
+
+
+def test_hit_without_a_district_has_an_empty_district() -> None:
+    result, _ = photon_request({"features": [feature("Hồ Hoàn Kiếm", "VN", 105.8524, 21.0287)]}, "Hồ")
+    assert result["hits"][0]["district"] == "", result
+
+
 def test_parse_point() -> None:
     assert _parse_point("21.03,105.85") == (21.03, 105.85)
     assert _parse_point(" 21.03 , 105.85 ") == (21.03, 105.85)
@@ -97,6 +109,60 @@ def test_parse_point() -> None:
             assert str(exc) == "invalid point", (bad, str(exc))
         else:
             raise AssertionError(f"accepted malformed point {bad!r}")
+
+
+def reverse_request(payload: dict, lat: str, lon: str) -> tuple[dict | None, dict[str, list[str]]]:
+    with patch("place_search.urlopen", return_value=FakeResponse(payload)) as urlopen:
+        result = reverse_place(lat, lon)
+    request = urlopen.call_args.args[0]
+    parsed = urlparse(request.full_url)
+    assert parsed.path == "/reverse", parsed.path
+    return result, parse_qs(parsed.query)
+
+
+def test_reverse_place_requests_the_nearest_feature_and_normalizes_it() -> None:
+    payload = {
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [105.7742, 20.9934]},
+                "properties": {
+                    "name": "Ngõ 93 Phố Đại Linh",
+                    "district": "Đại Mỗ",
+                    "city": "Hà Nội",
+                    "countrycode": "VN",
+                    "osm_id": 897406888,
+                    "osm_type": "W",
+                    "type": "street",
+                },
+            }
+        ]
+    }
+    place, query = reverse_request(payload, "20.992987", "105.773723")
+    assert query == {"lat": ["20.992987"], "lon": ["105.773723"], "lang": ["default"], "limit": ["1"]}, query
+    assert place == {
+        "id": "W:897406888",
+        "name": "Ngõ 93 Phố Đại Linh",
+        "address": "Đại Mỗ, Hà Nội",
+        "kind": "street",
+        "lat": 20.9934,
+        "lon": 105.7742,
+    }, place
+
+
+def test_reverse_place_drops_a_place_outside_vietnam_and_an_empty_result() -> None:
+    outside = {"features": [feature("Ottawa lake", "CA", -75.7, 45.4)]}
+    assert reverse_request(outside, "45.4", "-75.7")[0] is None
+    assert reverse_request({"features": []}, "21.0", "105.7")[0] is None
+
+
+def test_reverse_place_rejects_a_missing_or_out_of_range_coordinate() -> None:
+    for lat, lon in ((None, "105.7"), ("21.0", None), ("", ""), ("95", "105.7"), ("21.0", "abc")):
+        try:
+            reverse_place(lat, lon)
+        except PlaceSearchValidationError:
+            continue
+        raise AssertionError(f"accepted lat={lat!r} lon={lon!r}")
 
 
 def check_real_photon_ranks_hanoi_first() -> None:
@@ -115,6 +181,9 @@ def main() -> int:
     test_biased_request_forwards_point_and_scale()
     test_non_vietnam_features_are_dropped()
     test_parse_point()
+    test_reverse_place_requests_the_nearest_feature_and_normalizes_it()
+    test_reverse_place_drops_a_place_outside_vietnam_and_an_empty_result()
+    test_reverse_place_rejects_a_missing_or_out_of_range_coordinate()
     if os.environ.get("PHOTON_LIVE_TEST") == "1":
         check_real_photon_ranks_hanoi_first()
     else:

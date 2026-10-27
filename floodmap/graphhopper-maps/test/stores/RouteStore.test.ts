@@ -11,7 +11,15 @@ import {
     RoutingResult,
 } from '@/api/graphhopper'
 import Dispatcher, { Action } from '@/stores/Dispatcher'
-import { ClearPoints, ClearRoute, RemovePoint, SetPoint, SetSelectedPath } from '@/actions/Actions'
+import {
+    ClearPoints,
+    ClearRoute,
+    RemovePoint,
+    RouteRequestFailed,
+    RouteRequestSuccess,
+    SetPoint,
+    SetSelectedPath,
+} from '@/actions/Actions'
 import { POIQuery } from '@/pois/AddressParseResult'
 
 describe('RouteStore', () => {
@@ -41,6 +49,20 @@ describe('RouteStore', () => {
 
             expect(store.state).toEqual(initialState)
         }
+    })
+
+    it('should revert to initial state when a route request fails', () => {
+        const store = createStore()
+        const initialState = store.state
+        const request = {} as RoutingArgs
+        const path: Path = { ...store.state.selectedPath, distance: 1000 }
+        const result: RoutingResult = { paths: [path], info: { copyright: [], road_data_timestamp: '', took: 0 } }
+        Dispatcher.dispatch(new RouteRequestSuccess(request, false, result))
+        expect(store.state.selectedPath.distance).toBe(1000)
+
+        Dispatcher.dispatch(new RouteRequestFailed(request, 'Connection between locations not found'))
+
+        expect(store.state).toEqual(initialState)
     })
 
     it('Should set selected path', () => {

@@ -56,9 +56,13 @@ minio_custom/backend-data/
 # Large generated Valhalla data
 floodmap/valhalla-flood-road-test/valhalla/custom_files/valhalla_tiles.tar
 floodmap/valhalla-flood-road-test/valhalla/source/vietnam-latest.osm.pbf
-.claude
+.claude/worktrees/
+.claude/settings.local.json
+.claude/logs/
 .SynologyWorkingDirectory
 CLAUDE.md
+# The project's Claude rules are shared so every checkout, including the server's, follows them.
+!.claude/CLAUDE.md
 
 # Obsidian personal workspace state (artifacts/ is the vault root)
 artifacts/.obsidian/
@@ -66,3 +70,9 @@ artifacts/.obsidian/
 # Scratch space for experiments; everything but the folder's own README is disposable
 /marie-curie/*
 !/marie-curie/README.md
+# Story evidence screenshots stay local, only files already committed remain tracked
+artifacts/docs/user-stories/evidence/
+
+# Java
+java/**/target/
+/archive/

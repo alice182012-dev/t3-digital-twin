@@ -19,10 +19,15 @@
     cursor: pointer;
     padding: 0;
     border: none;
-    /* No live map-tile thumbnail wired up here (that would need a tile fetch this
-       presentational component has no business making) — a flat approximation of the
-       basemap's tone stands in for the mockup's tile-image background. */
     background-color: #cfc9ba;
+}
+
+.thumbImage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .thumb {
@@ -34,14 +39,6 @@
     box-shadow:
         0 0 0 2px #fff,
         0 0 0 4px #111;
-}
-
-/* The Flood thumbnail always carries this tint, active or not — only the ring and the
-   container's opacity (via .thumb vs .thumbActive) change with state. */
-.floodTint {
-    position: absolute;
-    inset: 0;
-    background: rgba(47, 111, 191, 0.45);
 }
 
 .thumbLabel {

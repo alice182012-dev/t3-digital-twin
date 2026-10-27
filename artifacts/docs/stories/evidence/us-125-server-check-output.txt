@@ -1,0 +1,29 @@
+US-125 server check, 2026-10-12, worker airflow_new-airflow-worker-1, script scripts/testdata/restore_snapshot.py
+
+First run (verify 8 files against the manifest, create both databases, DDL, load):
+  minio_custom_test: 2628 MB
+    graph_edge_export: 1
+    graph_edge: 67833
+    road_segment: 35652
+    flood_road_file: 58
+    flood_road_values: 1573912
+    flood_extent_step: 116
+    flood_extent_polygon: 812
+    flood_segment_metrics: 0
+  flood_metrics_test: schema ready
+  ok: every table has the manifest's row count, and the production counts did not change
+
+Second run, 10:14:01 to 10:16:10 UTC (2 min 9 s): the same eight counts, the same ok line, and minio_custom_test is still 2628 MB.
+
+docker system df, Local Volumes before and after the first run: 8.103 GB, then 11.64 GB (the restore adds about 3.5 GB).
+Database sizes after: minio_custom 4897 MB, minio_custom_test 2628 MB, flood_metrics 15 MB, flood_metrics_test 9382 kB.
+C: had 100.3 GB free before the restore.
+
+flood_metrics_test hypertables: background_forecast_depth, depth_history, history_moment, institution_histogram_bar.
+
+Pipeline code selects the test databases with the environment alone (POSTGRES_DB=minio_custom_test, TIMESCALE_DB=flood_metrics_test):
+  ('minio_custom_test', 1573912)   select current_database(), count(*) from flood_road_values
+  ('flood_metrics_test', 0)        select current_database(), count(*) from depth_history
+
+Production after the runs (live pipeline, so counts move): flood_road_file 75, flood_road_values 1911344, graph_edge 67833, edge_depth 37359, depth_history 19792.
+The script compared the production counts of the eight tables before and after each run and found no difference.

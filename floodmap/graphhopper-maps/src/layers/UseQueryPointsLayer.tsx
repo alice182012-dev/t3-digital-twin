@@ -8,9 +8,10 @@ import { fromLonLat, toLonLat } from 'ol/proj'
 import { Modify } from 'ol/interaction'
 import Dispatcher from '@/stores/Dispatcher'
 import { SetPoint } from '@/actions/Actions'
-import { coordinateToText } from '@/Converters'
+import { coordinateToText, pinLabel } from '@/Converters'
 import { Icon, Stroke, Style } from 'ol/style'
 import { createSvg } from '@/layers/createMarkerSVG'
+import { createLabelCanvas } from '@/layers/createLabelCanvas'
 
 const MARKER_SIZE = 35
 export const VIA_MARKER_SIZE = 23
@@ -67,6 +68,7 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
                 // a number is only displayed for via points and turns the marker into a circle
                 number: isVia ? i : undefined,
                 size: isVia ? VIA_MARKER_SIZE : MARKER_SIZE,
+                label: isVia ? undefined : pinLabel(point),
             })
             return feature
         })
@@ -77,7 +79,7 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
     })
     queryPointsLayer.set('gh:query_points', true)
     queryPointsLayer.setZIndex(3)
-    const cachedStyles: { [id: string]: Style } = {}
+    const cachedStyles: { [id: string]: Style | Style[] } = {}
     queryPointsLayer.setStyle(feature => {
         // hidden while it is dragged along the route, the dragged (numbered) circle replaces it, see UsePathsLayer
         if (feature.get('gh:hidden')) return []
@@ -85,10 +87,10 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
         const isVia = props.number !== undefined
         // transparent when dragging
         const dragging = isVia && feature.get('gh:dragging') === true
-        const key = props.number + '-' + props.color + '-' + props.size + '-' + dragging
+        const key = props.number + '-' + props.color + '-' + props.size + '-' + dragging + '-' + props.label
         let style = cachedStyles[key]
         if (style) return style
-        style = new Style({
+        const markerStyle = new Style({
             image: new Icon({
                 src: 'data:image/svg+xml;utf8,' + createSvg(props),
                 // the via circle is centered on the coordinate, the marker points to it with its tip
@@ -96,11 +98,25 @@ function addQueryPointsLayer(map: Map, queryPoints: QueryPoint[]) {
                 opacity: dragging ? 0.5 : 1,
             }),
         })
+        style = props.label ? [markerStyle, createLabelStyle(props.label)] : markerStyle
         cachedStyles[key] = style
         return style
     })
     map.addLayer(queryPointsLayer)
     return queryPointsLayer
+}
+
+// the label sits to the right of the pin head, vertically centered on it
+function createLabelStyle(label: string) {
+    const pixelRatio = window.devicePixelRatio || 1
+    const { canvas, size } = createLabelCanvas(label, pixelRatio)
+    return new Style({
+        image: new Icon({
+            img: canvas,
+            scale: 1 / pixelRatio,
+            displacement: [MARKER_SIZE / 2 + size[0] / 2, MARKER_SIZE * 0.7],
+        }),
+    })
 }
 
 function removeDragInteractions(map: Map) {

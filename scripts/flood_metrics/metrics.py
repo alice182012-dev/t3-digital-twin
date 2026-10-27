@@ -2,14 +2,14 @@
 
 Story 3 of artifacts/docs/user-stories/timescaledb-and-flood-metrics.md. Definitions follow the
 architecture doc's §4.4 and glossary (artifacts/raw/T3-Digital-Twin_Architecture.md). Pure: no DB,
-no I/O. extract_run.py loads the series from flood_road_values and writes the result.
+no I/O. extract_run.py loads the series from edge_depth and writes the result.
 
 Every event time is a sample time from the series, never an interpolated threshold crossing, so a
 value is reproducible by reading the segment's rows by hand. Its precision is the timestep spacing
 (15 minutes for a constant_cycle run). Only forecast depth interpolates, and only when T+1h or T+2h
 falls between two samples.
 
-"T" is the series' first timestep, not flood_road_values.timestamp: the pipeline sets run_ts to the
+"T" is the series' first timestep, not the run name: the pipeline sets run_ts to the
 earliest depth timestamp today, but older runs stored a folder time that differs from it.
 """
 

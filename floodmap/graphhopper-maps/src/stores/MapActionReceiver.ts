@@ -1,14 +1,7 @@
 import { Action, ActionReceiver } from '@/stores/Dispatcher'
 import { Map } from 'ol'
 import { fromLonLat } from 'ol/proj'
-import {
-    InfoReceived,
-    PathDetailsRangeSelected,
-    RouteRequestSuccess,
-    SetBBox,
-    SetSelectedPath,
-    ZoomToRoute,
-} from '@/actions/Actions'
+import { InfoReceived, RouteRequestSuccess, SetBBox, SetSelectedPath, ZoomToRoute } from '@/actions/Actions'
 import RouteStore from '@/stores/RouteStore'
 import { Bbox } from '@/api/graphhopper'
 
@@ -58,12 +51,6 @@ export default class MapActionReceiver implements ActionReceiver {
         } else if (action instanceof SetSelectedPath) {
             // Forcing to change bounds is ugly if zoomed in and for alternatives. See #437
             // fitBounds(this.map, action.path.bbox!, isSmallScreen)
-        } else if (action instanceof PathDetailsRangeSelected) {
-            // we either use the bbox from the path detail selection or go back to the route bbox when the path details
-            // were deselected
-            const bbox = action.bbox ? action.bbox : this.routeStore.state.selectedPath.bbox
-            if (bbox) fitBounds(this.map, bbox, isSmallScreen)
-            // if neither has a bbox just fall through to unchanged state
         } else if (action instanceof InfoReceived) {
             // Do nothing: the map's initial view (map.ts's createMap) is a fixed center/zoom over
             // the flood-forecast area, not the routing graph's own bbox.

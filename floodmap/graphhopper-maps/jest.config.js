@@ -6,6 +6,7 @@ module.exports = {
         config: '<rootDir>/config.js',
     },
     transform: {
-        '\\.svg$': '<rootDir>/test/svgFileName.js',
+        '\\.(svg|png)$': '<rootDir>/test/svgFileName.js',
+        '\\.css$': '<rootDir>/test/cssModuleClassNames.js',
     },
 }

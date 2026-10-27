@@ -14,6 +14,8 @@ last_updated: <% tp.date.now("YYYY-MM-DD") %>
 
 # <% tp.file.title %>
 
+Name this file BL-nnn-<slug>.md. Take nnn from the next free number in the Conventions of Home.md.
+
 ## Description
 
 What's blocked, and what fails when you hit it (the exact error, if there is one).

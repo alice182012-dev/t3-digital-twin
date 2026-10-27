@@ -1,7 +1,6 @@
 import { Action } from '@/stores/Dispatcher'
 import { QueryPoint } from '@/stores/QueryStore'
 import { ApiInfo, Bbox, Path, RoutingArgs, RoutingProfile, RoutingResult } from '@/api/graphhopper'
-import { PathDetailsPoint } from '@/stores/PathDetailsStore'
 import { POI } from '@/stores/POIsStore'
 import { Settings } from '@/stores/SettingsStore'
 import { Coordinate } from '@/utils'
@@ -135,10 +134,17 @@ export class ErrorAction implements Action {
 
 export class RouteRequestFailed extends ErrorAction {
     readonly request: RoutingArgs
+    /** GraphHopper answered that no connection exists between the points. The panel's "No safe route
+     *  available" box already says so, so the error bar stays hidden for this failure. */
+    readonly noConnection: boolean
+    /** The request got no answer within `ROUTE_TIMEOUT_MS` and was cancelled. The panel carries the message. */
+    readonly timedOut: boolean
 
-    constructor(request: RoutingArgs, message: string) {
+    constructor(request: RoutingArgs, message: string, noConnection = false, timedOut = false) {
         super(message)
         this.request = request
+        this.noConnection = noConnection
+        this.timedOut = timedOut
     }
 }
 
@@ -192,22 +198,6 @@ export class SetBBox implements Action {
     readonly bbox: Bbox
 
     constructor(bbox: Bbox) {
-        this.bbox = bbox
-    }
-}
-
-export class PathDetailsHover implements Action {
-    readonly pathDetailsPoint: PathDetailsPoint | null
-
-    constructor(pathDetailsPoint: PathDetailsPoint | null) {
-        this.pathDetailsPoint = pathDetailsPoint
-    }
-}
-
-export class PathDetailsRangeSelected implements Action {
-    readonly bbox: Bbox | null
-
-    constructor(bbox: Bbox | null) {
         this.bbox = bbox
     }
 }

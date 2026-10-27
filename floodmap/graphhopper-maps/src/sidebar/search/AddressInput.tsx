@@ -14,7 +14,7 @@ import CurrentLocationIcon from './current-location.svg'
 import styles from './AddressInput.module.css'
 import Api, { getApi } from '@/api/Api'
 import { tr } from '@/translation/Translation'
-import { coordinateToText, hitToItem, nominatimHitToItem, textToCoordinate } from '@/Converters'
+import { coordinateToText, hitToItem, nominatimHitToItem, suggestionLine, textToCoordinate } from '@/Converters'
 import { useMediaQuery } from 'react-responsive'
 import PopUp from '@/sidebar/search/PopUp'
 import PlainButton from '@/PlainButton'
@@ -36,6 +36,8 @@ export interface AddressInputProps {
     dropPreviewIndex: number
     index: number
     map: Map
+    /** The desktop panel frame of mockup screen 2c: a tall rounded box with a black border. */
+    framed?: boolean
 }
 
 export default function AddressInput(props: AddressInputProps) {
@@ -62,12 +64,14 @@ export default function AddressInput(props: AddressInputProps) {
 
             hits.forEach(hit => {
                 const obj = hitToItem(hit)
+                const { district } = suggestionLine(hit)
                 items.push(
                     new GeocodingItem(
                         obj.mainText,
                         obj.secondText,
                         hit.point,
                         hit.extent ? hit.extent : getBBoxFromCoord(hit.point),
+                        district,
                     ),
                 )
             })
@@ -200,6 +204,7 @@ export default function AddressInput(props: AddressInputProps) {
                 ref={searchInputContainer}
                 className={[
                     styles.inputContainer,
+                    props.framed ? styles.framed : '',
                     // show line (border) where input would be moved if dropped
                     props.dropPreviewIndex == props.index
                         ? props.dropPreviewIndex < props.moveStartIndex
@@ -299,8 +304,11 @@ export default function AddressInput(props: AddressInputProps) {
                         inputRef={searchInputContainer.current!}
                         index={props.index}
                         isSmallScreen={isSmallScreen}
+                        framed={!!props.framed}
                     >
                         <Autocomplete
+                            framed={!!props.framed && !isSmallScreen}
+                            query={origText}
                             items={autocompleteItems}
                             highlightedItem={autocompleteItems[highlightedResult]}
                             onSelect={item => {
@@ -359,18 +367,20 @@ function ResponsiveAutocomplete({
     children,
     index,
     isSmallScreen,
+    framed,
 }: {
     inputRef: HTMLElement
     children: ReactNode
     isSmallScreen: boolean
     index: number
+    framed: boolean
 }): JSX.Element {
     return (
         <>
             {isSmallScreen ? (
                 <div className={styles.smallList}>{children}</div>
             ) : (
-                <PopUp inputElement={inputRef} keepClearAtBottom={index > 5 ? 270 : 0}>
+                <PopUp inputElement={inputRef} keepClearAtBottom={index > 5 ? 270 : 0} framed={framed}>
                     {children}
                 </PopUp>
             )}

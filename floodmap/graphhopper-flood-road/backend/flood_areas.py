@@ -6,14 +6,19 @@ routes against (POST /route) and the equivalent map overlay (GET
 min-area defaults match the values Phase A's D2 sweep validated (buffer=22m,
 min_area=400m2).
 
-Reads `flood_road_values`, a separate table and pipeline from
+Reads `edge_depth`, the wet edges the routing engine's own table is built from, and takes their
+geometry from `graph_edge`, so the map and the engine see the same water. The run that wins a forecast
+time is the newest run in `edge_depth_run` whose `valid_times` contains it, so a run with no wet edge
+still wins.
+It is a separate table and pipeline from
 `flood_extent_polygon` (see flood_extent_runs.py, which backs the map's
-timestep picker). See artifacts/raw/SW Architecture.md #8 for why routing and
+timestep picker). See artifacts/raw/T3-Digital-Twin_Architecture.md section 4.2 for why routing and
 map-display visualization intentionally read different flood tables.
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from flood_utils import depth_bands_m
@@ -22,15 +27,18 @@ DEFAULT_BUFFER_M = 22.0
 DEFAULT_SIMPLIFY_M = 3.0
 DEFAULT_MIN_AREA_M2 = 400.0
 
-_WINNER_SEG_SQL = """
+VIETNAM_TZ = timezone(timedelta(hours=7))
+
+_SEG_SQL = """
 WITH winner AS (
-    SELECT DISTINCT ON (forecast_time) forecast_time, timestamp
-    FROM flood_road_values WHERE forecast_time = %(valid_time)s
-    ORDER BY forecast_time, timestamp DESC
+    {winner_select}
 ), seg AS (
-    SELECT ST_Transform(v.geom_4326, 3405) AS g, v.depth
-    FROM flood_road_values v JOIN winner w USING (forecast_time, timestamp)
-    WHERE v.depth >= %(band_min)s {band_max_clause}
+    SELECT ST_Transform(e.geom, 3405) AS g
+    FROM edge_depth d
+    JOIN winner w USING (run_ts)
+    JOIN graph_edge e USING (edge_key)
+    WHERE d.valid_time_utc = %(valid_time_utc)s
+      AND d.depth_cm >= %(band_min_cm)s {band_max_clause}
 ), parts AS (
     SELECT (ST_Dump(ST_Union(ST_Buffer(g, %(buffer_m)s)))).geom AS g FROM seg
 )
@@ -38,18 +46,17 @@ SELECT ST_AsGeoJSON(ST_Transform(ST_SimplifyPreserveTopology(g, %(simplify_m)s),
 FROM parts WHERE ST_Area(g) >= %(min_area_m2)s;
 """
 
-_PINNED_RUN_SEG_SQL = """
-WITH seg AS (
-    SELECT ST_Transform(v.geom_4326, 3405) AS g, v.depth
-    FROM flood_road_values v
-    WHERE v.forecast_time = %(valid_time)s AND v.timestamp = %(run)s
-      AND v.depth >= %(band_min)s {band_max_clause}
-), parts AS (
-    SELECT (ST_Dump(ST_Union(ST_Buffer(g, %(buffer_m)s)))).geom AS g FROM seg
-)
-SELECT ST_AsGeoJSON(ST_Transform(ST_SimplifyPreserveTopology(g, %(simplify_m)s), 4326), 6)
-FROM parts WHERE ST_Area(g) >= %(min_area_m2)s;
-"""
+_LATEST_WINNER = "SELECT max(run_ts) AS run_ts FROM edge_depth_run WHERE %(valid_time_utc)s = ANY(valid_times)"
+_PINNED_WINNER = "SELECT %(run)s::text AS run_ts"
+
+
+def _utc_naive(valid_time: str) -> datetime:
+    """The UTC clock time of a request's valid_time, the form edge_depth stores. A time with no offset
+    is Vietnam local time, as in the other tables of the contract."""
+    parsed = datetime.fromisoformat(valid_time)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=VIETNAM_TZ)
+    return parsed.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def derive_areas(
@@ -67,17 +74,18 @@ def derive_areas(
     custom_model.priority without re-deriving anything."""
     features: list[dict[str, Any]] = []
     pinned = bool(run) and run != "latest"
-    template = _PINNED_RUN_SEG_SQL if pinned else _WINNER_SEG_SQL
+    winner_select = _PINNED_WINNER if pinned else _LATEST_WINNER
+    valid_time_utc = _utc_naive(valid_time)
 
     with conn.cursor() as cur:
         for band in depth_bands_m(vehicle_type):
-            band_max_clause = "AND v.depth < %(band_max)s" if band["band_max"] is not None else ""
-            sql = template.format(band_max_clause=band_max_clause)
+            band_max_clause = "AND d.depth_cm < %(band_max_cm)s" if band["band_max"] is not None else ""
+            sql = _SEG_SQL.format(winner_select=winner_select, band_max_clause=band_max_clause)
             params = {
-                "valid_time": valid_time,
+                "valid_time_utc": valid_time_utc,
                 "run": run,
-                "band_min": band["band_min"],
-                "band_max": band["band_max"],
+                "band_min_cm": round(band["band_min"] * 100),
+                "band_max_cm": None if band["band_max"] is None else round(band["band_max"] * 100),
                 "buffer_m": buffer_m,
                 "simplify_m": simplify_m,
                 "min_area_m2": min_area_m2,

@@ -28,7 +28,7 @@ export default function MapPopup({ map, coordinate, children }: MapPopupProps) {
 
     useEffect(() => {
         overlay?.setPosition(coordinate ? fromLonLat([coordinate.lng, coordinate.lat]) : undefined)
-    }, [coordinate])
+    }, [coordinate, overlay])
 
     return <div ref={container}>{children}</div>
 }

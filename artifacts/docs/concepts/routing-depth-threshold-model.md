@@ -3,13 +3,13 @@ date: 2026-09-22
 type: concept
 status: active
 tags: [graphhopper, routing, flood-depth]
-related: ["[[graphhopper-backend]]", "[[SW Architecture]]", "[[decision-log]]"]
-last_updated: 2026-09-25
+related: ["[[graphhopper-backend]]", "[[T3-Digital-Twin_Architecture]]", "[[decision-log]]"]
+last_updated: 2026-10-13
 ---
 
 # Routing depth-threshold model
 
-This is how a flood depth in `flood_road_values` becomes a GraphHopper routing cost. It is the
+This is how a flood depth in `edge_depth` becomes a GraphHopper routing cost. It is the
 model [[graphhopper-backend]]'s `flood_areas.derive_areas` and `build_custom_model` run at request
 time.
 
@@ -50,17 +50,15 @@ does not imply a routing band change and vice versa.
 
 `flood_areas.derive_areas(conn, valid_time, vehicle_type, run, buffer_m, simplify_m, min_area_m2)`
 runs one SQL query per band (deepest first: b4, then b3, then b2), each pulling
-`flood_road_values` rows in that band's depth range for the given `(forecast_time, timestamp)`
-pair, then buffers, unions, and simplifies them (`ST_Buffer`, `ST_Union`, `ST_SimplifyPreserveTopology`)
-into polygons, dropping anything under `min_area_m2` (default 400 m²). Two SQL templates exist:
-`_WINNER_SEG_SQL` picks the latest `timestamp` for the requested `forecast_time` when `run` is
-`"latest"`; `_PINNED_RUN_SEG_SQL` pins to an exact `(timestamp, forecast_time)` pair when a specific
-`run` is requested. `buffer_m` (default 22 m) and `simplify_m` (default 3 m) match the values a
+`edge_depth` rows (with the geometry of `graph_edge`) in that band's depth range for the given run and
+`valid_time_utc`, then buffers, unions, and simplifies them (`ST_Buffer`, `ST_Union`, `ST_SimplifyPreserveTopology`)
+into polygons, dropping anything under `min_area_m2` (default 400 m²). Two winner queries exist:
+`_LATEST_WINNER` picks the newest run of `edge_depth_run` whose `valid_times` contain the requested time when `run` is
+`"latest"`; `_PINNED_WINNER` uses the run that the request names. `buffer_m` (default 22 m) and `simplify_m` (default 3 m) match the values a
 prior D2 parameter sweep validated.
 
-Each band's range tests `depth`, which on a row from `flood_on_roads.py` is the deepest 1 m sample
-along the road piece. D-006 in [[decision-log]] records that choice. Rows from the old GeoJSON chain
-carry one pixel of a 20 m cell in `depth`, and the bands grade them the same way.
+Each band's range tests `depth_cm`, which is the deepest 1 m sample along the edge (`build_edge_depth.py`).
+D-006 in [[decision-log]] records that choice.
 
 Each returned GeoJSON feature carries `band` and `multiply_by` in its properties, so
 `build_custom_model()` can turn the feature collection straight into GraphHopper's
@@ -86,7 +84,7 @@ actually ships.
 
 ## Design rationale not yet in code
 
-`artifacts/raw/SW Architecture.md`, section 9, describes a pre-closure threshold: proactively closing a
+`artifacts/raw/T3-Digital-Twin_Architecture.md`, section 4.5, describes a pre-closure threshold: proactively closing a
 segment when its depth forecast 1 hour ahead reaches the vehicle's hard block threshold, even if
 the current depth is still passable, as a safety buffer distinct from the hard block itself. That
 document is FloodNav's broader target architecture, not a record of what is currently implemented;

@@ -1,0 +1,20 @@
+US-106 server check, 2026-10-12 16:58 +07 (09:58 UTC), http://100.67.84.55:8090 (Airflow 3.1.7)
+
+1. Event, POST /api/v2/assets/events for asset flood_road_values (id 3), extra {"run_ts": "20261011T001500", "source": "US-106 manual event"}:
+   event id 177, timestamp 2026-10-12T09:58:29.632548Z
+
+2. Run, GET /api/v2/dags/flood_history/dagRuns:
+   asset_triggered__2026-10-12T09:58:29.640589+00:00_dWSONnac  state success  run_type asset_triggered
+   task load_depth_history  success  09:58:29.86 to 09:58:31.91 UTC
+
+3. Task log:
+   Runs ['20261011T001500'] from the triggering events
+   Loading run 20261011T001500 into depth_history
+   Run 20261011T001500: 8 moments written, 0 skipped for a later run, 19792 rows.
+
+4. TimescaleDB flood_metrics after the run:
+   depth_history   19792
+   history_moment  8
+   The counts equal those before the run (US-106 details item 9), so the load is idempotent.
+
+The event was created by hand, not by routing_adapter, because no real or test-rain run has emitted FLOOD_ROAD_VALUES since the deploy.

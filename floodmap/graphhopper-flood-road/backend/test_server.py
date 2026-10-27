@@ -35,13 +35,18 @@ from osgeo import gdal, osr
 
 import create_flood_depth_raster_tables
 import create_flood_extent_tables
-import create_flood_road_tables
+import create_flood_run_output_table
+import create_demo_pin_table
+import create_edge_depth_tables
+import create_forecast_mode_table
+import create_graph_edge_table
 import raster_load
 
 gdal.UseExceptions()
 
 VALID_TIME = "2026-05-22T09:00:00+00:00"
-RUN = "2026-05-22T06:00:00+00:00"
+VALID_TIME_UTC = "2026-05-22T09:00:00"
+RUN = "20260522T060000"
 # Depth 0.25m clears motorbike's b4 band (>= 0.20m), so a route request with this
 # valid_time must come out graded: flood_areas.derive_areas returns a non-empty
 # FeatureCollection, and server._handle_route must inject ch.disable + custom_model.
@@ -102,6 +107,17 @@ def gdallocationinfo_value(tif: Path, lon: float, lat: float) -> float:
     return float(out.stdout.strip())
 
 
+def pixels_around_boundary(tif_4326: Path, lon: float, lat: float) -> list[np.float32]:
+    """The four pixels that touch the pixel boundary nearest the point. A tile-edge point sits a
+    float-noise hair off the boundary, so either neighbor is a correct answer there, and the test
+    accepts these four pixels and nothing else."""
+    ds = gdal.Open(str(tif_4326))
+    ulx, scale_x, _, uly, _, scale_y = ds.GetGeoTransform()
+    col, row = round((lon - ulx) / scale_x), round((lat - uly) / scale_y)
+    window = ds.GetRasterBand(1).ReadAsArray(col - 1, row - 1, 2, 2)
+    return [np.float32(value) for value in window.ravel()]
+
+
 def tile_edge_lonlat(tif_4326: Path, tile_x: float, tile_y: float) -> tuple[float, float]:
     """The EPSG:4326 point tile_x and tile_y tiles in from the raster's top-left corner; a whole
     number lands on a tile edge, so this names points that several tiles' hulls share."""
@@ -114,9 +130,10 @@ def load_depth_runs(conn, workdir: Path) -> Path:
     """Loads OLD_RUN and NEW_RUN through raster_load.load_run, the same path the DAG uses.
     Returns NEW_RUN's source depth.tif for the gdallocationinfo acceptance check."""
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon;")
+        cur.execute("DROP TABLE IF EXISTS flood_depth_raster_tile, flood_extent_polygon, flood_run_output;")
         cur.execute(create_flood_depth_raster_tables.SQL)
         cur.execute(create_flood_extent_tables.SQL)
+        cur.execute(create_flood_run_output_table.SQL)
     conn.commit()
 
     runs = {OLD_RUN: ([SHARED_FILE, OLD_ONLY_FILE], 0.0), NEW_RUN: ([SHARED_FILE], 10.0)}
@@ -142,13 +159,23 @@ def points_url(base: str, **params) -> str:
 
 def reset(conn) -> None:
     with conn.cursor() as cur:
-        cur.execute("DROP TABLE IF EXISTS flood_road_values, flood_road_file;")
-        cur.execute(create_flood_road_tables.SQL)
-        cur.execute("INSERT INTO flood_road_file (id, timestamp, source_file) VALUES (1, %s, 'test');", (RUN,))
+        cur.execute("DROP TABLE IF EXISTS edge_depth, edge_depth_run, graph_edge_export, graph_edge, forecast_mode, demo_pin;")
+        cur.execute(create_forecast_mode_table.SQL)
+        cur.execute(create_demo_pin_table.SQL)
+        cur.execute(create_graph_edge_table.SQL)
+        cur.execute(create_edge_depth_tables.SQL)
         cur.execute(
-            "INSERT INTO flood_road_values (file_id, timestamp, forecast_time, depth, geom_4326)"
-            " VALUES (1, %s, %s, 0.25, ST_GeomFromText(%s, 4326));",
-            (RUN, VALID_TIME, FLOODED_SEGMENT),
+            "INSERT INTO graph_edge (edge_id, length_m, geom, edge_key)"
+            " VALUES (1, 1, ST_GeomFromText(%s, 4326), '1000:0');",
+            (FLOODED_SEGMENT,),
+        )
+        cur.execute(
+            "INSERT INTO edge_depth_run (run_ts, graph_hash, valid_times) VALUES (%s, 'test', ARRAY[%s::timestamp]);",
+            (RUN, VALID_TIME_UTC),
+        )
+        cur.execute(
+            "INSERT INTO edge_depth (run_ts, valid_time_utc, edge_key, depth_cm) VALUES (%s, %s, '1000:0', 25);",
+            (RUN, VALID_TIME_UTC),
         )
     conn.commit()
 
@@ -158,6 +185,7 @@ class StubGraphHopper(BaseHTTPRequestHandler):
     instead of trusting server.py's own claim about what it forwarded."""
 
     received_bodies: list[dict] = []
+    response_override: dict | None = None  # when set, /route answers with this instead of GRAPHHOPPER_RESPONSE
 
     def log_message(self, *args) -> None:  # quiet the default stderr access log
         pass
@@ -173,7 +201,7 @@ class StubGraphHopper(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
         if urlparse(self.path).path == "/route":
             type(self).received_bodies.append(body)
-            self._send(200, GRAPHHOPPER_RESPONSE)
+            self._send(200, type(self).response_override or GRAPHHOPPER_RESPONSE)
         else:
             self._send(404, {"error": "not found"})
 
@@ -196,6 +224,22 @@ def request(url: str, method: str = "GET", body: dict | None = None) -> tuple[in
             return res.status, json.loads(res.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         return exc.code, json.loads(exc.read().decode("utf-8"))
+
+
+def set_mode(dsn: str, *decisions: tuple[str, str]) -> None:
+    """Replaces the forecast_mode rows with one per (slot, mode), and pins OLD_RUN at VALID_TIME_UTC for the demo."""
+    with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+        cur.execute("TRUNCATE forecast_mode")
+        for slot, mode in decisions:
+            cur.execute(
+                "INSERT INTO forecast_mode (slot, rain_peak_mm_hr, gate_mm_hr, standing_flood, mode)"
+                " VALUES (%s, 0, 5, false, %s)",
+                (slot, mode),
+            )
+        cur.execute("TRUNCATE demo_pin")
+        cur.execute(
+            "INSERT INTO demo_pin (run_ts, valid_time_utc, wet_edges) VALUES (%s, %s, 1)", (OLD_RUN, VALID_TIME_UTC)
+        )
 
 
 def main() -> int:
@@ -286,7 +330,151 @@ def main() -> int:
         assert "ch.disable" not in plain_body, plain_body
         assert "custom_model" not in plain_body, plain_body
 
+        # TIME_AWARE_ROUTING on (US-052), against a GraphHopper that does not run the engine: the first request carries
+        # td_departure and no flood grading, the answer has no td.status, so the backend sends today's graded request and
+        # marks the response as a fallback.
+        os.environ["TIME_AWARE_ROUTING"] = "true"
+        try:
+            StubGraphHopper.received_bodies.clear()
+            status, payload = request(
+                f"{base}/route",
+                method="POST",
+                body={
+                    "points": [[105.7610, 21.0214], [105.7625, 21.0220]],
+                    "profile": "motorbike",
+                    "valid_time": VALID_TIME,
+                    "run": RUN,
+                },
+            )
+        finally:
+            del os.environ["TIME_AWARE_ROUTING"]
+        assert status == 200, (status, payload)
+        assert len(StubGraphHopper.received_bodies) == 2, StubGraphHopper.received_bodies
+        engine_body, fallback_body = StubGraphHopper.received_bodies
+        assert isinstance(engine_body["td_departure"], int), engine_body
+        assert "custom_model" not in engine_body and "ch.disable" not in engine_body, engine_body
+        assert "td_departure" not in fallback_body, fallback_body
+        assert fallback_body["ch.disable"] is True and "custom_model" in fallback_body, fallback_body
+        assert payload["paths"] == GRAPHHOPPER_RESPONSE["paths"], payload
+        assert payload["hints"]["td.status"] == "fallback", payload
+
+        # POST /route/departures (US-053): the usual route with its edge_id and time details, the depth table from the
+        # EDGE_TABLE_DIR volume, and the sticky rule. Edge 1 is wet at the first three steps, and now lies in the second step.
+        import struct
+        from datetime import datetime, timedelta, timezone
+
+        now = datetime.now(timezone.utc)
+        first_step = now.replace(minute=now.minute - now.minute % 15, second=0, microsecond=0) - timedelta(minutes=15)
+        graph_hash, run = "c" * 64, "20261005T170000"
+        packed = bytearray(struct.pack("<4sHHIHH", b"EDGD", 1, 8, 2, len(graph_hash), len(run)) + graph_hash.encode() + run.encode())
+        for i in range(8):
+            packed += struct.pack("<q", int((first_step + timedelta(minutes=15 * i)).timestamp()))
+        for edge in range(2):
+            for step in range(8):
+                packed += struct.pack("<H", 50 if edge == 1 and step <= 2 else 0)
+        with TemporaryDirectory() as tables:
+            Path(tables, "20261005T170000.bin").write_bytes(bytes(packed))
+            Path(tables, "latest").write_text("20261005T170000.bin\n", encoding="utf-8")
+            os.environ["EDGE_TABLE_DIR"] = tables
+            StubGraphHopper.response_override = {
+                "paths": [{"distance": 600.0, "time": 120000, "details": {
+                    "edge_id": [[0, 1, 0], [1, 2, 1]], "time": [[0, 1, 60000], [1, 2, 60000]]}}],
+                "hints": {"td.graph_hash": graph_hash, "td.run": run},
+            }
+            try:
+                StubGraphHopper.received_bodies.clear()
+                status, payload = request(
+                    f"{base}/route/departures",
+                    method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car", "now": "2030-01-01T00:00:00Z", "margin_s": 0},
+                )
+                assert status == 200, (status, payload)
+                assert payload["status"] == "ok", payload
+                assert payload["run"] == run and payload["margin_s"] == 600 and payload["limit_cm"] == 30, payload
+                assert abs(payload["run_age_s"] - (now - first_step).total_seconds()) < 5, payload
+                assert [c["status"] for c in payload["candidates"][:3]] == ["blocked", "blocked", "clear"], payload["candidates"]
+                assert payload["earliest_clear"]["departure"] == (first_step + timedelta(minutes=45)).isoformat(), payload
+                sent = StubGraphHopper.received_bodies[0]
+                assert sent["details"] == ["edge_id", "time"] and sent["td_info"] is True, sent
+                assert "custom_model" not in sent and "td_departure" not in sent, sent
+
+                # The table was built for another graph: unavailable, not an error, and both hashes are named.
+                StubGraphHopper.response_override["hints"]["td.graph_hash"] = "d" * 64
+                status, payload = request(
+                    f"{base}/route/departures", method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car"},
+                )
+                assert status == 200 and payload["status"] == "unavailable", (status, payload)
+                assert "c" * 64 in payload["reason"] and "d" * 64 in payload["reason"], payload
+
+                # No pointer in the folder.
+                Path(tables, "latest").unlink()
+                status, payload = request(
+                    f"{base}/route/departures", method="POST",
+                    body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "car"},
+                )
+                assert status == 200 and payload["status"] == "unavailable", (status, payload)
+
+                status, payload = request(f"{base}/route/departures", method="POST", body={"profile": "car"})
+                assert status == 400, (status, payload)
+            finally:
+                StubGraphHopper.response_override = None
+                del os.environ["EDGE_TABLE_DIR"]
+
+        # The forecast mode (US-130). With no decision written the backend is LIVE and reads the newest run.
+        status, payload = request(f"{base}/flood/mode")
+        assert (status, payload) == (200, {"mode": "LIVE", "decided_at": None, "demo": None}), (status, payload)
+
         wet_lon, wet_lat = pixel_centre_lonlat(*WET_PIXEL)
+        expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
+        live_point = points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+
+        # DEMO with a pinned step: the point read, the areas, and the route all use the pinned run and step, whatever the
+        # request names, and the engine is not asked even with the flag on.
+        set_mode(dsn, ("2026-10-12 03:00:00", "LIVE"), ("2026-10-12 03:15:00", "DEMO"))
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and payload["mode"] == "DEMO", (status, payload)
+        assert payload["demo"] == {"run": OLD_RUN, "valid_time": VALID_TIME}, payload
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == OLD_RUN, (status, payload)
+        assert np.float32(payload["depth_m"]) == depth_grid(0.0)[WET_PIXEL], payload
+        status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=OLD_ONLY_VALID_TIME, run=NEW_RUN))
+        assert status == 200 and payload["run"] == OLD_RUN, (status, payload)
+        status, payload = request(f"{base}/flood/areas?valid_time={quote('2030-01-01T00:00:00+00:00')}&run=latest")
+        assert status == 200 and [f["properties"]["band"] for f in payload["features"]] == ["b4"], (status, payload)
+        os.environ["TIME_AWARE_ROUTING"] = "true"
+        try:
+            StubGraphHopper.received_bodies.clear()
+            status, payload = request(
+                f"{base}/route",
+                method="POST",
+                body={"points": [[105.7610, 21.0214], [105.7625, 21.0220]], "profile": "motorbike"},
+            )
+        finally:
+            del os.environ["TIME_AWARE_ROUTING"]
+        assert status == 200, (status, payload)
+        assert len(StubGraphHopper.received_bodies) == 1, StubGraphHopper.received_bodies
+        demo_body = StubGraphHopper.received_bodies[0]
+        assert "td_departure" not in demo_body and demo_body["ch.disable"] is True, demo_body
+        assert "custom_model" in demo_body, demo_body
+
+        # DEMO with no pinned step reads the newest run, and PENDING never pins.
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE demo_pin")
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and (payload["mode"], payload["demo"]) == ("DEMO", None), (status, payload)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+        set_mode(dsn, ("2026-10-12 03:15:00", "DEMO"), ("2026-10-12 03:30:00", "PENDING"))
+        status, payload = request(f"{base}/flood/mode")
+        assert status == 200 and (payload["mode"], payload["demo"]) == ("PENDING", None), (status, payload)
+        status, payload = request(live_point)
+        assert status == 200 and payload["run"] == NEW_RUN, (status, payload)
+        with psycopg2.connect(dsn) as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE forecast_mode, demo_pin")
+
         expected_depth = gdallocationinfo_value(source_tif, wet_lon, wet_lat)
         status, payload = request(points_url(base, lat=wet_lat, lon=wet_lon, valid_time=SHARED_VALID_TIME))
         assert status == 200, (status, payload)
@@ -322,11 +510,12 @@ def main() -> int:
             "edge of two tiles": tile_edge_lonlat(warped_tif, 2, 0.5),
         }
         for name, (edge_lon, edge_lat) in edge_points.items():
-            expected_depth = gdallocationinfo_value(warped_tif, edge_lon, edge_lat)
+            neighbours = pixels_around_boundary(warped_tif, edge_lon, edge_lat)
+            assert len(set(neighbours)) == 4, (name, neighbours)
             status, payload = request(points_url(base, lat=edge_lat, lon=edge_lon, valid_time=SHARED_VALID_TIME))
             assert status == 200, (name, status, payload)
             assert payload["status"] == "wet", (name, payload)
-            assert np.float32(payload["depth_m"]) == np.float32(expected_depth), (name, payload, expected_depth)
+            assert np.float32(payload["depth_m"]) in neighbours, (name, payload, neighbours)
 
         status, payload = request(points_url(base, lat=10.0, lon=100.0, valid_time=SHARED_VALID_TIME))
         assert status == 200, (status, payload)
